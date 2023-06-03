@@ -15,10 +15,7 @@
 *.vcxproj.filters
 *.vcxproj.user
 imgui.ini
-*.txt
-/CoreExtensions/StandardMaterial/PhongMaterial/skyDome.h
-/CoreExtensions/StandardMaterial/TerrainMaterial/FETerrainShader - Copy.h
-/CoreExtensions/StandardMaterial/TerrainMaterial/FETerrainShader - Copy (2).h
+
 cmake_install.cmake
 
 #Folders
