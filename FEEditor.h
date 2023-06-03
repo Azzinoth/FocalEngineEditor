@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "../Editor/FEEditorSubWindows/projectWasModifiedPopUp.h"
+#include "FEEditorSubWindows/projectWasModifiedPopUp.h"
 #include <functional>
 using namespace FocalEngine;
 

@@ -1,4 +1,4 @@
-#include "../Editor/FEEditor.h"
+#include "FEEditor.h"
 
 static FETexture* TempTexture = nullptr;
 static void AddTransparencyToTextureCallBack(const std::vector<FEObject*> SelectionsResult)

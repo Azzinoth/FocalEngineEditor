@@ -1,12 +1,12 @@
 #pragma once
 
 #include "../FEngine.h"
-#include "../Editor/FEEditorDragAndDropManager.h"
+#include "FEEditorDragAndDropManager.h"
 #include "FEDearImguiWrapper/FEDearImguiWrapper.h"
-#include "../Editor/FEEditorGizmoManager.h"
-#include "../Editor/FEEditorPreviewManager.h"
+#include "FEEditorGizmoManager.h"
+#include "FEEditorPreviewManager.h"
 #include "FEEditorInternalResources.h"
-#include "../Editor/FEEditorVirtualFileSystem.h"
+#include "FEEditorVirtualFileSystem.h"
 
 using namespace FocalEngine;
 

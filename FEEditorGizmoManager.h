@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../FEngine.h"
-#include "../Editor/FEEditorSelectedObject.h"
+#include "FEEditorSelectedObject.h"
 using namespace FocalEngine;
 
 class FEEditor;

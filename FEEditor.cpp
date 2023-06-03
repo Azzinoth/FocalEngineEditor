@@ -1,4 +1,4 @@
-#include "../Editor/FEEditor.h"
+#include "FEEditor.h"
 
 FEEditor* FEEditor::Instance = nullptr;
 ImGuiWindow* FEEditor::SceneWindow = nullptr;
