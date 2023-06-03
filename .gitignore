@@ -15,7 +15,7 @@
 *.vcxproj.filters
 *.vcxproj.user
 imgui.ini
-
+*.txt
 cmake_install.cmake
 
 #Folders
