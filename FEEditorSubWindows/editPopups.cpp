@@ -829,13 +829,13 @@ void EditMaterialPopup::Show(FEMaterial* Material)
 				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetAOMapChannel(), NewNode, 8);
 			}
 
-			if (Material->GetRoughtnessMap() == Material->Textures[i])
+			if (Material->GetRoughnessMap() == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetRoughtnessMapChannel(), NewNode, 3);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetRoughnessMapChannel(), NewNode, 3);
 			}
-			else if (Material->GetRoughtnessMap(1) == Material->Textures[i])
+			else if (Material->GetRoughnessMap(1) == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetRoughtnessMapChannel(), NewNode, 9);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetRoughnessMapChannel(), NewNode, 9);
 			}
 
 			if (Material->GetMetalnessMap() == Material->Textures[i])
@@ -932,7 +932,7 @@ void EditMaterialPopup::Render()
 			}
 			case 3:
 			{
-				ObjToWorkWith->setRoughtnessMap(tempContainer, 0, subMaterial);
+				ObjToWorkWith->setRoughnessMap(tempContainer, 0, subMaterial);
 				break;
 			}
 			case 4:
@@ -1131,11 +1131,11 @@ void EditMaterialPopup::Render()
 			}
 		}
 
-		// ************* Roughtness *************
+		// ************* Roughness *************
 		ImGui::SetCursorPosX(10);
 		ImGui::SetCursorPosY(38 + 128 + 80);
-		ImGui::Text("Roughtness:");
-		ObjToWorkWith->getRoughtnessMap() == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getRoughtnessMap());
+		ImGui::Text("Roughness:");
+		ObjToWorkWith->getRoughnessMap() == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getRoughnessMap());
 		ImGui::SetCursorPosX(10);
 		iconButton->render();
 		if (iconButton->getWasClicked())
@@ -1147,21 +1147,21 @@ void EditMaterialPopup::Render()
 		if (MaterialBindingtargets.size() > 0)
 			MaterialBindingtargets[3]->stickToItem();
 
-		if (ObjToWorkWith->getRoughtnessMap() != nullptr)
+		if (ObjToWorkWith->getRoughnessMap() != nullptr)
 		{
 			ImGui::SetCursorPosX(10);
 			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##roughtness", channels[ObjToWorkWith->getRoughtnessMapChannel()].c_str(), ImGuiWindowFlags_None))
+			if (ImGui::BeginCombo("Channel##roughness", channels[ObjToWorkWith->getRoughnessMapChannel()].c_str(), ImGuiWindowFlags_None))
 			{
 				for (size_t i = 0; i < channels.size(); i++)
 				{
 					// if texture was compresed with out alpha channel
-					if (i == 3 && ObjToWorkWith->getRoughtnessMap()->getInternalFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
+					if (i == 3 && ObjToWorkWith->getRoughnessMap()->getInternalFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
 						continue;
 
-					bool is_selected = (channels[ObjToWorkWith->getRoughtnessMapChannel()] == channels[i]);
+					bool is_selected = (channels[ObjToWorkWith->getRoughnessMapChannel()] == channels[i]);
 					if (ImGui::Selectable(channels[i].c_str(), is_selected))
-						ObjToWorkWith->setRoughtnessMap(ObjToWorkWith->getRoughtnessMap(), i);
+						ObjToWorkWith->setRoughnessMap(ObjToWorkWith->getRoughnessMap(), i);
 
 					if (is_selected)
 						ImGui::SetItemDefaultFocus();
@@ -1347,11 +1347,11 @@ void EditMaterialPopup::Render()
 			}
 		}
 
-		// ************* Roughtness *************
+		// ************* Roughness *************
 		ImGui::SetCursorPosX(10);
 		ImGui::SetCursorPosY(64 + 128 + 80 + 128 + 80 + 128 + 80);
-		ImGui::Text("Roughtness:");
-		ObjToWorkWith->getRoughtnessMap(1) == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getRoughtnessMap(1));
+		ImGui::Text("Roughness:");
+		ObjToWorkWith->getRoughnessMap(1) == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getRoughnessMap(1));
 		ImGui::SetCursorPosX(10);
 		iconButton->render();
 		if (iconButton->getWasClicked())
@@ -1363,21 +1363,21 @@ void EditMaterialPopup::Render()
 		if (MaterialBindingtargets.size() > 0)
 			MaterialBindingtargets[9]->stickToItem();
 
-		if (ObjToWorkWith->getRoughtnessMap(1) != nullptr)
+		if (ObjToWorkWith->getRoughnessMap(1) != nullptr)
 		{
 			ImGui::SetCursorPosX(10);
 			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##roughtnessSubmaterial", channels[ObjToWorkWith->getRoughtnessMapChannel(1)].c_str(), ImGuiWindowFlags_None))
+			if (ImGui::BeginCombo("Channel##roughnessSubmaterial", channels[ObjToWorkWith->getRoughnessMapChannel(1)].c_str(), ImGuiWindowFlags_None))
 			{
 				for (size_t i = 0; i < channels.size(); i++)
 				{
 					// if texture was compresed with out alpha channel
-					if (i == 3 && ObjToWorkWith->getRoughtnessMap(1)->getInternalFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
+					if (i == 3 && ObjToWorkWith->getRoughnessMap(1)->getInternalFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
 						continue;
 
-					bool is_selected = (channels[ObjToWorkWith->getRoughtnessMapChannel(1)] == channels[i]);
+					bool is_selected = (channels[ObjToWorkWith->getRoughnessMapChannel(1)] == channels[i]);
 					if (ImGui::Selectable(channels[i].c_str(), is_selected))
-						ObjToWorkWith->setRoughtnessMap(ObjToWorkWith->getRoughtnessMap(1), i, 1);
+						ObjToWorkWith->setRoughnessMap(ObjToWorkWith->getRoughnessMap(1), i, 1);
 
 					if (is_selected)
 						ImGui::SetItemDefaultFocus();
@@ -1510,22 +1510,22 @@ void EditMaterialPopup::Render()
 			ObjToWorkWith->setAmbientOcclusionMapIntensity(AOMapIntensity);
 		}
 
-		// ************* Roughtness *************
-		if (ObjToWorkWith->getRoughtnessMap() == nullptr)
+		// ************* Roughness *************
+		if (ObjToWorkWith->getRoughnessMap() == nullptr)
 		{
-			ImGui::Text("Roughtness:");
+			ImGui::Text("Roughness:");
 			ImGui::SetNextItemWidth(fieldWidth);
-			float roughtness = ObjToWorkWith->getRoughtness();
-			ImGui::DragFloat("##Roughtness", &roughtness, 0.01f, 0.0f, 1.0f);
-			ObjToWorkWith->setRoughtness(roughtness);
+			float roughness = ObjToWorkWith->getRoughness();
+			ImGui::DragFloat("##Roughness", &roughness, 0.01f, 0.0f, 1.0f);
+			ObjToWorkWith->setRoughness(roughness);
 		}
 		else
 		{
-			ImGui::Text("Roughtness map intensity:");
+			ImGui::Text("Roughness map intensity:");
 			ImGui::SetNextItemWidth(fieldWidth);
-			float roughtness = ObjToWorkWith->getRoughtnessMapIntensity();
-			ImGui::DragFloat("##Roughtness map intensity", &roughtness, 0.01f, 0.0f, 10.0f);
-			ObjToWorkWith->setRoughtnessMapIntensity(roughtness);
+			float roughness = ObjToWorkWith->getRoughnessMapIntensity();
+			ImGui::DragFloat("##Roughness map intensity", &roughness, 0.01f, 0.0f, 10.0f);
+			ObjToWorkWith->setRoughnessMapIntensity(roughness);
 		}
 
 		// ************* Metalness *************
@@ -1635,7 +1635,7 @@ bool editMaterialPopup::dragAndDropMaterialBindingsCallback(FEObject* object, vo
 
 	case 3:
 	{
-		material->setRoughtnessMap(RESOURCE_MANAGER.getTexture(object->getObjectID()), 0, subMaterial);
+		material->setRoughnessMap(RESOURCE_MANAGER.getTexture(object->getObjectID()), 0, subMaterial);
 		break;
 	}
 

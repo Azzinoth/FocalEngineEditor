@@ -16,14 +16,14 @@ FEEditorMaterialNode::FEEditorMaterialNode(FEMaterial* Material) : FEVisualNode(
 	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_IN, "albedo"));
 	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_IN, "normal"));
 	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "AO"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Roughtness"));
+	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Roughness"));
 	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Metalness"));
 	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Displacement"));
 
 	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_IN, "albedo_1"));
 	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_IN, "normal_1"));
 	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "AO_1"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Roughtness_1"));
+	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Roughness_1"));
 	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Metalness_1"));
 	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Displacement_1"));
 }
@@ -96,30 +96,30 @@ void FEEditorMaterialNode::Draw()
 		Data->SetAmbientOcclusionMapIntensity(AOMapIntensity);
 	}
 
-	// ************* Roughtness *************
-	if (Data->GetRoughtnessMap() == nullptr)
+	// ************* Roughness *************
+	if (Data->GetRoughnessMap() == nullptr)
 	{
 		CurrentPosition.y += FieldStep;
 		ImGui::SetCursorScreenPos(CurrentPosition);
-		ImGui::Text("Roughtness:");
+		ImGui::Text("Roughness:");
 		ImGui::SetNextItemWidth(FieldWidth);
-		float roughtness = Data->GetRoughtness();
+		float roughness = Data->GetRoughness();
 		CurrentPosition.y += FieldStep;
 		ImGui::SetCursorScreenPos(CurrentPosition);
-		ImGui::DragFloat("##Roughtness", &roughtness, 0.01f, 0.0f, 1.0f);
-		Data->SetRoughtness(roughtness);
+		ImGui::DragFloat("##Roughness", &roughness, 0.01f, 0.0f, 1.0f);
+		Data->SetRoughness(roughness);
 	}
 	else
 	{
 		CurrentPosition.y += FieldStep;
 		ImGui::SetCursorScreenPos(CurrentPosition);
-		ImGui::Text("Roughtness map \nintensity:");
+		ImGui::Text("Roughness map \nintensity:");
 		ImGui::SetNextItemWidth(FieldWidth);
-		float roughtness = Data->GetRoughtnessMapIntensity();
+		float roughness = Data->GetRoughnessMapIntensity();
 		CurrentPosition.y += FieldStep * 1.5f;
 		ImGui::SetCursorScreenPos(CurrentPosition);
-		ImGui::DragFloat("##Roughtness map intensity", &roughtness, 0.01f, 0.0f, 10.0f);
-		Data->SetRoughtnessMapIntensity(roughtness);
+		ImGui::DragFloat("##Roughness map intensity", &roughness, 0.01f, 0.0f, 10.0f);
+		Data->SetRoughnessMapIntensity(roughness);
 	}
 
 	// ************* Metalness *************
@@ -230,13 +230,13 @@ void FEEditorMaterialNode::SocketEvent(FEVisualNodeSocket* OwnSocket, FEVisualNo
 		Data->SetAOMap(Texture, static_cast<int>(SocketIndex), 1);
 	}
 
-	if (OwnSocket->GetName() == "Roughtness")
+	if (OwnSocket->GetName() == "Roughness")
 	{
-		Data->SetRoughtnessMap(Texture, static_cast<int>(SocketIndex), 0);
+		Data->SetRoughnessMap(Texture, static_cast<int>(SocketIndex), 0);
 	}
-	else if (OwnSocket->GetName() == "Roughtness_1")
+	else if (OwnSocket->GetName() == "Roughness_1")
 	{
-		Data->SetRoughtnessMap(Texture, static_cast<int>(SocketIndex), 1);
+		Data->SetRoughnessMap(Texture, static_cast<int>(SocketIndex), 1);
 	}
 
 	if (OwnSocket->GetName() == "Metalness")
@@ -282,7 +282,7 @@ bool FEEditorMaterialNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNod
 	}
 
 	if ((OwnSocket->GetName() == "AO" || OwnSocket->GetName() == "AO_1" ||
-		OwnSocket->GetName() == "Roughtness" || OwnSocket->GetName() == "Roughtness_1" ||
+		OwnSocket->GetName() == "Roughness" || OwnSocket->GetName() == "Roughness_1" ||
 		OwnSocket->GetName() == "Metalness" || OwnSocket->GetName() == "Metalness_1" ||
 		OwnSocket->GetName() == "Displacement" || OwnSocket->GetName() == "Displacement_1") && (CandidateSocket->GetType() != FE_NODE_SOCKET_COLOR_CHANNEL_OUT && CandidateSocket->GetType() != FE_NODE_SOCKET_FLOAT_CHANNEL_OUT))
 	{

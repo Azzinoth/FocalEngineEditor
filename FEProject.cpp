@@ -480,11 +480,11 @@ void FEProject::SaveScene(bool bFullSave)
 		MaterialData[Material->GetObjectID()]["ID"] = Material->GetObjectID();
 		MaterialData[Material->GetObjectID()]["name"] = Material->GetName();
 		MaterialData[Material->GetObjectID()]["metalness"] = Material->GetMetalness();
-		MaterialData[Material->GetObjectID()]["roughtness"] = Material->GetRoughtness();
+		MaterialData[Material->GetObjectID()]["roughness"] = Material->GetRoughness();
 		MaterialData[Material->GetObjectID()]["normalMapIntensity"] = Material->GetNormalMapIntensity();
 		MaterialData[Material->GetObjectID()]["ambientOcclusionIntensity"] = Material->GetAmbientOcclusionIntensity();
 		MaterialData[Material->GetObjectID()]["ambientOcclusionMapIntensity"] = Material->GetAmbientOcclusionMapIntensity();
-		MaterialData[Material->GetObjectID()]["roughtnessMapIntensity"] = Material->GetRoughtnessMapIntensity();
+		MaterialData[Material->GetObjectID()]["roughnessMapIntensity"] = Material->GetRoughnessMapIntensity();
 		MaterialData[Material->GetObjectID()]["metalnessMapIntensity"] = Material->GetMetalnessMapIntensity();
 		MaterialData[Material->GetObjectID()]["tiling"] = Material->GetTiling();
 		MaterialData[Material->GetObjectID()]["compackPacking"] = Material->IsCompackPacking();
@@ -920,11 +920,11 @@ void FEProject::LoadScene()
 		}
 
 		NewMaterial->SetMetalness(Root["materials"][MaterialsList[i]]["metalness"].asFloat());
-		NewMaterial->SetRoughtness(Root["materials"][MaterialsList[i]]["roughtness"].asFloat());
+		NewMaterial->SetRoughness(Root["materials"][MaterialsList[i]]["roughness"].asFloat());
 		NewMaterial->SetNormalMapIntensity(Root["materials"][MaterialsList[i]]["normalMapIntensity"].asFloat());
 		NewMaterial->SetAmbientOcclusionIntensity(Root["materials"][MaterialsList[i]]["ambientOcclusionIntensity"].asFloat());
 		NewMaterial->SetAmbientOcclusionMapIntensity(Root["materials"][MaterialsList[i]]["ambientOcclusionMapIntensity"].asFloat());
-		NewMaterial->SetRoughtnessMapIntensity(Root["materials"][MaterialsList[i]]["roughtnessMapIntensity"].asFloat());
+		NewMaterial->SetRoughnessMapIntensity(Root["materials"][MaterialsList[i]]["roughnessMapIntensity"].asFloat());
 		NewMaterial->SetMetalnessMapIntensity(Root["materials"][MaterialsList[i]]["metalnessMapIntensity"].asFloat());
 
 		if (ProjectVersion >= 0.02f)
@@ -1470,11 +1470,11 @@ void FEProject::LoadSceneVer0()
 		}
 
 		NewMaterial->SetMetalness(Root["materials"][MaterialsList[i]]["metalness"].asFloat());
-		NewMaterial->SetRoughtness(Root["materials"][MaterialsList[i]]["roughtness"].asFloat());
+		NewMaterial->SetRoughness(Root["materials"][MaterialsList[i]]["roughness"].asFloat());
 		NewMaterial->SetNormalMapIntensity(Root["materials"][MaterialsList[i]]["normalMapIntensity"].asFloat());
 		NewMaterial->SetAmbientOcclusionIntensity(Root["materials"][MaterialsList[i]]["ambientOcclusionIntensity"].asFloat());
 		NewMaterial->SetAmbientOcclusionMapIntensity(Root["materials"][MaterialsList[i]]["ambientOcclusionMapIntensity"].asFloat());
-		NewMaterial->SetRoughtnessMapIntensity(Root["materials"][MaterialsList[i]]["roughtnessMapIntensity"].asFloat());
+		NewMaterial->SetRoughnessMapIntensity(Root["materials"][MaterialsList[i]]["roughnessMapIntensity"].asFloat());
 		NewMaterial->SetMetalnessMapIntensity(Root["materials"][MaterialsList[i]]["metalnessMapIntensity"].asFloat());
 	}
 
