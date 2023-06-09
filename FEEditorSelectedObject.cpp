@@ -178,7 +178,8 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 	CheckForSelectionisNeeded = false;
 
 	PixelAccurateSelectionFB->Bind();
-	FE_GL_ERROR(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+	glm::vec4 OriginalClearColor = ENGINE.GetClearColor();
+	ENGINE.SetClearColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
 	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
 	for (size_t i = 0; i < SELECTED.ObjectsUnderMouse.size(); i++)
@@ -300,7 +301,8 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 
 	FE_GL_ERROR(glReadPixels(static_cast<GLint>(MouseX), GLint(ENGINE.GetRenderTargetHeight() - MouseY), 1, 1, GL_RGB, GL_UNSIGNED_BYTE, ColorUnderMouse));
 	PixelAccurateSelectionFB->UnBind();
-	FE_GL_ERROR(glClearColor(FE_CLEAR_COLOR.x, FE_CLEAR_COLOR.y, FE_CLEAR_COLOR.z, FE_CLEAR_COLOR.w));
+
+	ENGINE.SetClearColor(OriginalClearColor);
 
 #ifndef EDITOR_SELECTION_DEBUG_MODE
 	if (!SELECTED.ObjectsUnderMouse.empty())
@@ -373,13 +375,16 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 	HALO_SELECTION_EFFECT.HaloMaterial->ClearAllTexturesInfo();
 	HALO_SELECTION_EFFECT.HaloMaterial->SetBaseColor(glm::vec3(1.0f, 0.25f, 0.0f));
 	FE_GL_ERROR(glViewport(0, 0, RENDERER.SceneToTextureFB->GetWidth(), RENDERER.SceneToTextureFB->GetHeight()));
-	FE_GL_ERROR(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+	glm::vec4 OriginalClearColor = ENGINE.GetClearColor();
+	ENGINE.SetClearColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+	//FE_GL_ERROR(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT));
 
 	if (Container == nullptr)
 	{
 		HALO_SELECTION_EFFECT.HaloObjectsFb->UnBind();
-		FE_GL_ERROR(glClearColor(FE_CLEAR_COLOR.x, FE_CLEAR_COLOR.y, FE_CLEAR_COLOR.z, FE_CLEAR_COLOR.w));
+		ENGINE.SetClearColor(OriginalClearColor);
+		//FE_GL_ERROR(glClearColor(FE_CLEAR_COLOR.x, FE_CLEAR_COLOR.y, FE_CLEAR_COLOR.z, FE_CLEAR_COLOR.w));
 		HALO_SELECTION_EFFECT.PostProcess->bActive = true;
 		return;
 	}
@@ -462,7 +467,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 	}
 
 	HALO_SELECTION_EFFECT.HaloObjectsFb->UnBind();
-	FE_GL_ERROR(glClearColor(FE_CLEAR_COLOR.x, FE_CLEAR_COLOR.y, FE_CLEAR_COLOR.z, FE_CLEAR_COLOR.w));
+	ENGINE.SetClearColor(OriginalClearColor);
 	HALO_SELECTION_EFFECT.PostProcess->bActive = true;
 }
 

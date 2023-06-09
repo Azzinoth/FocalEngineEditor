@@ -51,6 +51,18 @@ private:
 	std::unordered_map<std::string, FETexture*> GameModelPreviewTextures;
 	std::unordered_map<std::string, FETexture*> PrefabPreviewTextures;
 
+	static glm::vec4 OriginalClearColor;
+	static FETransformComponent OriginalMeshTransform;
+	static glm::vec3 OriginalCameraPosition;
+	static float OriginalAspectRation;
+	static float OriginalCameraPitch;
+	static float OriginalCameraRoll;
+	static float OriginalCameraYaw;
+	static float OriginalExposure;
+
+	void BeforePreviewActions();
+	void AfterPreviewActions();
+
 	void CreateMeshPreview(std::string MeshID);
 	FETexture* GetMeshPreview(std::string MeshID);
 
@@ -58,7 +70,7 @@ private:
 	FETexture* GetMaterialPreview(std::string MaterialID);
 
 	void CreateGameModelPreview(std::string GameModelID);
-	void CreateGameModelPreview(const FEGameModel* GameModel, FETexture** ResultingTexture) const;
+	void CreateGameModelPreview(const FEGameModel* GameModel, FETexture** ResultingTexture);
 	FETexture* GetGameModelPreview(std::string GameModelID);
 	void UpdateAllGameModelPreviews();
 

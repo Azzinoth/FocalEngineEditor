@@ -5,6 +5,15 @@ FEEditorPreviewManager* FEEditorPreviewManager::Instance = nullptr;
 FEEditorPreviewManager::FEEditorPreviewManager() {}
 FEEditorPreviewManager::~FEEditorPreviewManager() {}
 
+glm::vec4 FEEditorPreviewManager::OriginalClearColor = glm::vec4();
+FETransformComponent FEEditorPreviewManager::OriginalMeshTransform = FETransformComponent();
+glm::vec3 FEEditorPreviewManager::OriginalCameraPosition = glm::vec3();
+float FEEditorPreviewManager::OriginalAspectRation = 0.0f;
+float FEEditorPreviewManager::OriginalCameraPitch = 0.0f;
+float FEEditorPreviewManager::OriginalCameraRoll = 0.0f;
+float FEEditorPreviewManager::OriginalCameraYaw = 0.0f;
+float FEEditorPreviewManager::OriginalExposure = 0.0f;
+
 void FEEditorPreviewManager::InitializeResources()
 {
 	PreviewFB = RESOURCE_MANAGER.CreateFramebuffer(FE_COLOR_ATTACHMENT | FE_DEPTH_ATTACHMENT, 128, 128);
@@ -47,6 +56,55 @@ void FEEditorPreviewManager::UpdateAll()
 	}
 }
 
+void FEEditorPreviewManager::BeforePreviewActions()
+{
+	PreviewFB->Bind();
+	// We use these values even with the deferred renderer because the final image will not undergo gamma correction. Therefore, values exceeding 1.0f will not function correctly.
+	OriginalClearColor = ENGINE.GetClearColor();
+	ENGINE.SetClearColor(glm::vec4(0.55f, 0.73f, 0.87f, 1.0f));
+
+	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+
+	// Saving currently used variables.
+	OriginalCameraPosition = ENGINE.GetCamera()->GetPosition();
+	OriginalAspectRation = ENGINE.GetCamera()->GetAspectRatio();
+	OriginalCameraPitch = ENGINE.GetCamera()->GetPitch();
+	OriginalCameraRoll = ENGINE.GetCamera()->GetRoll();
+	OriginalCameraYaw = ENGINE.GetCamera()->GetYaw();
+	OriginalExposure = ENGINE.GetCamera()->GetExposure();
+	ENGINE.GetCamera()->SetExposure(1.0f);
+
+	OriginalMeshTransform = PreviewEntity->Transform;
+
+	// The transform impacts the AABB. Therefore, the necessary values must be set prior to any calculations.
+	PreviewEntity->Transform.SetPosition(glm::vec3(0.0, 0.0, 0.0));
+	PreviewEntity->Transform.SetScale(glm::vec3(1.0, 1.0, 1.0));
+	PreviewEntity->Transform.SetRotation(glm::vec3(15.0, -15.0, 0.0));
+
+	ENGINE.GetCamera()->SetAspectRatio(1.0f);
+	FE_GL_ERROR(glViewport(0, 0, 128, 128));
+
+	ENGINE.GetCamera()->SetPitch(0.0f);
+	ENGINE.GetCamera()->SetRoll(0.0f);
+	ENGINE.GetCamera()->SetYaw(0.0f);
+}
+
+void FEEditorPreviewManager::AfterPreviewActions()
+{
+	// We are reversing all of our previously applied transformations.
+	PreviewEntity->Transform = OriginalMeshTransform;
+
+	ENGINE.GetCamera()->SetPosition(OriginalCameraPosition);
+	ENGINE.GetCamera()->SetAspectRatio(OriginalAspectRation);
+	ENGINE.GetCamera()->SetPitch(OriginalCameraPitch);
+	ENGINE.GetCamera()->SetRoll(OriginalCameraRoll);
+	ENGINE.GetCamera()->SetYaw(OriginalCameraYaw);
+
+	PreviewFB->UnBind();
+
+	ENGINE.SetClearColor(OriginalClearColor);
+}
+
 void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 {
 	FEMesh* PreviewMesh = RESOURCE_MANAGER.GetMesh(MeshID);
@@ -56,23 +114,7 @@ void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 	PreviewGameModel->Mesh = PreviewMesh;
 	PreviewGameModel->Material = MeshPreviewMaterial;
 
-	PreviewFB->Bind();
-	// We use this values even with deffered renderer because final image will not be gamma corrected, so values over 1.0f would not work.
-	glClearColor(0.55f, 0.73f, 0.87f, 1.0f);
-	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-
-	// saving currently used variables
-	const FocalEngine::FETransformComponent RegularMeshTransform = PreviewEntity->Transform;
-	const glm::vec3 RegularCameraPosition = ENGINE.GetCamera()->GetPosition();
-	const float RegularAspectRation = ENGINE.GetCamera()->GetAspectRatio();
-	const float RegularCameraPitch = ENGINE.GetCamera()->GetPitch();
-	const float RegularCameraRoll = ENGINE.GetCamera()->GetRoll();
-	const float RegularCameraYaw = ENGINE.GetCamera()->GetYaw();
-
-	// transform has influence on AABB, so before any calculations setting needed values
-	PreviewEntity->Transform.SetPosition(glm::vec3(0.0, 0.0, 0.0));
-	PreviewEntity->Transform.SetScale(glm::vec3(1.0, 1.0, 1.0));
-	PreviewEntity->Transform.SetRotation(glm::vec3(15.0, -15.0, 0.0));
+	BeforePreviewActions();
 
 	FEAABB MeshAABB = PreviewEntity->GetAABB();
 	const glm::vec3 min = MeshAABB.GetMin();
@@ -102,31 +144,13 @@ void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 	PreviewEntity->Transform.SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
 	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 
-	ENGINE.GetCamera()->SetAspectRatio(1.0f);
-	FE_GL_ERROR(glViewport(0, 0, 128, 128));
-
-	ENGINE.GetCamera()->SetPitch(0.0f);
-	ENGINE.GetCamera()->SetRoll(0.0f);
-	ENGINE.GetCamera()->SetYaw(0.0f);
-
 	// rendering mesh to texture
 	RENDERER.RenderEntity(PreviewEntity, ENGINE.GetCamera());
-
-	// reversing all of our transformations.
-	PreviewEntity->Transform = RegularMeshTransform;
-
-	ENGINE.GetCamera()->SetPosition(RegularCameraPosition);
-	ENGINE.GetCamera()->SetAspectRatio(RegularAspectRation);
-	ENGINE.GetCamera()->SetPitch(RegularCameraPitch);
-	ENGINE.GetCamera()->SetRoll(RegularCameraRoll);
-	ENGINE.GetCamera()->SetYaw(RegularCameraYaw);
 
 	CurrentDirectionalLight->Transform.SetRotation(RegularLightRotation);
 	CurrentDirectionalLight->SetIntensity(RegularLightIntensity);
 
-	PreviewFB->UnBind();
-
-	glClearColor(FE_CLEAR_COLOR.x, FE_CLEAR_COLOR.y, FE_CLEAR_COLOR.z, FE_CLEAR_COLOR.w);
+	AfterPreviewActions();
 
 	// if we are updating preview we should delete old texture.
 	if (MeshPreviewTextures.find(MeshID) != MeshPreviewTextures.end())
@@ -193,48 +217,17 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 	PreviewGameModel->Material = PreviewMaterial;
 	PreviewEntity->SetReceivingShadows(false);
 
-	PreviewFB->Bind();
-	// We use this values even with deferred renderer because final image will not be gamma corrected, so values over 1.0f would not work.
-	glClearColor(0.55f, 0.73f, 0.87f, 1.0f);
-	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-
-	// saving currently used variables
-	const glm::vec3 RegularCameraPosition = ENGINE.GetCamera()->GetPosition();
-	const float RegularAspectRation = ENGINE.GetCamera()->GetAspectRatio();
-	const float RegularCameraPitch = ENGINE.GetCamera()->GetPitch();
-	const float RegularCameraRoll = ENGINE.GetCamera()->GetRoll();
-	const float RegularCameraYaw = ENGINE.GetCamera()->GetYaw();
-	const float RegularExposure = ENGINE.GetCamera()->GetExposure();
-	ENGINE.GetCamera()->SetExposure(1.0f);
-
-	PreviewEntity->Transform.SetPosition(glm::vec3(0.0, 0.0, 0.0));
-	PreviewEntity->Transform.SetScale(glm::vec3(1.0, 1.0, 1.0));
-	PreviewEntity->Transform.SetRotation(glm::vec3(0.0, 0.0, 0.0));
+	BeforePreviewActions();
 
 	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, 70.0f));
-	ENGINE.GetCamera()->SetAspectRatio(1.0f);
-	FE_GL_ERROR(glViewport(0, 0, 128, 128));
-
-	ENGINE.GetCamera()->SetPitch(0.0f);
-	ENGINE.GetCamera()->SetRoll(0.0f);
-	ENGINE.GetCamera()->SetYaw(0.0f);
 
 	// rendering material to texture
 	RENDERER.RenderEntityForward(PreviewEntity, ENGINE.GetCamera(), true);
 
-	ENGINE.GetCamera()->SetPosition(RegularCameraPosition);
-	ENGINE.GetCamera()->SetAspectRatio(RegularAspectRation);
-	ENGINE.GetCamera()->SetPitch(RegularCameraPitch);
-	ENGINE.GetCamera()->SetRoll(RegularCameraRoll);
-	ENGINE.GetCamera()->SetYaw(RegularCameraYaw);
-	ENGINE.GetCamera()->SetExposure(RegularExposure);
-
 	CurrentDirectionalLight->Transform.SetRotation(RegularLightRotation);
 	CurrentDirectionalLight->SetIntensity(RegularLightIntensity);
 
-	PreviewFB->UnBind();
-
-	glClearColor(FE_CLEAR_COLOR.x, FE_CLEAR_COLOR.y, FE_CLEAR_COLOR.z, FE_CLEAR_COLOR.w);
+	AfterPreviewActions();
 
 	// if we are updating preview we should delete old texture.
 	if (MaterialPreviewTextures.find(MaterialID) != MaterialPreviewTextures.end())
@@ -335,25 +328,7 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 	PreviewGameModel->Material = GameModel->Material;
 	PreviewEntity->SetReceivingShadows(false);
 
-	PreviewFB->Bind();
-	// We use this values even with deferred renderer because final image will not be gamma corrected, so values over 1.0f would not work.
-	glClearColor(0.55f, 0.73f, 0.87f, 1.0f);
-	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-
-	// saving currently used variables
-	const FocalEngine::FETransformComponent RegularMeshTransform = PreviewEntity->Transform;
-	const glm::vec3 RegularCameraPosition = ENGINE.GetCamera()->GetPosition();
-	const float RegularAspectRation = ENGINE.GetCamera()->GetAspectRatio();
-	const float RegularCameraPitch = ENGINE.GetCamera()->GetPitch();
-	const float RegularCameraRoll = ENGINE.GetCamera()->GetRoll();
-	const float RegularCameraYaw = ENGINE.GetCamera()->GetYaw();
-	const float RegularExposure = ENGINE.GetCamera()->GetExposure();
-	ENGINE.GetCamera()->SetExposure(1.0f);
-
-	// transform has influence on AABB, so before any calculations setting needed values
-	PreviewEntity->Transform.SetPosition(glm::vec3(0.0, 0.0, 0.0));
-	PreviewEntity->Transform.SetScale(glm::vec3(1.0, 1.0, 1.0));
-	PreviewEntity->Transform.SetRotation(glm::vec3(15.0, -15.0, 0.0));
+	BeforePreviewActions();
 
 	FEAABB MeshAABB = PreviewEntity->GetAABB();
 	const glm::vec3 min = MeshAABB.GetMin();
@@ -367,34 +342,15 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 	PreviewEntity->Transform.SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
 	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 
-	ENGINE.GetCamera()->SetAspectRatio(1.0f);
-	FE_GL_ERROR(glViewport(0, 0, 128, 128));
-
-	ENGINE.GetCamera()->SetPitch(0.0f);
-	ENGINE.GetCamera()->SetRoll(0.0f);
-	ENGINE.GetCamera()->SetYaw(0.0f);
-
 	// rendering game model to texture
 	RENDERER.RenderEntityForward(PreviewEntity, ENGINE.GetCamera(), true);
-
-	// reversing all of our transformations.
-	PreviewEntity->Transform = RegularMeshTransform;
-
-	ENGINE.GetCamera()->SetPosition(RegularCameraPosition);
-	ENGINE.GetCamera()->SetAspectRatio(RegularAspectRation);
-	ENGINE.GetCamera()->SetPitch(RegularCameraPitch);
-	ENGINE.GetCamera()->SetRoll(RegularCameraRoll);
-	ENGINE.GetCamera()->SetYaw(RegularCameraYaw);
-	ENGINE.GetCamera()->SetExposure(RegularExposure);
 
 	CurrentDirectionalLight->Transform.SetRotation(RegularLightRotation);
 	CurrentDirectionalLight->SetIntensity(RegularLightIntensity);
 
 	RENDERER.SetDistanceFogEnabled(RegularFog);
 
-	PreviewFB->UnBind();
-
-	glClearColor(FE_CLEAR_COLOR.x, FE_CLEAR_COLOR.y, FE_CLEAR_COLOR.z, FE_CLEAR_COLOR.w);
+	AfterPreviewActions();
 
 	// if we are updating preview we should delete old texture.
 	if (GameModelPreviewTextures.find(GameModelID) != GameModelPreviewTextures.end())
@@ -404,7 +360,7 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 	PreviewFB->SetColorAttachment(RESOURCE_MANAGER.CreateSameFormatTexture(PreviewFB->GetColorAttachment()));
 }
 
-void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel, FETexture** ResultingTexture) const
+void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel, FETexture** ResultingTexture)
 {
 	if (GameModel == nullptr)
 		return;
@@ -433,25 +389,8 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 		*ResultingTexture = RESOURCE_MANAGER.CreateSameFormatTexture(PreviewFB->GetColorAttachment());
 	FETexture* TempTexture = PreviewFB->GetColorAttachment();
 	PreviewFB->SetColorAttachment(*ResultingTexture);
-	PreviewFB->Bind();
-	// We use this values even with deferred renderer because final image will not be gamma corrected, so values over 1.0f would not work.
-	glClearColor(0.55f, 0.73f, 0.87f, 1.0f);
-	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-	// saving currently used variables
-	const FocalEngine::FETransformComponent RegularMeshTransform = PreviewEntity->Transform;
-	const glm::vec3 RegularCameraPosition = ENGINE.GetCamera()->GetPosition();
-	const float RegularAspectRation = ENGINE.GetCamera()->GetAspectRatio();
-	const float RegularCameraPitch = ENGINE.GetCamera()->GetPitch();
-	const float RegularCameraRoll = ENGINE.GetCamera()->GetRoll();
-	const float RegularCameraYaw = ENGINE.GetCamera()->GetYaw();
-	const float RegularExposure = ENGINE.GetCamera()->GetExposure();
-	ENGINE.GetCamera()->SetExposure(1.0f);
-
-	// transform has influence on AABB, so before any calculations setting needed values
-	PreviewEntity->Transform.SetPosition(glm::vec3(0.0, 0.0, 0.0));
-	PreviewEntity->Transform.SetScale(glm::vec3(1.0, 1.0, 1.0));
-	PreviewEntity->Transform.SetRotation(glm::vec3(15.0, -15.0, 0.0));
+	BeforePreviewActions();
 
 	FEAABB MeshAABB = PreviewEntity->GetAABB();
 	const glm::vec3 min = MeshAABB.GetMin();
@@ -465,31 +404,14 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 	PreviewEntity->Transform.SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
 	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 
-	ENGINE.GetCamera()->SetAspectRatio(1.0f);
-	FE_GL_ERROR(glViewport(0, 0, 128, 128));
-
-	ENGINE.GetCamera()->SetPitch(0.0f);
-	ENGINE.GetCamera()->SetRoll(0.0f);
-	ENGINE.GetCamera()->SetYaw(0.0f);
-
 	// rendering game model to texture
 	RENDERER.RenderEntityForward(PreviewEntity, ENGINE.GetCamera(), true);
-
-	// reversing all of our transformations.
-	PreviewEntity->Transform = RegularMeshTransform;
-
-	ENGINE.GetCamera()->SetPosition(RegularCameraPosition);
-	ENGINE.GetCamera()->SetAspectRatio(RegularAspectRation);
-	ENGINE.GetCamera()->SetPitch(RegularCameraPitch);
-	ENGINE.GetCamera()->SetRoll(RegularCameraRoll);
-	ENGINE.GetCamera()->SetYaw(RegularCameraYaw);
-	ENGINE.GetCamera()->SetExposure(RegularExposure);
 
 	CurrentDirectionalLight->Transform.SetRotation(RegularLightRotation);
 	CurrentDirectionalLight->SetIntensity(RegularLightIntensity);
 
-	PreviewFB->UnBind();
-	glClearColor(FE_CLEAR_COLOR.x, FE_CLEAR_COLOR.y, FE_CLEAR_COLOR.z, FE_CLEAR_COLOR.w);
+	AfterPreviewActions();
+
 	PreviewFB->SetColorAttachment(TempTexture);
 }
 
@@ -568,25 +490,7 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 	PreviewEntity->Prefab = prefab;
 	PreviewEntity->SetReceivingShadows(false);
 
-	PreviewFB->Bind();
-	// We use this values even with deferred renderer because final image will not be gamma corrected, so values over 1.0f would not work.
-	glClearColor(0.55f, 0.73f, 0.87f, 1.0f);
-	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-
-	// saving currently used variables
-	const FocalEngine::FETransformComponent RegularMeshTransform = PreviewEntity->Transform;
-	const glm::vec3 RegularCameraPosition = ENGINE.GetCamera()->GetPosition();
-	const float RegularAspectRation = ENGINE.GetCamera()->GetAspectRatio();
-	const float RegularCameraPitch = ENGINE.GetCamera()->GetPitch();
-	const float RegularCameraRoll = ENGINE.GetCamera()->GetRoll();
-	const float RegularCameraYaw = ENGINE.GetCamera()->GetYaw();
-	const float RegularExposure = ENGINE.GetCamera()->GetExposure();
-	ENGINE.GetCamera()->SetExposure(1.0f);
-
-	// transform has influence on AABB, so before any calculations setting needed values
-	PreviewEntity->Transform.SetPosition(glm::vec3(0.0, 0.0, 0.0));
-	PreviewEntity->Transform.SetScale(glm::vec3(1.0, 1.0, 1.0));
-	PreviewEntity->Transform.SetRotation(glm::vec3(15.0, -15.0, 0.0));
+	BeforePreviewActions();
 
 	PreviewEntity->SetDirtyFlag(true);
 	FEAABB MeshAABB = PreviewEntity->GetAABB();
@@ -601,35 +505,17 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 	PreviewEntity->Transform.SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
 	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 
-	ENGINE.GetCamera()->SetAspectRatio(1.0f);
-	FE_GL_ERROR(glViewport(0, 0, 128, 128));
-
-	ENGINE.GetCamera()->SetPitch(0.0f);
-	ENGINE.GetCamera()->SetRoll(0.0f);
-	ENGINE.GetCamera()->SetYaw(0.0f);
-
 	// rendering game model to texture
 	RENDERER.RenderEntityForward(PreviewEntity, ENGINE.GetCamera(), true);
 
 	PreviewEntity->Prefab = PreviewPrefab;
-	// reversing all of our transformations.
-	PreviewEntity->Transform = RegularMeshTransform;
-
-	ENGINE.GetCamera()->SetPosition(RegularCameraPosition);
-	ENGINE.GetCamera()->SetAspectRatio(RegularAspectRation);
-	ENGINE.GetCamera()->SetPitch(RegularCameraPitch);
-	ENGINE.GetCamera()->SetRoll(RegularCameraRoll);
-	ENGINE.GetCamera()->SetYaw(RegularCameraYaw);
-	ENGINE.GetCamera()->SetExposure(RegularExposure);
 
 	CurrentDirectionalLight->Transform.SetRotation(RegularLightRotation);
 	CurrentDirectionalLight->SetIntensity(RegularLightIntensity);
 
 	RENDERER.SetDistanceFogEnabled(RegularFog);
 
-	PreviewFB->UnBind();
-
-	glClearColor(FE_CLEAR_COLOR.x, FE_CLEAR_COLOR.y, FE_CLEAR_COLOR.z, FE_CLEAR_COLOR.w);
+	AfterPreviewActions();
 
 	// if we are updating preview we should delete old texture.
 	if (PrefabPreviewTextures.find(PrefabID) != PrefabPreviewTextures.end())
