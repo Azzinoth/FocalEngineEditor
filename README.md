@@ -21,6 +21,9 @@ git add --all
 # Commit the changes
 git commit -m "First commit."
 
+# Push changes. Origin should be path to your repository.
+git push origin media
+
 # Switch back to the master branch
 git checkout master
 ```
