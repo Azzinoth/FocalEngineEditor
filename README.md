@@ -1,5 +1,7 @@
 # Focal Engine Editor
 
+![build](https://github.com/Azzinoth/FocalEngineEditor/actions/workflows/Build.yml/badge.svg?branch=master)
+
 The Focal Engine Editor is a comprehensive tool for the [Focal Engine](https://github.com/Azzinoth/FocalEngine/), providing a variety of utilities for creating and managing your scene. The engine has been designed to function independently from the editor, ensuring modularity. For this reason, the engine and editor are separate projects.
 
 Here are some images from scene created using the Focal Engine Editor:
