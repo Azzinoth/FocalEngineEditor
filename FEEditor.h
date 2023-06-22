@@ -226,6 +226,9 @@ private:
 	void SetGameMode(bool GameMode);
 
 	void RenderAllSubWindows();
+
+	void SetUpImgui();
+	void SetImguiStyle();
 };
 
 #define EDITOR FEEditor::getInstance()
