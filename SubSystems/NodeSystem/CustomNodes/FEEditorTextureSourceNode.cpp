@@ -14,17 +14,17 @@ FEEditorTextureSourceNode::FEEditorTextureSourceNode(FETexture* Texture) : FEVis
 
 	if (Texture->GetInternalFormat() == GL_RED)
 	{
-		AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_OUT, "r"));
+		AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "r", true));
 	}
 	else
 	{
-		AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_OUT, "r"));
-		AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_OUT, "g"));
-		AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_OUT, "b"));
-		AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_OUT, "a"));
+		AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "r", true));
+		AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "g", true));
+		AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "b", true));
+		AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "a", true));
 
-		AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGB_CHANNEL_OUT, "rgb"));
-		AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_OUT, "rgba"));
+		AddSocket(new FEVisualNodeSocket(this, "RGB", "rgb", true));
+		AddSocket(new FEVisualNodeSocket(this, "RGBA", "rgba", true));
 	}
 }
 

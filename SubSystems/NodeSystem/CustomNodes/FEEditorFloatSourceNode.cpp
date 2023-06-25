@@ -13,7 +13,7 @@ FEEditorFloatSourceNode::FEEditorFloatSourceNode(const float InitialData) : FEVi
 	TitleBackgroundColor = ImColor(31, 117, 208);
 	TitleBackgroundColorHovered = ImColor(35, 145, 255);
 	
-	AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_FLOAT_CHANNEL_OUT, "out"));
+	AddSocket(new FEVisualNodeSocket(this, "FLOAT", "out", true));
 }
 
 void FEEditorFloatSourceNode::Draw()

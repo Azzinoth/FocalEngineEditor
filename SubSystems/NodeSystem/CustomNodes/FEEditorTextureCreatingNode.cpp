@@ -11,19 +11,19 @@ FEEditorTextureCreatingNode::FEEditorTextureCreatingNode() : FEVisualNode()
 	SetSize(ImVec2(280, 180));
 	SetName(ResultTexture->GetName());
 
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "r"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "g"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "b"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "a"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGB_CHANNEL_IN, "rgb"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_IN, "rgba"));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "r", false));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "g", false));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "b", false));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "a", false));
+	AddSocket(new FEVisualNodeSocket(this, "RGB", "rgb", false));
+	AddSocket(new FEVisualNodeSocket(this, "RGBA", "rgba", false));
 
-	AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_OUT, "r"));
-	AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_OUT, "g"));
-	AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_OUT, "b"));
-	AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_OUT, "a"));
-	AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGB_CHANNEL_OUT, "rgb"));
-	AddOutputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_OUT, "rgba"));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "r", true));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "g", true));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "b", true));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "a", true));
+	AddSocket(new FEVisualNodeSocket(this, "RGB", "rgb", true));
+	AddSocket(new FEVisualNodeSocket(this, "RGBA", "rgba", true));
 }
 
 void FEEditorTextureCreatingNode::Draw()
@@ -61,7 +61,7 @@ unsigned char* FEEditorTextureCreatingNode::GetInputColorChannelData(const size_
 	// Check if we have source on this channel
 	if (Input.size() > Channel && !Input[Channel]->GetConnections().empty())
 	{
-		if (Input[Channel]->GetConnections()[0]->GetType() == FE_NODE_SOCKET_FLOAT_CHANNEL_OUT)
+		if (Input[Channel]->GetConnections()[0]->GetType() == "FLOAT")
 		{
 			const FEEditorFloatSourceNode* SourceNode = reinterpret_cast<FEEditorFloatSourceNode*>(Input[Channel]->GetConnections()[0]->GetParent());
 			float data = SourceNode->GetData();
@@ -79,7 +79,7 @@ unsigned char* FEEditorTextureCreatingNode::GetInputColorChannelData(const size_
 			
 			return Result;
 		}
-		else if (Input[Channel]->GetConnections()[0]->GetType() == FE_NODE_SOCKET_COLOR_CHANNEL_OUT)
+		else if (Input[Channel]->GetConnections()[0]->GetType() == "COLOR_CHANNEL")
 		{
 			const FEEditorTextureSourceNode* SourceNode = reinterpret_cast<FEEditorTextureSourceNode*>(Input[Channel]->GetConnections()[0]->GetParent());
 			FETexture* SourceTexture = SourceNode->GetTexture();
@@ -114,8 +114,8 @@ unsigned char* FEEditorTextureCreatingNode::GetInputColorChannelData(const size_
 			return Result;
 		}
 	}
-	else if ((!Input[4]->GetConnections().empty() && Input[4]->GetConnections()[0]->GetType() == FE_NODE_SOCKET_COLOR_RGB_CHANNEL_OUT && Channel < 3) ||
-			 (!Input[5]->GetConnections().empty() && Input[5]->GetConnections()[0]->GetType() == FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_OUT))
+	else if ((!Input[4]->GetConnections().empty() && Input[4]->GetConnections()[0]->GetType() == "RGB" && Channel < 3) ||
+			 (!Input[5]->GetConnections().empty() && Input[5]->GetConnections()[0]->GetType() == "RGBA"))
 	{
 		const FEEditorTextureSourceNode* SourceNode = 
 			reinterpret_cast<FEEditorTextureSourceNode*>(
@@ -157,7 +157,7 @@ void FEEditorTextureCreatingNode::SocketEvent(FEVisualNodeSocket* OwnSocket, FEV
 	size_t TextureWidth = 0;
 	size_t TextureHeight = 0;
 
-	if (ConnectedSocket->GetType() == FE_NODE_SOCKET_FLOAT_CHANNEL_OUT)
+	if (ConnectedSocket->GetType() == "FLOAT")
 	{
 		if (ResultTexture == RESOURCE_MANAGER.NoTexture)
 			return;
@@ -165,7 +165,7 @@ void FEEditorTextureCreatingNode::SocketEvent(FEVisualNodeSocket* OwnSocket, FEV
 		TextureWidth = ResultTexture->GetWidth();
 		TextureHeight = ResultTexture->GetHeight();
 	}
-	else if (ConnectedSocket->GetType() == FE_NODE_SOCKET_COLOR_CHANNEL_OUT || ConnectedSocket->GetType() == FE_NODE_SOCKET_COLOR_RGB_CHANNEL_OUT || ConnectedSocket->GetType() == FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_OUT)
+	else if (ConnectedSocket->GetType() == "COLOR_CHANNEL" || ConnectedSocket->GetType() == "RGB" || ConnectedSocket->GetType() == "RGBA")
 	{
 		const FEEditorTextureSourceNode* SourceNode = reinterpret_cast<FEEditorTextureSourceNode*>(ConnectedSocket->GetParent());
 		TextureWidth = SourceNode->GetTexture()->GetWidth();
@@ -219,22 +219,14 @@ bool FEEditorTextureCreatingNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVi
 	if (!FEVisualNode::CanConnect(OwnSocket, CandidateSocket, nullptr))
 		return false;
 
-	// we reject if sockets have incompatible types.
+	// We reject if sockets have incompatible types.
 	bool bCorrectType = true;
-	if (CandidateSocket->GetType() == FE_NODE_SOCKET_COLOR_CHANNEL_OUT &&
-		OwnSocket->GetType() != FE_NODE_SOCKET_COLOR_CHANNEL_IN)
+	if (CandidateSocket->GetType() != "COLOR_CHANNEL" && CandidateSocket->GetType() != "RGB" && CandidateSocket->GetType() != "RGBA")
 		bCorrectType = false;
 
-	if (CandidateSocket->GetType() == FE_NODE_SOCKET_COLOR_RGB_CHANNEL_OUT &&
-		OwnSocket->GetType() != FE_NODE_SOCKET_COLOR_RGB_CHANNEL_IN)
-		bCorrectType = false;
-
-	if (CandidateSocket->GetType() == FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_OUT &&
-		OwnSocket->GetType() != FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_IN)
-		bCorrectType = false;
-
-	if (CandidateSocket->GetType() == FE_NODE_SOCKET_FLOAT_CHANNEL_OUT &&
-		OwnSocket->GetType() != FE_NODE_SOCKET_COLOR_CHANNEL_IN)
+	if ((CandidateSocket->GetType() == "COLOR_CHANNEL" && OwnSocket->GetType() != "COLOR_CHANNEL") ||
+		(CandidateSocket->GetType() == "RGB" && OwnSocket->GetType() != "RGB") ||
+		(CandidateSocket->GetType() == "RGBA" && OwnSocket->GetType() != "RGBA"))
 		bCorrectType = false;
 
 	if (!bCorrectType)
@@ -245,15 +237,15 @@ bool FEEditorTextureCreatingNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVi
 
 	// ***************************** tooManyConnectionOfThisTypeMsg *****************************
 	if ((!Input[0]->GetConnections().empty() || !Input[1]->GetConnections().empty() || !Input[2]->GetConnections().empty()) &&
-		(CandidateSocket->GetType() == FE_NODE_SOCKET_COLOR_RGB_CHANNEL_OUT))
+		(CandidateSocket->GetType() == "COLOR_CHANNEL"))
 	{
 		*MsgToUser = TooManyConnectionOfThisTypeMsg;
 		return false;
 	}
 
-	if (!Input[4]->GetConnections().empty() && (FE_NODE_SOCKET_COLOR_RGB_CHANNEL_OUT || FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_OUT))
+	if (!Input[4]->GetConnections().empty() && ("RGB" || "RGBA"))
 	{
-		if (OwnSocket->GetName() == "a" && (CandidateSocket->GetType() == FE_NODE_SOCKET_FLOAT_CHANNEL_OUT || CandidateSocket->GetType() == FE_NODE_SOCKET_COLOR_CHANNEL_OUT))
+		if (OwnSocket->GetName() == "a" && (CandidateSocket->GetType() == "FLOAT" || CandidateSocket->GetType() == "COLOR_CHANNEL"))
 		{
 
 		}
@@ -265,30 +257,30 @@ bool FEEditorTextureCreatingNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVi
 	}
 
 	if ((!Input[5]->GetConnections().empty()) &&
-		(CandidateSocket->GetType() == FE_NODE_SOCKET_FLOAT_CHANNEL_OUT || 
-		CandidateSocket->GetType() == FE_NODE_SOCKET_COLOR_RGB_CHANNEL_OUT || 
-		CandidateSocket->GetType() == FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_OUT))
+		(CandidateSocket->GetType() == "FLOAT" || 
+		CandidateSocket->GetType() == "RGB" || 
+		CandidateSocket->GetType() == "RGBA"))
 	{
 		*MsgToUser = TooManyConnectionOfThisTypeMsg;
 		return false;
 	}
 
 	if ((!Input[0]->GetConnections().empty() || !Input[1]->GetConnections().empty() || !Input[2]->GetConnections().empty() || !Input[3]->GetConnections().empty()) &&
-		(CandidateSocket->GetType() == FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_OUT))
+		(CandidateSocket->GetType() == "RGBA"))
 	{
 		*MsgToUser = TooManyConnectionOfThisTypeMsg;
 		return false;
 	}
 
 	if ((!Input[0]->GetConnections().empty() || !Input[1]->GetConnections().empty() || !Input[2]->GetConnections().empty()) &&
-		(CandidateSocket->GetType() == FE_NODE_SOCKET_COLOR_RGB_CHANNEL_OUT))
+		(CandidateSocket->GetType() == "RGB"))
 	{
 		*MsgToUser = TooManyConnectionOfThisTypeMsg;
 		return false;
 	}
 	// ***************************** tooManyConnectionOfThisTypeMsg END *****************************
 
-	if (CandidateSocket->GetType() == FE_NODE_SOCKET_FLOAT_CHANNEL_OUT &&
+	if (CandidateSocket->GetType() == "FLOAT" &&
 		ResultTexture == RESOURCE_MANAGER.NoTexture)
 	{
 		*MsgToUser = CantInferResolutionMsg;
@@ -315,7 +307,7 @@ bool FEEditorTextureCreatingNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVi
 		return true;
 
 	// But if we already created texture we will check that candidate node have texture with same resolution.
-	if (CandidateSocket->GetType() != FE_NODE_SOCKET_FLOAT_CHANNEL_OUT)
+	if (CandidateSocket->GetType() != "FLOAT")
 	{
 		const FEEditorTextureSourceNode* SourceNode = reinterpret_cast<FEEditorTextureSourceNode*>(CandidateSocket->GetParent());
 		if (SourceNode->GetTexture()->GetWidth() == ResultTexture->GetWidth() &&

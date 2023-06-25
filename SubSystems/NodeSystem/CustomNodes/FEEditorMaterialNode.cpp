@@ -13,19 +13,19 @@ FEEditorMaterialNode::FEEditorMaterialNode(FEMaterial* Material) : FEVisualNode(
 	TitleBackgroundColor = ImColor(200, 50, 200);
 	TitleBackgroundColorHovered = ImColor(245, 50, 245);
 	
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_IN, "albedo"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_IN, "normal"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "AO"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Roughness"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Metalness"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Displacement"));
+	AddSocket(new FEVisualNodeSocket(this, "RGBA", "albedo", false));
+	AddSocket(new FEVisualNodeSocket(this, "RGBA", "normal", false));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "AO", false));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "Roughness", false));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "Metalness", false));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "Displacement", false));
 
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_IN, "albedo_1"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_IN, "normal_1"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "AO_1"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Roughness_1"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Metalness_1"));
-	AddInputSocket(new FEVisualNodeSocket(this, FE_NODE_SOCKET_COLOR_CHANNEL_IN, "Displacement_1"));
+	AddSocket(new FEVisualNodeSocket(this, "RGBA", "albedo_1", false));
+	AddSocket(new FEVisualNodeSocket(this, "RGBA", "normal_1", false));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "AO_1", false));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "Roughness_1", false));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "Metalness_1", false));
+	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "Displacement_1", false));
 }
 
 void FEEditorMaterialNode::Draw()
@@ -269,13 +269,13 @@ bool FEEditorMaterialNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNod
 		return false;
 
 	// For now it is unsupported type.
-	if (CandidateSocket->GetType() == FE_NODE_SOCKET_FLOAT_CHANNEL_OUT)
+	if (CandidateSocket->GetType() == "FLOAT")
 	{
 		*MsgToUser = IncompatibleTypesMsg;
 		return false;
 	}
 
-	if ((OwnSocket->GetName() == "albedo" || OwnSocket->GetName() == "albedo_1" || OwnSocket->GetName() == "normal" || OwnSocket->GetName() == "normal_1") && (CandidateSocket->GetType() != FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_OUT))
+	if ((OwnSocket->GetName() == "albedo" || OwnSocket->GetName() == "albedo_1" || OwnSocket->GetName() == "normal" || OwnSocket->GetName() == "normal_1") && (CandidateSocket->GetType() != "RGBA"))
 	{
 		*MsgToUser = IncompatibleTypesMsg;
 		return false;
@@ -284,7 +284,7 @@ bool FEEditorMaterialNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNod
 	if ((OwnSocket->GetName() == "AO" || OwnSocket->GetName() == "AO_1" ||
 		OwnSocket->GetName() == "Roughness" || OwnSocket->GetName() == "Roughness_1" ||
 		OwnSocket->GetName() == "Metalness" || OwnSocket->GetName() == "Metalness_1" ||
-		OwnSocket->GetName() == "Displacement" || OwnSocket->GetName() == "Displacement_1") && (CandidateSocket->GetType() != FE_NODE_SOCKET_COLOR_CHANNEL_OUT && CandidateSocket->GetType() != FE_NODE_SOCKET_FLOAT_CHANNEL_OUT))
+		OwnSocket->GetName() == "Displacement" || OwnSocket->GetName() == "Displacement_1") && (CandidateSocket->GetType() != "COLOR_CHANNEL" && CandidateSocket->GetType() != "FLOAT"))
 	{
 		*MsgToUser = IncompatibleTypesMsg;
 		return false;
