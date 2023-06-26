@@ -2,7 +2,7 @@
 
 using namespace FocalEngine;
 
-FEEditorTextureCreatingNode::FEEditorTextureCreatingNode() : FEVisualNode()
+FEEditorTextureCreatingNode::FEEditorTextureCreatingNode() : VisualNode()
 {
 	Type = "FEEditorTextureCreatingNode";
 
@@ -11,29 +11,29 @@ FEEditorTextureCreatingNode::FEEditorTextureCreatingNode() : FEVisualNode()
 	SetSize(ImVec2(280, 180));
 	SetName(ResultTexture->GetName());
 
-	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "r", false));
-	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "g", false));
-	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "b", false));
-	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "a", false));
-	AddSocket(new FEVisualNodeSocket(this, "RGB", "rgb", false));
-	AddSocket(new FEVisualNodeSocket(this, "RGBA", "rgba", false));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "r", false));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "g", false));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "b", false));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "a", false));
+	AddSocket(new NodeSocket(this, "RGB", "rgb", false));
+	AddSocket(new NodeSocket(this, "RGBA", "rgba", false));
 
-	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "r", true));
-	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "g", true));
-	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "b", true));
-	AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "a", true));
-	AddSocket(new FEVisualNodeSocket(this, "RGB", "rgb", true));
-	AddSocket(new FEVisualNodeSocket(this, "RGBA", "rgba", true));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "r", true));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "g", true));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "b", true));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "a", true));
+	AddSocket(new NodeSocket(this, "RGB", "rgb", true));
+	AddSocket(new NodeSocket(this, "RGBA", "rgba", true));
 }
 
 void FEEditorTextureCreatingNode::Draw()
 {
-	FEVisualNode::Draw();
+	VisualNode::Draw();
 	ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x + 75.0f, ImGui::GetCursorScreenPos().y + NODE_TITLE_HEIGHT + 10.0f));
 	ImGui::Image((void*)static_cast<intptr_t>(ResultTexture->GetTextureID()), ImVec2(128, 128), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 }
 
-void FEEditorTextureCreatingNode::PutDataFromColorChannelInArray(FEVisualNodeSocket* SourceSocket, unsigned char* DataArray, const size_t TextureDataLenght, const size_t ToWhatChannel)
+void FEEditorTextureCreatingNode::PutDataFromColorChannelInArray(NodeSocket* SourceSocket, unsigned char* DataArray, const size_t TextureDataLenght, const size_t ToWhatChannel)
 {
 	const FEEditorTextureSourceNode* SourceNode = reinterpret_cast<FEEditorTextureSourceNode*>(SourceSocket->GetConnections()[0]->GetParent());
 	FETexture* SourceTexture = SourceNode->GetTexture();
@@ -147,11 +147,11 @@ unsigned char* FEEditorTextureCreatingNode::GetInputColorChannelData(const size_
 	return nullptr;
 }
 
-void FEEditorTextureCreatingNode::SocketEvent(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* ConnectedSocket, const FE_VISUAL_NODE_SOCKET_EVENT EventType)
+void FEEditorTextureCreatingNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, const VISUAL_NODE_SOCKET_EVENT EventType)
 {
-	FEVisualNode::SocketEvent(OwnSocket, ConnectedSocket, EventType);
+	VisualNode::SocketEvent(OwnSocket, ConnectedSocket, EventType);
 
-	if (EventType == FE_VISUAL_NODE_SOCKET_DESTRUCTION)
+	if (EventType == VISUAL_NODE_SOCKET_DESTRUCTION)
 		return;
 
 	size_t TextureWidth = 0;
@@ -214,9 +214,9 @@ void FEEditorTextureCreatingNode::SocketEvent(FEVisualNodeSocket* OwnSocket, FEV
 	delete[] AlphaChannel;
 }
 
-bool FEEditorTextureCreatingNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* CandidateSocket, char** MsgToUser)
+bool FEEditorTextureCreatingNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser)
 {
-	if (!FEVisualNode::CanConnect(OwnSocket, CandidateSocket, nullptr))
+	if (!VisualNode::CanConnect(OwnSocket, CandidateSocket, nullptr))
 		return false;
 
 	// We reject if sockets have incompatible types.

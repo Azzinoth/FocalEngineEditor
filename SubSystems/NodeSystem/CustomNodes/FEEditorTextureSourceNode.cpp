@@ -1,7 +1,7 @@
 #include "FEEditorTextureSourceNode.h"
 using namespace FocalEngine;
 
-FEEditorTextureSourceNode::FEEditorTextureSourceNode(FETexture* Texture) : FEVisualNode()
+FEEditorTextureSourceNode::FEEditorTextureSourceNode(FETexture* Texture) : VisualNode()
 {
 	Type = "FEEditorTextureSourceNode";
 	
@@ -14,23 +14,23 @@ FEEditorTextureSourceNode::FEEditorTextureSourceNode(FETexture* Texture) : FEVis
 
 	if (Texture->GetInternalFormat() == GL_RED)
 	{
-		AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "r", true));
+		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "r", true));
 	}
 	else
 	{
-		AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "r", true));
-		AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "g", true));
-		AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "b", true));
-		AddSocket(new FEVisualNodeSocket(this, "COLOR_CHANNEL", "a", true));
+		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "r", true));
+		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "g", true));
+		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "b", true));
+		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "a", true));
 
-		AddSocket(new FEVisualNodeSocket(this, "RGB", "rgb", true));
-		AddSocket(new FEVisualNodeSocket(this, "RGBA", "rgba", true));
+		AddSocket(new NodeSocket(this, "RGB", "rgb", true));
+		AddSocket(new NodeSocket(this, "RGBA", "rgba", true));
 	}
 }
 
 void FEEditorTextureSourceNode::Draw()
 {
-	FEVisualNode::Draw();
+	VisualNode::Draw();
 	ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x + 10.0f, ImGui::GetCursorScreenPos().y + NODE_TITLE_HEIGHT + 10.0f));
 	ImGui::Image((void*)(intptr_t)Texture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 
@@ -54,9 +54,9 @@ void FEEditorTextureSourceNode::Draw()
 	ImGui::PopStyleVar();
 }
 
-void FEEditorTextureSourceNode::SocketEvent(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* ConnectedSocket, const FE_VISUAL_NODE_SOCKET_EVENT EventType)
+void FEEditorTextureSourceNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, const VISUAL_NODE_SOCKET_EVENT EventType)
 {
-	FEVisualNode::SocketEvent(OwnSocket,  ConnectedSocket, EventType);
+	VisualNode::SocketEvent(OwnSocket,  ConnectedSocket, EventType);
 }
 
 FETexture* FEEditorTextureSourceNode::GetTexture() const
@@ -64,9 +64,9 @@ FETexture* FEEditorTextureSourceNode::GetTexture() const
 	return Texture;
 }
 
-bool FEEditorTextureSourceNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* CandidateSocket, char** MsgToUser)
+bool FEEditorTextureSourceNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser)
 {
-	if (!FEVisualNode::CanConnect(OwnSocket, CandidateSocket, nullptr))
+	if (!VisualNode::CanConnect(OwnSocket, CandidateSocket, nullptr))
 		return false;
 
 	return false;

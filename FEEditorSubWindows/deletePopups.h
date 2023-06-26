@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../FEProject.h"
-#include "FEVisualNodeSystem.h"  
+#include "VisualNodeSystem.h"  
 #include "../SubSystems/NodeSystem/CustomNodes/FEEditorStandardNodes.h"
 
 class DeleteDirectoryPopup;

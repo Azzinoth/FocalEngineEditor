@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../FEVisualNodeSystem/FEVisualNodeSystem.h"
+#include "../VisualNodeSystem/VisualNodeSystem.h"
 #include "FEEditorTextureSourceNode.h"
 
-class FEEditorMaterialNode: public FEVisualNode
+class FEEditorMaterialNode: public VisualNode
 {
 	char* IncompatibleTypesMsg = "Incompatible socket types.";
 	char* TooManyConnectionsMsg = "Too many connections.";
@@ -16,8 +16,8 @@ class FEEditorMaterialNode: public FEVisualNode
 	bool bContextMenu = false;
 	bool OpenContextMenu();
 
-	bool CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* CandidateSocket, char** MsgToUser);
-	void SocketEvent(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* ConnectedSocket, FE_VISUAL_NODE_SOCKET_EVENT EventType);
+	bool CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser);
+	void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, VISUAL_NODE_SOCKET_EVENT EventType);
 
 	void MouseClick(int MouseButton);
 

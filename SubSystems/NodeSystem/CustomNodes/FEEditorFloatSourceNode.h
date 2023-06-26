@@ -1,16 +1,16 @@
 #pragma once
 
-#include "../FEVisualNodeSystem/FEVisualNodeSystem.h"
+#include "../VisualNodeSystem/VisualNodeSystem.h"
 
-class FEEditorFloatSourceNode : public FEVisualNode
+class FEEditorFloatSourceNode : public VisualNode
 {
 	float Data = 0.0f;
 
 	bool ContextMenu = false;
 	bool OpenContextMenu();
 
-	bool CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* CandidateSocket, char** MsgToUser);
-	void SocketEvent(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* ConnectedSocket, FE_VISUAL_NODE_SOCKET_EVENT EventType);
+	bool CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser);
+	void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, VISUAL_NODE_SOCKET_EVENT EventType);
 
 	void MouseClick(int MouseButton);
 

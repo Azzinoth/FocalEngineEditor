@@ -5,7 +5,7 @@ ImVec2 CombineChannelsToTexturePopUp::NodeGridRelativePosition = ImVec2(5, 30);
 ImVec2 CombineChannelsToTexturePopUp::WindowPosition = ImVec2(0, 0);
 ImVec2 CombineChannelsToTexturePopUp::MousePositionWhenContextMenuWasOpened = ImVec2(0, 0);
 FETexture* CombineChannelsToTexturePopUp::TextureForNewNode = nullptr;
-FEVisualNodeArea* CombineChannelsToTexturePopUp::CurrentNodeArea = nullptr;
+VisualNodeArea* CombineChannelsToTexturePopUp::CurrentNodeArea = nullptr;
 
 CombineChannelsToTexturePopUp::CombineChannelsToTexturePopUp()
 {

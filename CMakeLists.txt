@@ -18,8 +18,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "/MP /W3 /O2 /Oi /Gy /sdl /FC /GL /OPT:REF /OPT:ICF 
 # defined projects like INSTALL.vcproj and ZERO_CHECK.vcproj
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-if(NOT TARGET FEVisualNodeSystem)
-	add_subdirectory(SubSystems/NodeSystem/FEVisualNodeSystem)
+if(NOT TARGET VisualNodeSystem)
+	add_subdirectory(SubSystems/NodeSystem/VisualNodeSystem)
 endif()
 
 if(NOT TARGET FocalEngine)
@@ -91,7 +91,7 @@ file(GLOB Editor_Materials_SRC
 	"Resources/Materials/FE_PixelAccurateSelection_VS.glsl"
 )
 
-file(GLOB FEVisualNodeSystem_CustomNodes_SRC
+file(GLOB VisualNodeSystem_CustomNodes_SRC
 	"SubSystems/NodeSystem/CustomNodes/FEEditorStandardNodes.h"
 	"SubSystems/NodeSystem/CustomNodes/FEEditorMaterialNode.cpp"
 	"SubSystems/NodeSystem/CustomNodes/FEEditorMaterialNode.h"
@@ -118,14 +118,14 @@ add_executable(FocalEngineEditor WIN32
 								 ${FEDearImguiWrapper_SRC}
 								 ${FEEditorSubWindows_SRC}
 								 ${Editor_Materials_SRC}
-								 ${FEVisualNodeSystem_CustomNodes_SRC}
+								 ${VisualNodeSystem_CustomNodes_SRC}
 								 # *************** SUB_SYSTEM ***************
 								 
 								 # *************** THIRD_PARTY ***************
 								 ${textEditor_SRC}
 )
 
-target_link_libraries(FocalEngineEditor FEVisualNodeSystem)
+target_link_libraries(FocalEngineEditor VisualNodeSystem)
 target_link_libraries(FocalEngineEditor FocalEngine)
 
 target_link_libraries(FocalEngineEditor glew32s.lib)
@@ -139,7 +139,7 @@ source_group("Source Files/" FILES ${Editor_SRC})
 source_group("Source Files/FEDearImguiWrapper" FILES ${FEDearImguiWrapper_SRC})
 source_group("Source Files/FEEditorSubWindows" FILES ${FEEditorSubWindows_SRC})
 source_group("Source Files/Materials" FILES ${Editor_Materials_SRC})
-source_group("Source Files/NodeSystem/CustomNodes" FILES ${FEVisualNodeSystem_CustomNodes_SRC})
+source_group("Source Files/NodeSystem/CustomNodes" FILES ${VisualNodeSystem_CustomNodes_SRC})
 # *************** SUB_SYSTEM ***************
 
 # *************** THIRD_PARTY ***************

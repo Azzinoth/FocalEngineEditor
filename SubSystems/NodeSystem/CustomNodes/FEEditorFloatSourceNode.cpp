@@ -1,7 +1,7 @@
 #include "FEEditorFloatSourceNode.h"
 using namespace FocalEngine;
 
-FEEditorFloatSourceNode::FEEditorFloatSourceNode(const float InitialData) : FEVisualNode()
+FEEditorFloatSourceNode::FEEditorFloatSourceNode(const float InitialData) : VisualNode()
 {
 	Type = "FEEditorFloatSourceNode";
 
@@ -13,12 +13,12 @@ FEEditorFloatSourceNode::FEEditorFloatSourceNode(const float InitialData) : FEVi
 	TitleBackgroundColor = ImColor(31, 117, 208);
 	TitleBackgroundColorHovered = ImColor(35, 145, 255);
 	
-	AddSocket(new FEVisualNodeSocket(this, "FLOAT", "out", true));
+	AddSocket(new NodeSocket(this, "FLOAT", "out", true));
 }
 
 void FEEditorFloatSourceNode::Draw()
 {	
-	FEVisualNode::Draw();
+	VisualNode::Draw();
 	ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x + 10.0f, ImGui::GetCursorScreenPos().y + NODE_TITLE_HEIGHT + 13.0f));
 	ImGui::SetNextItemWidth(140);
 	if (ImGui::InputFloat("##data", &Data))
@@ -46,9 +46,9 @@ void FEEditorFloatSourceNode::Draw()
 	ImGui::PopStyleVar();
 }
 
-void FEEditorFloatSourceNode::SocketEvent(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* ConnectedSocket, const FE_VISUAL_NODE_SOCKET_EVENT EventType)
+void FEEditorFloatSourceNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, const VISUAL_NODE_SOCKET_EVENT EventType)
 {
-	FEVisualNode::SocketEvent(OwnSocket,  ConnectedSocket, EventType);
+	VisualNode::SocketEvent(OwnSocket,  ConnectedSocket, EventType);
 }
 
 float FEEditorFloatSourceNode::GetData() const
@@ -56,9 +56,9 @@ float FEEditorFloatSourceNode::GetData() const
 	return Data;
 }
 
-bool FEEditorFloatSourceNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* CandidateSocket, char** MsgToUser)
+bool FEEditorFloatSourceNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser)
 {
-	if (!FEVisualNode::CanConnect(OwnSocket, CandidateSocket, nullptr))
+	if (!VisualNode::CanConnect(OwnSocket, CandidateSocket, nullptr))
 		return false;
 
 	return false;

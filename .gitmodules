@@ -1,6 +1,6 @@
 [submodule "FocalEngine"]
 	path = SubSystems/FocalEngine
 	url = https://github.com/Azzinoth/FocalEngine
-[submodule "FEVisualNodeSystem"]
-	path = SubSystems/NodeSystem/FEVisualNodeSystem
-	url = https://github.com/Azzinoth/FEVisualNodeSystem
+[submodule "VisualNodeSystem"]
+	path = SubSystems/NodeSystem/VisualNodeSystem
+	url = https://github.com/Azzinoth/VisualNodeSystem
