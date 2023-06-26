@@ -31,7 +31,7 @@ In the Editor, the following key windows are available:
 
 ![Effects Settings](https://github.com/Azzinoth/FocalEngineEditor/blob/media/Effects%20Settings.png)
 
-The Material Editor employs the [Visual Node System](https://github.com/Azzinoth/FEVisualNodeSystem) to enhance editing intuitiveness.
+The Material Editor employs the [Visual Node System](https://github.com/Azzinoth/VisualNodeSystem) to enhance editing intuitiveness.
 
 ![Material Editor](https://github.com/Azzinoth/FocalEngineEditor/blob/media/Material%20editor.png)
 
