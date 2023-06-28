@@ -258,9 +258,9 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 					continue;
 
 				PotentiallySelectedTerrain->Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
-				PotentiallySelectedTerrain->Shader->GetParameter("baseColor")->UpdateData(glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
+				PotentiallySelectedTerrain->Shader->UpdateParameterData("baseColor", glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
 				RENDERER.RenderTerrain(PotentiallySelectedTerrain, ENGINE.GetCamera());
-				PotentiallySelectedTerrain->Shader->GetParameter("baseColor")->UpdateData(glm::vec3(1.0f));
+				PotentiallySelectedTerrain->Shader->UpdateParameterData("baseColor", glm::vec3(1.0f));
 				PotentiallySelectedTerrain->Shader = RESOURCE_MANAGER.GetShader("5A3E4F5C13115856401F1D1C"/*"FETerrainShader"*/);
 			}
 		}
@@ -457,12 +457,12 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 		FETerrain* SelectedTerrain = SCENE.GetTerrain(Container->GetObjectID());
 
 		SelectedTerrain->Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
-		SelectedTerrain->Shader->GetParameter("baseColor")->UpdateData(glm::vec3(1.0f, 0.25f, 0.0f));
+		SelectedTerrain->Shader->UpdateParameterData("baseColor", glm::vec3(1.0f, 0.25f, 0.0f));
 		const float RegularLODLevel = SelectedTerrain->GetLODLevel();
 		SelectedTerrain->SetLODLevel(0.0f);
 		RENDERER.RenderTerrain(SelectedTerrain, ENGINE.GetCamera());
 		SelectedTerrain->SetLODLevel(RegularLODLevel);
-		SelectedTerrain->Shader->GetParameter("baseColor")->UpdateData(glm::vec3(1.0f));
+		SelectedTerrain->Shader->UpdateParameterData("baseColor", glm::vec3(1.0f));
 		SelectedTerrain->Shader = RESOURCE_MANAGER.GetShader("5A3E4F5C13115856401F1D1C"/*"FETerrainShader"*/);
 	}
 

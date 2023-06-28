@@ -435,61 +435,6 @@ void FEEditor::ShowTransformConfiguration(const std::string Name, FETransformCom
 	Transform->ChangeZScaleBy(scale[2] - OldScale[2]);
 }
 
-void FEEditor::DisplayMaterialParameter(FEShaderParam* Param) const
-{
-	switch (Param->Type)
-	{
-		case FE_INT_SCALAR_UNIFORM:
-		{
-			int IData = *(int*)Param->Data;
-			ImGui::SliderInt(Param->Name.c_str(), &IData, 0, 10);
-			Param->UpdateData(IData);
-			break;
-		}
-
-		case FE_FLOAT_SCALAR_UNIFORM:
-		{
-			float FData = *(float*)Param->Data;
-			ImGui::DragFloat(Param->Name.c_str(), &FData, 0.1f, 0.0f, 100.0f);
-			Param->UpdateData(FData);
-			break;
-		}
-
-		case FE_VECTOR2_UNIFORM:
-		{
-			glm::vec2 color = *(glm::vec2*)Param->Data;
-			ImGui::ColorEdit3(Param->Name.c_str(), &color.x);
-			Param->UpdateData(color);
-			break;
-		}
-
-		case FE_VECTOR3_UNIFORM:
-		{
-			glm::vec3 color = *(glm::vec3*)Param->Data;
-			ImGui::ColorEdit3(Param->Name.c_str(), &color.x);
-			Param->UpdateData(color);
-			break;
-		}
-
-		case FE_VECTOR4_UNIFORM:
-		{
-			glm::vec4 color = *(glm::vec4*)Param->Data;
-			ImGui::ColorEdit3(Param->Name.c_str(), &color.x);
-			Param->UpdateData(color);
-			break;
-		}
-
-		case FE_MAT4_UNIFORM:
-		{
-			//loadMatrix(iterator->second.getName().c_str(), *(glm::mat4*)iterator->second.data);
-			break;
-		}
-
-		default:
-			break;
-	}
-}
-
 void FEEditor::DisplayLightProperties(FELight* Light) const
 {
 	ShowTransformConfiguration(Light, &Light->Transform);
@@ -2710,9 +2655,9 @@ void FEEditor::DisplayTerrainSettings(FETerrain* Terrain)
 			ImGui::Checkbox("WireframeMode", &bActive);
 			Terrain->SetWireframeMode(bActive);
 
-			int IData = *(int*)RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/)->GetParameter("debugFlag")->Data;
+			int IData = *(int*)RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/)->GetParameterData("debugFlag");
 			ImGui::SliderInt("debugFlag", &IData, 0, 10);
-			RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/)->GetParameter("debugFlag")->UpdateData(IData);
+			RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/)->UpdateParameterData("debugFlag", IData);
 
 			float DisplacementScale = Terrain->GetDisplacementScale();
 			ImGui::DragFloat("displacementScale", &DisplacementScale, 0.02f, -10.0f, 10.0f);

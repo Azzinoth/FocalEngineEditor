@@ -401,11 +401,13 @@ void shaderEditorWindow::Render()
 			bComputeShaderUsed ? ComputeShaderEditor.GetText().c_str() : nullptr,
 			true);
 
-		const std::vector<std::string> OldParameters = ShaderToEdit->GetParameterList();
-		for (size_t i = 0; i < OldParameters.size(); i++)
-		{
-			DummyShader->AddParameter(*ShaderToEdit->GetParameter(OldParameters[i]));
-		}
+		//const std::vector<std::string> OldParameters = ShaderToEdit->GetParameterList();
+		//for (size_t i = 0; i < OldParameters.size(); i++)
+		//{
+			//DummyShader->AddParameter(*ShaderToEdit->GetParameter(OldParameters[i]));
+		//}
+
+		DummyShader->AddParametersFromShader(ShaderToEdit);
 
 		const std::string errors = DummyShader->GetCompilationErrors();
 		if (!errors.empty())
@@ -422,11 +424,12 @@ void shaderEditorWindow::Render()
 				bGeometryShaderUsed ? GeometryShaderEditor.GetText().c_str() : nullptr,
 				bComputeShaderUsed ? ComputeShaderEditor.GetText().c_str() : nullptr);
 
-			const std::vector<std::string> OldParameters = ShaderToEdit->GetParameterList();
-			for (size_t i = 0; i < OldParameters.size(); i++)
-			{
-				ReCompiledShader->AddParameter(*ShaderToEdit->GetParameter(OldParameters[i]));
-			}
+			//const std::vector<std::string> OldParameters = ShaderToEdit->GetParameterList();
+			//for (size_t i = 0; i < OldParameters.size(); i++)
+			//{
+			//	ReCompiledShader->AddParameter(*ShaderToEdit->GetParameter(OldParameters[i]));
+			//}
+			ReCompiledShader->AddParametersFromShader(ShaderToEdit);
 
 			RESOURCE_MANAGER.ReplaceShader(ShaderToEdit->GetObjectID(), ReCompiledShader);
 

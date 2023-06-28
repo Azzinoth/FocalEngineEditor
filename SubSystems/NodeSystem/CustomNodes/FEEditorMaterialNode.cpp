@@ -55,7 +55,8 @@ void FEEditorMaterialNode::Draw()
 		ImGui::SetCursorScreenPos(CurrentPosition);
 		ImGui::SetNextItemWidth(FieldWidth);
 		ImGui::SliderInt("##Debug flag", &IData, 0, 10);
-		DebugFlag->UpdateData(IData);
+
+		Data->Shader->UpdateParameterData("debugFlag", &IData);
 	}
 
 	// ************* Normal *************

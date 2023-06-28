@@ -105,7 +105,6 @@ private:
 	void ShowTransformConfiguration(FEObject* Object, FETransformComponent* Transform) const;
 	void ShowTransformConfiguration(std::string Name, FETransformComponent* Transform) const;
 
-	void DisplayMaterialParameter(FEShaderParam* Param) const;
 	void DisplayLightProperties(FELight* Light) const;
 	void DisplayLightsProperties() const;
 
