@@ -944,9 +944,9 @@ void FEEditor::DisplaySceneBrowser()
 	ImGui::Checkbox("bFreezeCulling", &bFreezeCulling);
 	RENDERER.bFreezeCulling = bFreezeCulling;
 
-	bool bFreezeOccusionCulling = !RENDERER.IsOccusionCullingEnabled();
-	ImGui::Checkbox("freezeOccusionCulling", &bFreezeOccusionCulling);
-	RENDERER.SetOccusionCullingEnabled(!bFreezeOccusionCulling);
+	bool bFreezeOcclusionCulling = !RENDERER.IsOcclusionCullingEnabled();
+	ImGui::Checkbox("freezeOcclusionCulling", &bFreezeOcclusionCulling);
+	RENDERER.SetOcclusionCullingEnabled(!bFreezeOcclusionCulling);
 
 	static bool bDisplaySelectedObjAABB = false;
 	ImGui::Checkbox("Display AABB of selected object", &bDisplaySelectedObjAABB);
@@ -2304,7 +2304,7 @@ void FEEditor::DisplayEffectsWindow() const
 		bool bEnabledSky = RENDERER.IsSkyEnabled();
 		if (ImGui::Checkbox("enable sky", &bEnabledSky))
 		{
-			RENDERER.SetSkyEnabld(bEnabledSky);
+			RENDERER.SetSkyEnabled(bEnabledSky);
 		}
 
 		ImGui::Text("Sphere size:");

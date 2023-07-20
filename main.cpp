@@ -11,8 +11,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	double GPUFrameDurations[FrameCountTillMeasure] = { 0.0f };
 	int FrameCounter = 0;
 
-	double AvarageCpuFrameDuration = 0.0;
-	double AvarageGpuFrameDuration = 0.0;
+	double AverageCpuFrameDuration = 0.0;
+	double AverageGpuFrameDuration = 0.0;
 
 	while (ENGINE.IsWindowOpened())
 	{
@@ -34,31 +34,32 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ENGINE.EndFrame();
 
 		// CPU and GPU Time
-		CPUFrameDurations[FrameCounter++] = ENGINE.GetCpuTime();
-		GPUFrameDurations[FrameCounter++] = ENGINE.GetGpuTime();
+		CPUFrameDurations[FrameCounter] = ENGINE.GetCpuTime();
+		GPUFrameDurations[FrameCounter] = ENGINE.GetGpuTime();
+		FrameCounter++;
 
 		if (FrameCounter > FrameCountTillMeasure - 1)
 		{
-			AvarageCpuFrameDuration = 0.0f;
-			AvarageGpuFrameDuration = 0.0f;
+			AverageCpuFrameDuration = 0.0f;
+			AverageGpuFrameDuration = 0.0f;
 			for (size_t i = 0; i < FrameCountTillMeasure; i++)
 			{
-				AvarageCpuFrameDuration += CPUFrameDurations[i];
-				AvarageGpuFrameDuration += GPUFrameDurations[i];
+				AverageCpuFrameDuration += CPUFrameDurations[i];
+				AverageGpuFrameDuration += GPUFrameDurations[i];
 			}
-			AvarageCpuFrameDuration /= FrameCountTillMeasure;
-			AvarageGpuFrameDuration /= FrameCountTillMeasure;
+			AverageCpuFrameDuration /= FrameCountTillMeasure;
+			AverageGpuFrameDuration /= FrameCountTillMeasure;
 			
 			FrameCounter = 0;
 		}
 
-		std::string CPUMs = std::to_string(AvarageCpuFrameDuration);
+		std::string CPUMs = std::to_string(AverageCpuFrameDuration);
 		CPUMs.erase(CPUMs.begin() + 4, CPUMs.end());
 
-		std::string GPUMs = std::to_string(AvarageGpuFrameDuration);
+		std::string GPUMs = std::to_string(AverageGpuFrameDuration);
 		GPUMs.erase(GPUMs.begin() + 4, GPUMs.end());
 
-		std::string FrameMs = std::to_string(AvarageCpuFrameDuration + AvarageGpuFrameDuration);
+		std::string FrameMs = std::to_string(AverageCpuFrameDuration + AverageGpuFrameDuration);
 		FrameMs.erase(FrameMs.begin() + 4, FrameMs.end());
 
 		std::string caption = "CPU time : ";

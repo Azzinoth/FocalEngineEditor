@@ -1229,7 +1229,7 @@ void FEProject::LoadScene()
 	// *********** Chromatic Aberration ***********
 	RENDERER.SetChromaticAberrationIntensity(Root["effects"]["Chromatic Aberration"]["Shift strength"].asFloat());
 	// *********** Sky ***********
-	RENDERER.SetSkyEnabld(Root["effects"]["Sky"]["Enabled"].asFloat() > 0.0f ? true : false);
+	RENDERER.SetSkyEnabled(Root["effects"]["Sky"]["Enabled"].asFloat() > 0.0f ? true : false);
 	RENDERER.SetDistanceToSky(Root["effects"]["Sky"]["Sphere size"].asFloat());
 
 	// loading Camera settings
@@ -1702,7 +1702,7 @@ void FEProject::LoadSceneVer0()
 	// *********** Chromatic Aberration ***********
 	RENDERER.SetChromaticAberrationIntensity(Root["effects"]["Chromatic Aberration"]["Shift strength"].asFloat());
 	// *********** Sky ***********
-	RENDERER.SetSkyEnabld(Root["effects"]["Sky"]["Enabled"].asFloat() > 0.0f ? true : false);
+	RENDERER.SetSkyEnabled(Root["effects"]["Sky"]["Enabled"].asFloat() > 0.0f ? true : false);
 	RENDERER.SetDistanceToSky(Root["effects"]["Sky"]["Sphere size"].asFloat());
 
 	// loading Camera settings
