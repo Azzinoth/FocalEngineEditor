@@ -1,11 +1,12 @@
 #include "combineChannelsToTexturePopUp.h"
+using namespace VisNodeSys;
 
 CombineChannelsToTexturePopUp* CombineChannelsToTexturePopUp::Instance = nullptr;
 ImVec2 CombineChannelsToTexturePopUp::NodeGridRelativePosition = ImVec2(5, 30);
 ImVec2 CombineChannelsToTexturePopUp::WindowPosition = ImVec2(0, 0);
 ImVec2 CombineChannelsToTexturePopUp::MousePositionWhenContextMenuWasOpened = ImVec2(0, 0);
 FETexture* CombineChannelsToTexturePopUp::TextureForNewNode = nullptr;
-VisualNodeArea* CombineChannelsToTexturePopUp::CurrentNodeArea = nullptr;
+NodeArea* CombineChannelsToTexturePopUp::CurrentNodeArea = nullptr;
 
 CombineChannelsToTexturePopUp::CombineChannelsToTexturePopUp()
 {
@@ -51,8 +52,8 @@ void CombineChannelsToTexturePopUp::Render()
 	WindowPosition = ImGui::GetWindowPos();
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	
-	CurrentNodeArea->SetAreaPosition(NodeGridRelativePosition);
-	CurrentNodeArea->SetAreaSize(ImVec2(ImGui::GetWindowWidth(), ImGui::GetWindowHeight() - 67));
+	CurrentNodeArea->SetPosition(NodeGridRelativePosition);
+	CurrentNodeArea->SetSize(ImVec2(ImGui::GetWindowWidth(), ImGui::GetWindowHeight() - 67.0f));
 	CurrentNodeArea->Update();
 
 	if (ImGui::GetIO().MouseReleased[1])
@@ -60,7 +61,8 @@ void CombineChannelsToTexturePopUp::Render()
 	
 	NodeAreaTarget->StickToItem();
 
-	const float YPosition = ImGui::GetCursorPosY();
+	const float YPosition = ImGui::GetWindowHeight() - 33.0f;
+	ImGui::SetCursorPosY(YPosition);
 	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 8.0f - 120.0f / 2.0f);
 	if (ImGui::Button("Combine", ImVec2(120, 0)))
 	{

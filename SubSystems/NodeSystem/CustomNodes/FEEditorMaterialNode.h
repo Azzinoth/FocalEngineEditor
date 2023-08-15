@@ -3,7 +3,7 @@
 #include "../VisualNodeSystem/VisualNodeSystem.h"
 #include "FEEditorTextureSourceNode.h"
 
-class FEEditorMaterialNode: public VisualNode
+class FEEditorMaterialNode : public VisNodeSys::Node
 {
 	char* IncompatibleTypesMsg = "Incompatible socket types.";
 	char* TooManyConnectionsMsg = "Too many connections.";
@@ -16,8 +16,8 @@ class FEEditorMaterialNode: public VisualNode
 	bool bContextMenu = false;
 	bool OpenContextMenu();
 
-	bool CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser);
-	void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, VISUAL_NODE_SOCKET_EVENT EventType);
+	bool CanConnect(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* CandidateSocket, char** MsgToUser);
+	void SocketEvent(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* ConnectedSocket, VisNodeSys::NODE_SOCKET_EVENT EventType);
 
 	void MouseClick(int MouseButton);
 

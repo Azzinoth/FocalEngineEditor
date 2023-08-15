@@ -100,7 +100,7 @@ class EditMaterialPopup : public FEImGuiWindow
 	static FEMaterial* ObjToWorkWith;
 
 	// ************** Node area **************
-	static VisualNodeArea* MaterialNodeArea;
+	static VisNodeSys::NodeArea* MaterialNodeArea;
 
 	static ImVec2 WindowPosition;
 	static ImVec2 NodeGridRelativePosition;
@@ -109,7 +109,7 @@ class EditMaterialPopup : public FEImGuiWindow
 	static FETexture* TextureForNewNode;
 	static void NodeSystemMainContextMenu();
 	static void TextureNodeCreationCallback(std::vector<FEObject*> SelectionsResult);
-	static void TextureNodeCallback(VisualNode* Node, VISUAL_NODE_EVENT EventWithNode);
+	static void TextureNodeCallback(VisNodeSys::Node* Node, VisNodeSys::NODE_EVENT EventWithNode);
 	// ************** Node area END **************
 	
 	// ************** Drag&Drop **************

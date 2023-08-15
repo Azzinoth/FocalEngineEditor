@@ -1,18 +1,35 @@
 #include "FEEditorTextureSourceNode.h"
 using namespace FocalEngine;
+using namespace VisNodeSys;
 
-FEEditorTextureSourceNode::FEEditorTextureSourceNode(FETexture* Texture) : VisualNode()
+bool FEEditorTextureSourceNode::isRegistered = []()
+{
+	NODE_FACTORY.RegisterNodeType("FEEditorTextureSourceNode",
+		[]() -> Node* {
+			return new FEEditorTextureSourceNode(nullptr);
+		},
+
+		[](const Node& CurrentNode) -> Node* {
+			const FEEditorTextureSourceNode& NodeToCopy = static_cast<const FEEditorTextureSourceNode&>(CurrentNode);
+			return new FEEditorTextureSourceNode(NodeToCopy);
+		}
+	);
+
+	return true;
+}();
+
+FEEditorTextureSourceNode::FEEditorTextureSourceNode(FETexture* Texture) : Node()
 {
 	Type = "FEEditorTextureSourceNode";
 	
 	this->Texture = Texture;
-	if (Texture == nullptr)
+	if (this->Texture == nullptr)
 		this->Texture = RESOURCE_MANAGER.NoTexture;
 
 	SetSize(ImVec2(230, 180));
-	SetName(Texture->GetName());
+	SetName(this->Texture->GetName());
 
-	if (Texture->GetInternalFormat() == GL_RED)
+	if (this->Texture->GetInternalFormat() == GL_RED)
 	{
 		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "r", true));
 	}
@@ -30,9 +47,12 @@ FEEditorTextureSourceNode::FEEditorTextureSourceNode(FETexture* Texture) : Visua
 
 void FEEditorTextureSourceNode::Draw()
 {
-	VisualNode::Draw();
-	ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x + 10.0f, ImGui::GetCursorScreenPos().y + NODE_TITLE_HEIGHT + 10.0f));
-	ImGui::Image((void*)(intptr_t)Texture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+	Node::Draw();
+
+	float Zoom = ParentArea->GetZoomFactor();
+
+	ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x + 10.0f * Zoom, ImGui::GetCursorScreenPos().y + NODE_TITLE_HEIGHT * Zoom + 10.0f * Zoom));
+	ImGui::Image((void*)(intptr_t)Texture->GetTextureID(), ImVec2(128, 128) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 
 	if (bContextMenu)
 	{
@@ -54,9 +74,9 @@ void FEEditorTextureSourceNode::Draw()
 	ImGui::PopStyleVar();
 }
 
-void FEEditorTextureSourceNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, const VISUAL_NODE_SOCKET_EVENT EventType)
+void FEEditorTextureSourceNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, const NODE_SOCKET_EVENT EventType)
 {
-	VisualNode::SocketEvent(OwnSocket,  ConnectedSocket, EventType);
+	Node::SocketEvent(OwnSocket,  ConnectedSocket, EventType);
 }
 
 FETexture* FEEditorTextureSourceNode::GetTexture() const
@@ -66,7 +86,7 @@ FETexture* FEEditorTextureSourceNode::GetTexture() const
 
 bool FEEditorTextureSourceNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser)
 {
-	if (!VisualNode::CanConnect(OwnSocket, CandidateSocket, nullptr))
+	if (!Node::CanConnect(OwnSocket, CandidateSocket, nullptr))
 		return false;
 
 	return false;

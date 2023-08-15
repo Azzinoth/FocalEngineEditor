@@ -740,7 +740,7 @@ EditMaterialPopup::~EditMaterialPopup()
 
 #ifdef USE_NODES
 FEMaterial* EditMaterialPopup::ObjToWorkWith = nullptr;
-VisualNodeArea* EditMaterialPopup::MaterialNodeArea = nullptr;
+VisNodeSys::NodeArea* EditMaterialPopup::MaterialNodeArea = nullptr;
 ImVec2 EditMaterialPopup::NodeGridRelativePosition = ImVec2(5, 30);
 ImVec2 EditMaterialPopup::WindowPosition = ImVec2(0, 0);
 ImVec2 EditMaterialPopup::MousePositionWhenContextMenuWasOpened = ImVec2(0, 0);
@@ -890,8 +890,8 @@ void EditMaterialPopup::Render()
 	}
 
 #ifdef USE_NODES
-	MaterialNodeArea->SetAreaPosition(ImVec2(0, 0));
-	MaterialNodeArea->SetAreaSize(ImVec2(ImGui::GetWindowWidth(), ImGui::GetWindowHeight() - 50));
+	MaterialNodeArea->SetPosition(ImVec2(0, 0));
+	MaterialNodeArea->SetSize(ImVec2(ImGui::GetWindowWidth(), ImGui::GetWindowHeight() - 50.0f));
 	MaterialNodeArea->Update();
 	NodeAreaTarget->StickToItem();
 
@@ -899,6 +899,8 @@ void EditMaterialPopup::Render()
 
 	if (ImGui::GetIO().MouseReleased[1])
 		MousePositionWhenContextMenuWasOpened = ImGui::GetMousePos();
+
+	CancelButton->SetPosition(ImVec2(CancelButton->GetPosition().x, ImGui::GetWindowHeight() - 44.0f));
 #else
 	// lame callback
 	if (tempContainer != RESOURCE_MANAGER.noTexture)
@@ -1550,7 +1552,7 @@ void EditMaterialPopup::Render()
 		ImGui::EndChild();
 	}
 #endif // USE_NODES
-
+	
 	CancelButton->Render();
 	if (CancelButton->IsClicked())
 	{
@@ -1688,7 +1690,7 @@ void EditMaterialPopup::NodeSystemMainContextMenu()
 	}
 }
 
-void EditMaterialPopup::TextureNodeCallback(VisualNode* Node, const VISUAL_NODE_EVENT EventWithNode)
+void EditMaterialPopup::TextureNodeCallback(VisNodeSys::Node* Node, const VisNodeSys::NODE_EVENT EventWithNode)
 {
 	if (Node == nullptr)
 		return;
@@ -1696,7 +1698,7 @@ void EditMaterialPopup::TextureNodeCallback(VisualNode* Node, const VISUAL_NODE_
 	if (Node->GetType() != "FEEditorTextureSourceNode")
 		return;
 
-	if (EventWithNode != VISUAL_NODE_DESTROYED && EventWithNode != VISUAL_NODE_REMOVED)
+	if (EventWithNode != VisNodeSys::DESTROYED && EventWithNode != VisNodeSys::REMOVED)
 		return;
 
 	const FEEditorTextureSourceNode* CurrentNode = reinterpret_cast<FEEditorTextureSourceNode*>(Node);

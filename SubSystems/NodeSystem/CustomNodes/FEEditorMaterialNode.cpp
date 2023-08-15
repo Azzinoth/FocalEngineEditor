@@ -1,7 +1,8 @@
 #include "FEEditorMaterialNode.h"
 using namespace FocalEngine;
+using namespace VisNodeSys;
 
-FEEditorMaterialNode::FEEditorMaterialNode(FEMaterial* Material) : VisualNode()
+FEEditorMaterialNode::FEEditorMaterialNode(FEMaterial* Material) : Node()
 {
 	Type = "FEEditorMaterialNode";
 
@@ -30,12 +31,14 @@ FEEditorMaterialNode::FEEditorMaterialNode(FEMaterial* Material) : VisualNode()
 
 void FEEditorMaterialNode::Draw()
 {	
-	VisualNode::Draw();
+	Node::Draw();
 
-	ImVec2 CurrentPosition = ImVec2(ImGui::GetCursorScreenPos().x + 180.0f, ImGui::GetCursorScreenPos().y + NODE_TITLE_HEIGHT + 13.0f);
+	float Zoom = ParentArea->GetZoomFactor();
+
+	ImVec2 CurrentPosition = ImVec2(ImGui::GetCursorScreenPos().x + 180.0f * Zoom, ImGui::GetCursorScreenPos().y + NODE_TITLE_HEIGHT * Zoom + 13.0f * Zoom);
 	ImGui::SetCursorScreenPos(CurrentPosition);
-	const float FieldWidth = 160.0f;
-	const float FieldStep = 30.0f;
+	const float FieldWidth = 160.0f * Zoom;
+	const float FieldStep = 30.0f * Zoom;
 
 	bool bCompactFlag = Data->IsCompackPacking();
 	ImGui::Checkbox("##Compact flag", &bCompactFlag);
@@ -69,6 +72,7 @@ void FEEditorMaterialNode::Draw()
 	ImGui::SetCursorScreenPos(CurrentPosition);
 	ImGui::SetNextItemWidth(FieldWidth);
 	ImGui::DragFloat("##Normal map intensity", &NormalMapIntensity, 0.01f, 0.0f, 1.0f);
+	SetCouldBeMoved(ImGui::IsItemHovered() ? false : true);
 	Data->SetNormalMapIntensity(NormalMapIntensity);
 
 	// ************* AO *************
@@ -179,15 +183,15 @@ void FEEditorMaterialNode::Draw()
 	ImGui::PopStyleVar();
 }
 
-void FEEditorMaterialNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, const VISUAL_NODE_SOCKET_EVENT EventType)
+void FEEditorMaterialNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, const NODE_SOCKET_EVENT EventType)
 {
-	VisualNode::SocketEvent(OwnSocket,  ConnectedSocket, EventType);
+	Node::SocketEvent(OwnSocket,  ConnectedSocket, EventType);
 
-	if (EventType == VISUAL_NODE_SOCKET_DESTRUCTION)
+	if (EventType == DESTRUCTION)
 		return;
 
 	FETexture* Texture = reinterpret_cast<FEEditorTextureSourceNode*>(ConnectedSocket->GetParent())->GetTexture();
-	if (EventType == VISUAL_NODE_SOCKET_DISCONNECTED)
+	if (EventType == DISCONNECTED)
 		Texture = nullptr;
 
 	size_t SocketIndex = 0; // "r"
@@ -266,7 +270,7 @@ FEMaterial* FEEditorMaterialNode::GetData() const
 
 bool FEEditorMaterialNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser)
 {
-	if (!VisualNode::CanConnect(OwnSocket, CandidateSocket, nullptr))
+	if (!Node::CanConnect(OwnSocket, CandidateSocket, nullptr))
 		return false;
 
 	// For now it is unsupported type.
@@ -291,7 +295,7 @@ bool FEEditorMaterialNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* Candida
 		return false;
 	}
 
-	if (!OwnSocket->GetConnections().empty())
+	if (!OwnSocket->GetConnectedSockets().empty())
 	{
 		*MsgToUser = TooManyConnectionsMsg;
 		return false;

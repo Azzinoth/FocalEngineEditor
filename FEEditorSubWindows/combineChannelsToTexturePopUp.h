@@ -20,7 +20,7 @@ class CombineChannelsToTexturePopUp : public FEImGuiWindow
 	// ************** Drag&Drop END **************
 
 	// ************** Node area **************
-	static VisualNodeArea* CurrentNodeArea;
+	static VisNodeSys::NodeArea* CurrentNodeArea;
 
 	static FETexture* TextureForNewNode;
 	static void NodeSystemMainContextMenu();

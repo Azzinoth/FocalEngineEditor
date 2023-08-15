@@ -2,7 +2,7 @@
 
 #include "../VisualNodeSystem/VisualNodeSystem.h"
 
-class FEEditorTextureCreatingNode : public VisualNode
+class FEEditorTextureCreatingNode : public VisNodeSys::Node
 {
 	FETexture* ResultTexture = nullptr;
 	char* IncompatibleTypesMsg = "Incompatible socket types.";
@@ -11,11 +11,11 @@ class FEEditorTextureCreatingNode : public VisualNode
 	char* CantInferResolutionMsg = "Can't infer texture resolution.";
 	char* TooManyConnectionOfThisTypeMsg = "Too many connections of this type.";
 
-	void PutDataFromColorChannelInArray(NodeSocket* SourceSocket, unsigned char* DataArray, size_t TextureDataLenght, size_t ToWhatChannel);
+	void PutDataFromColorChannelInArray(VisNodeSys::NodeSocket* SourceSocket, unsigned char* DataArray, size_t TextureDataLenght, size_t ToWhatChannel);
 	unsigned char* GetInputColorChannelData(size_t Channel) const;
 
-	bool CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser);
-	void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, VISUAL_NODE_SOCKET_EVENT EventType);
+	bool CanConnect(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* CandidateSocket, char** MsgToUser);
+	void SocketEvent(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* ConnectedSocket, VisNodeSys::NODE_SOCKET_EVENT EventType);
 
 	Json::Value GetInfoForSaving();
 public:
