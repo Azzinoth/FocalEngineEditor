@@ -1,5 +1,4 @@
 #include "FEEditorFloatSourceNode.h"
-using namespace FocalEngine;
 using namespace VisNodeSys;
 
 FEEditorFloatSourceNode::FEEditorFloatSourceNode(const float InitialData) : Node()
