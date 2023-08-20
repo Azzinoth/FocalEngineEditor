@@ -5,6 +5,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	ENGINE.InitWindow();
 	EDITOR.InitializeResources();
 	THREAD_POOL.SetConcurrentThreadCount(10);
+	NODE_SYSTEM.Initialize();
 
 	const int FrameCountTillMeasure = 20;
 	double CPUFrameDurations[FrameCountTillMeasure] = { 0.0f };
