@@ -128,13 +128,8 @@ add_executable(FocalEngineEditor WIN32
 								 ${textEditor_SRC}
 )
 
-target_link_libraries(FocalEngineEditor VisualNodeSystem)
-target_link_libraries(FocalEngineEditor FocalEngine)
-
-target_link_libraries(FocalEngineEditor glew32s.lib)
-target_link_libraries(FocalEngineEditor glfw3.lib)
-target_link_libraries(FocalEngineEditor glfw3dll.lib)
-target_link_libraries(FocalEngineEditor opengl32.lib)
+target_link_libraries(FocalEngineEditor PRIVATE VisualNodeSystem)
+target_link_libraries(FocalEngineEditor PRIVATE FocalEngine)
 
 source_group("Source Files" FILES ${Application_SRC})
 # *************** EDITOR ***************
