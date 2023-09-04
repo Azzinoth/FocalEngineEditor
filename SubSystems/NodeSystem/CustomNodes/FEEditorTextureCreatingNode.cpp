@@ -234,15 +234,17 @@ bool FEEditorTextureCreatingNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* 
 
 	if (!bCorrectType)
 	{
-		*MsgToUser = IncompatibleTypesMsg;
+		if (MsgToUser != nullptr)
+			*MsgToUser = IncompatibleTypesMsg;
 		return false;
 	}
 
 	// ***************************** tooManyConnectionOfThisTypeMsg *****************************
-	if ((!Input[0]->GetConnectedSockets().empty() || !Input[1]->GetConnectedSockets().empty() || !Input[2]->GetConnectedSockets().empty()) &&
+	if ((!Input[0]->GetConnectedSockets().empty() && !Input[1]->GetConnectedSockets().empty() && !Input[2]->GetConnectedSockets().empty()) &&
 		(CandidateSocket->GetType() == "COLOR_CHANNEL"))
 	{
-		*MsgToUser = TooManyConnectionOfThisTypeMsg;
+		if (MsgToUser != nullptr)
+			*MsgToUser = TooManyConnectionOfThisTypeMsg;
 		return false;
 	}
 
@@ -254,7 +256,8 @@ bool FEEditorTextureCreatingNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* 
 		}
 		else
 		{
-			*MsgToUser = TooManyConnectionOfThisTypeMsg;
+			if (MsgToUser != nullptr)
+				*MsgToUser = TooManyConnectionOfThisTypeMsg;
 			return false;
 		}
 	}
@@ -264,21 +267,24 @@ bool FEEditorTextureCreatingNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* 
 		CandidateSocket->GetType() == "RGB" || 
 		CandidateSocket->GetType() == "RGBA"))
 	{
-		*MsgToUser = TooManyConnectionOfThisTypeMsg;
+		if (MsgToUser != nullptr)
+			*MsgToUser = TooManyConnectionOfThisTypeMsg;
 		return false;
 	}
 
 	if ((!Input[0]->GetConnectedSockets().empty() || !Input[1]->GetConnectedSockets().empty() || !Input[2]->GetConnectedSockets().empty() || !Input[3]->GetConnectedSockets().empty()) &&
 		(CandidateSocket->GetType() == "RGBA"))
 	{
-		*MsgToUser = TooManyConnectionOfThisTypeMsg;
+		if (MsgToUser != nullptr)
+			*MsgToUser = TooManyConnectionOfThisTypeMsg;
 		return false;
 	}
 
 	if ((!Input[0]->GetConnectedSockets().empty() || !Input[1]->GetConnectedSockets().empty() || !Input[2]->GetConnectedSockets().empty()) &&
 		(CandidateSocket->GetType() == "RGB"))
 	{
-		*MsgToUser = TooManyConnectionOfThisTypeMsg;
+		if (MsgToUser != nullptr)
+			*MsgToUser = TooManyConnectionOfThisTypeMsg;
 		return false;
 	}
 	// ***************************** tooManyConnectionOfThisTypeMsg END *****************************
@@ -286,21 +292,24 @@ bool FEEditorTextureCreatingNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* 
 	if (CandidateSocket->GetType() == "FLOAT" &&
 		ResultTexture == RESOURCE_MANAGER.NoTexture)
 	{
-		*MsgToUser = CantInferResolutionMsg;
+		if (MsgToUser != nullptr)
+			*MsgToUser = CantInferResolutionMsg;
 		return false;
 	}
 
 	// In current node own sockets can't be connected.
 	if (CandidateSocket->GetParent() == this)
 	{
-		*MsgToUser = IncompatibleTypesMsg;
+		if (MsgToUser != nullptr)
+			*MsgToUser = IncompatibleTypesMsg;
 		return false;
 	}
 
 	// If we have connection on this input we should reject
 	if (!OwnSocket->GetConnectedSockets().empty())
 	{
-		*MsgToUser = TooManyConnectionsMsg;
+		if (MsgToUser != nullptr)
+			*MsgToUser = TooManyConnectionsMsg;
 		return false;
 	}
 
@@ -320,7 +329,8 @@ bool FEEditorTextureCreatingNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* 
 		}
 		else
 		{
-			*MsgToUser = IncompatibleResolutionMsg;
+			if (MsgToUser != nullptr)
+				*MsgToUser = IncompatibleResolutionMsg;
 			return false;
 		}
 	}

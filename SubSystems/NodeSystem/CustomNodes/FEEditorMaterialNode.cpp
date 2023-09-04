@@ -276,13 +276,15 @@ bool FEEditorMaterialNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* Candida
 	// For now it is unsupported type.
 	if (CandidateSocket->GetType() == "FLOAT")
 	{
-		*MsgToUser = IncompatibleTypesMsg;
+		if (MsgToUser != nullptr)
+			*MsgToUser = IncompatibleTypesMsg;
 		return false;
 	}
 
 	if ((OwnSocket->GetName() == "albedo" || OwnSocket->GetName() == "albedo_1" || OwnSocket->GetName() == "normal" || OwnSocket->GetName() == "normal_1") && (CandidateSocket->GetType() != "RGBA"))
 	{
-		*MsgToUser = IncompatibleTypesMsg;
+		if (MsgToUser != nullptr)
+			*MsgToUser = IncompatibleTypesMsg;
 		return false;
 	}
 
@@ -291,13 +293,15 @@ bool FEEditorMaterialNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* Candida
 		OwnSocket->GetName() == "Metalness" || OwnSocket->GetName() == "Metalness_1" ||
 		OwnSocket->GetName() == "Displacement" || OwnSocket->GetName() == "Displacement_1") && (CandidateSocket->GetType() != "COLOR_CHANNEL" && CandidateSocket->GetType() != "FLOAT"))
 	{
-		*MsgToUser = IncompatibleTypesMsg;
+		if (MsgToUser != nullptr)
+			*MsgToUser = IncompatibleTypesMsg;
 		return false;
 	}
 
 	if (!OwnSocket->GetConnectedSockets().empty())
 	{
-		*MsgToUser = TooManyConnectionsMsg;
+		if (MsgToUser != nullptr)
+			*MsgToUser = TooManyConnectionsMsg;
 		return false;
 	}
 
