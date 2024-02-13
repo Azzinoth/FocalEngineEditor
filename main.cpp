@@ -15,7 +15,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	double AverageCpuFrameDuration = 0.0;
 	double AverageGpuFrameDuration = 0.0;
 
-	while (ENGINE.IsWindowOpened())
+	while (ENGINE.IsNotTerminated())
 	{
 		ENGINE.BeginFrame();
 		ENGINE.Render();

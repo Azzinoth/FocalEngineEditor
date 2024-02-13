@@ -1216,7 +1216,17 @@ void FEEditor::Render()
 
 				if (ImGui::MenuItem("Exit"))
 				{
-					ENGINE.Terminate();
+					if (PROJECT_MANAGER.GetCurrent()->IsModified())
+					{
+						APPLICATION.GetMainWindow()->CancelClose();
+						projectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
+					}
+					else
+					{
+						PROJECT_MANAGER.CloseCurrentProject();
+						ENGINE.Terminate();
+						return;
+					}
 				}
 				
 				ImGui::EndMenu();
@@ -1370,6 +1380,7 @@ void FEEditor::CloseWindowCallBack()
 
 	if (PROJECT_MANAGER.GetCurrent()->IsModified())
 	{
+		APPLICATION.GetMainWindow()->CancelClose();
 		projectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
 	}
 	else
@@ -2848,7 +2859,7 @@ void FEEditor::DisplayTerrainSettings(FETerrain* Terrain)
 
 			ImGui::Text("Layers:");
 
-			ImGui::BeginChildFrame(ImGui::GetID("Layers ListBox Child"), ImVec2(ImGui::GetWindowContentRegionWidth() - 10.0f, 500.0f), ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+			ImGui::BeginChildFrame(ImGui::GetID("Layers ListBox Child"), ImVec2(ImGui::GetContentRegionAvail().x - 10.0f, 500.0f), ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 			bool bListBoxHovered = false;
 			if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
 				bListBoxHovered = true;
@@ -2862,7 +2873,7 @@ void FEEditor::DisplayTerrainSettings(FETerrain* Terrain)
 				}
 			}
 
-			ImGui::BeginListBox("##Layers ListBox", ImVec2(ImGui::GetWindowContentRegionWidth() - 10.0f, 500.0f));
+			ImGui::BeginListBox("##Layers ListBox", ImVec2(ImGui::GetContentRegionAvail().x - 10.0f, 500.0f));
 
 			for (size_t i = 0; i < FE_TERRAIN_MAX_LAYERS; i++)
 			{
@@ -2873,7 +2884,7 @@ void FEEditor::DisplayTerrainSettings(FETerrain* Terrain)
 				ImVec2 PostionBeforeDraw = ImGui::GetCursorPos();
 
 				ImVec2 TextSize = ImGui::CalcTextSize(layer->GetName().c_str());
-				ImGui::SetCursorPos(PostionBeforeDraw + ImVec2(ImGui::GetWindowContentRegionWidth() / 2.0f - TextSize.x / 2.0f, 16));
+				ImGui::SetCursorPos(PostionBeforeDraw + ImVec2(ImGui::GetContentRegionAvail().x / 2.0f - TextSize.x / 2.0f, 16));
 				
 				if (TerrainLayerRenameIndex == i)
 				{
@@ -2886,7 +2897,7 @@ void FEEditor::DisplayTerrainSettings(FETerrain* Terrain)
 					}
 
 					ImGui::SetNextItemWidth(350.0f);
-					ImGui::SetCursorPos(ImVec2(PostionBeforeDraw.x + 64.0f + (ImGui::GetWindowContentRegionWidth()- 64.0f) / 2.0f - 350.0f / 2.0f, PostionBeforeDraw.y + 12));
+					ImGui::SetCursorPos(ImVec2(PostionBeforeDraw.x + 64.0f + (ImGui::GetContentRegionAvail().x- 64.0f) / 2.0f - 350.0f / 2.0f, PostionBeforeDraw.y + 12));
 					if (ImGui::InputText("##newNameTerrainLayerEditor", TerrainLayerRename, IM_ARRAYSIZE(TerrainLayerRename), ImGuiInputTextFlags_EnterReturnsTrue) ||
 						ImGui::IsMouseClicked(0) && !ImGui::IsItemHovered() || ImGui::GetFocusID() != ImGui::GetID("##newNameTerrainLayerEditor"))
 					{
@@ -2903,7 +2914,7 @@ void FEEditor::DisplayTerrainSettings(FETerrain* Terrain)
 				ImGui::SetCursorPos(PostionBeforeDraw);
 
 				ImGui::PushID(int(i));
-				if (ImGui::Selectable("##item", SelectedLayer == i ? true : false, ImGuiSelectableFlags_None, ImVec2(ImGui::GetWindowContentRegionWidth() - 0, 64)))
+				if (ImGui::Selectable("##item", SelectedLayer == i ? true : false, ImGuiSelectableFlags_None, ImVec2(ImGui::GetContentRegionAvail().x - 0, 64)))
 				{
 					SelectedLayer = int(i);
 					Terrain->SetBrushLayerIndex(SelectedLayer);

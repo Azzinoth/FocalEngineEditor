@@ -967,7 +967,7 @@ void EditMaterialPopup::Render()
 	// Textures
 	{
 		ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 162, 232, 50));
-		ImGui::BeginChild("Textures", ImVec2(ImGui::GetWindowContentRegionWidth() * 0.25f, 600), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("Textures", ImVec2(ImGui::GetContentRegionAvail().x * 0.25f, 600), true, ImGuiWindowFlags_HorizontalScrollbar);
 
 		if (!ImGui::IsPopupOpen("##materialPropertiesContext_menu"))
 			textureFromListUnderMouse = -1;
@@ -1034,7 +1034,7 @@ void EditMaterialPopup::Render()
 	{
 		ImGui::SameLine();
 		ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 162, 232, 50));
-		ImGui::BeginChild("Bindings", ImVec2(ImGui::GetWindowContentRegionWidth() * 0.49f, 600), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("Bindings", ImVec2(ImGui::GetContentRegionAvail().x * 0.49f, 600), true, ImGuiWindowFlags_HorizontalScrollbar);
 
 		ImGui::Text("First sub material:");
 
@@ -1066,11 +1066,11 @@ void EditMaterialPopup::Render()
 		}
 
 		// ************* Normal *************
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
 		ImGui::SetCursorPosY(38);
 		ImGui::Text("Normal:");
 		ObjToWorkWith->getNormalMap() == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getNormalMap());
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
 		iconButton->render();
 		if (iconButton->getWasClicked())
 		{
@@ -1083,7 +1083,7 @@ void EditMaterialPopup::Render()
 
 		if (ObjToWorkWith->getNormalMap() != nullptr)
 		{
-			ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f);
+			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
 			ImGui::SetNextItemWidth(85);
 			if (ImGui::BeginCombo("Channel##normal", "rgb", ImGuiWindowFlags_None))
 			{
@@ -1095,11 +1095,11 @@ void EditMaterialPopup::Render()
 		}
 
 		// ************* AO *************
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f * 2.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
 		ImGui::SetCursorPosY(38);
 		ImGui::Text("AO:");
 		ObjToWorkWith->getAOMap() == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getAOMap());
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f * 2.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
 		iconButton->render();
 		if (iconButton->getWasClicked())
 		{
@@ -1112,7 +1112,7 @@ void EditMaterialPopup::Render()
 
 		if (ObjToWorkWith->getAOMap() != nullptr)
 		{
-			ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f * 2.0f);
+			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
 			ImGui::SetNextItemWidth(85);
 			if (ImGui::BeginCombo("Channel##ao", channels[ObjToWorkWith->getAOMapChannel()].c_str(), ImGuiWindowFlags_None))
 			{
@@ -1173,11 +1173,11 @@ void EditMaterialPopup::Render()
 		}
 
 		// ************* Metalness *************
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
 		ImGui::SetCursorPosY(38 + 128 + 80);
 		ImGui::Text("Metalness:");
 		ObjToWorkWith->getMetalnessMap() == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getMetalnessMap());
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
 		iconButton->render();
 		if (iconButton->getWasClicked())
 		{
@@ -1190,7 +1190,7 @@ void EditMaterialPopup::Render()
 
 		if (ObjToWorkWith->getMetalnessMap() != nullptr)
 		{
-			ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f);
+			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
 			ImGui::SetNextItemWidth(85);
 			if (ImGui::BeginCombo("Channel##metalness", channels[ObjToWorkWith->getMetalnessMapChannel()].c_str(), ImGuiWindowFlags_None))
 			{
@@ -1212,11 +1212,11 @@ void EditMaterialPopup::Render()
 		}
 
 		// ************* Displacement *************
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f * 2.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
 		ImGui::SetCursorPosY(38 + 128 + 80);
 		ImGui::Text("Displacement:");
 		ObjToWorkWith->getDisplacementMap() == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getDisplacementMap());
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f * 2.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
 		iconButton->render();
 		if (iconButton->getWasClicked())
 		{
@@ -1229,7 +1229,7 @@ void EditMaterialPopup::Render()
 
 		if (ObjToWorkWith->getDisplacementMap() != nullptr)
 		{
-			ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f * 2.0f);
+			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
 			ImGui::SetNextItemWidth(85);
 			if (ImGui::BeginCombo("Channel##displacement", channels[ObjToWorkWith->getDisplacementMapChannel()].c_str(), ImGuiWindowFlags_None))
 			{
@@ -1282,11 +1282,11 @@ void EditMaterialPopup::Render()
 		}
 
 		// ************* Normal *************
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
 		ImGui::SetCursorPosY(64 + 128 + 80 + 128 + 80);
 		ImGui::Text("Normal:");
 		ObjToWorkWith->getNormalMap(1) == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getNormalMap(1));
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
 		iconButton->render();
 		if (iconButton->getWasClicked())
 		{
@@ -1299,7 +1299,7 @@ void EditMaterialPopup::Render()
 
 		if (ObjToWorkWith->getNormalMap(1) != nullptr)
 		{
-			ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f);
+			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
 			ImGui::SetNextItemWidth(85);
 			if (ImGui::BeginCombo("Channel##normalSubmaterial", "rgb", ImGuiWindowFlags_None))
 			{
@@ -1311,11 +1311,11 @@ void EditMaterialPopup::Render()
 		}
 
 		// ************* AO *************
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f * 2.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
 		ImGui::SetCursorPosY(64 + 128 + 80 + 128 + 80);
 		ImGui::Text("AO:");
 		ObjToWorkWith->getAOMap(1) == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getAOMap(1));
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f * 2.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
 		iconButton->render();
 		if (iconButton->getWasClicked())
 		{
@@ -1328,7 +1328,7 @@ void EditMaterialPopup::Render()
 
 		if (ObjToWorkWith->getAOMap(1) != nullptr)
 		{
-			ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f * 2.0f);
+			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
 			ImGui::SetNextItemWidth(85);
 			if (ImGui::BeginCombo("Channel##aoSubmaterial", channels[ObjToWorkWith->getAOMapChannel(1)].c_str(), ImGuiWindowFlags_None))
 			{
@@ -1389,11 +1389,11 @@ void EditMaterialPopup::Render()
 		}
 
 		// ************* Metalness *************
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
 		ImGui::SetCursorPosY(64 + 128 + 80 + 128 + 80 + 128 + 80);
 		ImGui::Text("Metalness:");
 		ObjToWorkWith->getMetalnessMap(1) == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getMetalnessMap(1));
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
 		iconButton->render();
 		if (iconButton->getWasClicked())
 		{
@@ -1406,7 +1406,7 @@ void EditMaterialPopup::Render()
 
 		if (ObjToWorkWith->getMetalnessMap(1) != nullptr)
 		{
-			ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f);
+			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
 			ImGui::SetNextItemWidth(85);
 			if (ImGui::BeginCombo("Channel##metalnessSubmaterial", channels[ObjToWorkWith->getMetalnessMapChannel(1)].c_str(), ImGuiWindowFlags_None))
 			{
@@ -1428,11 +1428,11 @@ void EditMaterialPopup::Render()
 		}
 
 		// ************* Displacement *************
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f * 2.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
 		ImGui::SetCursorPosY(64 + 128 + 80 + 128 + 80 + 128 + 80);
 		ImGui::Text("Displacement:");
 		ObjToWorkWith->getDisplacementMap(1) == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getDisplacementMap(1));
-		ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f * 2.0f);
+		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
 		iconButton->render();
 		if (iconButton->getWasClicked())
 		{
@@ -1445,7 +1445,7 @@ void EditMaterialPopup::Render()
 
 		if (ObjToWorkWith->getDisplacementMap(1) != nullptr)
 		{
-			ImGui::SetCursorPosX(10 + ImGui::GetWindowContentRegionWidth() / 3.0f * 2.0f);
+			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
 			ImGui::SetNextItemWidth(85);
 			if (ImGui::BeginCombo("Channel##displacementSubmaterial", channels[ObjToWorkWith->getDisplacementMapChannel(1)].c_str(), ImGuiWindowFlags_None))
 			{
@@ -1475,7 +1475,7 @@ void EditMaterialPopup::Render()
 		static float fieldWidth = 350.0f;
 		ImGui::SameLine();
 		ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 162, 232, 50));
-		ImGui::BeginChild("Settings", ImVec2(ImGui::GetWindowContentRegionWidth() * 0.30f, 600), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("Settings", ImVec2(ImGui::GetContentRegionAvail().x * 0.30f, 600), true, ImGuiWindowFlags_HorizontalScrollbar);
 
 		FEShaderParam* debugFlag = ObjToWorkWith->getParameter("debugFlag");
 		if (debugFlag != nullptr)

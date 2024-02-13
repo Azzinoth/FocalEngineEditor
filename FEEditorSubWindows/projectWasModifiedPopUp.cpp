@@ -26,6 +26,7 @@ void projectWasModifiedPopUp::Render()
 		{
 			ImGui::PopStyleVar();
 			ImGui::EndPopup();
+			APPLICATION.GetMainWindow()->Terminate();
 			return;
 		}
 
@@ -42,6 +43,7 @@ void projectWasModifiedPopUp::Render()
 			ObjToWorkWith = nullptr;
 			ImGuiModalPopup::Close();
 			ButtonPressed = true;
+			APPLICATION.GetMainWindow()->CancelClose();
 		}
 
 		ImGui::SetItemDefaultFocus();
@@ -59,6 +61,7 @@ void projectWasModifiedPopUp::Render()
 		if (ImGui::Button("Cancel", ImVec2(140, 0)))
 		{
 			ImGuiModalPopup::Close();
+			APPLICATION.GetMainWindow()->CancelClose();
 		}
 
 		ImGui::PopStyleVar();

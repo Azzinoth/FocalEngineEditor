@@ -133,7 +133,7 @@ void PrefabEditorWindow::Render()
 		{
 			static bool ContextMenuOpened = false;
 
-			ImGui::BeginChildFrame(ImGui::GetID("GameModels ListBox Child"), ImVec2(ImGui::GetWindowContentRegionWidth() - 10.0f, 500.0f), ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+			ImGui::BeginChildFrame(ImGui::GetID("GameModels ListBox Child"), ImVec2(ImGui::GetContentRegionAvail().x - 10.0f, 500.0f), ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 			bool bListBoxHovered = false;
 			if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
 			{
@@ -150,7 +150,7 @@ void PrefabEditorWindow::Render()
 				}
 			}
 
-			if (ImGui::BeginListBox("##GameModels ListBox", ImVec2(ImGui::GetWindowContentRegionWidth() - 10.0f, 500.0f)))
+			if (ImGui::BeginListBox("##GameModels ListBox", ImVec2(ImGui::GetContentRegionAvail().x - 10.0f, 500.0f)))
 			{
 				ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
 
@@ -163,12 +163,12 @@ void PrefabEditorWindow::Render()
 					ImVec2 PostionBeforeDraw = ImGui::GetCursorPos();
 
 					const ImVec2 TextSize = ImGui::CalcTextSize(GameModel->GetName().c_str());
-					ImGui::SetCursorPos(PostionBeforeDraw + ImVec2(ImGui::GetWindowContentRegionWidth() / 2.0f - TextSize.x / 2.0f, 16));
+					ImGui::SetCursorPos(PostionBeforeDraw + ImVec2(ImGui::GetContentRegionAvail().x / 2.0f - TextSize.x / 2.0f, 16));
 					ImGui::Text(GameModel->GetName().c_str());
 					ImGui::SetCursorPos(PostionBeforeDraw);
 
 					ImGui::PushID(i);
-					if (ImGui::Selectable("##item", SelectedGameModel == i ? true : false, ImGuiSelectableFlags_None, ImVec2(ImGui::GetWindowContentRegionWidth() - 0, 64)))
+					if (ImGui::Selectable("##item", SelectedGameModel == i ? true : false, ImGuiSelectableFlags_None, ImVec2(ImGui::GetContentRegionAvail().x - 0, 64)))
 					{
 						SelectedGameModel = i;
 					}
@@ -186,8 +186,8 @@ void PrefabEditorWindow::Render()
 					ShowTransformConfiguration(&ObjToWorkWith->GetComponent(i)->Transform, i);
 				}
 
-				ImGui::EndListBox();
 				ImGui::PopFont();
+				ImGui::EndListBox();
 			}
 			
 

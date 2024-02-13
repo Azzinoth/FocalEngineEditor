@@ -231,7 +231,7 @@ void FEProjectManager::DisplayProjectSelection()
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::ImColor(0.0f, 202.0f / 255.0f, 66.0f / 255.0f, 1.0f)));
 
 		ImGui::SameLine();
-		ImGui::SetCursorPos(ImVec2(ImGui::GetWindowContentRegionWidth() - 280.0f - 32.0f, ImGui::GetCursorPos().y));
+		ImGui::SetCursorPos(ImVec2(ImGui::GetContentRegionAvail().x + 280.0f + 64.0f, ImGui::GetCursorPos().y));
 		if (ImGui::Button("Choose projects directory", ImVec2(280.0f, 64.0f)))
 		{
 			std::string path;
