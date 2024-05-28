@@ -38,6 +38,7 @@ private:
 	SINGLETON_PRIVATE_PART(FEEditorPreviewManager)
 
 	void InitializeResources();
+	void ReInitializeEntities();
 	void UpdateAll();
 
 	FEFramebuffer* PreviewFB;

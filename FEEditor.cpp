@@ -1031,6 +1031,8 @@ void FEEditor::InitializeResources()
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity->Prefab->GetComponent(0)->GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity);
 
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(PREVIEW_MANAGER.PreviewEntity);
+
 	MouseCursorIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/mouseCursorIcon.png", "mouseCursorIcon");
 	RESOURCE_MANAGER.MakeTextureStandard(MouseCursorIcon);
 	ArrowToGroundIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/arrowToGroundIcon.png", "arrowToGroundIcon");
@@ -1419,7 +1421,7 @@ void FEEditor::DropCallback(const int Count, const char** Paths)
 				{
 					if (LoadedObjects[j]->GetType() == FE_ENTITY)
 					{
-						//SCENE.addEntity(reinterpret_cast<FEEntity*>(loadedObjects[i]));
+						SCENE.AddEntity(reinterpret_cast<FEEntity*>(LoadedObjects[j]));
 					}
 					else
 					{

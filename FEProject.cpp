@@ -65,7 +65,6 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 	PROJECT_MANAGER.GetCurrent()->LoadScene();
 	IndexChosen = -1;
 
-	//if (SCENE.getEntityByName("transformationXGizmoEntity").size() == 0)
 	GIZMO_MANAGER.ReInitializeEntities();
 
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity);
@@ -82,6 +81,9 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity);
+
+	PREVIEW_MANAGER.ReInitializeEntities();
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(PREVIEW_MANAGER.PreviewEntity);
 
 	// all parts of Gizmos are standard resources except entities, so we need to register them again.
 	// if it is first start and those entities are already registered these calls just returns false.

@@ -73,7 +73,6 @@ public:
 	bool WasSelected(int Index);
 
 	void MouseMove(double LastMouseX, double LastMouseY, double MouseX, double MouseY);
-
 private:
 	SINGLETON_PRIVATE_PART(GizmoManager)
 

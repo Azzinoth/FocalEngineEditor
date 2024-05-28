@@ -278,7 +278,8 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			int g = ((LastColorShiftIndex + 1) >> 8) & 255;
 			int b = ((LastColorShiftIndex + 1) >> 16) & 255;
 
-			static FEEntity* DummyEntity = new FEEntity(it->first->Prefab, "dummyEntity");
+			static FEEntity* DummyEntity = SCENE.AddEntity(it->first->Prefab, "dummyEntity");
+			DummyEntity->SetVisibility(true);
 			DummyEntity->Prefab = it->first->Prefab;
 			DummyEntity->Transform = FETransformComponent(it->first->GetTransformedInstancedMatrix(it->second[j]));
 
@@ -295,6 +296,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			
 				it->first->Prefab->GetComponent(k)->GameModel->Material = RegularMaterial;
 			}
+			DummyEntity->SetVisibility(false);
 		}
 		it++;
 	}
@@ -412,7 +414,8 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 
 		if (InstancedSubObjectIndexSelected != -1)
 		{
-			static FEEntity* DummyEntity = new FEEntity(SelectedEntity->Prefab, "dummyEntity");
+			static FEEntity* DummyEntity = SCENE.AddEntity(SelectedEntity->Prefab, "dummyEntity");
+			DummyEntity->SetVisibility(true);
 			DummyEntity->Prefab = SelectedEntity->Prefab;
 			DummyEntity->Transform = FETransformComponent(SelectedEntity->GetTransformedInstancedMatrix(InstancedSubObjectIndexSelected));
 
@@ -430,6 +433,8 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 
 				SelectedEntity->Prefab->GetComponent(i)->GameModel->Material = RegularMaterial;
 			}
+
+			DummyEntity->SetVisibility(false);
 		}
 		else
 		{

@@ -19,7 +19,8 @@ void FEEditorPreviewManager::InitializeResources()
 	PreviewFB = RESOURCE_MANAGER.CreateFramebuffer(FE_COLOR_ATTACHMENT | FE_DEPTH_ATTACHMENT, 128, 128);
 	PreviewGameModel = new FEGameModel(nullptr, nullptr, "editorPreviewGameModel");
 	PreviewPrefab = new FEPrefab(PreviewGameModel, "editorPreviewPrefab");
-	PreviewEntity = new FEEntity(PreviewPrefab, "editorPreviewEntity");
+	PreviewEntity = SCENE.AddEntity(PreviewPrefab, "editorPreviewEntity");
+	PreviewEntity->SetVisibility(false);
 	MeshPreviewMaterial = RESOURCE_MANAGER.CreateMaterial("meshPreviewMaterial");
 	RESOURCE_MANAGER.MakeMaterialStandard(MeshPreviewMaterial);
 	MeshPreviewMaterial->Shader = RESOURCE_MANAGER.CreateShader("FEMeshPreviewShader", RESOURCE_MANAGER.LoadGLSL("Resources//Materials//FE_MeshPreview_VS.glsl").c_str(),
@@ -31,6 +32,12 @@ void FEEditorPreviewManager::InitializeResources()
 																					   "607A53601357077F03770357"/*"FEMeshPreviewShader"*/);
 
 	RESOURCE_MANAGER.MakeShaderStandard(MeshPreviewMaterial->Shader);
+}
+
+void FEEditorPreviewManager::ReInitializeEntities()
+{
+	PreviewEntity = SCENE.AddEntity(PreviewPrefab, "editorPreviewEntity");
+	PreviewEntity->SetVisibility(false);
 }
 
 void FEEditorPreviewManager::UpdateAll()
@@ -87,6 +94,8 @@ void FEEditorPreviewManager::BeforePreviewActions()
 	ENGINE.GetCamera()->SetPitch(0.0f);
 	ENGINE.GetCamera()->SetRoll(0.0f);
 	ENGINE.GetCamera()->SetYaw(0.0f);
+
+	PreviewEntity->SetVisibility(true);
 }
 
 void FEEditorPreviewManager::AfterPreviewActions()
@@ -103,6 +112,8 @@ void FEEditorPreviewManager::AfterPreviewActions()
 	PreviewFB->UnBind();
 
 	ENGINE.SetClearColor(OriginalClearColor);
+
+	PreviewEntity->SetVisibility(false);
 }
 
 void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
@@ -533,6 +544,12 @@ void CreatePrefabPreview(FEPrefab* Prefab, FETexture** ResultingTexture)
 FETexture* FEEditorPreviewManager::GetPrefabPreview(const std::string PrefabID)
 {
 	FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabID);
+	if (CurrentPrefab == nullptr)
+	{
+		LOG.Add("FEEditorPreviewManager::GetPrefabPreview could not find prefab with ID: " + PrefabID, "FE_LOG_RENDERING", FE_LOG_ERROR);
+		return RESOURCE_MANAGER.NoTexture;
+	}
+		
 	// if prefab's dirty flag is set we need to update preview
 	if (CurrentPrefab->IsDirty())
 	{
