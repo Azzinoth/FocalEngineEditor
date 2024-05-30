@@ -1404,7 +1404,7 @@ void FEEditor::DropCallback(const int Count, const char** Paths)
 {
 	for (size_t i = 0; i < size_t(Count); i++)
 	{
-		if (FILE_SYSTEM.IsFolder(Paths[i]) && Count == 1)
+		if (FILE_SYSTEM.CheckDirectory(Paths[i]) && Count == 1)
 		{
 			if (PROJECT_MANAGER.GetCurrent() == nullptr)
 			{

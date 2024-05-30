@@ -27,10 +27,10 @@ std::vector<FEProject*> FEProjectManager::GetList()
 
 void FEProjectManager::LoadProjectList()
 {
-	if (!FILE_SYSTEM.IsFolder(PROJECTS_FOLDER))
+	if (!FILE_SYSTEM.CheckDirectory(PROJECTS_FOLDER))
 		CustomProjectFolder = "";
 
-	const std::vector<std::string> ProjectNameList = FILE_SYSTEM.GetFolderList(PROJECTS_FOLDER);
+	const std::vector<std::string> ProjectNameList = FILE_SYSTEM.GetDirectoryList(PROJECTS_FOLDER);
 
 	for (size_t i = 0; i < ProjectNameList.size(); i++)
 	{
@@ -213,7 +213,7 @@ void FEProjectManager::DisplayProjectSelection()
 				FILE_SYSTEM.DeleteFile((List[IndexChosen]->GetProjectFolder() + FileList[i]).c_str());
 			}
 			// Then we can try to delete project folder, but if user created some folders in it we will fail.
-			FILE_SYSTEM.DeleteFolder(ProjectFolder.c_str());
+			FILE_SYSTEM.DeleteDirectory(ProjectFolder.c_str());
 
 			for (size_t i = 0; i < List.size(); i++)
 			{
@@ -270,7 +270,7 @@ void FEProjectManager::DisplayProjectSelection()
 
 				if (strlen(ProjectName) != 0 && !bAlreadyCreated)
 				{
-					FILE_SYSTEM.CreateFolder((std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/").c_str());
+					FILE_SYSTEM.CreateDirectory((std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/").c_str());
 					List.push_back(new FEProject(ProjectName, std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/"));
 					List.back()->CreateDummyScreenshot();
 					//SCENE.addLight(FE_DIRECTIONAL_LIGHT, "sun");
@@ -306,7 +306,7 @@ void FEProjectManager::DisplayProjectSelection()
 
 bool FEProjectManager::ContainProject(const std::string Path)
 {
-	if (!FILE_SYSTEM.IsFolder(Path.c_str()))
+	if (!FILE_SYSTEM.CheckDirectory(Path.c_str()))
 		return false;
 
 	if (!FILE_SYSTEM.CheckFile((Path + "/scene.txt").c_str()))
@@ -1763,7 +1763,7 @@ bool FEProject::ShouldIncludeInSceneFile(const FETexture* Texture)
 
 void FEProject::SetProjectFolder(const std::string NewValue)
 {
-	if (!FILE_SYSTEM.IsFolder(NewValue.c_str()))
+	if (!FILE_SYSTEM.CheckDirectory(NewValue.c_str()))
 		return;
 
 	ProjectFolder = NewValue;
@@ -1771,7 +1771,7 @@ void FEProject::SetProjectFolder(const std::string NewValue)
 
 void FEProject::SaveSceneTo(const std::string NewPath)
 {
-	if (!FILE_SYSTEM.IsFolder(NewPath.c_str()))
+	if (!FILE_SYSTEM.CheckDirectory(NewPath.c_str()))
 		return;
 
 	SetProjectFolder(NewPath);
