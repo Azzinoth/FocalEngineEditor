@@ -1,4 +1,4 @@
-#include "combineChannelsToTexturePopUp.h"
+#include "CombineChannelsToTexturePopUp.h"
 using namespace VisNodeSys;
 
 CombineChannelsToTexturePopUp* CombineChannelsToTexturePopUp::Instance = nullptr;
@@ -123,7 +123,7 @@ void CombineChannelsToTexturePopUp::NodeSystemMainContextMenu()
 		if (ImGui::MenuItem("Texture node"))
 		{
 			TextureForNewNode = RESOURCE_MANAGER.NoTexture;
-			SelectFeObjectPopUp::getInstance().Show(FE_TEXTURE, TextureNodeCreationCallback);
+			SelectFEObjectPopUp::getInstance().Show(FE_TEXTURE, TextureNodeCreationCallback);
 		}
 
 		if (ImGui::MenuItem("Float node"))

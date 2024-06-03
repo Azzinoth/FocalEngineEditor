@@ -1,13 +1,12 @@
 #pragma once
 
 #include "../FEngine.h"
+#include <any>
 using namespace FocalEngine;
-
-class DragAndDropManager;
 
 class DragAndDropTarget
 {
-	friend DragAndDropManager;
+	friend class DragAndDropManager;
 private:
 	std::vector<FE_OBJECT_TYPE> AcceptedTypes;
 	std::vector<std::string> ToolTipTexts;
@@ -18,7 +17,6 @@ public:
 	DragAndDropTarget();
 	DragAndDropTarget(FE_OBJECT_TYPE AcceptedType, bool (*Callback)(FEObject*, void**), void** UserData = nullptr, std::string ToolTipText = "");
 	DragAndDropTarget(std::vector<FE_OBJECT_TYPE>& AcceptedTypes, bool (*Callback)(FEObject*, void**), void** UserData, std::vector<std::string>& ToolTipTexts);
-
 	~DragAndDropTarget();
 
 	void SetActive(bool Active);
@@ -48,7 +46,7 @@ public:
 	void DropAction();
 	void MouseMove();
 
-	void SetObject(FEObject* Obj, FETexture* Texture = nullptr, ImVec2 UV0 = ImVec2(0.0f, 1.0f), ImVec2 UV1 = ImVec2(0.0f, 1.0f));
+	void SetObjectToDrag(FEObject* Object, FETexture* Texture = nullptr, ImVec2 UV0 = ImVec2(0.0f, 1.0f), ImVec2 UV1 = ImVec2(0.0f, 1.0f));
 	bool ObjectIsDraged() const;
 
 	FETexture* GetToolTipTexture() const;

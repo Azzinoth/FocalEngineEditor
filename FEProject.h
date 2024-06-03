@@ -8,8 +8,6 @@
 #include "FEEditorInternalResources.h"
 #include "FEEditorVirtualFileSystem.h"
 
-using namespace FocalEngine;
-
 class FEProject
 {
 public:

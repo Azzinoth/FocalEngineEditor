@@ -165,9 +165,9 @@ void DragAndDropManager::MouseMove()
 	}
 }
 
-void DragAndDropManager::SetObject(FEObject* Obj, FETexture* Texture, ImVec2 UV0, ImVec2 UV1)
+void DragAndDropManager::SetObjectToDrag(FEObject* Object, FETexture* Texture, ImVec2 UV0, ImVec2 UV1)
 {
-	Object = Obj;
+	this->Object = Object;
 	PreviewTexture = Texture;
 	this->UV0 = UV0;
 	this->UV1 = UV1;

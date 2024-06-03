@@ -1,8 +1,8 @@
-#include "renamePopups.h"
+#include "RenamePopups.h"
 
-renameFailedPopUp* renameFailedPopUp::Instance = nullptr;
+RenameFailedPopUp* RenameFailedPopUp::Instance = nullptr;
 
-renameFailedPopUp::renameFailedPopUp()
+RenameFailedPopUp::RenameFailedPopUp()
 {
 	PopupCaption = "Invalid name";
 	OkButton = new ImGuiButton("OK");
@@ -11,12 +11,12 @@ renameFailedPopUp::renameFailedPopUp()
 	OkButton->SetPosition(ImVec2(0, 0));
 }
 
-renameFailedPopUp::~renameFailedPopUp()
+RenameFailedPopUp::~RenameFailedPopUp()
 {
 	delete OkButton;
 }
 
-void renameFailedPopUp::Render()
+void RenameFailedPopUp::Render()
 {
 	ImGuiModalPopup::Render();
 
@@ -42,22 +42,22 @@ void renameFailedPopUp::Render()
 	}
 }
 
-renamePopUp* renamePopUp::Instance = nullptr;
+RenamePopUp* RenamePopUp::Instance = nullptr;
 
-renamePopUp::renamePopUp()
+RenamePopUp::RenamePopUp()
 {
 	PopupCaption = "Rename object";
 	ObjToWorkWith = nullptr;
 }
 
-void renamePopUp::Show(FEObject* ObjToWorkWith)
+void RenamePopUp::Show(FEObject* ObjToWorkWith)
 {
 	bShouldOpen = true;
 	this->ObjToWorkWith = ObjToWorkWith;
 	strcpy_s(NewName, ObjToWorkWith->GetName().size() + 1, ObjToWorkWith->GetName().c_str());
 }
 
-void renamePopUp::Render()
+void RenamePopUp::Render()
 {
 	ImGuiModalPopup::Render();
 
@@ -95,7 +95,7 @@ void renamePopUp::Render()
 			{
 				ObjToWorkWith = nullptr;
 				ImGuiModalPopup::Close();
-				renameFailedPopUp::getInstance().Show();
+				RenameFailedPopUp::getInstance().Show();
 			}
 		}
 		ImGui::SetItemDefaultFocus();

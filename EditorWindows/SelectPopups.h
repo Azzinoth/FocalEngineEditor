@@ -1,10 +1,10 @@
 #pragma once
 
-#include "resizeTexturePopup.h"
+#include "ResizeTexturePopup.h"
 
-class SelectFeObjectPopUp : public ImGuiModalPopup
+class SelectFEObjectPopUp : public ImGuiModalPopup
 {
-	SINGLETON_PRIVATE_PART(SelectFeObjectPopUp)
+	SINGLETON_PRIVATE_PART(SelectFEObjectPopUp)
 
 	int IndexUnderMouse = -1;
 	FEObject* HighlightedObject = nullptr;
@@ -29,7 +29,7 @@ class SelectFeObjectPopUp : public ImGuiModalPopup
 	bool IsSelected(const FEObject* Object) const;
 	void AddToSelected(FEObject* Object);
 public:
-	SINGLETON_PUBLIC_PART(SelectFeObjectPopUp)
+	SINGLETON_PUBLIC_PART(SelectFEObjectPopUp)
 
 	void Show(FE_OBJECT_TYPE Type, void(*CallBack)(std::vector<FEObject*>), FEObject* HighlightedObject = nullptr, std::vector<FEObject*> CustomList = std::vector<FEObject*>());
 	void Close() override;

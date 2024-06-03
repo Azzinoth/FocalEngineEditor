@@ -1,6 +1,6 @@
 #pragma once
 
-#include "combineChannelsToTexturePopUp.h"
+#include "CombineChannelsToTexturePopUp.h"
 
 class PrefabEditorWindow : public FEImGuiWindow
 {

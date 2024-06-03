@@ -1,8 +1,8 @@
-#include "resizeTexturePopup.h"
+#include "ResizeTexturePopup.h"
 
-resizeTexturePopup* resizeTexturePopup::Instance = nullptr;
+ResizeTexturePopup* ResizeTexturePopup::Instance = nullptr;
 
-resizeTexturePopup::resizeTexturePopup()
+ResizeTexturePopup::ResizeTexturePopup()
 {
 	PopupCaption = "Resize texture";
 	ObjToWorkWith = nullptr;
@@ -15,13 +15,13 @@ resizeTexturePopup::resizeTexturePopup()
 	ApplyButton = new ImGuiButton("Apply");
 }
 
-resizeTexturePopup::~resizeTexturePopup()
+ResizeTexturePopup::~ResizeTexturePopup()
 {
 	delete CancelButton;
 	delete ApplyButton;
 }
 
-void resizeTexturePopup::Show(FETexture* ObjToWorkWith)
+void ResizeTexturePopup::Show(FETexture* ObjToWorkWith)
 {
 	if (ObjToWorkWith == nullptr)
 		return;
@@ -32,7 +32,7 @@ void resizeTexturePopup::Show(FETexture* ObjToWorkWith)
 	NewHeight = ObjToWorkWith->GetHeight();
 }
 
-void resizeTexturePopup::Render()
+void ResizeTexturePopup::Render()
 {
 	ImGuiModalPopup::Render();
 

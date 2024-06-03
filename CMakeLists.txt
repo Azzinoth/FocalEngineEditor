@@ -44,7 +44,6 @@ file(GLOB Editor_SRC
 	"main.cpp"
 	"FEEditor.cpp"
 	"FEEditor.h"
-	"FEEditorContentBrowser.cpp"
 	"FEEditorDragAndDropManager.cpp"
 	"FEEditorDragAndDropManager.h"
 	"FEEditorGizmoManager.cpp"
@@ -68,28 +67,32 @@ file(GLOB FEDearImguiWrapper_SRC
 	"FEDearImguiWrapper/FEDearImguiWrapper.h"
 )
 
-file(GLOB FEEditorSubWindows_SRC
-	"FEEditorSubWindows/deletePopups.cpp"
-	"FEEditorSubWindows/deletePopups.h"
-	"FEEditorSubWindows/editPopups.cpp"
-	"FEEditorSubWindows/editPopups.h"
-	"FEEditorSubWindows/gyzmosSettingsWindow.h"
-	"FEEditorSubWindows/combineChannelsToTexturePopUp.cpp"
-	"FEEditorSubWindows/combineChannelsToTexturePopUp.h"
-	"FEEditorSubWindows/projectWasModifiedPopUp.cpp"
-	"FEEditorSubWindows/projectWasModifiedPopUp.h"
-	"FEEditorSubWindows/renamePopups.cpp"
-	"FEEditorSubWindows/renamePopups.h"
-	"FEEditorSubWindows/selectPopups.cpp"
-	"FEEditorSubWindows/selectPopups.h"
-	"FEEditorSubWindows/shaderEditorWindow.cpp"
-	"FEEditorSubWindows/shaderEditorWindow.h"
-	"FEEditorSubWindows/resizeTexturePopup.cpp"
-	"FEEditorSubWindows/resizeTexturePopup.h"
-	"FEEditorSubWindows/prefabEditorWindow.cpp"
-	"FEEditorSubWindows/prefabEditorWindow.h"
-	"FEEditorSubWindows/debugTextureViewWindow.cpp"
-	"FEEditorSubWindows/debugTextureViewWindow.h"
+file(GLOB EditorWindows_SRC
+	"EditorWindows/DeletePopups.cpp"
+	"EditorWindows/DeletePopups.h"
+	"EditorWindows/EditPopups.cpp"
+	"EditorWindows/EditPopups.h"
+	"EditorWindows/GyzmosSettingsWindow.h"
+	"EditorWindows/CombineChannelsToTexturePopUp.cpp"
+	"EditorWindows/CombineChannelsToTexturePopUp.h"
+	"EditorWindows/ProjectWasModifiedPopUp.cpp"
+	"EditorWindows/ProjectWasModifiedPopUp.h"
+	"EditorWindows/RenamePopups.cpp"
+	"EditorWindows/RenamePopups.h"
+	"EditorWindows/SelectPopups.cpp"
+	"EditorWindows/SelectPopups.h"
+	"EditorWindows/ShaderEditorWindow.cpp"
+	"EditorWindows/ShaderEditorWindow.h"
+	"EditorWindows/ResizeTexturePopup.cpp"
+	"EditorWindows/ResizeTexturePopup.h"
+	"EditorWindows/PrefabEditorWindow.cpp"
+	"EditorWindows/PrefabEditorWindow.h"
+	"EditorWindows/DebugTextureViewWindow.cpp"
+	"EditorWindows/DebugTextureViewWindow.h"
+	"EditorWindows/SceneGraphWindow.cpp"
+	"EditorWindows/SceneGraphWindow.h"
+	"EditorWindows/ContentBrowserWindow.cpp"
+	"EditorWindows/ContentBrowserWindow.h"
 )
 
 file(GLOB Editor_Materials_SRC
@@ -129,7 +132,7 @@ link_directories(${GLFW_LIB_DIR})
 add_executable(FocalEngineEditor WIN32
 								 ${Editor_SRC}
 								 ${FEDearImguiWrapper_SRC}
-								 ${FEEditorSubWindows_SRC}
+								 ${EditorWindows_SRC}
 								 ${Editor_Materials_SRC}
 								 ${VisualNodeSystem_CustomNodes_SRC}
 								 # *************** SUB_SYSTEM ***************
@@ -145,7 +148,7 @@ source_group("Source Files" FILES ${Application_SRC})
 # *************** EDITOR ***************
 source_group("Source Files/" FILES ${Editor_SRC})
 source_group("Source Files/FEDearImguiWrapper" FILES ${FEDearImguiWrapper_SRC})
-source_group("Source Files/FEEditorSubWindows" FILES ${FEEditorSubWindows_SRC})
+source_group("Source Files/EditorWindows" FILES ${EditorWindows_SRC})
 source_group("Source Files/Materials" FILES ${Editor_Materials_SRC})
 source_group("Source Files/NodeSystem/CustomNodes" FILES ${VisualNodeSystem_CustomNodes_SRC})
 # *************** SUB_SYSTEM ***************

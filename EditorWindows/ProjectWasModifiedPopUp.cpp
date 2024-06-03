@@ -1,21 +1,21 @@
-#include "projectWasModifiedPopUp.h"
+#include "ProjectWasModifiedPopUp.h"
 
-projectWasModifiedPopUp* projectWasModifiedPopUp::Instance = nullptr;
+ProjectWasModifiedPopUp* ProjectWasModifiedPopUp::Instance = nullptr;
 
-projectWasModifiedPopUp::projectWasModifiedPopUp()
+ProjectWasModifiedPopUp::ProjectWasModifiedPopUp()
 {
 	PopupCaption = "Save project ?";
 	ObjToWorkWith = nullptr;
 }
 
-void projectWasModifiedPopUp::Show(FEProject* Project, const bool FullyCloseApplication)
+void ProjectWasModifiedPopUp::Show(FEProject* Project, const bool FullyCloseApplication)
 {
 	bShouldOpen = true;
 	ObjToWorkWith = Project;
 	bShouldTerminate = FullyCloseApplication;
 }
 
-void projectWasModifiedPopUp::Render()
+void ProjectWasModifiedPopUp::Render()
 {
 	ImGuiModalPopup::Render();
 

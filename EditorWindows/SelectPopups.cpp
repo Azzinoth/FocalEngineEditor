@@ -1,10 +1,10 @@
-#include "selectPopups.h"
+#include "SelectPopups.h"
 
-SelectFeObjectPopUp* SelectFeObjectPopUp::Instance = nullptr;
-bool SelectFeObjectPopUp::ControlButtonPressed = false;
-bool SelectFeObjectPopUp::bOneObjectSelectonMode = true;
+SelectFEObjectPopUp* SelectFEObjectPopUp::Instance = nullptr;
+bool SelectFEObjectPopUp::ControlButtonPressed = false;
+bool SelectFEObjectPopUp::bOneObjectSelectonMode = true;
 
-SelectFeObjectPopUp::SelectFeObjectPopUp()
+SelectFEObjectPopUp::SelectFEObjectPopUp()
 {
 	PopupCaption = "Select";
 	IconButton = new ImGuiImageButton(nullptr);
@@ -20,17 +20,17 @@ SelectFeObjectPopUp::SelectFeObjectPopUp()
 	CancelButton->SetSize(ImVec2(140, 24));
 	CancelButton->SetPosition(ImVec2(660, 35));
 
-	ENGINE.AddKeyCallback(SelectFeObjectPopUp::KeyButtonCallback);
+	ENGINE.AddKeyCallback(SelectFEObjectPopUp::KeyButtonCallback);
 }
 
-SelectFeObjectPopUp::~SelectFeObjectPopUp()
+SelectFEObjectPopUp::~SelectFEObjectPopUp()
 {
 	delete SelectButton;
 	delete CancelButton;
 	delete IconButton;
 }
 
-void SelectFeObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::vector<FEObject*>), FEObject* HighlightedObject, const std::vector<FEObject*> CustomList)
+void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::vector<FEObject*>), FEObject* HighlightedObject, const std::vector<FEObject*> CustomList)
 {
 	CurrenType = Type;
 	if (CurrenType == FE_NULL)
@@ -118,7 +118,7 @@ void SelectFeObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 	}
 }
 
-void SelectFeObjectPopUp::Render()
+void SelectFEObjectPopUp::Render()
 {
 	ImGuiModalPopup::Render();
 
@@ -228,7 +228,7 @@ void SelectFeObjectPopUp::Render()
 	}
 }
 
-void SelectFeObjectPopUp::OnSelectAction()
+void SelectFEObjectPopUp::OnSelectAction()
 {
 	if (CallBack != nullptr)
 	{
@@ -237,7 +237,7 @@ void SelectFeObjectPopUp::OnSelectAction()
 	}
 }
 
-void SelectFeObjectPopUp::Close()
+void SelectFEObjectPopUp::Close()
 {
 	ImGuiModalPopup::Close();
 	IndexUnderMouse = -1;
@@ -245,7 +245,7 @@ void SelectFeObjectPopUp::Close()
 	SelectedObjects.clear();
 }
 
-void SelectFeObjectPopUp::KeyButtonCallback(const int Key, int Scancode, const int Action, int Mods)
+void SelectFEObjectPopUp::KeyButtonCallback(const int Key, int Scancode, const int Action, int Mods)
 {
 	if ((Key == GLFW_KEY_LEFT_CONTROL || Action == GLFW_KEY_RIGHT_CONTROL) && Action == GLFW_RELEASE)
 	{
@@ -257,7 +257,7 @@ void SelectFeObjectPopUp::KeyButtonCallback(const int Key, int Scancode, const i
 	}
 }
 
-bool SelectFeObjectPopUp::IsSelected(const FEObject* Object) const
+bool SelectFEObjectPopUp::IsSelected(const FEObject* Object) const
 {
 	for (size_t i = 0; i < SelectedObjects.size(); i++)
 	{
@@ -268,19 +268,19 @@ bool SelectFeObjectPopUp::IsSelected(const FEObject* Object) const
 	return false;
 }
 
-bool SelectFeObjectPopUp::IsOneObjectSelectonMode()
+bool SelectFEObjectPopUp::IsOneObjectSelectonMode()
 {
 	return bOneObjectSelectonMode;
 }
 
-void SelectFeObjectPopUp::SetOneObjectSelectonMode(const bool NewValue)
+void SelectFEObjectPopUp::SetOneObjectSelectonMode(const bool NewValue)
 {
 	bOneObjectSelectonMode = NewValue;
 	if (bOneObjectSelectonMode && SelectedObjects.size() > 1)
 		SelectedObjects.resize(1);
 }
 
-void SelectFeObjectPopUp::AddToSelected(FEObject* Object)
+void SelectFEObjectPopUp::AddToSelected(FEObject* Object)
 {
 	if (IsSelected(Object))
 		return;

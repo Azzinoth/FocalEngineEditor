@@ -1,8 +1,8 @@
 #pragma once
 
-#include "renamePopups.h"
+#include "RenamePopups.h"
 
-class resizeTexturePopup : public ImGuiModalPopup
+class ResizeTexturePopup : public ImGuiModalPopup
 {
 	FETexture* ObjToWorkWith;
 	int NewWidth;
@@ -14,10 +14,10 @@ class resizeTexturePopup : public ImGuiModalPopup
 	ImGuiButton* ApplyButton;
 	ImVec2 PopupSize = ImVec2(450, 260);
 public:
-	SINGLETON_PUBLIC_PART(resizeTexturePopup)
+	SINGLETON_PUBLIC_PART(ResizeTexturePopup)
 
 	void Show(FETexture* ObjToWorkWith);
 	void Render() override;
 private:
-	SINGLETON_PRIVATE_PART(resizeTexturePopup)
+	SINGLETON_PRIVATE_PART(ResizeTexturePopup)
 };

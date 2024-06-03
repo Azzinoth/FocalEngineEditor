@@ -1,6 +1,6 @@
-#include "debugTextureViewWindow.h"
+#include "DebugTextureViewWindow.h"
 
-debugTextureViewWindow::debugTextureViewWindow(std::function<FETexture* ()> Func)
+DebugTextureViewWindow::DebugTextureViewWindow(std::function<FETexture* ()> Func)
 {
 	TextureToView = Func;
 
@@ -17,13 +17,13 @@ debugTextureViewWindow::debugTextureViewWindow(std::function<FETexture* ()> Func
 	CloseButton->SetPosition(ImVec2(800.0 / 2.0 - 140.0 / 2.0, 800.0 - 35.0));
 }
 
-debugTextureViewWindow::~debugTextureViewWindow()
+DebugTextureViewWindow::~DebugTextureViewWindow()
 {
 	if (CloseButton != nullptr)
 		delete CloseButton;
 }
 
-void debugTextureViewWindow::Render()
+void DebugTextureViewWindow::Render()
 {
 	FEImGuiWindow::Render();
 

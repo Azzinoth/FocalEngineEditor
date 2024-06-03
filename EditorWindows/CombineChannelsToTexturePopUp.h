@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gyzmosSettingsWindow.h"
+#include "GyzmosSettingsWindow.h"
 
 class CombineChannelsToTexturePopUp : public FEImGuiWindow
 {

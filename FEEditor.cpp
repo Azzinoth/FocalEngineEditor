@@ -3,7 +3,6 @@
 FEEditor* FEEditor::Instance = nullptr;
 ImGuiWindow* FEEditor::SceneWindow = nullptr;
 FEEntity* FEEditor::EntityToModify = nullptr;
-FEObject* FEEditor::ItemInFocus = nullptr;
 
 bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
 {
@@ -20,53 +19,6 @@ bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
 	return false;
 }
 
-static void CreateNewInstancedEntityCallBack(const std::vector<FEObject*> SelectionsResult)
-{
-	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_PREFAB)
-	{
-		FEPrefab* SelectedPrefab = RESOURCE_MANAGER.GetPrefab(SelectionsResult[0]->GetObjectID());
-		if (SelectedPrefab == nullptr)
-			return;
-
-		FEEntityInstanced* NewEntity = SCENE.AddEntityInstanced(SelectedPrefab);
-		NewEntity->Transform.SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-		SELECTED.SetSelected(NewEntity);
-		
-		PROJECT_MANAGER.GetCurrent()->SetModified(true);
-	}
-}
-
-static void CreateNewEntityCallBack(const std::vector<FEObject*> SelectionsResult)
-{
-	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_PREFAB)
-	{
-		FEPrefab* SelectedPrefab = RESOURCE_MANAGER.GetPrefab(SelectionsResult[0]->GetObjectID());
-		if (SelectedPrefab == nullptr)
-			return;
-
-		FEEntity* NewEntity = SCENE.AddEntity(SelectedPrefab);
-		NewEntity->Transform.SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-		SELECTED.SetSelected(NewEntity);
-
-		PROJECT_MANAGER.GetCurrent()->SetModified(true);
-	}
-}
-
-void FEEditor::ChangePrefabOfEntityCallBack(const std::vector<FEObject*> SelectionsResult)
-{
-	if (EntityToModify == nullptr)
-		return;
-
-	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_PREFAB)
-	{
-		FEPrefab* SelectedPrefab = RESOURCE_MANAGER.GetPrefab(SelectionsResult[0]->GetObjectID());
-		if (SelectedPrefab == nullptr)
-			return;
-
-		EntityToModify->Prefab = SelectedPrefab;
-	}
-}
-
 FEEditor::FEEditor()
 {
 	ENGINE.SetRenderTargetMode(FE_CUSTOM_MODE);
@@ -75,9 +27,6 @@ FEEditor::FEEditor()
 
 	if (ENGINE.GetCamera()->GetCameraType() == 1)
 		ENGINE.RenderTargetCenterForCamera(reinterpret_cast<FEFreeCamera*>(ENGINE.GetCamera()));
-
-	strcpy_s(FilterForResourcesContentBrowser, "");
-	strcpy_s(FilterForSceneEntities, "");
 }
 
 FEEditor::~FEEditor() {}
@@ -134,8 +83,6 @@ void FEEditor::SetObjectNameInClipboard(const std::string NewValue)
 
 void FEEditor::MouseButtonCallback(const int Button, const int Action, int Mods)
 {
-	ItemInFocus = nullptr;
-
 	if (ImGui::GetCurrentContext()->HoveredWindow != nullptr && FEEditor::SceneWindow != nullptr)
 	{
 		EDITOR.bSceneWindowHovered = ImGui::GetCurrentContext()->HoveredWindow->Name == EDITOR.SceneWindow->Name;
@@ -205,7 +152,7 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 		{
 			if (PROJECT_MANAGER.GetCurrent() == nullptr)
 				ENGINE.Terminate();
-			projectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
+			ProjectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
 		}
 	}
 
@@ -564,421 +511,19 @@ void FEEditor::DisplayLightsProperties() const
 	}
 }
 
-void FEEditor::DrawCorrectSceneBrowserIcon(const FEObject* SceneObject) const
+void FEEditor::ChangePrefabOfEntityCallBack(const std::vector<FEObject*> SelectionsResult)
 {
-	ImGui::SetCursorPosX(20);
-
-	if (SceneObject->GetType() == FE_ENTITY || SceneObject->GetType() == FE_ENTITY_INSTANCED)
-	{
-		const FEEntity* entity = SCENE.GetEntity(SceneObject->GetObjectID());
-
-		if (EDITOR_INTERNAL_RESOURCES.IsInInternalEditorList(entity))
-			return;
-
-		if (entity->GetType() == FE_ENTITY_INSTANCED)
-		{
-				
-			ImGui::Image((void*)(intptr_t)InstancedEntitySceneBrowserIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-		}
-		else
-		{
-			ImGui::Image((void*)(intptr_t)EntitySceneBrowserIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-		}
-	}
-
-	if (SceneObject->GetType() == FE_DIRECTIONAL_LIGHT)
-	{
-		ImGui::Image((void*)(intptr_t)DirectionalLightSceneBrowserIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-		
-	}
-
-	if (SceneObject->GetType() == FE_SPOT_LIGHT)
-	{
-		ImGui::Image((void*)(intptr_t)SpotLightSceneBrowserIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-		
-	}
-
-	if (SceneObject->GetType() == FE_POINT_LIGHT)
-	{
-		ImGui::Image((void*)(intptr_t)PointLightSceneBrowserIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-		
-	}
-
-	if (SceneObject->GetType() == FE_TERRAIN)
-	{
-		ImGui::Image((void*)(intptr_t)TerrainSceneBrowserIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-	}
-
-	if (SceneObject->GetType() == FE_CAMERA)
-	{
-		ImGui::Image((void*)(intptr_t)CameraSceneBrowserIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-	}
-
-	ImGui::SameLine();
-	return;
-}
-
-void FEEditor::DisplaySceneBrowser()
-{
-	if (!bSceneBrowserVisible)
+	if (EntityToModify == nullptr)
 		return;
 
-	static int SceneObjectHoveredIndex = -1;
-
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-	ImGui::Begin("Scene Entities", nullptr, ImGuiWindowFlags_None);
-
-	ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::ImColor(0.6f, 0.24f, 0.24f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.7f, 0.21f, 0.21f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.8f, 0.16f, 0.16f));
-
-	if (ImGui::Button("Enter game mode", ImVec2(220, 0)))
+	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_PREFAB)
 	{
-		FEEditor::getInstance().SetGameMode(true);
+		FEPrefab* SelectedPrefab = RESOURCE_MANAGER.GetPrefab(SelectionsResult[0]->GetObjectID());
+		if (SelectedPrefab == nullptr)
+			return;
+
+		EntityToModify->Prefab = SelectedPrefab;
 	}
-
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-
-	const std::vector<std::string> EntityList = SCENE.GetEntityList();
-	std::vector<std::string> SceneObjectsList;
-	for (size_t i = 0; i < EntityList.size(); i++)
-	{
-		if (EDITOR_INTERNAL_RESOURCES.IsInInternalEditorList(SCENE.GetEntity(EntityList[i])))
-			continue;
-		SceneObjectsList.push_back(EntityList[i]);
-	}
-
-	const std::vector<std::string> LightList = SCENE.GetLightsList();
-	for (size_t i = 0; i < LightList.size(); i++)
-	{
-		SceneObjectsList.push_back(LightList[i]);
-	}
-
-	const std::vector<std::string> TerrainList = SCENE.GetTerrainList();
-	for (size_t i = 0; i < TerrainList.size(); i++)
-	{
-		SceneObjectsList.push_back(TerrainList[i]);
-	}
-
-	SceneObjectsList.push_back(ENGINE.GetCamera()->GetObjectID());
-
-	// Filtering.
-	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5.0f);
-	ImGui::Text("Filter: ");
-	ImGui::SameLine();
-
-	ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 5.0f);
-	ImGui::InputText("##selectFEObjectPopUpFilter", FilterForSceneEntities, IM_ARRAYSIZE(FilterForSceneEntities));
-
-	std::vector<std::string> FilteredSceneObjectsList;
-	if (strlen(FilterForSceneEntities) == 0)
-	{
-		FilteredSceneObjectsList = SceneObjectsList;
-	}
-	else
-	{
-		FilteredSceneObjectsList.clear();
-		for (size_t i = 0; i < SceneObjectsList.size(); i++)
-		{
-			if (OBJECT_MANAGER.GetFEObject(SceneObjectsList[i])->GetName().find(FilterForSceneEntities) != -1)
-			{
-				FilteredSceneObjectsList.push_back(SceneObjectsList[i]);
-			}
-		}
-	}
-
-	if (!bShouldOpenContextMenuInSceneEntities)
-		SceneObjectHoveredIndex = -1;
-	
-	for (size_t i = 0; i < FilteredSceneObjectsList.size(); i++)
-	{
-		DrawCorrectSceneBrowserIcon(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
-
-		ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-		if (SELECTED.GetSelected() != nullptr)
-		{
-			if (SELECTED.GetSelected()->GetObjectID() == FilteredSceneObjectsList[i])
-			{
-				node_flags |= ImGuiTreeNodeFlags_Selected;
-			}
-		}
-
-		SetCorrectSceneBrowserColor(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
-		ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i])->GetName().c_str(), i);
-		PopCorrectSceneBrowserColor(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
-
-		if (ImGui::IsItemClicked())
-		{
-			SELECTED.SetSelected(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
-			SELECTED.SetDirtyFlag(false);
-		}
-
-		if (ImGui::IsItemHovered())
-		{
-			SceneObjectHoveredIndex = int(i);
-		}
-	}
-
-	bool open_context_menu = false;
-	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(1))
-		open_context_menu = true;
-
-	if (open_context_menu)
-		ImGui::OpenPopup("##context_menu");
-
-	bShouldOpenContextMenuInSceneEntities = false;
-
-	if (ImGui::BeginPopup("##context_menu"))
-	{
-		bShouldOpenContextMenuInSceneEntities = true;
-
-		if (SceneObjectHoveredIndex == -1)
-		{
-			if (ImGui::BeginMenu("Add"))
-			{
-				if (ImGui::MenuItem("Entity"))
-				{
-					SelectFeObjectPopUp::getInstance().Show(FE_PREFAB, CreateNewEntityCallBack);
-					//selectGameModelPopUp::getInstance().show(nullptr, true);
-				}
-
-				if (ImGui::MenuItem("Instanced entity"))
-				{
-					SelectFeObjectPopUp::getInstance().Show(FE_PREFAB, CreateNewInstancedEntityCallBack);
-					//selectGameModelPopUp::getInstance().show(nullptr, true, true);
-				}
-
-				if (ImGui::MenuItem("Terrain"))
-				{
-					const std::vector<std::string> TerrainList = SCENE.GetTerrainList();
-					const size_t NextId = TerrainList.size();
-					size_t index = 0;
-					std::string NewName = "terrain_" + std::to_string(NextId + index);
-
-					while (true)
-					{
-						bool bCorrectName = true;
-						for (size_t i = 0; i < TerrainList.size(); i++)
-						{
-							if (TerrainList[i] == NewName)
-							{
-								bCorrectName = false;
-								break;
-							}
-						}
-
-						if (bCorrectName)
-							break;
-
-						index++;
-						NewName = "terrain_" + std::to_string(NextId + index);
-					}
-
-					FETerrain* NewTerrain = RESOURCE_MANAGER.CreateTerrain(true, NewName);
-					SCENE.AddTerrain(NewTerrain);
-					NewTerrain->HeightMap->SetDirtyFlag(true);
-					PROJECT_MANAGER.GetCurrent()->SetModified(true);
-				}
-
-				if (ImGui::BeginMenu("Light"))
-				{
-					if (ImGui::MenuItem("Directional"))
-					{
-						SCENE.AddLight(FE_DIRECTIONAL_LIGHT, "");
-					}
-
-					if (ImGui::MenuItem("Spot"))
-					{
-						SCENE.AddLight(FE_SPOT_LIGHT, "");
-					}
-
-					if (ImGui::MenuItem("Point"))
-					{
-						SCENE.AddLight(FE_POINT_LIGHT, "");
-					}
-
-					ImGui::EndMenu();
-				}
-
-				ImGui::EndMenu();
-			}
-		}
-		else
-		{
-			if (ImGui::MenuItem("Rename"))
-			{
-				if (SCENE.GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
-				{
-					renamePopUp::getInstance().Show(SCENE.GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]));
-				}
-				else if (SCENE.GetTerrain(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
-				{
-					renamePopUp::getInstance().Show(SCENE.GetTerrain(FilteredSceneObjectsList[SceneObjectHoveredIndex]));
-				}
-				else if (SCENE.GetLight(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
-				{
-					renamePopUp::getInstance().Show(SCENE.GetLight(FilteredSceneObjectsList[SceneObjectHoveredIndex]));
-					//renameLightWindow.show(SCENE.getLight(filteredSceneObjectsList[sceneObjectHoveredIndex]));
-				}
-			}
-
-			if (ImGui::MenuItem("Delete"))
-			{
-				if (SCENE.GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
-				{
-					const FEEntity* Entity = SCENE.GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
-					if (SELECTED.GetEntity() == Entity)
-						SELECTED.Clear();
-
-					SCENE.DeleteEntity(Entity->GetObjectID());
-				}
-				else if (SCENE.GetTerrain(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
-				{
-					const FETerrain* Terrain = SCENE.GetTerrain(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
-					if (SELECTED.GetTerrain() == Terrain)
-						SELECTED.Clear();
-
-					SCENE.DeleteTerrain(Terrain->GetObjectID());
-				}
-				else if (SCENE.GetLight(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
-				{
-					const FELight* Light = SCENE.GetLight(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
-					if (SELECTED.GetLight() == Light)
-						SELECTED.Clear();
-
-					SCENE.DeleteLight(Light->GetObjectID());
-				}
-			}
-
-			if (ImGui::MenuItem("*DEBUG* Test model camera on this"))
-			{
-				FEModelViewCamera* NewCamera = new FEModelViewCamera("New ModelViewCamera");
-				NewCamera->SetAspectRatio(static_cast<float>(ENGINE.GetRenderTargetWidth()) / static_cast<float>(ENGINE.GetRenderTargetHeight()));
-
-				glm::vec3 Position = glm::vec3(0.0f);
-				if (SCENE.GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
-				{
-					const FEEntity* Entity = SCENE.GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
-					Position = Entity->Transform.GetPosition();
-				}
-				else if (SCENE.GetTerrain(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
-				{
-					const FETerrain* Terrain = SCENE.GetTerrain(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
-					Position = Terrain->Transform.GetPosition();
-				}
-				else if (SCENE.GetLight(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
-				{
-					const FELight* Light = SCENE.GetLight(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
-					Position = Light->Transform.GetPosition();
-				}
-
-				NewCamera->SetTrackingObjectPosition(Position);
-				NewCamera->SetOnUpdate(OnCameraUpdate);
-				ENGINE.SetCamera(NewCamera);
-			}
-		}
-
-		ImGui::EndPopup();
-	}
-
-	static bool bDisplayGrid = true;
-	ImGui::Checkbox("Display grid", &bDisplayGrid);
-
-	static glm::vec3 color = glm::vec3(0.2f, 0.3f, 0.4f);
-
-	const float BasicW = 0.1f;
-	float width = BasicW * 4.0f;
-	if (bDisplayGrid)
-	{
-		const int GridSize = 200;
-		for (int i = -GridSize / 2; i < GridSize / 2; i++)
-		{
-			color = glm::vec3(0.4f, 0.65f, 0.73f);
-			width = BasicW * 4.0f;
-			if (i % 2 != 0 && i != 0)
-			{
-				color = color / 4.0f;
-				width = width / 4.0f;
-			}
-			else if (i == 0)
-			{
-				color = glm::vec3(0.9f, 0.9f, 0.9f);
-				width = BasicW * 4.0f;
-			}
-
-			RENDERER.DrawLine(glm::vec3(i, 0.0f, -GridSize / 2), glm::vec3(i, 0.0f, GridSize / 2), color, width);
-			RENDERER.DrawLine(glm::vec3(-GridSize / 2, 0.0f, i), glm::vec3(GridSize / 2, 0.0f, i), color, width);
-		}
-	}
-
-	static float FavgTime = 0.0f;
-	static std::vector<float> AvgTime;
-	static int counter = 0;
-
-	ImGui::Text((std::string("Time : ") + std::to_string(RENDERER.LastTestTime)).c_str());
-
-	if (AvgTime.size() < 100)
-	{
-		AvgTime.push_back(RENDERER.LastTestTime);
-	}
-	else if (AvgTime.size() >= 100)
-	{
-		AvgTime[counter++ % 100] = RENDERER.LastTestTime;
-	}
-
-	for (size_t i = 0; i < AvgTime.size(); i++)
-	{
-		FavgTime += AvgTime[i];
-	}
-	FavgTime /= AvgTime.size();
-
-
-	if (counter > 1000000)
-		counter = 0;
-
-	ImGui::Text((std::string("avg Time : ") + std::to_string(FavgTime)).c_str());
-
-	bool bFreezeCulling = RENDERER.bFreezeCulling;
-	ImGui::Checkbox("bFreezeCulling", &bFreezeCulling);
-	RENDERER.bFreezeCulling = bFreezeCulling;
-
-	bool bFreezeOcclusionCulling = !RENDERER.IsOcclusionCullingEnabled();
-	ImGui::Checkbox("freezeOcclusionCulling", &bFreezeOcclusionCulling);
-	RENDERER.SetOcclusionCullingEnabled(!bFreezeOcclusionCulling);
-
-	static bool bDisplaySelectedObjAABB = false;
-	ImGui::Checkbox("Display AABB of selected object", &bDisplaySelectedObjAABB);
-
-	// draw AABB
-	if (SELECTED.GetSelected() != nullptr &&
-		(SELECTED.GetSelected()->GetType() == FE_ENTITY || SELECTED.GetSelected()->GetType() == FE_ENTITY_INSTANCED || SELECTED.GetSelected()->GetType() == FE_TERRAIN) &&
-		bDisplaySelectedObjAABB)
-	{
-		const FEAABB SelectedAabb = SELECTED.GetEntity() != nullptr ? SELECTED.GetEntity()->GetAABB() : SELECTED.GetTerrain()->GetAABB();
-		RENDERER.DrawAABB(SelectedAabb);
-
-		if (SELECTED.GetSelected()->GetType() == FE_ENTITY_INSTANCED)
-		{
-			static bool bDisplaySubObjAABB = false;
-			ImGui::Checkbox("Display AABB of instanced entity subobjects", &bDisplaySubObjAABB);
-
-			if (bDisplaySubObjAABB)
-			{
-				const FEEntityInstanced* EntityInstanced = reinterpret_cast<FEEntityInstanced*> (SELECTED.GetSelected());
-				const int MaxIterations = EntityInstanced->InstancedAABB.size() * 8 >= FE_MAX_LINES ? FE_MAX_LINES : int(EntityInstanced->InstancedAABB.size());
-
-				for (size_t j = 0; j < MaxIterations; j++)
-				{
-					RENDERER.DrawAABB(EntityInstanced->InstancedAABB[j]);
-				}
-			}
-		}
-	}
-
-	ImGui::PopStyleVar();
-	ImGui::End();
 }
 
 void FEEditor::InitializeResources()
@@ -1038,47 +583,9 @@ void FEEditor::InitializeResources()
 	ArrowToGroundIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/arrowToGroundIcon.png", "arrowToGroundIcon");
 	RESOURCE_MANAGER.MakeTextureStandard(ArrowToGroundIcon);
 
-	EntitySceneBrowserIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/entitySceneBrowserIcon.png", "entitySceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(EntitySceneBrowserIcon);
-	InstancedEntitySceneBrowserIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/instancedEntitySceneBrowserIcon.png", "instancedEntitySceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(InstancedEntitySceneBrowserIcon);
+	SCENE_GRAPH_WINDOW.InitializeResources();
 
-	DirectionalLightSceneBrowserIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/directionalLightSceneBrowserIcon.png", "directionalLightSceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(DirectionalLightSceneBrowserIcon);
-	SpotLightSceneBrowserIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/spotLightSceneBrowserIcon.png", "spotLightSceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(SpotLightSceneBrowserIcon);
-	PointLightSceneBrowserIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/pointLightSceneBrowserIcon.png", "pointLightSceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(PointLightSceneBrowserIcon);
-
-	TerrainSceneBrowserIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/terrainSceneBrowserIcon.png", "terrainSceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(TerrainSceneBrowserIcon);
-
-	CameraSceneBrowserIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/cameraSceneBrowserIcon.png", "cameraSceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(CameraSceneBrowserIcon);
-
-	FolderIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/folderIcon.png", "folderIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(FolderIcon);
-
-	ShaderIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/shaderIcon.png", "shaderIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(ShaderIcon);
-
-	VFSBackIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/VFSBackIcon.png", "VFSBackIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(VFSBackIcon);
-
-	TextureContentBrowserIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/textureContentBrowserIcon.png", "textureContentBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(TextureContentBrowserIcon);
-
-	MeshContentBrowserIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/meshContentBrowserIcon.png", "meshContentBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(MeshContentBrowserIcon);
-
-	MaterialContentBrowserIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/materialContentBrowserIcon.png", "materialContentBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(MaterialContentBrowserIcon);
-
-	GameModelContentBrowserIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/gameModelContentBrowserIcon.png", "gameModelContentBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(GameModelContentBrowserIcon);
-
-	PrefabContentBrowserIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/prefabContentBrowserIcon.png", "prefabContentBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(PrefabContentBrowserIcon);
+	CONTENT_BROWSER_WINDOW.InitializeResources();
 
 	// ************** Terrain Settings **************
 	ExportHeightMapButton = new ImGuiButton("Export HeightMap");
@@ -1109,26 +616,6 @@ void FEEditor::InitializeResources()
 
 	EntityChangePrefabTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_PREFAB, EntityChangePrefabTargetCallBack, nullptr, "Drop to assign prefab");
 	// ************** Terrain Settings END **************
-
-	AllContentBrowserIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/allContentBrowserIcon.png", "allIcon");
-	FilterAllTypesButton = new ImGuiImageButton(AllContentBrowserIcon);
-	RESOURCE_MANAGER.MakeTextureStandard(AllContentBrowserIcon);
-	FilterAllTypesButton->SetSize(ImVec2(32, 32));
-
-	FilterTextureTypeButton = new ImGuiImageButton(TextureContentBrowserIcon);
-	FilterTextureTypeButton->SetSize(ImVec2(32, 32));
-
-	FilterMeshTypeButton = new ImGuiImageButton(MeshContentBrowserIcon);
-	FilterMeshTypeButton->SetSize(ImVec2(32, 32));
-
-	FilterMaterialTypeButton = new ImGuiImageButton(MaterialContentBrowserIcon);
-	FilterMaterialTypeButton->SetSize(ImVec2(32, 32));
-
-	FilterGameModelTypeButton = new ImGuiImageButton(GameModelContentBrowserIcon);
-	FilterGameModelTypeButton->SetSize(ImVec2(32, 32));
-
-	FilterPrefabTypeButton = new ImGuiImageButton(PrefabContentBrowserIcon);
-	FilterPrefabTypeButton->SetSize(ImVec2(32, 32));
 	
 	ENGINE.GetCamera()->SetOnUpdate(OnCameraUpdate);
 	ENGINE.AddWindowCloseCallback(CloseWindowCallBack);
@@ -1200,13 +687,13 @@ void FEEditor::Render()
 				{
 					if (PROJECT_MANAGER.GetCurrent()->IsModified())
 					{
-						projectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), false);
+						ProjectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), false);
 					}
 					else
 					{
 						PROJECT_MANAGER.CloseCurrentProject();
-						strcpy_s(FilterForResourcesContentBrowser, "");
-						strcpy_s(FilterForSceneEntities, "");
+						CONTENT_BROWSER_WINDOW.Clear();
+						SCENE_GRAPH_WINDOW.Clear();
 
 						ImGui::PopStyleVar();
 						ImGui::EndMenu();
@@ -1221,7 +708,7 @@ void FEEditor::Render()
 					if (PROJECT_MANAGER.GetCurrent()->IsModified())
 					{
 						APPLICATION.GetMainWindow()->CancelClose();
-						projectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
+						ProjectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
 					}
 					else
 					{
@@ -1236,9 +723,9 @@ void FEEditor::Render()
 
 			if (ImGui::BeginMenu("Window"))
 			{
-				if (ImGui::MenuItem("Scene Entities", nullptr, bSceneBrowserVisible))
+				if (ImGui::MenuItem("Scene Entities", nullptr, SCENE_GRAPH_WINDOW.bVisible))
 				{
-					bSceneBrowserVisible = !bSceneBrowserVisible;
+					SCENE_GRAPH_WINDOW.bVisible = !SCENE_GRAPH_WINDOW.bVisible;
 				}
 
 				if (ImGui::MenuItem("Inspector", nullptr, bInspectorVisible))
@@ -1246,9 +733,9 @@ void FEEditor::Render()
 					bInspectorVisible = !bInspectorVisible;
 				}
 
-				if (ImGui::MenuItem("Content Browser", nullptr, bContentBrowserVisible))
+				if (ImGui::MenuItem("Content Browser", nullptr, CONTENT_BROWSER_WINDOW.bVisible))
 				{
-					bContentBrowserVisible = !bContentBrowserVisible;
+					CONTENT_BROWSER_WINDOW.bVisible = !CONTENT_BROWSER_WINDOW.bVisible;
 				}
 
 				if (ImGui::MenuItem("Effects", nullptr, bEffectsWindowVisible))
@@ -1283,7 +770,7 @@ void FEEditor::Render()
 								{
 									if (CurrentWindow == nullptr)
 									{
-										CurrentWindow = new debugTextureViewWindow(iterator->second);
+										CurrentWindow = new DebugTextureViewWindow(iterator->second);
 										CurrentWindow->SetCaption(iterator->first);
 										CurrentWindow->Show();
 									}
@@ -1311,7 +798,6 @@ void FEEditor::Render()
 			ImGui::EndMainMenuBar();
 		}
 		ImGui::PopStyleVar();
-		//ImGui::PopStyleVar();
 
 		ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollbar);
 		
@@ -1346,8 +832,8 @@ void FEEditor::Render()
 
 		ImGui::End();
 
-		DisplaySceneBrowser();
-		DisplayContentBrowser();
+		SCENE_GRAPH_WINDOW.Render();
+		CONTENT_BROWSER_WINDOW.Render();
 		DisplayInspector();
 		DisplayEffectsWindow();
 		DisplayLogWindow();
@@ -1383,7 +869,7 @@ void FEEditor::CloseWindowCallBack()
 	if (PROJECT_MANAGER.GetCurrent()->IsModified())
 	{
 		APPLICATION.GetMainWindow()->CancelClose();
-		projectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
+		ProjectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
 	}
 	else
 	{
@@ -1484,36 +970,6 @@ bool FEEditor::TerrainChangeMaterialTargetCallBack(FEObject* Object, void** Laye
 	return true;
 }
 
-void FEEditor::ShowInFolderItem(FEObject* Object)
-{
-	VIRTUAL_FILE_SYSTEM.SetCurrentPath(VIRTUAL_FILE_SYSTEM.LocateFile(Object));
-	ImGui::SetWindowFocus("Content Browser");
-	strcpy_s(FilterForResourcesContentBrowser, "");
-	ItemInFocus = Object;
-
-	const auto Content = VIRTUAL_FILE_SYSTEM.GetDirectoryContent(VIRTUAL_FILE_SYSTEM.GetCurrentPath());
-	size_t TotalItemCount = Content.size();
-
-	size_t ItemIndex = 0;
-	for (size_t i = 0; i < Content.size(); i++)
-	{
-		if (Content[i]->GetObjectID() == Object->GetObjectID())
-		{
-			ItemIndex = i;
-			break;
-		}
-	}
-
-	ImGuiWindow* ContentBrowserWindow = ImGui::FindWindowByName("Content Browser");
-	const int IconsPerWindowWidth = (int)(ContentBrowserWindow->Rect().GetWidth() / (ContentBrowserItemIconSize + 8 + 32));
-	const size_t ItemRow = ItemIndex / IconsPerWindowWidth;
-	
-	if (ContentBrowserWindow != nullptr)
-	{
-		ContentBrowserWindow->Scroll.y = float(ItemRow * (ContentBrowserItemIconSize + 8 + 8 + 32));
-	}
-}
-
 void FEEditor::DisplayInspector()
 {
 	if (!bInspectorVisible)
@@ -1531,48 +987,48 @@ void FEEditor::DisplayInspector()
 
 	if (SELECTED.GetEntity() != nullptr)
 	{
-		FEEntity* entity = SELECTED.GetEntity();
+		FEEntity* Entity = SELECTED.GetEntity();
 
-		if (entity->GetType() == FE_ENTITY)
+		if (Entity->GetType() == FE_ENTITY)
 		{
-			ShowTransformConfiguration(entity, &entity->Transform);
+			ShowTransformConfiguration(Entity, &Entity->Transform);
 
 			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.5f, 0.5f, 0.5f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.95f, 0.90f, 0.0f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.1f, 1.0f, 0.1f, 1.0f));
 
-			bool bActive = entity->IsWireframeMode();
+			bool bActive = Entity->IsWireframeMode();
 			ImGui::Checkbox("WireframeMode", &bActive);
-			entity->SetWireframeMode(bActive);
+			Entity->SetWireframeMode(bActive);
 
 			ImGui::Separator();
 			ImGui::Text("Prefab : ");
-			FETexture* PreviewTexture = PREVIEW_MANAGER.GetPrefabPreview(entity->Prefab->GetObjectID());
+			FETexture* PreviewTexture = PREVIEW_MANAGER.GetPrefabPreview(Entity->Prefab->GetObjectID());
 			
 			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
-				EntityToModify = entity;
-				SelectFeObjectPopUp::getInstance().Show(FE_PREFAB, ChangePrefabOfEntityCallBack, entity->Prefab);
+				EntityToModify = Entity;
+				SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, ChangePrefabOfEntityCallBack, Entity->Prefab);
 				
 			}
 			EntityChangePrefabTarget->StickToItem();
 
-			bool open_context_menu = false;
+			bool bOpenContextMenu = false;
 			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
-				open_context_menu = true;
+				bOpenContextMenu = true;
 
-			if (open_context_menu)
+			if (bOpenContextMenu)
 				ImGui::OpenPopup("##Inspector_context_menu");
 
-			bShouldOpenContextMenuInContentBrowser = false;
+			CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = false;
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 			if (ImGui::BeginPopup("##Inspector_context_menu"))
 			{
-				bShouldOpenContextMenuInContentBrowser = true;
+				CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = true;
 
 				if (ImGui::MenuItem("Show in folder"))
 				{
-					ShowInFolderItem(entity->Prefab);
+					CONTENT_BROWSER_WINDOW.OpenItemParentFolder(Entity->Prefab);
 				}
 
 				ImGui::EndPopup();
@@ -1585,9 +1041,9 @@ void FEEditor::DisplayInspector()
 			ImGui::PopStyleColor();
 			ImGui::PopStyleColor();
 		}
-		else if (entity->GetType() == FE_ENTITY_INSTANCED)
+		else if (Entity->GetType() == FE_ENTITY_INSTANCED)
 		{
-			FEEntityInstanced* InstancedEntity = reinterpret_cast<FEEntityInstanced*>(entity);
+			FEEntityInstanced* InstancedEntity = reinterpret_cast<FEEntityInstanced*>(Entity);
 
 			if (SELECTED.InstancedSubObjectIndexSelected != -1)
 			{
@@ -1617,7 +1073,7 @@ void FEEditor::DisplayInspector()
 			}
 			else
 			{
-				ShowTransformConfiguration(entity, &entity->Transform);
+				ShowTransformConfiguration(Entity, &Entity->Transform);
 
 				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.5f, 0.5f, 0.5f));
 				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.95f, 0.90f, 0.0f));
@@ -1626,30 +1082,30 @@ void FEEditor::DisplayInspector()
 				ImGui::Separator();
 
 				ImGui::Text("Prefab : ");
-				FETexture* PreviewTexture = PREVIEW_MANAGER.GetPrefabPreview(entity->Prefab->GetObjectID());
+				FETexture* PreviewTexture = PREVIEW_MANAGER.GetPrefabPreview(Entity->Prefab->GetObjectID());
 				if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 				{
-					EntityToModify = entity;
-					SelectFeObjectPopUp::getInstance().Show(FE_PREFAB, ChangePrefabOfEntityCallBack, entity->Prefab);
+					EntityToModify = Entity;
+					SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, ChangePrefabOfEntityCallBack, Entity->Prefab);
 				}
 				EntityChangePrefabTarget->StickToItem();
 
-				bool open_context_menu = false;
+				bool bOpenContextMenu = false;
 				if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
-					open_context_menu = true;
+					bOpenContextMenu = true;
 
-				if (open_context_menu)
+				if (bOpenContextMenu)
 					ImGui::OpenPopup("##Inspector_context_menu");
 
-				bShouldOpenContextMenuInContentBrowser = false;
+				CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = false;
 				ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 				if (ImGui::BeginPopup("##Inspector_context_menu"))
 				{
-					bShouldOpenContextMenuInContentBrowser = true;
+					CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = true;
 
 					if (ImGui::MenuItem("Show in folder"))
 					{
-						ShowInFolderItem(entity->Prefab);
+						CONTENT_BROWSER_WINDOW.OpenItemParentFolder(Entity->Prefab);
 					}
 
 					ImGui::EndPopup();
@@ -2972,7 +2428,7 @@ void FEEditor::DisplayTerrainSettings(FETerrain* Terrain)
 					else
 					{
 						TerrainToWorkWith = Terrain;
-						SelectFeObjectPopUp::getInstance().Show(FE_MATERIAL, CreateNewTerrainLayerWithMaterialCallBack, nullptr, FinalMaterialList);
+						SelectFEObjectPopUp::getInstance().Show(FE_MATERIAL, CreateNewTerrainLayerWithMaterialCallBack, nullptr, FinalMaterialList);
 					}
 				}
 
@@ -3034,7 +2490,7 @@ void FEEditor::DisplayTerrainSettings(FETerrain* Terrain)
 							{
 								TerrainToWorkWith = Terrain;
 								TempLayerIndex = HoveredTerrainLayerItem;
-								SelectFeObjectPopUp::getInstance().Show(FE_MATERIAL, ChangeMaterialInTerrainLayerCallBack, Terrain->GetLayerInSlot(HoveredTerrainLayerItem)->GetMaterial(), FinalMaterialList);
+								SelectFEObjectPopUp::getInstance().Show(FE_MATERIAL, ChangeMaterialInTerrainLayerCallBack, Terrain->GetLayerInSlot(HoveredTerrainLayerItem)->GetMaterial(), FinalMaterialList);
 							}
 						}
 
@@ -3077,7 +2533,7 @@ void FEEditor::DisplayTerrainSettings(FETerrain* Terrain)
 
 void FEEditor::RenderAllSubWindows()
 {
-	SelectFeObjectPopUp::getInstance().Render();
+	SelectFEObjectPopUp::getInstance().Render();
 
 	DeleteTexturePopup::getInstance().Render();
 	DeleteMeshPopup::getInstance().Render();
@@ -3086,56 +2542,16 @@ void FEEditor::RenderAllSubWindows()
 	DeletePrefabPopup::getInstance().Render();
 	DeleteDirectoryPopup::getInstance().Render();
 
-	resizeTexturePopup::getInstance().Render();
+	ResizeTexturePopup::getInstance().Render();
 	JustTextWindowObj.Render();
 
-	renamePopUp::getInstance().Render();
-	renameFailedPopUp::getInstance().Render();
+	RenamePopUp::getInstance().Render();
+	RenameFailedPopUp::getInstance().Render();
 	MessagePopUp::getInstance().Render();
 	
-	projectWasModifiedPopUp::getInstance().Render();
+	ProjectWasModifiedPopUp::getInstance().Render();
 
 	FE_IMGUI_WINDOW_MANAGER.RenderAllWindows();
-}
-
-void FEEditor::SetCorrectSceneBrowserColor(FEObject* SceneObject) const
-{
-	if (SceneObject->GetType() == FE_DIRECTIONAL_LIGHT ||
-		SceneObject->GetType() == FE_SPOT_LIGHT ||
-		SceneObject->GetType() == FE_POINT_LIGHT)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, LightColorSceneBrowser);
-	}
-	else if (SceneObject->GetType() == FE_CAMERA)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, CameraColorSceneBrowser);
-	}
-	else if (SceneObject->GetType() == FE_TERRAIN)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, TerrainColorSceneBrowser);
-	}
-	else if (SceneObject->GetType() == FE_ENTITY)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, EntityColorSceneBrowser);
-	}
-	else if (SceneObject->GetType() == FE_ENTITY_INSTANCED)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, InstancedEntityColorSceneBrowser);
-	}
-}
-
-void FEEditor::PopCorrectSceneBrowserColor(FEObject* SceneObject)
-{
-	if (SceneObject->GetType() == FE_DIRECTIONAL_LIGHT ||
-		SceneObject->GetType() == FE_SPOT_LIGHT ||
-		SceneObject->GetType() == FE_POINT_LIGHT ||
-		SceneObject->GetType() == FE_CAMERA ||
-		SceneObject->GetType() == FE_TERRAIN ||
-		SceneObject->GetType() == FE_ENTITY ||
-		SceneObject->GetType() == FE_ENTITY_INSTANCED)
-	{
-		ImGui::PopStyleColor();
-	}
 }
 
 void FEEditor::SetImguiStyle()

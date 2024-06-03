@@ -1,11 +1,11 @@
 #pragma once
 
-#include "editPopups.h"
+#include "EditPopups.h"
 #pragma warning (disable: 4724)
 
-class shaderDebugWindow : public FEImGuiWindow
+class ShaderDebugWindow : public FEImGuiWindow
 {
-	SINGLETON_PRIVATE_PART(shaderDebugWindow)
+	SINGLETON_PRIVATE_PART(ShaderDebugWindow)
 
 	TextEditor Editor;
 	ImGuiButton* CloseButton = nullptr;
@@ -17,15 +17,15 @@ class shaderDebugWindow : public FEImGuiWindow
 	std::vector<std::vector<float>>* Data = nullptr;
 	std::vector<std::vector<float>> DataDump;
 public:
-	SINGLETON_PUBLIC_PART(shaderDebugWindow)
+	SINGLETON_PUBLIC_PART(ShaderDebugWindow)
 
 	void Show(FEShader* Shader, std::string Caption);
 	void Render() override;
 };
 
-class shaderEditorWindow : public FEImGuiWindow
+class ShaderEditorWindow : public FEImGuiWindow
 {
-	SINGLETON_PRIVATE_PART(shaderEditorWindow)
+	SINGLETON_PRIVATE_PART(ShaderEditorWindow)
 
 	FEShader* ShaderToEdit = nullptr;
 	FEShader* DummyShader = nullptr;
@@ -50,7 +50,7 @@ class shaderEditorWindow : public FEImGuiWindow
 
 	void ReplaceShader(FEShader* OldShader, FEShader* NewShader);
 public:
-	SINGLETON_PUBLIC_PART(shaderEditorWindow)
+	SINGLETON_PUBLIC_PART(ShaderEditorWindow)
 
 	void Show(FEShader* Shader);
 

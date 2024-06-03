@@ -1,4 +1,4 @@
-#include "prefabEditorWindow.h"
+#include "PrefabEditorWindow.h"
 
 PrefabEditorWindow* PrefabEditorWindow::Instance = nullptr;
 FEPrefab* PrefabEditorWindow::ObjToWorkWith = nullptr;
@@ -207,7 +207,7 @@ void PrefabEditorWindow::Render()
 
 				if (ImGui::MenuItem("Add game model..."))
 				{
-					SelectFeObjectPopUp::getInstance().Show(FE_GAMEMODEL, AddNewGameModelCallBack);
+					SelectFEObjectPopUp::getInstance().Show(FE_GAMEMODEL, AddNewGameModelCallBack);
 				}
 
 				if (HoveredGameModelItem != -1)

@@ -1,19 +1,19 @@
 #pragma once
 
-#include "shaderEditorWindow.h"
+#include "ShaderEditorWindow.h"
 
-class gyzmosSettingsWindow : public FEImGuiWindow
+class GyzmosSettingsWindow : public FEImGuiWindow
 {
 	ImGuiImageButton* TransformationGizmoButton = nullptr;
 	ImGuiImageButton* ScaleGizmoButton = nullptr;
 	ImGuiImageButton* RotateGizmoButton = nullptr;
 public:
-	gyzmosSettingsWindow()
+	GyzmosSettingsWindow()
 	{
 		Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar;
 	}
 
-	~gyzmosSettingsWindow() override
+	~GyzmosSettingsWindow() override
 	{
 		delete TransformationGizmoButton;
 		delete ScaleGizmoButton;
@@ -103,4 +103,4 @@ public:
 		FEImGuiWindow::OnRenderEnd();
 	}
 };
-static gyzmosSettingsWindow GyzmosSettingsWindowObject;
+static GyzmosSettingsWindow GyzmosSettingsWindowObject;

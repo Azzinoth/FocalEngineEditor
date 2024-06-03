@@ -1,4 +1,4 @@
-#include "deletePopups.h"
+#include "DeletePopups.h"
 
 DeleteTexturePopup* DeleteTexturePopup::Instance = nullptr;
 

@@ -1,8 +1,8 @@
-#include "shaderEditorWindow.h"
+#include "ShaderEditorWindow.h"
 
-shaderDebugWindow* shaderDebugWindow::Instance = nullptr;
+ShaderDebugWindow* ShaderDebugWindow::Instance = nullptr;
 
-shaderDebugWindow::shaderDebugWindow()
+ShaderDebugWindow::ShaderDebugWindow()
 {
 	Flags = ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar;
 	Editor.SetShowWhitespaces(false);
@@ -14,7 +14,7 @@ shaderDebugWindow::shaderDebugWindow()
 	Editor.SetColorizerEnable(false);
 }
 
-shaderDebugWindow::~shaderDebugWindow()
+ShaderDebugWindow::~ShaderDebugWindow()
 {
 	delete CloseButton;
 	delete UpdateButton;
@@ -22,7 +22,7 @@ shaderDebugWindow::~shaderDebugWindow()
 	ShaderToWorkWith = nullptr;
 }
 
-void shaderDebugWindow::Show(FEShader* Shader, std::string Caption)
+void ShaderDebugWindow::Show(FEShader* Shader, std::string Caption)
 {
 	bUpdateNeeded = true;
 	ShaderToWorkWith = Shader;
@@ -39,7 +39,7 @@ void shaderDebugWindow::Show(FEShader* Shader, std::string Caption)
 	FEImGuiWindow::Show();
 }
 
-void shaderDebugWindow::Render()
+void ShaderDebugWindow::Render()
 {
 	FEImGuiWindow::Render();
 
@@ -135,9 +135,9 @@ void shaderDebugWindow::Render()
 	FEImGuiWindow::OnRenderEnd();
 }
 
-shaderEditorWindow* shaderEditorWindow::Instance = nullptr;
+ShaderEditorWindow* ShaderEditorWindow::Instance = nullptr;
 
-shaderEditorWindow::shaderEditorWindow()
+ShaderEditorWindow::ShaderEditorWindow()
 {
 	Flags = ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar;
 	CurrentEditor = &VertexShaderEditor;
@@ -163,12 +163,12 @@ shaderEditorWindow::shaderEditorWindow()
 	CloseButton->SetHoveredColor((ImVec4)ImColor(0.8f, 0.16f, 0.16f));
 }
 
-shaderEditorWindow::~shaderEditorWindow()
+ShaderEditorWindow::~ShaderEditorWindow()
 {
 	delete CompileButton;
 }
 
-void shaderEditorWindow::Show(FEShader* Shader)
+void ShaderEditorWindow::Show(FEShader* Shader)
 {
 	ShaderToEdit = Shader;
 	std::string TempCaption = "Edit shader: ";
@@ -257,7 +257,7 @@ void shaderEditorWindow::Show(FEShader* Shader)
 	}
 }
 
-void shaderEditorWindow::Render()
+void ShaderEditorWindow::Render()
 {
 	FEImGuiWindow::Render();
 
@@ -429,7 +429,7 @@ void shaderEditorWindow::Render()
 
 			if (ShaderToEdit->IsDebugRequest())
 			{
-				shaderDebugWindow::getInstance().Show(ShaderToEdit, "Shader debug info");
+				ShaderDebugWindow::getInstance().Show(ShaderToEdit, "Shader debug info");
 			}
 		}
 	}
@@ -444,7 +444,7 @@ void shaderEditorWindow::Render()
 	FEImGuiWindow::OnRenderEnd();
 }
 
-void shaderEditorWindow::ReplaceShader(FEShader* OldShader, FEShader* NewShader)
+void ShaderEditorWindow::ReplaceShader(FEShader* OldShader, FEShader* NewShader)
 {
 	std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialList();
 	for (size_t i = 0; i < MaterialList.size(); i++)
