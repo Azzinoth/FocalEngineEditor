@@ -773,7 +773,7 @@ void EditMaterialPopup::Show(FEMaterial* Material)
 #ifdef USE_NODES
 		MaterialNodeArea = NODE_SYSTEM.CreateNodeArea();
 		MaterialNodeArea->SetMainContextMenuFunc(NodeSystemMainContextMenu);
-		MaterialNodeArea->SetNodeEventCallback(TextureNodeCallback);
+		MaterialNodeArea->AddNodeEventCallback(TextureNodeCallback);
 
 		FEEditorMaterialNode* NewNode = new FEEditorMaterialNode(Material);
 
