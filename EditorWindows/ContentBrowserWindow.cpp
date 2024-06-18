@@ -132,7 +132,7 @@ void FEEditorContentBrowserWindow::Render()
 				FILE_SYSTEM.ShowFileOpenDialog(FilePath, ALL_IMPORT_LOAD_FILTER, 3);
 				if (!FilePath.empty())
 				{
-					const std::vector<FEObject*> LoadedObjects = RESOURCE_MANAGER.ImportAsset(FilePath.c_str());
+					const std::vector<FEObject*> LoadedObjects = SCENE.ImportAsset(FilePath.c_str());
 					for (size_t i = 0; i < LoadedObjects.size(); i++)
 					{
 						if (LoadedObjects[i] != nullptr)

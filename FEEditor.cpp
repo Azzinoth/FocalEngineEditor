@@ -900,14 +900,14 @@ void FEEditor::DropCallback(const int Count, const char** Paths)
 
 		if (PROJECT_MANAGER.GetCurrent() != nullptr)
 		{
-			std::vector<FEObject*> LoadedObjects = RESOURCE_MANAGER.ImportAsset(Paths[i]);
+			std::vector<FEObject*> LoadedObjects = SCENE.ImportAsset(Paths[i]);
 			for (size_t j = 0; j < LoadedObjects.size(); j++)
 			{
 				if (LoadedObjects[j] != nullptr)
 				{
 					if (LoadedObjects[j]->GetType() == FE_ENTITY)
 					{
-						SCENE.AddEntity(reinterpret_cast<FEEntity*>(LoadedObjects[j]));
+						//SCENE.AddEntity(reinterpret_cast<FEEntity*>(LoadedObjects[j]));
 					}
 					else
 					{
