@@ -15,8 +15,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	double AverageCpuFrameDuration = 0.0;
 	double AverageGpuFrameDuration = 0.0;
 
+	bool bPutThisFrameToTimeline = false;
+
 	while (ENGINE.IsNotTerminated())
 	{
+		PROFILING.StartProfiling();
+
 		ENGINE.BeginFrame();
 		ENGINE.Render();
 
@@ -29,6 +33,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		ImGui::Image((void*)(intptr_t)SELECTED.PixelAccurateSelectionFB->GetColorAttachment()->GetTextureID(), ImVec2(256 * 4, 256 * 4), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 #endif
+
+		if (ImGui::Button("Put This Frame To Timeline"))
+		{
+			bPutThisFrameToTimeline = true;
+		}
 
 		//ImGui::ShowDemoWindow();
 		EDITOR.Render();
@@ -74,6 +83,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		caption += " ms";
 
 		ENGINE.SetWindowCaption(caption.c_str());
+
+		PROFILING.StopProfiling();
+		if (bPutThisFrameToTimeline)
+		{
+			PROFILING.SaveTimelineToJSON("timeline.json");
+			bPutThisFrameToTimeline = false;
+		}
 	}
 	
 	return 0;
