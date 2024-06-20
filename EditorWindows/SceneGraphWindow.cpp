@@ -198,8 +198,54 @@ DragAndDropTarget* FEEditorSceneGraphWindow::GetSceneNodeDragAndDropTarget(FENai
 	return SceneNodeDragAndDropTargets[UniqueID];
 }
 
+#include "glm/gtx/matrix_decompose.hpp"
+
+void TransformUpdate(FENaiveSceneEntity* SubTreeRoot)
+{
+	FEEntity* Entity = reinterpret_cast<FEEntity*>(SubTreeRoot->GetOldStyleEntity());
+	if (Entity == nullptr)
+		return;
+
+	FETransformComponent& ParentTransform = Entity->Transform;
+
+	auto Children = SubTreeRoot->GetChildren();
+	for (size_t i = 0; i < Children.size(); i++)
+	{
+		/*FEEntity* ChildEntity = reinterpret_cast<FEEntity*>(Children[i]->GetOldStyleEntity());
+		FETransformComponent& ChildTransform = ChildEntity->Transform;
+
+		ChildTransform.SetPosition(ParentTransform.GetPosition() + ChildTransform.GetPosition());
+		ChildTransform.SetQuaternion(ParentTransform.GetQuaternion() * ChildTransform.GetQuaternion());
+		ChildTransform.SetScale(ParentTransform.GetScale() * ChildTransform.GetScale());
+
+		TransformUpdate(Children[i]);*/
+
+		if (SubTreeRoot->GetName() == "BistroExterior")
+		{
+			int y = 0;
+			y++;
+		}
+
+
+		FEEntity* ChildEntity = reinterpret_cast<FEEntity*>(Children[i]->GetOldStyleEntity());
+		FETransformComponent& ChildTransform = ChildEntity->Transform;
+
+		ParentTransform.Update();
+		ChildTransform.Update();
+		ChildTransform.ForceSetTransformMatrix(ParentTransform.GetTransformMatrix() * ChildTransform.GetTransformMatrix());
+
+		glm::vec3 Position, Scale;
+		glm::quat Rotation;
+		glm::decompose(ParentTransform.GetTransformMatrix(), Scale, Rotation, Position, glm::vec3(), glm::vec4());
+		
+		int y = 0;
+		y++;
+	}
+}
+
 void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneEntity* SubTreeRoot)
 {
+	TransformUpdate(SubTreeRoot);
 
 	SceneNodeDragAndDropTargetIndex++;
 	int64_t UniqueID = 0;
@@ -268,6 +314,8 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneEntity* SubTreeRoot)
 		}
 	}
 }
+
+
 
 void FEEditorSceneGraphWindow::RenderNewSceneGraph()
 {

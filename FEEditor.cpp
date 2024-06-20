@@ -221,82 +221,104 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 void FEEditor::ShowTransformConfiguration(FEObject* Object, FETransformComponent* Transform) const
 {
 	// ********************* POSITION *********************
-	glm::vec3 position = Transform->GetPosition();
+	glm::vec3 TemporaryPosition = Transform->GetPosition();
+	bool bModified = false;
+
 	ImGui::Text("Position : ");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##X pos : ") + Object->GetName()).c_str(), &position[0], 0.1f);
+	if (ImGui::DragFloat((std::string("##X pos : ") + Object->GetName()).c_str(), &TemporaryPosition[0], 0.1f))
+		bModified = true;
 	ShowToolTip("X position");
 
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Y pos : ") + Object->GetName()).c_str(), &position[1], 0.1f);
+	if (ImGui::DragFloat((std::string("##Y pos : ") + Object->GetName()).c_str(), &TemporaryPosition[1], 0.1f))
+		bModified = true;
 	ShowToolTip("Y position");
 
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Z pos : ") + Object->GetName()).c_str(), &position[2], 0.1f);
+	if (ImGui::DragFloat((std::string("##Z pos : ") + Object->GetName()).c_str(), &TemporaryPosition[2], 0.1f))
+		bModified = true;
 	ShowToolTip("Z position");
-	Transform->SetPosition(position);
+
+	if (bModified)
+		Transform->SetPosition(TemporaryPosition);
 
 	// ********************* ROTATION *********************
-	glm::vec3 rotation = Transform->GetRotation();
+	glm::vec3 TemporaryRotation = Transform->GetRotation();
+	bModified = false;
+
 	ImGui::Text("Rotation : ");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##X rot : ") + Object->GetName()).c_str(), &rotation[0], 0.1f, -360.0f, 360.0f);
+	if (ImGui::DragFloat((std::string("##X rot : ") + Object->GetName()).c_str(), &TemporaryRotation[0], 0.1f, -360.0f, 360.0f))
+		bModified = true;
 	ShowToolTip("X rotation");
 
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Y rot : ") + Object->GetName()).c_str(), &rotation[1], 0.1f, -360.0f, 360.0f);
+	if (ImGui::DragFloat((std::string("##Y rot : ") + Object->GetName()).c_str(), &TemporaryRotation[1], 0.1f, -360.0f, 360.0f))
+		bModified = true;
 	ShowToolTip("Y rotation");
 
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Z rot : ") + Object->GetName()).c_str(), &rotation[2], 0.1f, -360.0f, 360.0f);
+	if (ImGui::DragFloat((std::string("##Z rot : ") + Object->GetName()).c_str(), &TemporaryRotation[2], 0.1f, -360.0f, 360.0f))
+		bModified = true;
 	ShowToolTip("Z rotation");
-	Transform->SetRotation(rotation);
+
+	if (bModified)
+		Transform->SetRotation(TemporaryRotation);
 
 	// ********************* SCALE *********************
 	bool bUniformScaling = Transform->IsUniformScalingSet();
-	ImGui::Checkbox("Uniform scaling", &bUniformScaling);
-	Transform->SetUniformScaling(bUniformScaling);
+	bModified = false;
 
-	glm::vec3 scale = Transform->GetScale();
+	if (ImGui::Checkbox("Uniform scaling", &bUniformScaling))
+		Transform->SetUniformScaling(bUniformScaling);
+
+	glm::vec3 TemporaryScale = Transform->GetScale();
 	ImGui::Text("Scale : ");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##X scale : ") + Object->GetName()).c_str(), &scale[0], 0.01f, 0.01f, 1000.0f);
+	if (ImGui::DragFloat((std::string("##X scale : ") + Object->GetName()).c_str(), &TemporaryScale[0], 0.01f, 0.01f, 1000.0f))
+		bModified = true;
 	ShowToolTip("X scale");
 
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Y scale : ") + Object->GetName()).c_str(), &scale[1], 0.01f, 0.01f, 1000.0f);
+	if (ImGui::DragFloat((std::string("##Y scale : ") + Object->GetName()).c_str(), &TemporaryScale[1], 0.01f, 0.01f, 1000.0f))
+		bModified = true;
 	ShowToolTip("Y scale");
 
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Z scale : ") + Object->GetName()).c_str(), &scale[2], 0.01f, 0.01f, 1000.0f);
+	if (ImGui::DragFloat((std::string("##Z scale : ") + Object->GetName()).c_str(), &TemporaryScale[2], 0.01f, 0.01f, 1000.0f))
+		bModified = true;
 	ShowToolTip("Z scale");
 
-	glm::vec3 OldScale = Transform->GetScale();
-	Transform->ChangeXScaleBy(scale[0] - OldScale[0]);
-	Transform->ChangeYScaleBy(scale[1] - OldScale[1]);
-	Transform->ChangeZScaleBy(scale[2] - OldScale[2]);
+	if (bModified)
+	{
+		glm::vec3 OldScale = Transform->GetScale();
+		Transform->ChangeXScaleBy(TemporaryScale[0] - OldScale[0]);
+		Transform->ChangeYScaleBy(TemporaryScale[1] - OldScale[1]);
+		Transform->ChangeZScaleBy(TemporaryScale[2] - OldScale[2]);
+	}
 
 	// ********************* REAL WORLD COMPARISON SCALE *********************
 	if (Object->GetType() == FE_ENTITY || Object->GetType() == FE_ENTITY_INSTANCED)
 	{
-		FEEntity* entity = SCENE.GetEntity(Object->GetObjectID());
+		FEEntity* Entity = SCENE.GetEntity(Object->GetObjectID());
 
-		FEAABB RealAabb = entity->GetAABB();
-		const glm::vec3 min = RealAabb.GetMin();
-		const glm::vec3 max = RealAabb.GetMax();
+		FEAABB RealAabb = Entity->GetAABB();
+		const glm::vec3 Min = RealAabb.GetMin();
+		const glm::vec3 Max = RealAabb.GetMax();
 
-		const float XSize = sqrt((max.x - min.x) * (max.x - min.x));
-		const float YSize = sqrt((max.y - min.y) * (max.y - min.y));
-		const float ZSize = sqrt((max.z - min.z) * (max.z - min.z));
+		const float XSize = sqrt((Max.x - Min.x) * (Max.x - Min.x));
+		const float YSize = sqrt((Max.y - Min.y) * (Max.y - Min.y));
+		const float ZSize = sqrt((Max.z - Min.z) * (Max.z - Min.z));
 
 		std::string SizeInM = "Approximate object size: ";
 		SizeInM += std::to_string(std::max(XSize, std::max(YSize, ZSize)));
