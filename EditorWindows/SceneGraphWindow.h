@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ProjectWasModifiedPopUp.h"
-//using namespace FocalEngine;
 
 class FEEditorSceneGraphWindow
 {

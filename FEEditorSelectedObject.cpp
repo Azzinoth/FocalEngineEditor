@@ -128,9 +128,9 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 	const std::vector<std::string> EntityList = SCENE.GetEntityList();
 	for (size_t i = 0; i < EntityList.size(); i++)
 	{
-		float dis = 0;
-		FEAABB box = SCENE.GetEntity(EntityList[i])->GetAABB();
-		if (box.RayIntersect(ENGINE.GetCamera()->GetPosition(), MouseRayVector, dis))
+		float Distance = 0;
+		FEAABB Box = SCENE.GetEntity(EntityList[i])->GetAABB();
+		if (Box.RayIntersect(ENGINE.GetCamera()->GetPosition(), MouseRayVector, Distance))
 		{
 			if (SCENE.GetEntity(EntityList[i])->GetType() == FE_ENTITY_INSTANCED)
 			{
@@ -140,7 +140,7 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 					InstancedSubObjectsInfo[InstancedEntity] = std::vector<int>();
 					for (size_t j = 0; j < InstancedEntity->InstancedAABB.size(); j++)
 					{
-						if(InstancedEntity->InstancedAABB[j].RayIntersect(ENGINE.GetCamera()->GetPosition(), MouseRayVector, dis))
+						if(InstancedEntity->InstancedAABB[j].RayIntersect(ENGINE.GetCamera()->GetPosition(), MouseRayVector, Distance))
 						{
 							InstancedSubObjectsInfo[InstancedEntity].push_back(static_cast<int>(j));
 						}
@@ -159,9 +159,9 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 	const std::vector<std::string> TerrainList = SCENE.GetTerrainList();
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		float dis = 0;
-		FEAABB box = SCENE.GetTerrain(TerrainList[i])->GetAABB();
-		if (box.RayIntersect(ENGINE.GetCamera()->GetPosition(), MouseRayVector, dis))
+		float Distance = 0;
+		FEAABB Box = SCENE.GetTerrain(TerrainList[i])->GetAABB();
+		if (Box.RayIntersect(ENGINE.GetCamera()->GetPosition(), MouseRayVector, Distance))
 		{
 			SELECTED.ObjectsUnderMouse.push_back(SCENE.GetTerrain(TerrainList[i]));
 		}

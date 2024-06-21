@@ -204,7 +204,22 @@ void TransformUpdate(FENaiveSceneEntity* SubTreeRoot)
 {
 	FEEntity* Entity = reinterpret_cast<FEEntity*>(SubTreeRoot->GetOldStyleEntity());
 	if (Entity == nullptr)
+	{
+		auto Children = SubTreeRoot->GetChildren();
+		for (size_t i = 0; i < Children.size(); i++)
+		{
+			TransformUpdate(Children[i]);
+		}
 		return;
+	}
+
+	Entity->Transform.bIsInSceneGraph = true;
+
+	if (SubTreeRoot->GetParent() == nullptr || SubTreeRoot->GetParent() == SCENE.SceneGraph.GetRoot())
+	{
+		Entity->Transform.Update();
+		Entity->Transform.WorldSpaceMatrix = Entity->Transform.LocalSpaceMatrix;
+	}
 
 	FETransformComponent& ParentTransform = Entity->Transform;
 
@@ -220,26 +235,33 @@ void TransformUpdate(FENaiveSceneEntity* SubTreeRoot)
 
 		TransformUpdate(Children[i]);*/
 
-		if (SubTreeRoot->GetName() == "BistroExterior")
+		/*if (SubTreeRoot->GetName() == "BistroExterior")
 		{
 			int y = 0;
 			y++;
-		}
-
+		}*/
 
 		FEEntity* ChildEntity = reinterpret_cast<FEEntity*>(Children[i]->GetOldStyleEntity());
 		FETransformComponent& ChildTransform = ChildEntity->Transform;
 
-		ParentTransform.Update();
-		ChildTransform.Update();
-		ChildTransform.ForceSetTransformMatrix(ParentTransform.GetTransformMatrix() * ChildTransform.GetTransformMatrix());
 
-		glm::vec3 Position, Scale;
+		//glm::mat4 CurrentParentTransform = ParentTransform.GetTransformMatrix();
+
+		//ParentTransform.Update();
+		//ChildTransform.Update();
+
+		//ChildTransform.LocalSpaceMatrix = ChildTransform.GetTransformMatrix();
+		ChildTransform.WorldSpaceMatrix = ParentTransform.WorldSpaceMatrix * ChildTransform.LocalSpaceMatrix;
+		//ChildTransform.ForceSetTransformMatrix(ChildTransform.WorldSpaceMatrix);
+
+		TransformUpdate(Children[i]);
+
+		/*glm::vec3 Position, Scale;
 		glm::quat Rotation;
 		glm::decompose(ParentTransform.GetTransformMatrix(), Scale, Rotation, Position, glm::vec3(), glm::vec4());
 		
 		int y = 0;
-		y++;
+		y++;*/
 	}
 }
 
@@ -326,6 +348,7 @@ void FEEditorSceneGraphWindow::RenderNewSceneGraph()
 
 	SceneNodeDragAndDropTargetIndex = -1;
 	RenderSubTree(Root);
+	TransformUpdate(Root);
 
 	if (bSceneNodeTargetsDirty)
 		bSceneNodeTargetsDirty = false;

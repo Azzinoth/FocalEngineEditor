@@ -1,10 +1,7 @@
 #pragma once
 
 #include "SceneGraphWindow.h"
-//using namespace FocalEngine;
 
-//namespace FocalEngine
-//{
 #ifdef FE_WIN_32
 	const COMDLG_FILTERSPEC OBJ_LOAD_FILTER[] =
 	{
@@ -27,6 +24,8 @@
     class FEEditorContentBrowserWindow
     {
         friend class FEEditor;
+        friend class FEEditorInspectorWindow;
+
         SINGLETON_PRIVATE_PART(FEEditorContentBrowserWindow)
 
         // Visibility and state
@@ -112,4 +111,3 @@
     };
 
 #define CONTENT_BROWSER_WINDOW FEEditorContentBrowserWindow::getInstance()
-//}

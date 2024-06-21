@@ -91,6 +91,8 @@ file(GLOB EditorWindows_SRC
 	"EditorWindows/DebugTextureViewWindow.h"
 	"EditorWindows/SceneGraphWindow.cpp"
 	"EditorWindows/SceneGraphWindow.h"
+	"EditorWindows/InspectorWindow.cpp"
+	"EditorWindows/InspectorWindow.h"
 	"EditorWindows/ContentBrowserWindow.cpp"
 	"EditorWindows/ContentBrowserWindow.h"
 	"EditorWindows/LogWindow.cpp"

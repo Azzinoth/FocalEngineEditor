@@ -43,7 +43,7 @@ bool FEVFSDirectory::HasFile(const FEObject* File)
 {
 	if (File == nullptr)
 	{
-		LOG.Add("file is nullptr in function FEVFSDirectory::hasFile.", "FE_LOG_GENERAL", FE_LOG_ERROR);
+		LOG.Add("File is nullptr in function FEVFSDirectory::HasFile.", "FE_LOG_GENERAL", FE_LOG_ERROR);
 		return false;
 	}
 
@@ -258,7 +258,7 @@ bool FEVirtualFileSystem::CreateFile(FEObject* Data, const std::string Path)
 {
 	if (Data == nullptr)
 	{
-		LOG.Add("data is nullptr in function FEVirtualFileSystem::createFile.", "FE_LOG_GENERAL", FE_LOG_ERROR);
+		LOG.Add("Data is nullptr in function FEVirtualFileSystem::CreateFile.", "FE_LOG_GENERAL", FE_LOG_ERROR);
 		return false;
 	}
 
@@ -269,7 +269,7 @@ bool FEVirtualFileSystem::CreateFile(FEObject* Data, const std::string Path)
 		Data->GetType() != FE_GAMEMODEL &&
 		Data->GetType() != FE_PREFAB)
 	{
-		LOG.Add("data type is not supported in function FEVirtualFileSystem::createFile.", "FE_LOG_GENERAL", FE_LOG_ERROR);
+		LOG.Add("Data type is not supported in function FEVirtualFileSystem::CreateFile.", "FE_LOG_GENERAL", FE_LOG_ERROR);
 		return false;
 	}
 
@@ -398,7 +398,7 @@ bool FEVirtualFileSystem::MoveFile(FEObject* Data, const std::string OldPath, co
 {
 	if (Data == nullptr)
 	{
-		LOG.Add("data is nullptr in function FEVirtualFileSystem::moveFile.", "FE_LOG_GENERAL", FE_LOG_ERROR);
+		LOG.Add("Data is nullptr in function FEVirtualFileSystem::MoveFile.", "FE_LOG_GENERAL", FE_LOG_ERROR);
 		return false;
 	}
 
@@ -467,7 +467,7 @@ void FEVirtualFileSystem::DeleteDirectory(FEVFSDirectory* Directory)
 {
 	if (Directory == nullptr)
 	{
-		LOG.Add("directory is nullptr in function FEVirtualFileSystem::deleteDirectory.", "FE_LOG_GENERAL", FE_LOG_ERROR);
+		LOG.Add("Directory is nullptr in function FEVirtualFileSystem::DeleteDirectory.", "FE_LOG_GENERAL", FE_LOG_ERROR);
 		return;
 	}
 
@@ -523,32 +523,32 @@ std::string FEVirtualFileSystem::DirectoryToPath(FEVFSDirectory* Directory)
 
 std::string FEVirtualFileSystem::GetDirectoryParent(const std::string Path)
 {
-	const FEVFSDirectory* directory = PathToDirectory(Path);
-	if (directory == nullptr)
+	const FEVFSDirectory* Directory = PathToDirectory(Path);
+	if (Directory == nullptr)
 		return "/";
 
-	return DirectoryToPath(directory->Parent);
+	return DirectoryToPath(Directory->Parent);
 }
 
 bool FEVirtualFileSystem::DeleteFile(const FEObject* Data, const std::string Path)
 {
 	if (Data == nullptr)
 	{
-		LOG.Add("data is nullptr in function FEVirtualFileSystem::deleteFile.", "FE_LOG_GENERAL", FE_LOG_ERROR);
+		LOG.Add("Data is nullptr in function FEVirtualFileSystem::DeleteFile.", "FE_LOG_GENERAL", FE_LOG_ERROR);
 		return false;
 	}
 
-	FEVFSDirectory* directory = PathToDirectory(Path);
-	if (directory == nullptr)
+	FEVFSDirectory* Directory = PathToDirectory(Path);
+	if (Directory == nullptr)
 		return false;
 
-	if (!directory->HasFile(Data))
+	if (!Directory->HasFile(Data))
 		return false;
 
-	if (directory->IsReadOnly())
+	if (Directory->IsReadOnly())
 		return false;
 
-	directory->DeleteFile(Data);
+	Directory->DeleteFile(Data);
 
 	return true;
 }
@@ -621,12 +621,12 @@ void FEVirtualFileSystem::SaveStateRecursive(Json::Value* LocalRoot, FEVFSDirect
 {
 	LocalRoot->operator[](Directory->GetObjectID())["name"] = Directory->GetName();
 	
-	Json::Value files;
+	Json::Value Files;
 	for (size_t i = 0; i < Directory->Files.size(); i++)
 	{
-		files[Directory->Files[i].Data->GetObjectID()];
+		Files[Directory->Files[i].Data->GetObjectID()];
 	}
-	LocalRoot->operator[](Directory->GetObjectID())["files"] = files;
+	LocalRoot->operator[](Directory->GetObjectID())["files"] = Files;
 
 	Json::Value SubDirectories;
 	for (size_t i = 0; i < Directory->SubDirectories.size(); i++)
@@ -744,7 +744,6 @@ bool FEVirtualFileSystem::IsReadOnly(const FEObject* Data, const std::string Pat
 void FEVirtualFileSystem::SetDirectoryReadOnly(const bool NewValue, const std::string Path)
 {
 	FEVFSDirectory* Directory = PathToDirectory(Path);
-
 	if (Directory == nullptr)
 		return;
 
@@ -754,7 +753,6 @@ void FEVirtualFileSystem::SetDirectoryReadOnly(const bool NewValue, const std::s
 void FEVirtualFileSystem::SetFileReadOnly(const bool NewValue, const FEObject* Data, const std::string Path)
 {
 	FEVFSDirectory* Directory = PathToDirectory(Path);
-
 	if (Directory == nullptr)
 		return;
 

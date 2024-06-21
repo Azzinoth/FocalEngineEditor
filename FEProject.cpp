@@ -236,9 +236,9 @@ void FEProjectManager::DisplayProjectSelection()
 		ImGui::SetCursorPos(ImVec2(ImGui::GetContentRegionAvail().x + 280.0f + 64.0f, ImGui::GetCursorPos().y));
 		if (ImGui::Button("Choose projects directory", ImVec2(280.0f, 64.0f)))
 		{
-			std::string path;
-			FILE_SYSTEM.ShowFolderOpenDialog(path);
-			SetProjectsFolder(path);
+			std::string Path;
+			FILE_SYSTEM.ShowFolderOpenDialog(Path);
+			SetProjectsFolder(Path);
 		}
 
 		ImGui::PopStyleColor();
