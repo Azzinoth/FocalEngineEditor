@@ -21,6 +21,10 @@ public:
 	float GizmosScale = 0.00175f;
 	int GizmosState = TRANSFORM_GIZMOS;
 
+	// Parent Gizmo Entity
+	FEEntity* ParentGizmoEntity = nullptr;
+	FENaiveSceneEntity* ParentGizmoGraphEntity = nullptr;
+
 	FEEntity* TransformationXGizmoEntity = nullptr;
 	FEEntity* TransformationYGizmoEntity = nullptr;
 	FEEntity* TransformationZGizmoEntity = nullptr;
@@ -29,15 +33,15 @@ public:
 	bool bTransformationYGizmoActive = false;
 	bool bTransformationZGizmoActive = false;
 
-	FEEntity* TransformationXyGizmoEntity = nullptr;
-	FEEntity* TransformationYzGizmoEntity = nullptr;
-	FEEntity* TransformationXzGizmoEntity = nullptr;
+	FEEntity* TransformationXYGizmoEntity = nullptr;
+	FEEntity* TransformationYZGizmoEntity = nullptr;
+	FEEntity* TransformationXZGizmoEntity = nullptr;
 
 	bool bTransformationXYGizmoActive = false;
 	bool bTransformationYZGizmoActive = false;
 	bool bTransformationXZGizmoActive = false;
 
-	// scale part
+	// Scale part.
 	FEEntity* ScaleXGizmoEntity = nullptr;
 	FEEntity* ScaleYGizmoEntity = nullptr;
 	FEEntity* ScaleZGizmoEntity = nullptr;
@@ -46,7 +50,7 @@ public:
 	bool bScaleYGizmoActive = false;
 	bool bScaleZGizmoActive = false;
 
-	// rotate part
+	// Rotate part.
 	FEEntity* RotateXGizmoEntity = nullptr;
 	FEEntity* RotateYGizmoEntity = nullptr;
 	FEEntity* RotateZGizmoEntity = nullptr;
@@ -80,9 +84,6 @@ private:
 
 	glm::vec3 GetMousePositionDifferenceOnPlane(glm::vec3 PlaneNormal);
 	glm::vec3 GetMousePositionDifferenceOnPlane(glm::vec3 PlaneNormal, glm::vec3& LastMousePointOnPlane);
-	bool RaysIntersection(const glm::vec3& FRayOrigin, const glm::vec3& FRayDirection,
-	                      const glm::vec3& SRayOrigin, const glm::vec3& SRayDirection,
-	                      float& Ft, float& St) const;
 
 	void MouseMoveTransformationGizmos();
 	void MouseMoveScaleGizmos();
@@ -91,6 +92,8 @@ private:
 	static void OnSelectedObjectUpdate();
 
 	FETransformComponent GetTransformComponentOfSelectedObject();
+	void MoveSelectedEntityAlongAxis(const glm::vec3& AxisOfMovement, FETransformComponent& ObjectTransform);
+	void RotateSelectedEntity(const glm::vec3& AxisOfRotation, FETransformComponent& ObjectTransform, const float& RotationAmount);
 	void ApplyChangesToSelectedObject(FETransformComponent Changes);
 };
 

@@ -12,7 +12,10 @@ void GizmoManager::InitializeResources()
 	FEMesh* TransformationGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "45191B6F172E3B531978692E.model").c_str(), "transformationGizmoMesh");
 	RESOURCE_MANAGER.MakeMeshStandard(TransformationGizmoMesh);
 
-	// transformationXGizmo
+	ParentGizmoEntity = SCENE.AddEmptyEntity("ParentGizmoEntity");
+	FENaiveSceneEntity* ParentGizmoGraphEntity = SCENE.SceneGraph.GetEntityByOldEntityID(ParentGizmoEntity->GetObjectID());
+
+	// TransformationXGizmo
 	FEMaterial* CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationXGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
@@ -25,8 +28,10 @@ void GizmoManager::InitializeResources()
 	TransformationXGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
 	TransformationXGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
 	TransformationXGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(TransformationXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// transformationYGizmo
+	// TransformationYGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationYGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
@@ -39,8 +44,10 @@ void GizmoManager::InitializeResources()
 	TransformationYGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
 	TransformationYGizmoEntity->Transform.SetRotation(glm::vec3(0.0f));
 	TransformationYGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(TransformationYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// transformationZGizmo
+	// TransformationZGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
@@ -53,52 +60,63 @@ void GizmoManager::InitializeResources()
 	TransformationZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
 	TransformationZGizmoEntity->Transform.SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
 	TransformationZGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(TransformationZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// plane gizmos
+	// Plane gizmos
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationXYGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(1.0f, 1.0f, 1.0f), "baseColor"));
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
-	TransformationXyGizmoEntity = SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXYGizmoGM"), "transformationXYGizmoEntity");
-	RESOURCE_MANAGER.MakePrefabStandard(TransformationXyGizmoEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationXyGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	TransformationXyGizmoEntity->SetCastShadows(false);
-	TransformationXyGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale, GizmosScale, GizmosScale * 0.02f));
-	TransformationXyGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
-	TransformationXyGizmoEntity->SetIsPostprocessApplied(false);
+	TransformationXYGizmoEntity = SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXYGizmoGM"), "transformationXYGizmoEntity");
+	RESOURCE_MANAGER.MakePrefabStandard(TransformationXYGizmoEntity->Prefab);
+	RESOURCE_MANAGER.MakeGameModelStandard(TransformationXYGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	TransformationXYGizmoEntity->SetCastShadows(false);
+	TransformationXYGizmoEntity->Transform.SetPosition(glm::vec3(0.005f, 0.005f, 0.0f));
+	TransformationXYGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale, GizmosScale, GizmosScale * 0.02f));
+	TransformationXYGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
+	TransformationXYGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(TransformationXYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationYZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(1.0f, 1.0f, 1.0f), "baseColor"));
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
-	TransformationYzGizmoEntity = SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationYZGizmoGM"), "transformationYZGizmoEntity");
-	RESOURCE_MANAGER.MakePrefabStandard(TransformationYzGizmoEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationYzGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	TransformationYzGizmoEntity->SetCastShadows(false);
-	TransformationYzGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 0.02f, GizmosScale, GizmosScale));
-	TransformationYzGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	TransformationYzGizmoEntity->SetIsPostprocessApplied(false);
+	TransformationYZGizmoEntity = SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationYZGizmoGM"), "transformationYZGizmoEntity");
+	RESOURCE_MANAGER.MakePrefabStandard(TransformationYZGizmoEntity->Prefab);
+	RESOURCE_MANAGER.MakeGameModelStandard(TransformationYZGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	TransformationYZGizmoEntity->SetCastShadows(false);
+	TransformationYZGizmoEntity->Transform.SetPosition(glm::vec3(0.0f, 0.005f, 0.005f));
+	TransformationYZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 0.02f, GizmosScale, GizmosScale));
+	TransformationYZGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+	TransformationYZGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(TransformationYZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationXZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(1.0f, 1.0f, 1.0f), "baseColor"));
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
-	TransformationXzGizmoEntity = SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXZGizmoGM"), "transformationXZGizmoEntity");
-	RESOURCE_MANAGER.MakePrefabStandard(TransformationXzGizmoEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationXzGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	TransformationXzGizmoEntity->SetCastShadows(false);
-	TransformationXzGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale, GizmosScale * 0.02f, GizmosScale));
-	TransformationXzGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	TransformationXzGizmoEntity->SetIsPostprocessApplied(false);
+	TransformationXZGizmoEntity = SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXZGizmoGM"), "transformationXZGizmoEntity");
+	RESOURCE_MANAGER.MakePrefabStandard(TransformationXZGizmoEntity->Prefab);
+	RESOURCE_MANAGER.MakeGameModelStandard(TransformationXZGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	TransformationXZGizmoEntity->SetCastShadows(false);
+	TransformationXZGizmoEntity->Transform.SetPosition(glm::vec3(0.005f, 0.0f, 0.005f));
+	TransformationXZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale, GizmosScale * 0.02f, GizmosScale));
+	TransformationXZGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+	TransformationXZGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(TransformationXZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// scale gizmos
+	// Scale gizmos.
 	FEMesh* ScaleGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "637C784B2E5E5C6548190E1B.model").c_str(), "scaleGizmoMesh");
 	RESOURCE_MANAGER.MakeMeshStandard(ScaleGizmoMesh);
 
-	// scaleXGizmo
+	// ScaleXGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("scaleXGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
@@ -111,8 +129,10 @@ void GizmoManager::InitializeResources()
 	ScaleXGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
 	ScaleXGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
 	ScaleXGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(ScaleXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// scaleYGizmo
+	// ScaleYGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("scaleYGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
@@ -125,8 +145,10 @@ void GizmoManager::InitializeResources()
 	ScaleYGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
 	ScaleYGizmoEntity->Transform.SetRotation(glm::vec3(0.0f));
 	ScaleYGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(ScaleYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// scaleZGizmo
+	// ScaleZGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("scaleZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
@@ -139,12 +161,14 @@ void GizmoManager::InitializeResources()
 	ScaleZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
 	ScaleZGizmoEntity->Transform.SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
 	ScaleZGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(ScaleZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// rotate gizmos
+	// Rotate gizmos
 	FEMesh* RotateGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "19622421516E5B317E1B5360.model").c_str(), "rotateGizmoMesh");
 	RESOURCE_MANAGER.MakeMeshStandard(RotateGizmoMesh);
 
-	// rotateXGizmo
+	// RotateXGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("rotateXGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
@@ -157,8 +181,10 @@ void GizmoManager::InitializeResources()
 	RotateXGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateXGizmoEntity->Transform.SetRotation(RotateXStandardRotation);
 	RotateXGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(RotateXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// rotateYGizmo
+	// RotateYGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("rotateYGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
@@ -171,8 +197,10 @@ void GizmoManager::InitializeResources()
 	RotateYGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateYGizmoEntity->Transform.SetRotation(RotateYStandardRotation);
 	RotateYGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(RotateYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// rotateZGizmo
+	// RotateZGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("rotateZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
@@ -185,6 +213,8 @@ void GizmoManager::InitializeResources()
 	RotateZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateZGizmoEntity->Transform.SetRotation(RotateZStandardRotation);
 	RotateZGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(RotateZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
 	TransformationGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "456A31026A1C3152181A6064.texture").c_str(), "transformationGizmoIcon");
 	RESOURCE_MANAGER.MakeTextureStandard(TransformationGizmoIcon);
@@ -200,9 +230,9 @@ void GizmoManager::HideAllGizmo()
 	TransformationYGizmoEntity->SetVisibility(false);
 	TransformationZGizmoEntity->SetVisibility(false);
 
-	TransformationXyGizmoEntity->SetVisibility(false);
-	TransformationYzGizmoEntity->SetVisibility(false);
-	TransformationXzGizmoEntity->SetVisibility(false);
+	TransformationXYGizmoEntity->SetVisibility(false);
+	TransformationYZGizmoEntity->SetVisibility(false);
+	TransformationXZGizmoEntity->SetVisibility(false);
 
 	bTransformationXGizmoActive = false;
 	bTransformationYGizmoActive = false;
@@ -254,9 +284,9 @@ void GizmoManager::UpdateGizmoState(int NewState)
 			TransformationYGizmoEntity->SetVisibility(true);
 			TransformationZGizmoEntity->SetVisibility(true);
 
-			TransformationXyGizmoEntity->SetVisibility(true);
-			TransformationYzGizmoEntity->SetVisibility(true);
-			TransformationXzGizmoEntity->SetVisibility(true);
+			TransformationXYGizmoEntity->SetVisibility(true);
+			TransformationYZGizmoEntity->SetVisibility(true);
+			TransformationXZGizmoEntity->SetVisibility(true);
 
 			break;
 		}
@@ -306,7 +336,7 @@ void GizmoManager::Render()
 	{
 		HideAllGizmo();
 		return;
-	}	
+	}
 
 	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject();
 	const glm::vec3 ObjectSpaceOriginInWorldSpace = glm::vec3(ObjTransform.GetTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -321,25 +351,9 @@ void GizmoManager::Render()
 		toObject = glm::normalize(center - ENGINE.getCamera()->getPosition());
 	}*/
 
+	ParentGizmoEntity->Transform.SetPosition((ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f));
 	if (GIZMO_MANAGER.GizmosState == TRANSFORM_GIZMOS)
 	{
-		GIZMO_MANAGER.TransformationXGizmoEntity->Transform.SetPosition((ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f));
-		GIZMO_MANAGER.TransformationYGizmoEntity->Transform.SetPosition((ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f));
-		GIZMO_MANAGER.TransformationZGizmoEntity->Transform.SetPosition((ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f));
-
-		glm::vec3 NewP = ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f;
-		NewP.x += 0.005f;
-		NewP.y += 0.005f;
-		GIZMO_MANAGER.TransformationXyGizmoEntity->Transform.SetPosition(NewP);
-		NewP = ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f;
-		NewP.z += 0.005f;
-		NewP.y += 0.005f;
-		GIZMO_MANAGER.TransformationYzGizmoEntity->Transform.SetPosition(NewP);
-		NewP = ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f;
-		NewP.x += 0.005f;
-		NewP.z += 0.005f;
-		GIZMO_MANAGER.TransformationXzGizmoEntity->Transform.SetPosition(NewP);
-
 		// X Gizmos
 		GIZMO_MANAGER.TransformationXGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
 		if (GIZMO_MANAGER.bTransformationXZGizmoActive || GIZMO_MANAGER.bTransformationXYGizmoActive || GIZMO_MANAGER.bTransformationXGizmoActive)
@@ -356,26 +370,22 @@ void GizmoManager::Render()
 			GIZMO_MANAGER.TransformationZGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 		// XY Gizmos
-		GIZMO_MANAGER.TransformationXyGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
+		GIZMO_MANAGER.TransformationXYGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
 		if (GIZMO_MANAGER.bTransformationXYGizmoActive)
-			GIZMO_MANAGER.TransformationXyGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.TransformationXYGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 		// YZ Gizmos
-		GIZMO_MANAGER.TransformationYzGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
+		GIZMO_MANAGER.TransformationYZGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
 		if (GIZMO_MANAGER.bTransformationYZGizmoActive)
-			GIZMO_MANAGER.TransformationYzGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.TransformationYZGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 		// XZ Gizmos
-		GIZMO_MANAGER.TransformationXzGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
+		GIZMO_MANAGER.TransformationXZGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
 		if (GIZMO_MANAGER.bTransformationXZGizmoActive)
-			GIZMO_MANAGER.TransformationXzGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.TransformationXZGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 	}
 	else if (GIZMO_MANAGER.GizmosState == SCALE_GIZMOS)
 	{
-		GIZMO_MANAGER.ScaleXGizmoEntity->Transform.SetPosition((ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f));
-		GIZMO_MANAGER.ScaleYGizmoEntity->Transform.SetPosition((ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f));
-		GIZMO_MANAGER.ScaleZGizmoEntity->Transform.SetPosition((ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f));
-
 		// X Gizmos
 		GIZMO_MANAGER.ScaleXGizmoEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
 		if (GIZMO_MANAGER.bScaleXGizmoActive)
@@ -393,10 +403,6 @@ void GizmoManager::Render()
 	}
 	else if (GIZMO_MANAGER.GizmosState == ROTATE_GIZMOS)
 	{
-		GIZMO_MANAGER.RotateXGizmoEntity->Transform.SetPosition((ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f));
-		GIZMO_MANAGER.RotateYGizmoEntity->Transform.SetPosition((ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f));
-		GIZMO_MANAGER.RotateZGizmoEntity->Transform.SetPosition((ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f));
-
 		if (SELECTED.SELECTED.GetSelected() != nullptr)
 		{
 			GIZMO_MANAGER.RotateXGizmoEntity->SetVisibility(true);
@@ -457,15 +463,15 @@ bool GizmoManager::WasSelected(int Index)
 	{
 		bTransformationZGizmoActive = true;
 	}
-	else if (GizmosState == TRANSFORM_GIZMOS && EntityNameHash == TransformationXyGizmoEntity->GetNameHash())
+	else if (GizmosState == TRANSFORM_GIZMOS && EntityNameHash == TransformationXYGizmoEntity->GetNameHash())
 	{
 		bTransformationXYGizmoActive = true;
 	}
-	else if (GizmosState == TRANSFORM_GIZMOS && EntityNameHash == TransformationYzGizmoEntity->GetNameHash())
+	else if (GizmosState == TRANSFORM_GIZMOS && EntityNameHash == TransformationYZGizmoEntity->GetNameHash())
 	{
 		bTransformationYZGizmoActive = true;
 	}
-	else if (GizmosState == TRANSFORM_GIZMOS && EntityNameHash == TransformationXzGizmoEntity->GetNameHash())
+	else if (GizmosState == TRANSFORM_GIZMOS && EntityNameHash == TransformationXZGizmoEntity->GetNameHash())
 	{
 		bTransformationXZGizmoActive = true;
 	}
@@ -579,113 +585,136 @@ glm::vec3 GizmoManager::GetMousePositionDifferenceOnPlane(glm::vec3 PlaneNormal,
 	return PointOnPlane;
 }
 
-bool GizmoManager::RaysIntersection(const glm::vec3& FRayOrigin, const glm::vec3& FRayDirection,
-                                    const glm::vec3& SRayOrigin, const glm::vec3& SRayDirection,
-                                    float& Ft, float& St) const
+void GizmoManager::MoveSelectedEntityAlongAxis(const glm::vec3& AxisOfMovement, FETransformComponent& ObjectTransform)
 {
-	const glm::vec3 DirectionsCross = glm::cross(FRayDirection, SRayDirection);
-	// two rays are parallel
-	if (DirectionsCross == glm::vec3(0.0f))
-		return false;
+	glm::vec3 NewPosition = ObjectTransform.GetPosition();
+	glm::vec3 LocalAlternativeAxis = AxisOfMovement;
 
-	Ft = glm::dot(glm::cross((SRayOrigin - FRayOrigin), SRayDirection), DirectionsCross);
-	Ft /= glm::length(DirectionsCross) * glm::length(DirectionsCross);
+	FENaiveSceneEntity* SceneGraphParentEntity = SCENE.SceneGraph.GetEntityByOldEntityID(SELECTED.GetSelected()->GetObjectID());
+	if (SceneGraphParentEntity != nullptr)
+	{
+		if (SceneGraphParentEntity->GetParent() != SCENE.SceneGraph.GetRoot())
+		{
+			FEEntity* ParentEntity = reinterpret_cast<FEEntity*>(SceneGraphParentEntity->GetParent()->GetOldStyleEntity());
+			LocalAlternativeAxis = glm::inverse(ParentEntity->Transform.WorldSpaceMatrix) * glm::vec4(AxisOfMovement, 0.0f);
+		}
 
-	St = glm::dot(glm::cross((SRayOrigin - FRayOrigin), FRayDirection), DirectionsCross);
-	St /= glm::length(DirectionsCross) * glm::length(DirectionsCross);
+		NewPosition += LocalAlternativeAxis;
+		ObjectTransform.SetPosition(NewPosition);
+	}
+}
 
-	return true;
+#include <glm/gtx/matrix_decompose.hpp>
+void GizmoManager::RotateSelectedEntity(const glm::vec3& AxisOfRotation, FETransformComponent& ObjectTransform, const float& RotationAmount)
+{
+	glm::vec3 LocalAlternativeAxis = AxisOfRotation;
+
+	FENaiveSceneEntity* SceneGraphParentEntity = SCENE.SceneGraph.GetEntityByOldEntityID(SELECTED.GetSelected()->GetObjectID());
+	if (SceneGraphParentEntity != nullptr)
+	{
+		if (SceneGraphParentEntity->GetParent() != SCENE.SceneGraph.GetRoot())
+		{
+			FEEntity* ParentEntity = reinterpret_cast<FEEntity*>(SceneGraphParentEntity->GetParent()->GetOldStyleEntity());
+			//LocalAlternativeAxis = glm::inverse(ParentEntity->Transform.GetQuaternion()) * glm::vec3(AxisOfRotation);
+
+			glm::dvec3 DoubleScale;
+			glm::dquat DoubleRotation;
+			glm::dvec3 DoubleTranslation;
+			glm::dvec3 DoubleSkew;
+			glm::dvec4 DoublePerspective;
+			glm::dmat4 DoubleNewChildLocalMatrix = ParentEntity->Transform.WorldSpaceMatrix;
+			bool Success = glm::decompose(DoubleNewChildLocalMatrix, DoubleScale, DoubleRotation, DoubleTranslation, DoubleSkew, DoublePerspective);
+			if (Success)
+			{
+				LocalAlternativeAxis = glm::inverse(glm::quat(DoubleRotation)) * glm::vec3(AxisOfRotation);
+			}
+
+			//LocalAlternativeAxis = glm::quat(glm::inverse(ParentEntity->Transform.WorldSpaceMatrix)) * glm::vec4(AxisOfRotation, 1.0f);
+		}
+
+		glm::quat RotationQuaternion = glm::quat(cos(RotationAmount * ANGLE_TORADIANS_COF / 2),
+												 LocalAlternativeAxis.x * sin(RotationAmount * ANGLE_TORADIANS_COF / 2),
+												 LocalAlternativeAxis.y * sin(RotationAmount * ANGLE_TORADIANS_COF / 2),
+												 LocalAlternativeAxis.z * sin(RotationAmount * ANGLE_TORADIANS_COF / 2));
+
+		ObjectTransform.RotateByQuaternion(RotationQuaternion);
+	}
 }
 
 void GizmoManager::MouseMoveTransformationGizmos()
 {
 	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject();
 
-	float Ft = 0.0f;
-	float St = 0.0f;
+	float MouseRayParametricIntersection = 0.0f;
+	float GizmoRayParametricIntersection = 0.0f;
 
-	float LastFt = 0.0f;
-	float LastSt = 0.0f;
+	float LastFrameMouseRayParametricIntersection = 0.0f;
+	float LastFrameGizmoRayParametricIntersection = 0.0f;
 
 	if (GIZMO_MANAGER.bTransformationXGizmoActive)
 	{
 		const glm::vec3 LastMouseRayVector = SELECTED.MouseRay(LastMouseX, LastMouseY);
-		RaysIntersection(ENGINE.GetCamera()->GetPosition(), LastMouseRayVector,
-						 glm::vec3(ObjTransform.GetTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(1.0f, 0.0f, 0.0f),
-						 LastFt, LastSt);
+		GEOMETRY.RaysIntersection(ENGINE.GetCamera()->GetPosition(), LastMouseRayVector,
+								  glm::vec3(ObjTransform.GetTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(1.0f, 0.0f, 0.0f),
+								  LastFrameMouseRayParametricIntersection, LastFrameGizmoRayParametricIntersection);
 
 		const glm::vec3 MouseRayVector = SELECTED.MouseRay(MouseX, MouseY);
-		RaysIntersection(ENGINE.GetCamera()->GetPosition(), MouseRayVector,
-						 glm::vec3(ObjTransform.GetTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(1.0f, 0.0f, 0.0f),
-						 Ft, St);
+		GEOMETRY.RaysIntersection(ENGINE.GetCamera()->GetPosition(), MouseRayVector,
+								  glm::vec3(ObjTransform.GetTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(1.0f, 0.0f, 0.0f),
+								  MouseRayParametricIntersection, GizmoRayParametricIntersection);
 
-		const float TDifference = St - LastSt;
-		glm::vec3 NewPosition = ObjTransform.GetPosition();
-		NewPosition.x += TDifference;
-		ObjTransform.SetPosition(NewPosition);
+		const float Difference = GizmoRayParametricIntersection - LastFrameGizmoRayParametricIntersection;
+		MoveSelectedEntityAlongAxis(glm::vec3(Difference, 0.0f, 0.0f), ObjTransform);
 	}
 
 	if (GIZMO_MANAGER.bTransformationYGizmoActive)
 	{
 		const glm::vec3 LastMouseRayVector = SELECTED.MouseRay(LastMouseX, LastMouseY);
-		RaysIntersection(ENGINE.GetCamera()->GetPosition(), LastMouseRayVector,
-						 glm::vec3(ObjTransform.GetTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(0.0f, 1.0f, 0.0f),
-						 LastFt, LastSt);
+		GEOMETRY.RaysIntersection(ENGINE.GetCamera()->GetPosition(), LastMouseRayVector,
+								  glm::vec3(ObjTransform.GetTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(0.0f, 1.0f, 0.0f),
+								  LastFrameMouseRayParametricIntersection, LastFrameGizmoRayParametricIntersection);
 
 		const glm::vec3 MouseRayVector = SELECTED.MouseRay(MouseX, MouseY);
-		RaysIntersection(ENGINE.GetCamera()->GetPosition(), MouseRayVector,
-						 glm::vec3(ObjTransform.GetTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(0.0f, 1.0f, 0.0f),
-						 Ft, St);
+		GEOMETRY.RaysIntersection(ENGINE.GetCamera()->GetPosition(), MouseRayVector,
+								  glm::vec3(ObjTransform.GetTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(0.0f, 1.0f, 0.0f),
+								  MouseRayParametricIntersection, GizmoRayParametricIntersection);
 
-		const float TDifference = St - LastSt;
-		glm::vec3 NewPosition = ObjTransform.GetPosition();
-		NewPosition.y += TDifference;
-		ObjTransform.SetPosition(NewPosition);
+		const float Difference = GizmoRayParametricIntersection - LastFrameGizmoRayParametricIntersection;
+		MoveSelectedEntityAlongAxis(glm::vec3(0.0f, Difference, 0.0f), ObjTransform);
 	}
 
 	if (GIZMO_MANAGER.bTransformationZGizmoActive)
 	{
 		const glm::vec3 LastMouseRayVector = SELECTED.MouseRay(LastMouseX, LastMouseY);
-		RaysIntersection(ENGINE.GetCamera()->GetPosition(), LastMouseRayVector,
-						 glm::vec3(ObjTransform.GetTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(0.0f, 0.0f, 1.0f),
-						 LastFt, LastSt);
+		GEOMETRY.RaysIntersection(ENGINE.GetCamera()->GetPosition(), LastMouseRayVector,
+								  glm::vec3(ObjTransform.GetTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(0.0f, 0.0f, 1.0f),
+								  LastFrameMouseRayParametricIntersection, LastFrameGizmoRayParametricIntersection);
 
 		const glm::vec3 MouseRayVector = SELECTED.MouseRay(MouseX, MouseY);
-		RaysIntersection(ENGINE.GetCamera()->GetPosition(), MouseRayVector,
-						 glm::vec3(ObjTransform.GetTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(0.0f, 0.0f, 1.0f),
-						 Ft, St);
+		GEOMETRY.RaysIntersection(ENGINE.GetCamera()->GetPosition(), MouseRayVector,
+								  glm::vec3(ObjTransform.GetTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(0.0f, 0.0f, 1.0f),
+								  MouseRayParametricIntersection, GizmoRayParametricIntersection);
 
-		const float TDifference = St - LastSt;
-		glm::vec3 NewPosition = ObjTransform.GetPosition();
-		NewPosition.z += TDifference;
-		ObjTransform.SetPosition(NewPosition);
+		const float Difference = GizmoRayParametricIntersection - LastFrameGizmoRayParametricIntersection;
+		MoveSelectedEntityAlongAxis(glm::vec3(0.0f, 0.0f, Difference), ObjTransform);
 	}
 
 	if (GIZMO_MANAGER.bTransformationXYGizmoActive)
 	{
 		const glm::vec3 Difference = GetMousePositionDifferenceOnPlane(glm::vec3(0.0f, 0.0f, 1.0f));
-		glm::vec3 NewPosition = ObjTransform.GetPosition();
-		NewPosition.x += Difference.x;
-		NewPosition.y += Difference.y;
-		ObjTransform.SetPosition(NewPosition);
+		MoveSelectedEntityAlongAxis(Difference, ObjTransform);
 	}
 
 	if (GIZMO_MANAGER.bTransformationYZGizmoActive)
 	{
 		const glm::vec3 Difference = GetMousePositionDifferenceOnPlane(glm::vec3(1.0f, 0.0f, 0.0f));
-		glm::vec3 NewPosition = ObjTransform.GetPosition();
-		NewPosition.y += Difference.y;
-		NewPosition.z += Difference.z;
-		ObjTransform.SetPosition(NewPosition);
+		MoveSelectedEntityAlongAxis(Difference, ObjTransform);
 	}
 
 	if (GIZMO_MANAGER.bTransformationXZGizmoActive)
 	{
 		const glm::vec3 Difference = GetMousePositionDifferenceOnPlane(glm::vec3(0.0f, 1.0f, 0.0f));
-		glm::vec3 NewPosition = ObjTransform.GetPosition();
-		NewPosition.x += Difference.x;
-		NewPosition.z += Difference.z;
-		ObjTransform.SetPosition(NewPosition);
+		MoveSelectedEntityAlongAxis(Difference, ObjTransform);
 	}
 
 	ApplyChangesToSelectedObject(ObjTransform);
@@ -698,9 +727,16 @@ void GizmoManager::MouseMoveScaleGizmos()
 	if (GIZMO_MANAGER.bScaleXGizmoActive && GIZMO_MANAGER.bScaleYGizmoActive && GIZMO_MANAGER.bScaleZGizmoActive)
 	{
 		const glm::vec3 Difference = GetMousePositionDifferenceOnPlane(-ENGINE.GetCamera()->GetForward());
-		const float Magnitude = Difference.x + Difference.y + Difference.z;
-
+		float Magnitude = Difference.x + Difference.y + Difference.z;
+		
 		glm::vec3 EntityScale = ObjTransform.GetScale();
+		// Calculate the average current scale
+		float AverageScale = (EntityScale.x + EntityScale.y + EntityScale.z) / 3.0f;
+
+		// Adjust the magnitude based on the current scale
+		// to prevent the object from scaling too fast or too slow
+		float ScaleFactor = glm::clamp(1.0f / AverageScale, 0.001f, 1000.0f);
+		Magnitude /= ScaleFactor;
 		EntityScale += Magnitude;
 		ObjTransform.SetScale(EntityScale);
 	}
@@ -736,6 +772,11 @@ void GizmoManager::MouseMoveScaleGizmos()
 
 void GizmoManager::MouseMoveRotateGizmos()
 {
+	if (!GIZMO_MANAGER.bRotateXGizmoActive &&
+		!GIZMO_MANAGER.bRotateYGizmoActive &&
+		!GIZMO_MANAGER.bRotateZGizmoActive)
+		return;
+
 	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject();
 
 	const float DifferenceX = static_cast<float>(MouseX - LastMouseX);
@@ -743,42 +784,18 @@ void GizmoManager::MouseMoveRotateGizmos()
 
 	const float Difference = (DifferenceX + DifferenceY) / 2.0f;
 
+	glm::vec3 AxisOfRotation = glm::vec3(0.0f, 0.0f, 0.0f);
+
 	if (GIZMO_MANAGER.bRotateXGizmoActive)
-	{
-		const glm::vec3 XVector = glm::vec3(1.0f, 0.0f, 0.0f);
-
-		const glm::quat RotationQuaternion1 = glm::quat(cos(Difference * ANGLE_TORADIANS_COF / 2),
-		                                                XVector.x * sin(Difference * ANGLE_TORADIANS_COF / 2),
-		                                                XVector.y * sin(Difference * ANGLE_TORADIANS_COF / 2),
-		                                                XVector.z * sin(Difference * ANGLE_TORADIANS_COF / 2));
-
-		ObjTransform.RotateByQuaternion(RotationQuaternion1);
-	}
+		AxisOfRotation = glm::vec3(1.0f, 0.0f, 0.0f);
 
 	if (GIZMO_MANAGER.bRotateYGizmoActive)
-	{
-		const glm::vec3 YVector = glm::vec3(0.0f, 1.0f, 0.0f);
-
-		const glm::quat RotationQuaternion1 = glm::quat(cos(Difference * ANGLE_TORADIANS_COF / 2),
-		                                                YVector.x * sin(Difference * ANGLE_TORADIANS_COF / 2),
-		                                                YVector.y * sin(Difference * ANGLE_TORADIANS_COF / 2),
-		                                                YVector.z * sin(Difference * ANGLE_TORADIANS_COF / 2));
-
-		ObjTransform.RotateByQuaternion(RotationQuaternion1);
-	}
+		AxisOfRotation = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	if (GIZMO_MANAGER.bRotateZGizmoActive)
-	{
-		const glm::vec3 ZVector = glm::vec3(0.0f, 0.0f, 1.0f);
+		AxisOfRotation = glm::vec3(0.0f, 0.0f, 1.0f);
 
-		const glm::quat RotationQuaternion1 = glm::quat(cos(Difference * ANGLE_TORADIANS_COF / 2),
-		                                                ZVector.x * sin(Difference * ANGLE_TORADIANS_COF / 2),
-		                                                ZVector.y * sin(Difference * ANGLE_TORADIANS_COF / 2),
-		                                                ZVector.z * sin(Difference * ANGLE_TORADIANS_COF / 2));
-
-		ObjTransform.RotateByQuaternion(RotationQuaternion1);
-	}
-
+	RotateSelectedEntity(AxisOfRotation, ObjTransform, Difference);
 	ApplyChangesToSelectedObject(ObjTransform);
 }
 
@@ -825,9 +842,9 @@ void GizmoManager::OnSelectedObjectUpdate()
 			GIZMO_MANAGER.TransformationXGizmoEntity->SetVisibility(true);
 			GIZMO_MANAGER.TransformationYGizmoEntity->SetVisibility(true);
 			GIZMO_MANAGER.TransformationZGizmoEntity->SetVisibility(true);
-			GIZMO_MANAGER.TransformationXyGizmoEntity->SetVisibility(true);
-			GIZMO_MANAGER.TransformationYzGizmoEntity->SetVisibility(true);
-			GIZMO_MANAGER.TransformationXzGizmoEntity->SetVisibility(true);
+			GIZMO_MANAGER.TransformationXYGizmoEntity->SetVisibility(true);
+			GIZMO_MANAGER.TransformationYZGizmoEntity->SetVisibility(true);
+			GIZMO_MANAGER.TransformationXZGizmoEntity->SetVisibility(true);
 		}
 		else if (GIZMO_MANAGER.GizmosState == SCALE_GIZMOS)
 		{
@@ -908,86 +925,115 @@ void GizmoManager::ApplyChangesToSelectedObject(FETransformComponent Changes)
 
 void GizmoManager::ReInitializeEntities()
 {
-	// transformationXGizmo
+	ParentGizmoEntity = SCENE.AddEmptyEntity("ParentGizmoEntity");
+	ParentGizmoGraphEntity = SCENE.SceneGraph.GetEntityByOldEntityID(ParentGizmoEntity->GetObjectID());
+
+	// TransformationXGizmo
 	TransformationXGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationXGizmoGM")[0], "transformationXGizmoEntity");
 	TransformationXGizmoEntity->SetCastShadows(false);
 	TransformationXGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
 	TransformationXGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
 	TransformationXGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(TransformationXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// transformationYGizmo
+	// TransformationYGizmo
 	TransformationYGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationYGizmoGM")[0], "transformationYGizmoEntity");
 	TransformationYGizmoEntity->SetCastShadows(false);
 	TransformationYGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
 	TransformationYGizmoEntity->Transform.SetRotation(glm::vec3(0.0f));
 	TransformationYGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(TransformationYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// transformationZGizmo
+	// TransformationZGizmo
 	TransformationZGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationZGizmoGM")[0], "transformationZGizmoEntity");
 	TransformationZGizmoEntity->SetCastShadows(false);
 	TransformationZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
 	TransformationZGizmoEntity->Transform.SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
 	TransformationZGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(TransformationZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// plane gizmos
-	TransformationXyGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationXYGizmoGM")[0], "transformationXYGizmoEntity");
-	TransformationXyGizmoEntity->SetCastShadows(false);
-	TransformationXyGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale, GizmosScale, GizmosScale * 0.02f));
-	TransformationXyGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
-	TransformationXyGizmoEntity->SetIsPostprocessApplied(false);
+	// Plane gizmos
+	TransformationXYGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationXYGizmoGM")[0], "transformationXYGizmoEntity");
+	TransformationXYGizmoEntity->SetCastShadows(false);
+	TransformationXYGizmoEntity->Transform.SetPosition(glm::vec3(0.005f, 0.005f, 0.0f));
+	TransformationXYGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale, GizmosScale, GizmosScale * 0.02f));
+	TransformationXYGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
+	TransformationXYGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(TransformationXYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	
-	TransformationYzGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationYZGizmoGM")[0], "transformationYZGizmoEntity");
-	TransformationYzGizmoEntity->SetCastShadows(false);
-	TransformationYzGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 0.02f, GizmosScale, GizmosScale));
-	TransformationYzGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	TransformationYzGizmoEntity->SetIsPostprocessApplied(false);
+	TransformationYZGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationYZGizmoGM")[0], "transformationYZGizmoEntity");
+	TransformationYZGizmoEntity->SetCastShadows(false);
+	TransformationYZGizmoEntity->Transform.SetPosition(glm::vec3(0.0f, 0.005f, 0.005f));
+	TransformationYZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 0.02f, GizmosScale, GizmosScale));
+	TransformationYZGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+	TransformationYZGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(TransformationYZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	TransformationXzGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationXZGizmoGM")[0], "transformationXZGizmoEntity");
-	TransformationXzGizmoEntity->SetCastShadows(false);
-	TransformationXzGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale, GizmosScale * 0.02f, GizmosScale));
-	TransformationXzGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	TransformationXzGizmoEntity->SetIsPostprocessApplied(false);
+	TransformationXZGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationXZGizmoGM")[0], "transformationXZGizmoEntity");
+	TransformationXZGizmoEntity->SetCastShadows(false);
+	TransformationXZGizmoEntity->Transform.SetPosition(glm::vec3(0.005f, 0.0f, 0.005f));
+	TransformationXZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale, GizmosScale * 0.02f, GizmosScale));
+	TransformationXZGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+	TransformationXZGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(TransformationXZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// scaleXGizmo
+	// ScaleXGizmo
 	ScaleXGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("scaleXGizmoGM")[0], "scaleXGizmoEntity");
 	ScaleXGizmoEntity->SetCastShadows(false);
 	ScaleXGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
 	ScaleXGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
 	ScaleXGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(ScaleXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// scaleYGizmo
+	// ScaleYGizmo
 	ScaleYGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("scaleYGizmoGM")[0], "scaleYGizmoEntity");
 	ScaleYGizmoEntity->SetCastShadows(false);
 	ScaleYGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
 	ScaleYGizmoEntity->Transform.SetRotation(glm::vec3(0.0f));
 	ScaleYGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(ScaleYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// scaleZGizmo
+	// ScaleZGizmo
 	ScaleZGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("scaleZGizmoGM")[0], "scaleZGizmoEntity");
 	ScaleZGizmoEntity->SetCastShadows(false);
 	ScaleZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
 	ScaleZGizmoEntity->Transform.SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
 	ScaleZGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(ScaleZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// rotateXGizmo
+	// RotateXGizmo
 	RotateXGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("rotateXGizmoGM")[0], "rotateXGizmoEntity");
 	RotateXGizmoEntity->SetCastShadows(false);
 	RotateXGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateXGizmoEntity->Transform.SetRotation(RotateXStandardRotation);
 	RotateXGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(RotateXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// rotateYGizmo
+	// RotateYGizmo
 	RotateYGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("rotateYGizmoGM")[0], "rotateYGizmoEntity");
 	RotateYGizmoEntity->SetCastShadows(false);
 	RotateYGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateYGizmoEntity->Transform.SetRotation(RotateYStandardRotation);
 	RotateYGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(RotateYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 
-	// rotateZGizmo
+	// RotateZGizmo
 	RotateZGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("rotateZGizmoGM")[0], "rotateZGizmoEntity");
 	RotateZGizmoEntity->SetCastShadows(false);
 	RotateZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateZGizmoEntity->Transform.SetRotation(RotateZStandardRotation);
 	RotateZGizmoEntity->SetIsPostprocessApplied(false);
+	// Temporary overly complicated solution, because of new and old entity system.
+	SCENE.SceneGraph.MoveEntity(SCENE.SceneGraph.GetEntityByOldEntityID(RotateZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphEntity->GetObjectID());
 }
