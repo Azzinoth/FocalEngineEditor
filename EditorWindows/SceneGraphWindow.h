@@ -43,7 +43,7 @@ class FEEditorSceneGraphWindow
     int64_t ItemUnderMouse = 0;
     int SceneNodeDragAndDropTargetIndex = -1;
     std::unordered_map <int64_t, DragAndDropTarget*> SceneNodeDragAndDropTargets;
-    DragAndDropTarget* GetSceneNodeDragAndDropTarget(FENaiveSceneEntity* NodeToFind);
+    DragAndDropTarget* GetSceneNodeDragAndDropTarget(FENaiveSceneGraphNode* NodeToFind);
 
     bool bSceneNodeTargetsDirty = true;
     static bool SceneNodeDragAndDropCallback(FEObject* Object, void** SceneNodeTarget)
@@ -51,10 +51,10 @@ class FEEditorSceneGraphWindow
         if (Object == nullptr || SceneNodeTarget == nullptr ||  Object->GetType() != FE_SCENE_ENTITY)
 			return false;
 		
-        FENaiveSceneEntity* NodeTarget = reinterpret_cast<FENaiveSceneEntity*>(SceneNodeTarget);
-		FENaiveSceneEntity* SceneEntity = reinterpret_cast<FENaiveSceneEntity*>(Object);
+        FENaiveSceneGraphNode* NodeTarget = reinterpret_cast<FENaiveSceneGraphNode*>(SceneNodeTarget);
+		FENaiveSceneGraphNode* SceneEntity = reinterpret_cast<FENaiveSceneGraphNode*>(Object);
 
-        return SCENE.SceneGraph.MoveEntity(SceneEntity->GetObjectID(), NodeTarget->GetObjectID());
+        return SCENE.SceneGraph.MoveNode(SceneEntity->GetObjectID(), NodeTarget->GetObjectID());
     }
 
     void UpdateSceneNodeDragAndDropTargets();
@@ -62,7 +62,7 @@ class FEEditorSceneGraphWindow
     // Rendering and initialization
     void Render();
     void RenderNewSceneGraph();
-    void RenderSubTree(FENaiveSceneEntity* SubTreeRoot);
+    void RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot);
     void Clear();
     void InitializeResources();
 

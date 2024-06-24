@@ -175,7 +175,7 @@ void FEEditorSceneGraphWindow::DrawCorrectIcon(const FEObject* SceneObject) cons
 	return;
 }
 
-DragAndDropTarget* FEEditorSceneGraphWindow::GetSceneNodeDragAndDropTarget(FENaiveSceneEntity* NodeToFind)
+DragAndDropTarget* FEEditorSceneGraphWindow::GetSceneNodeDragAndDropTarget(FENaiveSceneGraphNode* NodeToFind)
 {
 	int64_t UniqueID = 0;
 	// If it is Root.
@@ -198,7 +198,7 @@ DragAndDropTarget* FEEditorSceneGraphWindow::GetSceneNodeDragAndDropTarget(FENai
 	return SceneNodeDragAndDropTargets[UniqueID];
 }
 
-void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneEntity* SubTreeRoot)
+void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 {
 	SceneNodeDragAndDropTargetIndex++;
 	int64_t UniqueID = 0;
@@ -270,7 +270,7 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneEntity* SubTreeRoot)
 
 void FEEditorSceneGraphWindow::RenderNewSceneGraph()
 {
-	FENaiveSceneEntity* Root = SCENE.SceneGraph.GetRoot();
+	FENaiveSceneGraphNode* Root = SCENE.SceneGraph.GetRoot();
 
 	if (bSceneNodeTargetsDirty)
 		SceneNodeDragAndDropTargets.clear();

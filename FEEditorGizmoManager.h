@@ -23,7 +23,7 @@ public:
 
 	// Parent Gizmo Entity
 	FEEntity* ParentGizmoEntity = nullptr;
-	FENaiveSceneEntity* ParentGizmoGraphEntity = nullptr;
+	FENaiveSceneGraphNode* ParentGizmoGraphEntity = nullptr;
 
 	FEEntity* TransformationXGizmoEntity = nullptr;
 	FEEntity* TransformationYGizmoEntity = nullptr;
