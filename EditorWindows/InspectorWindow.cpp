@@ -145,6 +145,12 @@ void FEEditorInspectorWindow::ShowTransformConfiguration(FEObject* Object, FETra
 	{
 		FEEntity* Entity = SCENE.GetEntity(Object->GetObjectID());
 
+		// Temporary solution, becuase of the lack of proper ECS system
+		if (Object->GetType() == FE_ENTITY)
+		{
+			Entity = reinterpret_cast<FEEntity*>(Object);
+		}
+
 		FEAABB RealAabb = Entity->GetAABB();
 		const glm::vec3 Min = RealAabb.GetMin();
 		const glm::vec3 Max = RealAabb.GetMax();
@@ -444,15 +450,23 @@ void FEEditorInspectorWindow::Render()
 
 			ImGui::Separator();
 			ImGui::Text("Prefab : ");
-			FETexture* PreviewTexture = PREVIEW_MANAGER.GetPrefabPreview(Entity->Prefab->GetObjectID());
-
-			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+			// Temporary solution, becuase of the lack of proper ECS system
+			if (Entity->Prefab != nullptr)
 			{
-				EntityToModify = Entity;
-				SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, ChangePrefabOfEntityCallBack, Entity->Prefab);
+				FETexture* PreviewTexture = PREVIEW_MANAGER.GetPrefabPreview(Entity->Prefab->GetObjectID());
 
+				if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+				{
+					EntityToModify = Entity;
+					SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, ChangePrefabOfEntityCallBack, Entity->Prefab);
+
+				}
+				EntityChangePrefabTarget->StickToItem();
 			}
-			EntityChangePrefabTarget->StickToItem();
+			else
+			{
+				ImGui::Text("No prefab assigned.");
+			}
 
 			bool bOpenContextMenu = false;
 			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))

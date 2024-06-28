@@ -47,10 +47,7 @@ private:
 	void SetProjectFolder(std::string NewValue);
 };
 
-//#define PROJECTS_FOLDER "../FocalEngineProjects"
-//#define PROJECTS_FOLDER "C:/Users/Kindr/Downloads/FocalEngineProjects-master"
-//#define PROJECTS_FOLDER "C:/Users/Anastasiia/Desktop/FocalEngine/FEProjects"
-#define PROJECTS_FILE_VER 0.02f
+#define PROJECTS_FILE_VER 0.025f
 
 class FEProjectManager
 {

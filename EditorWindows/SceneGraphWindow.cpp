@@ -227,6 +227,15 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 	bool bOpened = ImGui::TreeNodeEx((void*)UniqueID, NodeFlags, Name.c_str(), 0);
 	GetSceneNodeDragAndDropTarget(SubTreeRoot)->StickToItem();
 
+	if (ImGui::IsItemClicked())
+	{
+		if (SubTreeRoot->GetOldStyleEntity() != nullptr)
+		{
+			SELECTED.SetSelected(OBJECT_MANAGER.GetFEObject(SubTreeRoot->GetOldStyleEntity()->GetObjectID()));
+			SELECTED.SetDirtyFlag(false);
+		}
+	}
+
 	if (ImGui::IsItemHovered())
 	{
 		if (!bShouldOpenContextMenu && !DRAG_AND_DROP_MANAGER.ObjectIsDraged())

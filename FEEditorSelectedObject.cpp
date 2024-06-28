@@ -382,12 +382,27 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 	//FE_GL_ERROR(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT));
 
+	// Temporary solution, becuase of the lack of proper ECS system
+	if (Container != nullptr && Container->GetType() == FE_ENTITY)
+	{
+		FEEntity* SelectedEntity = reinterpret_cast<FEEntity*>(Container);
+		if (SelectedEntity->Prefab == nullptr)
+		{
+			HALO_SELECTION_EFFECT.HaloObjectsFb->UnBind();
+			ENGINE.SetClearColor(OriginalClearColor);
+			HALO_SELECTION_EFFECT.PostProcess->bActive = true;
+
+			return;
+		}
+	}
+
 	if (Container == nullptr)
 	{
 		HALO_SELECTION_EFFECT.HaloObjectsFb->UnBind();
 		ENGINE.SetClearColor(OriginalClearColor);
 		//FE_GL_ERROR(glClearColor(FE_CLEAR_COLOR.x, FE_CLEAR_COLOR.y, FE_CLEAR_COLOR.z, FE_CLEAR_COLOR.w));
 		HALO_SELECTION_EFFECT.PostProcess->bActive = true;
+
 		return;
 	}
 	
@@ -508,6 +523,13 @@ FEEntity* FEEditorSelectedObject::GetEntity() const
 	if (Container == nullptr)
 		return nullptr;
 
+	// Temporary solution, becuase of the lack of proper ECS system
+	if (Container->GetType() == FE_ENTITY)
+	{
+		FEEntity* SelectedEntity = reinterpret_cast<FEEntity*>(Container);
+		if (SelectedEntity->Prefab == nullptr)
+			return SelectedEntity;
+	}
 
 	if (Container->GetType() == FE_ENTITY || Container->GetType() == FE_ENTITY_INSTANCED)
 	{

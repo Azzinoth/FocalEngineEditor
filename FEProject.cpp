@@ -396,9 +396,38 @@ void FEProject::SaveScene(bool bFullSave)
 
 	Root["version"] = PROJECTS_FILE_VER;
 
+	// Saving scene hierarchy.
+	Json::Value SceneHierarchy = SCENE.SceneGraph.ToJson();
+
+	std::vector<std::string> KeysToDelete;
+	Json::Value& SceneNodes = SceneHierarchy["Nodes"];
+
+	std::vector<std::string> ListOfOmitedObjects = { "gizmo", "Gizmo", "editorPreviewEntity" };
+	// Parsing scene hierarchy to delete all internal editor objects.
+	for (auto it = SceneNodes.begin(); it != SceneNodes.end(); it++)
+	{
+		auto test = it.key().asString();
+		auto Name = SceneNodes[it.key().asString()]["Name"].asString();
+
+		for (size_t j = 0; j < ListOfOmitedObjects.size(); j++)
+		{
+			if (Name.find(ListOfOmitedObjects[j]) != std::string::npos)
+			{
+				KeysToDelete.push_back(it.key().asString());
+				break;
+			}
+		}
+	}
+
+	for (size_t i = 0; i < KeysToDelete.size(); i++)
+	{
+		SceneNodes.removeMember(KeysToDelete[i]);
+	}
+	Root["sceneHierarchy"] = SceneHierarchy;
+
 	if (!bFullSave)
 	{
-		// saving all unSaved objects
+		// Saving all unsaved objects.
 		for (size_t i = 0; i < UnSavedObjects.size(); i++)
 		{
 			switch (UnSavedObjects[i]->GetType())
@@ -422,7 +451,7 @@ void FEProject::SaveScene(bool bFullSave)
 		}
 	}
 
-	// saving Meshes
+	// Saving Meshes.
 	std::vector<std::string> MeshList = RESOURCE_MANAGER.GetMeshList();
 	Json::Value MeshData;
 	for (size_t i = 0; i < MeshList.size(); i++)
@@ -439,7 +468,7 @@ void FEProject::SaveScene(bool bFullSave)
 	}
 	Root["meshes"] = MeshData;
 
-	// saving Textures
+	// Saving Textures.
 	std::vector<std::string> TexturesList = RESOURCE_MANAGER.GetTextureList();
 	Json::Value TexturesData;
 	for (size_t i = 0; i < TexturesList.size(); i++)
@@ -460,7 +489,7 @@ void FEProject::SaveScene(bool bFullSave)
 	}
 	Root["textures"] = TexturesData;
 
-	// saving Materials
+	// Saving Materials.
 	std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialList();
 	Json::Value MaterialData;
 	for (size_t i = 0; i < MaterialList.size(); i++)
@@ -495,7 +524,7 @@ void FEProject::SaveScene(bool bFullSave)
 	}
 	Root["materials"] = MaterialData;
 
-	// saving gameModels
+	// Saving GameModels.
 	std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
 	Json::Value GameModelData;
 	for (size_t i = 0; i < GameModelList.size(); i++)
@@ -527,7 +556,7 @@ void FEProject::SaveScene(bool bFullSave)
 	}
 	Root["gameModels"] = GameModelData;
 
-	// saving prefabs
+	// Saving Prefabs.
 	std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
 	Json::Value PrefabData;
 	for (size_t i = 0; i < PrefabList.size(); i++)
@@ -547,7 +576,7 @@ void FEProject::SaveScene(bool bFullSave)
 	}
 	Root["prefabs"] = PrefabData;
 
-	// saving Entities
+	// Saving Entities.
 	std::vector<std::string> EntityList = SCENE.GetEntityList();
 	Json::Value EntityData;
 	for (size_t i = 0; i < EntityList.size(); i++)
@@ -556,10 +585,32 @@ void FEProject::SaveScene(bool bFullSave)
 		if (EDITOR_INTERNAL_RESOURCES.IsInInternalEditorList(Entity))
 			continue;
 
+		// Temporary solution, becuase of the lack of proper ECS system
+		bool bOmit = false;
+		for (size_t j = 0; j < ListOfOmitedObjects.size(); j++)
+		{
+			if (Entity->GetName().find(ListOfOmitedObjects[j]) != std::string::npos)
+			{
+				bOmit = true;
+				break;
+			}
+		}
+		if (bOmit)
+			continue;
+
 		EntityData[Entity->GetObjectID()]["ID"] = Entity->GetObjectID();
 		EntityData[Entity->GetObjectID()]["type"] = FEObjectTypeToString(Entity->GetType());
 		EntityData[Entity->GetObjectID()]["name"] = Entity->GetName();
-		EntityData[Entity->GetObjectID()]["prefab"] = Entity->Prefab->GetObjectID();
+		EntityData[Entity->GetObjectID()]["visible"] = Entity->IsVisible();
+		// Temporary solution, becuase of the lack of proper ECS system
+		if (Entity->Prefab != nullptr)
+		{
+			EntityData[Entity->GetObjectID()]["prefab"] = Entity->Prefab->GetObjectID();
+		}
+		else
+		{
+			EntityData[Entity->GetObjectID()]["prefab"] = "none";
+		}
 		WriteTransformToJson(EntityData[Entity->GetObjectID()]["transformation"], &Entity->Transform);
 
 		if (Entity->GetType() == FE_ENTITY_INSTANCED)
@@ -619,7 +670,7 @@ void FEProject::SaveScene(bool bFullSave)
 	}
 	Root["entities"] = EntityData;
 
-	// saving Terrains
+	// Saving Terrains.
 	std::vector<std::string> TerrainList = SCENE.GetTerrainList();
 	Json::Value TerrainData;
 	for (size_t i = 0; i < TerrainList.size(); i++)
@@ -673,7 +724,7 @@ void FEProject::SaveScene(bool bFullSave)
 	}
 	Root["terrains"] = TerrainData;
 
-	// saving Lights
+	// Saving Lights.
 	std::vector<std::string> LightList = SCENE.GetLightsList();
 	Json::Value LightData;
 	for (size_t i = 0; i < LightList.size(); i++)
@@ -696,7 +747,7 @@ void FEProject::SaveScene(bool bFullSave)
 		LightData[Light->GetObjectID()]["shadowBiasVariableIntensity"] = Light->GetShadowBiasVariableIntensity();
 		LightData[Light->GetObjectID()]["shadowBlurFactor"] = Light->GetShadowBlurFactor();
 
-		// type specific information
+		// Type specific information.
 		if (Light->GetType() == FE_DIRECTIONAL_LIGHT)
 		{
 			FEDirectionalLight* DirectionalLight = reinterpret_cast<FEDirectionalLight*>(Light);
@@ -728,7 +779,7 @@ void FEProject::SaveScene(bool bFullSave)
 	}
 	Root["lights"] = LightData;
 
-	// saving Effects settings
+	// Saving Effects settings.
 	Json::Value EffectsData;
 	// *********** Gamma Correction & Exposure ***********
 	EffectsData["Gamma Correction & Exposure"]["Gamma"] = ENGINE.GetCamera()->GetGamma();
@@ -757,7 +808,7 @@ void FEProject::SaveScene(bool bFullSave)
 
 	Root["effects"] = EffectsData;
 
-	// saving Camera settings
+	// Saving Camera settings.
 	Json::Value CameraData;
 
 	CameraData["position"]["X"] = ENGINE.GetCamera()->GetPosition()[0];
@@ -778,7 +829,7 @@ void FEProject::SaveScene(bool bFullSave)
 
 	Root["camera"] = CameraData;
 
-	// saving into file
+	// Saving into file.
 	Json::StreamWriterBuilder Builder;
 	const std::string JsonFile = Json::writeString(Builder, Root);
 
@@ -830,10 +881,10 @@ void FEProject::LoadScene()
 	if (!Reader->parse(FileData.c_str(), FileData.c_str() + FileData.size(), &Root, &Err))
 		return;
 
-	// read project file version
+	// Read project file version.
 	float ProjectVersion = Root["version"].asFloat();
 
-	// project file was created before any version was written to project files.
+	// Project file was created before any version was written to project files.
 	if (ProjectVersion != PROJECTS_FILE_VER)
 	{
 		if (ProjectVersion == 0.0f)
@@ -849,7 +900,7 @@ void FEProject::LoadScene()
 		}
 	}
 
-	// loading Meshes
+	// Loading Meshes
 	std::vector<Json::String> MeshList = Root["meshes"].getMemberNames();
 	for (size_t i = 0; i < MeshList.size(); i++)
 	{
@@ -1045,6 +1096,9 @@ void FEProject::LoadScene()
 																					  Root["entities"][EntityList[i]]["name"].asString(),
 																					  Root["entities"][EntityList[i]]["ID"].asString());
 
+				if (abs(ProjectVersion - 0.025f) <= FLT_EPSILON)
+					InstancedEntity->SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
+
 				ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(EntityList[i])->Transform);
 
 				InstancedEntity->SpawnInfo.Seed = Root["entities"][EntityList[i]]["spawnInfo"]["seed"].asInt();
@@ -1135,9 +1189,12 @@ void FEProject::LoadScene()
 				else
 				{
 					SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
-									Root["entities"][EntityList[i]]["name"].asString(),
-									Root["entities"][EntityList[i]]["ID"].asString());
+															   Root["entities"][EntityList[i]]["name"].asString(),
+															   Root["entities"][EntityList[i]]["ID"].asString());
 				}
+
+				if (abs(ProjectVersion - 0.025f) <= FLT_EPSILON)
+					SCENE.GetEntity(EntityList[i])->SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
 				
 				ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(EntityList[i])->Transform);
 			}
@@ -1149,6 +1206,14 @@ void FEProject::LoadScene()
 							Root["entities"][EntityList[i]]["ID"].asString());
 			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(EntityList[i])->Transform);
 		}
+	}
+
+	if (abs(ProjectVersion - 0.025f) <= FLT_EPSILON)
+	{
+		int y = 0;
+		y++;
+		// Loading scene hierarchy.
+		SCENE.SceneGraph.FromJson(Root["sceneHierarchy"]);
 	}
 
 	// loading Lights
