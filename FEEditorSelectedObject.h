@@ -18,19 +18,17 @@ public:
 	void ReInitializeResources();
 	void SetOnUpdateFunc(void(*Func)());
 
-	FEObject* GetSelected() const;
+	FENewEntity* GetSelected() const;
 
 	FEEntity* GetEntity() const;
 	FETerrain* GetTerrain() const;
 	FELight* GetLight() const;
 
-	/*template <class T>
-	T* getSelected(FEObjectType type);*/
-
 	bool GetDirtyFlag() const;
 	void SetDirtyFlag(bool NewValue);
 
-	void SetSelected(FEObject* SelectedObject);
+	//void SetSelected(FEObject* SelectedObject);
+	void SetSelected(FENewEntity* SelectedObject);
 	void Clear();
 
 	glm::dvec3 MouseRay(double MouseX, double MouseY) const;
@@ -50,7 +48,8 @@ public:
 	FEShader* FEPixelAccurateInstancedSelection = nullptr; 
 	FEShader* FEPixelAccurateSelection = nullptr;
 private:
-	FEObject* Container = nullptr;
+	FENewEntity* Container = nullptr;
+	//FENewEntity* NewContainer = nullptr;
 	
 	bool bDirtyFlag = false;
 

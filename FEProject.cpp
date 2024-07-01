@@ -61,6 +61,8 @@ void FEProjectManager::CloseCurrentProject()
 
 void FEProjectManager::OpenProject(const int ProjectIndex)
 {
+	SCENE.Clear();
+
 	PROJECT_MANAGER.SetCurrent(List[ProjectIndex]);
 	PROJECT_MANAGER.GetCurrent()->LoadScene();
 	IndexChosen = -1;
@@ -100,15 +102,15 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 	PREVIEW_MANAGER.UpdateAll();
 	SELECTED.Clear();
 
-	// cleaning dirty flag of entities
-	const std::vector<std::string> EntityList = SCENE.GetEntityList();
-	for (size_t i = 0; i < EntityList.size(); i++)
-	{
-		FEEntity* Entity = SCENE.GetEntity(EntityList[i]);
-		// but before that update AABB
-		Entity->GetAABB();
-		Entity->Transform.SetDirtyFlag(false);
-	}
+	// Cleaning dirty flag of entities.
+	//const std::vector<std::string> EntityList = SCENE.GetEntityList();
+	//for (size_t i = 0; i < EntityList.size(); i++)
+	//{
+	//	FEEntity* Entity = SCENE.GetEntity(EntityList[i]);
+	//	// But before that update AABB.
+	//	Entity->GetAABB();
+	//	Entity->Transform.SetDirtyFlag(false);
+	//}
 }
 
 void FEProjectManager::DisplayProjectSelection()
@@ -1197,6 +1199,11 @@ void FEProject::LoadScene()
 					SCENE.GetEntity(EntityList[i])->SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
 				
 				ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(EntityList[i])->Transform);
+				FENewEntity* NewEntity = SCENE.GetNewStyleEntityByOldStyleID(EntityList[i]);
+				if (NewEntity != nullptr)
+				{
+					NewEntity->GetComponent<FETransformComponent>() = SCENE.GetEntity(EntityList[i])->Transform;
+				}
 			}
 		}
 		else

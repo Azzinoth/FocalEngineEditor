@@ -84,7 +84,8 @@ static void CreateNewInstancedEntityCallBack(const std::vector<FEObject*> Select
 
 		FEEntityInstanced* NewEntity = SCENE.AddEntityInstanced(SelectedPrefab);
 		NewEntity->Transform.SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-		SELECTED.SetSelected(NewEntity);
+		// FIX ME!
+		//SELECTED.SetSelected(NewEntity);
 
 		PROJECT_MANAGER.GetCurrent()->SetModified(true);
 	}
@@ -98,9 +99,12 @@ static void CreateNewEntityCallBack(const std::vector<FEObject*> SelectionsResul
 		if (SelectedPrefab == nullptr)
 			return;
 
+		// FIX ME!
 		FEEntity* NewEntity = SCENE.AddEntity(SelectedPrefab);
-		NewEntity->Transform.SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-		SELECTED.SetSelected(NewEntity);
+		FENewEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(NewEntity->GetObjectID());
+		NewNewEntity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+		//NewEntity->Transform.SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+		SELECTED.SetSelected(NewNewEntity);
 
 		PROJECT_MANAGER.GetCurrent()->SetModified(true);
 	}
@@ -178,15 +182,15 @@ void FEEditorSceneGraphWindow::DrawCorrectIcon(const FEObject* SceneObject) cons
 DragAndDropTarget* FEEditorSceneGraphWindow::GetSceneNodeDragAndDropTarget(FENaiveSceneGraphNode* NodeToFind)
 {
 	int64_t UniqueID = 0;
-	// If it is Root.
-	if (NodeToFind->GetOldStyleEntity() == nullptr)
-	{
-		UniqueID = 1;
-	}
-	else
-	{
-		UniqueID = static_cast<intptr_t>(std::hash<std::string>{}(NodeToFind->GetOldStyleEntity()->GetObjectID().c_str()));
-	}
+	//// If it is Root.
+	//if (NodeToFind->GetOldStyleEntity() == nullptr)
+	//{
+	//	UniqueID = 1;
+	//}
+	//else
+	//{
+		UniqueID = static_cast<intptr_t>(std::hash<std::string>{}(NodeToFind->GetNewStyleEntity()->GetObjectID().c_str()));
+	//}
 
 	if (SceneNodeDragAndDropTargets.find(UniqueID) == SceneNodeDragAndDropTargets.end())
 	{
@@ -204,34 +208,34 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 	int64_t UniqueID = 0;
 	bool bIsLeaf = SubTreeRoot->GetChildren().size() == 0;
 	ImGuiTreeNodeFlags NodeFlags = bIsLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : ImGuiTreeNodeFlags_OpenOnArrow;
-	std::string Name = SubTreeRoot->GetOldStyleEntity() == nullptr ? PROJECT_MANAGER.GetCurrent()->GetName() : SubTreeRoot->GetName();
+	std::string Name = SubTreeRoot->GetParent() == nullptr ? PROJECT_MANAGER.GetCurrent()->GetName() : SubTreeRoot->GetName();
 
-	if (SELECTED.GetSelected() != nullptr && SubTreeRoot->GetOldStyleEntity() != nullptr)
+	if (SELECTED.GetSelected() != nullptr && SubTreeRoot->GetNewStyleEntity() != nullptr)
 	{
-		if (SELECTED.GetSelected()->GetObjectID() == SubTreeRoot->GetOldStyleEntity()->GetObjectID())
+		if (SELECTED.GetSelected()->GetObjectID() == SubTreeRoot->GetNewStyleEntity()->GetObjectID())
 		{
 			NodeFlags |= ImGuiTreeNodeFlags_Selected;
 		}
 	}
 
 	// If it is Root.
-	if (SubTreeRoot->GetOldStyleEntity() == nullptr)
+	/*if (SubTreeRoot->GetOldStyleEntity() == nullptr)
 	{
 		UniqueID = 1;
 	}
 	else
-	{
-		UniqueID = static_cast<intptr_t>(std::hash<std::string>{}(SubTreeRoot->GetOldStyleEntity()->GetObjectID().c_str()));
-	}
+	{*/
+		UniqueID = static_cast<intptr_t>(std::hash<std::string>{}(SubTreeRoot->GetNewStyleEntity()->GetObjectID().c_str()));
+	//}
 
 	bool bOpened = ImGui::TreeNodeEx((void*)UniqueID, NodeFlags, Name.c_str(), 0);
 	GetSceneNodeDragAndDropTarget(SubTreeRoot)->StickToItem();
 
 	if (ImGui::IsItemClicked())
 	{
-		if (SubTreeRoot->GetOldStyleEntity() != nullptr)
+		if (SubTreeRoot->GetParent() != nullptr)
 		{
-			SELECTED.SetSelected(OBJECT_MANAGER.GetFEObject(SubTreeRoot->GetOldStyleEntity()->GetObjectID()));
+			SELECTED.SetSelected(SubTreeRoot->GetNewStyleEntity());
 			SELECTED.SetDirtyFlag(false);
 		}
 	}
@@ -386,7 +390,9 @@ void FEEditorSceneGraphWindow::Render()
 
 		if (ImGui::IsItemClicked())
 		{
-			SELECTED.SetSelected(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
+			// FIX ME!
+			FENewEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i])->GetObjectID());
+			SELECTED.SetSelected(NewNewEntity);
 			SELECTED.SetDirtyFlag(false);
 		}
 
@@ -627,27 +633,33 @@ void FEEditorSceneGraphWindow::Render()
 	static bool bDisplaySelectedObjAABB = false;
 	ImGui::Checkbox("Display AABB of selected object", &bDisplaySelectedObjAABB);
 
-	// draw AABB
+	// Draw AABB
 	if (SELECTED.GetSelected() != nullptr &&
 		(SELECTED.GetSelected()->GetType() == FE_ENTITY || SELECTED.GetSelected()->GetType() == FE_ENTITY_INSTANCED || SELECTED.GetSelected()->GetType() == FE_TERRAIN) &&
 		bDisplaySelectedObjAABB)
 	{
-		const FEAABB SelectedAabb = SELECTED.GetEntity() != nullptr ? SELECTED.GetEntity()->GetAABB() : SELECTED.GetTerrain()->GetAABB();
-		RENDERER.DrawAABB(SelectedAabb);
-
-		if (SELECTED.GetSelected()->GetType() == FE_ENTITY_INSTANCED)
+		if (SELECTED.GetSelected()->HasComponent<FERenderableComponent>())
 		{
-			static bool bDisplaySubObjAABB = false;
-			ImGui::Checkbox("Display AABB of instanced entity subobjects", &bDisplaySubObjAABB);
+			FEEntity* OldStyleEntity = SELECTED.GetSelected()->GetComponent<FERenderableComponent>().OldStyleEntity;
+			FEAABB SelectedAABB = OldStyleEntity->GetAABB().Transform(SELECTED.GetSelected()->GetComponent<FETransformComponent>().GetTransformMatrix());
+			//const FEAABB SelectedAABB = SELECTED.GetEntity() != nullptr ? SELECTED.GetEntity()->GetAABB() : SELECTED.GetTerrain()->GetAABB();
 
-			if (bDisplaySubObjAABB)
+			RENDERER.DrawAABB(SelectedAABB);
+
+			if (SELECTED.GetSelected()->GetType() == FE_ENTITY_INSTANCED)
 			{
-				const FEEntityInstanced* EntityInstanced = reinterpret_cast<FEEntityInstanced*> (SELECTED.GetSelected());
-				const int MaxIterations = EntityInstanced->InstancedAABB.size() * 8 >= FE_MAX_LINES ? FE_MAX_LINES : int(EntityInstanced->InstancedAABB.size());
+				static bool bDisplaySubObjAABB = false;
+				ImGui::Checkbox("Display AABB of instanced entity subobjects", &bDisplaySubObjAABB);
 
-				for (size_t j = 0; j < MaxIterations; j++)
+				if (bDisplaySubObjAABB)
 				{
-					RENDERER.DrawAABB(EntityInstanced->InstancedAABB[j]);
+					const FEEntityInstanced* EntityInstanced = reinterpret_cast<FEEntityInstanced*> (SELECTED.GetSelected());
+					const int MaxIterations = EntityInstanced->InstancedAABB.size() * 8 >= FE_MAX_LINES ? FE_MAX_LINES : int(EntityInstanced->InstancedAABB.size());
+
+					for (size_t j = 0; j < MaxIterations; j++)
+					{
+						RENDERER.DrawAABB(EntityInstanced->InstancedAABB[j]);
+					}
 				}
 			}
 		}

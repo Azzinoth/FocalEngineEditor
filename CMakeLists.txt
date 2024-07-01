@@ -167,6 +167,6 @@ include_directories(
 	${BASICAPP_THIRDPARTY_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/imgui
 	${BASICAPP_DIR}
-	${FOCAL_ENGINE_THIRD_PARTY_DIR}
+	${FOCAL_ENGINE_INCLUDES}
 	${VISUAL_NODE_SYSTEM_DIR}
 )

@@ -7,9 +7,12 @@ bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
 {
 	if (Object->GetType() == FE_PREFAB)
 	{
+		// FIX ME!
 		FEEntity* NewEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Object->GetObjectID()));
-		NewEntity->Transform.SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-		SELECTED.SetSelected(NewEntity);
+		FENewEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(NewEntity->GetObjectID());
+		NewNewEntity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+		//NewEntity->Transform.SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+		SELECTED.SetSelected(NewNewEntity);
 		PROJECT_MANAGER.GetCurrent()->SetModified(true);
 
 		return true;
@@ -192,10 +195,16 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 	{
 		if (!EDITOR.GetObjectNameInClipboard().empty())
 		{
+			// FIX ME!
 			FEEntity* NewEntity = SCENE.AddEntity(SCENE.GetEntity(EDITOR.GetObjectNameInClipboard())->Prefab, "");
-			NewEntity->Transform = SCENE.GetEntity(EDITOR.GetObjectNameInClipboard())->Transform;
-			NewEntity->Transform.SetPosition(NewEntity->Transform.GetPosition() * 1.1f);
-			SELECTED.SetSelected(NewEntity);
+			FENewEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(NewEntity->GetObjectID());
+			NewNewEntity->GetComponent<FETransformComponent>() = SCENE.GetEntity(EDITOR.GetObjectNameInClipboard())->Transform;
+			NewNewEntity->GetComponent<FETransformComponent>().SetPosition(NewEntity->Transform.GetPosition() * 1.1f);
+
+			//NewEntity->Transform = SCENE.GetEntity(EDITOR.GetObjectNameInClipboard())->Transform;
+			//NewEntity->Transform.SetPosition(NewEntity->Transform.GetPosition() * 1.1f);
+			
+			SELECTED.SetSelected(NewNewEntity);
 		}
 	}
 
@@ -240,31 +249,31 @@ void FEEditor::InitializeResources()
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("637C784B2E5E5C6548190E1B"/*"scaleGizmoMesh"*/));
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("19622421516E5B317E1B5360"/*"rotateGizmoMesh"*/));
 
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoEntity);
 
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoEntity);
 
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity);
 
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(PREVIEW_MANAGER.PreviewEntity);
@@ -497,12 +506,12 @@ void FEEditor::Render()
 			GyzmosSettingsWindowObject.Show();
 		GyzmosSettingsWindowObject.Render();
 
-		const int index = SELECTED.GetIndexOfObjectUnderMouse(EDITOR.GetMouseX(), EDITOR.GetMouseY());
-		if (index >= 0)
+		const int ObjectIndex = SELECTED.GetIndexOfObjectUnderMouse(EDITOR.GetMouseX(), EDITOR.GetMouseY());
+		if (ObjectIndex >= 0)
 		{
-			if (!GIZMO_MANAGER.WasSelected(index))
+			if (!GIZMO_MANAGER.WasSelected(ObjectIndex))
 			{
-				SELECTED.SetSelectedByIndex(index);
+				SELECTED.SetSelectedByIndex(ObjectIndex);
 			}
 		}
 

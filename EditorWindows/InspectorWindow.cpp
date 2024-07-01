@@ -144,16 +144,17 @@ void FEEditorInspectorWindow::ShowTransformConfiguration(FEObject* Object, FETra
 	if (Object->GetType() == FE_ENTITY || Object->GetType() == FE_ENTITY_INSTANCED)
 	{
 		FEEntity* Entity = SCENE.GetEntity(Object->GetObjectID());
+		FENewEntity* NewStyleEntity = SCENE.GetNewStyleEntityByOldStyleID(Object->GetObjectID());
 
-		// Temporary solution, becuase of the lack of proper ECS system
-		if (Object->GetType() == FE_ENTITY)
-		{
-			Entity = reinterpret_cast<FEEntity*>(Object);
-		}
+		//// Temporary solution, becuase of the lack of proper ECS system
+		//if (Object->GetType() == FE_ENTITY)
+		//{
+		//	Entity = reinterpret_cast<FEEntity*>(Object);
+		//}
 
-		FEAABB RealAabb = Entity->GetAABB();
-		const glm::vec3 Min = RealAabb.GetMin();
-		const glm::vec3 Max = RealAabb.GetMax();
+		FEAABB RealAABB = Entity->GetAABB().Transform(NewStyleEntity->GetComponent<FETransformComponent>().GetTransformMatrix());
+		const glm::vec3 Min = RealAABB.GetMin();
+		const glm::vec3 Max = RealAABB.GetMax();
 
 		const float XSize = sqrt((Max.x - Min.x) * (Max.x - Min.x));
 		const float YSize = sqrt((Max.y - Min.y) * (Max.y - Min.y));
@@ -421,6 +422,51 @@ void FEEditorInspectorWindow::Render()
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 	ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None);
+
+	// Test new ECS.
+	if (SELECTED.GetSelected() == nullptr)
+	{
+		ImGui::PopStyleVar();
+		ImGui::End();
+		return;
+	}
+	else
+	{
+		FENewEntity* NewStyleEntity = SELECTED.GetSelected();
+		if (NewStyleEntity->HasComponent<FETagComponent>())
+		{
+			FETagComponent& Tag = NewStyleEntity->GetComponent<FETagComponent>();
+			char Buffer[256];
+			memset(Buffer, 0, 256);
+			strcpy_s(Buffer, Tag.Tag.c_str());
+			if (ImGui::InputText("Tag", Buffer, 256))
+			{
+				Tag.Tag = std::string(Buffer);
+			}
+		}
+
+		if (NewStyleEntity->HasComponent<FETransformComponent>())
+		{
+			FETransformComponent& Transform = NewStyleEntity->GetComponent<FETransformComponent>();
+			ShowTransformConfiguration(NewStyleEntity->GetName(), &Transform);
+		}
+
+		/*if (NewStyleEntity->HasComponent<FERenderableComponent>())
+		{
+			FERenderableComponent& Renderable = NewStyleEntity->GetComponent<FERenderableComponent>();
+			if (Renderable.OldStyleEntity != nullptr)
+			{
+				FEEntity* OldStyleEntity = Renderable.OldStyleEntity;
+				ShowTransformConfiguration(OldStyleEntity, &OldStyleEntity->Transform);
+			}
+		}*/
+
+
+		ImGui::PopStyleVar();
+		ImGui::End();
+		return;
+	}
+	
 
 	if (SELECTED.GetSelected() == nullptr)
 	{
@@ -787,7 +833,8 @@ void FEEditorInspectorWindow::Render()
 					if (!InstancedEntity->IsSelectMode())
 					{
 						SELECTED.Clear();
-						SELECTED.SetSelected(InstancedEntity);
+						// FIX ME!
+						//SELECTED.SetSelected(InstancedEntity);
 					}
 				}
 				ShowToolTip("Individual selection mode - Used to select individual instances.");
@@ -805,9 +852,10 @@ void FEEditorInspectorWindow::Render()
 
 		if (CurrentTerrain->GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
 		{
-			// to hide gizmos
-			if (SELECTED.GetTerrain() != nullptr)
-				SELECTED.SetSelected(SELECTED.GetTerrain());
+			// FIX ME!
+			// To hide gizmos.
+			/*if (SELECTED.GetTerrain() != nullptr)
+				SELECTED.SetSelected(SELECTED.GetTerrain());*/
 
 			CurrentTerrain->SetBrushActive(bLeftMousePressed);
 
@@ -843,9 +891,10 @@ void FEEditorInspectorWindow::Render()
 		}
 		else
 		{
-			// to show gizmos
-			if (SELECTED.GetTerrain() != nullptr)
-				SELECTED.SetSelected(SELECTED.GetTerrain());
+			// FIX ME!
+			// To show gizmos.
+			/*if (SELECTED.GetTerrain() != nullptr)
+				SELECTED.SetSelected(SELECTED.GetTerrain());*/
 		}
 	}
 	else if (SELECTED.GetLight() != nullptr)

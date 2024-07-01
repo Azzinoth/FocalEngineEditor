@@ -282,7 +282,7 @@ FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string Material
 			{
 				CreateGameModelPreview(CurrentGameModel->GetObjectID());
 
-				// if some prefab uses this game model we should also update it's preview
+				// if some Prefab uses this game model we should also update it's preview
 				std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
 				for (size_t j = 0; j < PrefabList.size(); j++)
 				{
@@ -312,7 +312,6 @@ FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string Material
 void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelID)
 {
 	const FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(GameModelID);
-
 	if (GameModel == nullptr)
 		return;
 
@@ -468,14 +467,14 @@ void FEEditorPreviewManager::UpdateAllGameModelPreviews()
 
 void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 {
-	FEPrefab* prefab = RESOURCE_MANAGER.GetPrefab(PrefabID);
-	if (prefab == nullptr)
+	FEPrefab* Prefab = RESOURCE_MANAGER.GetPrefab(PrefabID);
+	if (Prefab == nullptr)
 		return;
 
-	if (prefab->ComponentsCount() < 1)
+	if (Prefab->ComponentsCount() < 1)
 		return;
 
-	const FEGameModel* GameModel = prefab->GetComponent(0)->GameModel;
+	const FEGameModel* GameModel = Prefab->GetComponent(0)->GameModel;
 	if (GameModel == nullptr)
 		return;
 
@@ -498,7 +497,7 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 	const bool RegularFog = RENDERER.IsDistanceFogEnabled();
 	RENDERER.SetDistanceFogEnabled(false);
 
-	PreviewEntity->Prefab = prefab;
+	PreviewEntity->Prefab = Prefab;
 	PreviewEntity->SetReceivingShadows(false);
 
 	BeforePreviewActions();
@@ -550,7 +549,7 @@ FETexture* FEEditorPreviewManager::GetPrefabPreview(const std::string PrefabID)
 		return RESOURCE_MANAGER.NoTexture;
 	}
 		
-	// if prefab's dirty flag is set we need to update preview
+	// if Prefab's dirty flag is set we need to update preview
 	if (CurrentPrefab->IsDirty())
 	{
 		CreatePrefabPreview(PrefabID);
@@ -559,7 +558,7 @@ FETexture* FEEditorPreviewManager::GetPrefabPreview(const std::string PrefabID)
 
 	for (int i = 0; i < CurrentPrefab->ComponentsCount(); i++)
 	{
-		// if prefab's material dirty flag is set we need to update preview
+		// if Prefab's material dirty flag is set we need to update preview
 		if (CurrentPrefab->GetComponent(i)->GameModel->GetMaterial() != nullptr && CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->IsDirty())
 		{
 			CreateMaterialPreview(CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->GetObjectID());
