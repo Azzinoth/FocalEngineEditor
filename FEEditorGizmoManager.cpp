@@ -558,41 +558,39 @@ bool GizmoManager::WasSelected(int Index)
 {
 	DeactivateAllGizmo();
 
-	if (SELECTED.ObjectsUnderMouse[Index]->GetType() == FE_CAMERA)
+	if (SELECTED.SceneEntitiesUnderMouse[Index]->GetType() == FE_CAMERA)
 		return true;
 
-	FEEntity* SelectedEntity = nullptr;
-	if (SELECTED.ObjectsUnderMouse[Index]->GetType() == FE_ENTITY)
-		SelectedEntity = SCENE.GetEntity(SELECTED.ObjectsUnderMouse[Index]->GetObjectID());
+	FENewEntity* SelectedEntity = SELECTED.SceneEntitiesUnderMouse[Index];
+	FETransformComponent& CurrentTransform = SelectedEntity->GetComponent<FETransformComponent>();
 
-	const int EntityNameHash = SelectedEntity == nullptr ? -1 : SelectedEntity->GetNameHash();
-	if (GizmosState == TRANSFORM_GIZMOS && EntityNameHash == TransformationXGizmoEntity->GetNameHash())
+	if (GizmosState == TRANSFORM_GIZMOS && SelectedEntity->GetObjectID() == TransformationXGizmoEntity->GetObjectID())
 	{
 		bTransformationXGizmoActive = true;
 	}
-	else if (GizmosState == TRANSFORM_GIZMOS && EntityNameHash == TransformationYGizmoEntity->GetNameHash())
+	else if (GizmosState == TRANSFORM_GIZMOS && SelectedEntity->GetObjectID() == TransformationYGizmoEntity->GetObjectID())
 	{
 		bTransformationYGizmoActive = true;
 	}
-	else if (GizmosState == TRANSFORM_GIZMOS && EntityNameHash == TransformationZGizmoEntity->GetNameHash())
+	else if (GizmosState == TRANSFORM_GIZMOS && SelectedEntity->GetObjectID() == TransformationZGizmoEntity->GetObjectID())
 	{
 		bTransformationZGizmoActive = true;
 	}
-	else if (GizmosState == TRANSFORM_GIZMOS && EntityNameHash == TransformationXYGizmoEntity->GetNameHash())
+	else if (GizmosState == TRANSFORM_GIZMOS && SelectedEntity->GetObjectID() == TransformationXYGizmoEntity->GetObjectID())
 	{
 		bTransformationXYGizmoActive = true;
 	}
-	else if (GizmosState == TRANSFORM_GIZMOS && EntityNameHash == TransformationYZGizmoEntity->GetNameHash())
+	else if (GizmosState == TRANSFORM_GIZMOS && SelectedEntity->GetObjectID() == TransformationYZGizmoEntity->GetObjectID())
 	{
 		bTransformationYZGizmoActive = true;
 	}
-	else if (GizmosState == TRANSFORM_GIZMOS && EntityNameHash == TransformationXZGizmoEntity->GetNameHash())
+	else if (GizmosState == TRANSFORM_GIZMOS && SelectedEntity->GetObjectID() == TransformationXZGizmoEntity->GetObjectID())
 	{
 		bTransformationXZGizmoActive = true;
 	}
-	else if (GizmosState == SCALE_GIZMOS && EntityNameHash == ScaleXGizmoEntity->GetNameHash())
+	else if (GizmosState == SCALE_GIZMOS && SelectedEntity->GetObjectID() == ScaleXGizmoEntity->GetObjectID())
 	{
-		if (SelectedEntity != nullptr && SelectedEntity->Transform.IsUniformScalingSet())
+		if (SelectedEntity != nullptr && CurrentTransform.IsUniformScalingSet())
 		{
 			bScaleXGizmoActive = true;
 			bScaleYGizmoActive = true;
@@ -601,9 +599,9 @@ bool GizmoManager::WasSelected(int Index)
 
 		bScaleXGizmoActive = true;
 	}
-	else if (GizmosState == SCALE_GIZMOS && EntityNameHash == ScaleYGizmoEntity->GetNameHash())
+	else if (GizmosState == SCALE_GIZMOS && SelectedEntity->GetObjectID() == ScaleYGizmoEntity->GetObjectID())
 	{
-		if (SelectedEntity != nullptr && SelectedEntity->Transform.IsUniformScalingSet())
+		if (SelectedEntity != nullptr && CurrentTransform.IsUniformScalingSet())
 		{
 			bScaleXGizmoActive = true;
 			bScaleYGizmoActive = true;
@@ -612,9 +610,9 @@ bool GizmoManager::WasSelected(int Index)
 
 		bScaleYGizmoActive = true;
 	}
-	else if (GizmosState == SCALE_GIZMOS && EntityNameHash == ScaleZGizmoEntity->GetNameHash())
+	else if (GizmosState == SCALE_GIZMOS && SelectedEntity->GetObjectID() == ScaleZGizmoEntity->GetObjectID())
 	{
-		if (SelectedEntity != nullptr && SelectedEntity->Transform.IsUniformScalingSet())
+		if (SelectedEntity != nullptr && CurrentTransform.IsUniformScalingSet())
 		{
 			bScaleXGizmoActive = true;
 			bScaleYGizmoActive = true;
@@ -623,15 +621,15 @@ bool GizmoManager::WasSelected(int Index)
 
 		bScaleZGizmoActive = true;
 	}
-	else if (GizmosState == ROTATE_GIZMOS && EntityNameHash == RotateXGizmoEntity->GetNameHash())
+	else if (GizmosState == ROTATE_GIZMOS && SelectedEntity->GetObjectID() == RotateXGizmoEntity->GetObjectID())
 	{
 		bRotateXGizmoActive = true;
 	}
-	else if (GizmosState == ROTATE_GIZMOS && EntityNameHash == RotateYGizmoEntity->GetNameHash())
+	else if (GizmosState == ROTATE_GIZMOS && SelectedEntity->GetObjectID() == RotateYGizmoEntity->GetObjectID())
 	{
 		bRotateYGizmoActive = true;
 	}
-	else if (GizmosState == ROTATE_GIZMOS && EntityNameHash == RotateZGizmoEntity->GetNameHash())
+	else if (GizmosState == ROTATE_GIZMOS && SelectedEntity->GetObjectID() == RotateZGizmoEntity->GetObjectID())
 	{
 		bRotateZGizmoActive = true;
 	}

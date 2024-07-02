@@ -24,8 +24,8 @@ public:
     void SetMouseY(double NewValue);
 
     // Clipboard
-    std::string GetObjectNameInClipboard();
-    void SetObjectNameInClipboard(std::string NewValue);
+    std::string GetSceneEntityIDInClipboard();
+    void SetSceneEntityIDInClipboard(std::string NewValue);
 private:
     SINGLETON_PRIVATE_PART(FEEditor)
 
@@ -36,7 +36,7 @@ private:
     bool bIsCameraInputActive = false;
 
     // Clipboard
-    std::string ObjectNameInClipboard;
+    std::string SceneEntityIDInClipboard;
 
     // Scene window
     static ImGuiWindow* SceneWindow;

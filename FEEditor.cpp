@@ -73,14 +73,14 @@ void FEEditor::SetMouseY(const double NewValue)
 	MouseY = NewValue;
 }
 
-std::string FEEditor::GetObjectNameInClipboard()
+std::string FEEditor::GetSceneEntityIDInClipboard()
 {
-	return ObjectNameInClipboard;
+	return SceneEntityIDInClipboard;
 }
 
-void FEEditor::SetObjectNameInClipboard(const std::string NewValue)
+void FEEditor::SetSceneEntityIDInClipboard(const std::string NewValue)
 {
-	ObjectNameInClipboard = NewValue;
+	SceneEntityIDInClipboard = NewValue;
 }
 
 void FEEditor::MouseButtonCallback(const int Button, const int Action, int Mods)
@@ -187,22 +187,22 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 
 	if (!ImGui::GetIO().WantCaptureKeyboard && Mods == GLFW_MOD_CONTROL && Key == GLFW_KEY_C && Action == GLFW_RELEASE)
 	{
-		if (SELECTED.GetEntity() != nullptr)
-			EDITOR.SetObjectNameInClipboard(SELECTED.GetEntity()->GetObjectID());
+		if (SELECTED.GetSelected() != nullptr)
+			EDITOR.SetSceneEntityIDInClipboard(SELECTED.GetSelected()->GetObjectID());
 	}
 
 	if (!ImGui::GetIO().WantCaptureKeyboard && Mods == GLFW_MOD_CONTROL && Key == GLFW_KEY_V && Action == GLFW_RELEASE)
 	{
-		if (!EDITOR.GetObjectNameInClipboard().empty())
+		if (!EDITOR.GetSceneEntityIDInClipboard().empty())
 		{
 			// FIX ME!
-			FEEntity* NewEntity = SCENE.AddEntity(SCENE.GetEntity(EDITOR.GetObjectNameInClipboard())->Prefab, "");
+			// There should be proper FEScene::DuplicateNewStyleEntity that will duplicate the entity and all its components
+			// Also place it in same scene graph node as the original entity ?
+			FEEntity* NewEntity = SCENE.AddEntity(SCENE.GetEntity(EDITOR.GetSceneEntityIDInClipboard())->Prefab, "");
 			FENewEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(NewEntity->GetObjectID());
-			NewNewEntity->GetComponent<FETransformComponent>() = SCENE.GetEntity(EDITOR.GetObjectNameInClipboard())->Transform;
-			NewNewEntity->GetComponent<FETransformComponent>().SetPosition(NewEntity->Transform.GetPosition() * 1.1f);
-
-			//NewEntity->Transform = SCENE.GetEntity(EDITOR.GetObjectNameInClipboard())->Transform;
-			//NewEntity->Transform.SetPosition(NewEntity->Transform.GetPosition() * 1.1f);
+			FENewEntity* EntityToCopy = SCENE.GetNewStyleEntity(EDITOR.GetSceneEntityIDInClipboard());
+			NewNewEntity->GetComponent<FETransformComponent>() = EntityToCopy->GetComponent<FETransformComponent>();
+			NewNewEntity->GetComponent<FETransformComponent>().SetPosition(EntityToCopy->GetComponent<FETransformComponent>().GetPosition() * 1.1f);
 			
 			SELECTED.SetSelected(NewNewEntity);
 		}

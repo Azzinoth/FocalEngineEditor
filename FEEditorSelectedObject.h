@@ -27,13 +27,12 @@ public:
 	bool GetDirtyFlag() const;
 	void SetDirtyFlag(bool NewValue);
 
-	//void SetSelected(FEObject* SelectedObject);
 	void SetSelected(FENewEntity* SelectedObject);
 	void Clear();
 
 	glm::dvec3 MouseRay(double MouseX, double MouseY) const;
 	void DetermineEntityUnderMouse(double MouseX, double MouseY);
-	std::vector<FEObject*> ObjectsUnderMouse;
+	std::vector<FENewEntity*> SceneEntitiesUnderMouse;
 
 	bool CheckForSelectionisNeeded = false;
 	int GetIndexOfObjectUnderMouse(double MouseX, double MouseY);
@@ -49,7 +48,6 @@ public:
 	FEShader* FEPixelAccurateSelection = nullptr;
 private:
 	FENewEntity* Container = nullptr;
-	//FENewEntity* NewContainer = nullptr;
 	
 	bool bDirtyFlag = false;
 

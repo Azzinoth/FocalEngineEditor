@@ -155,7 +155,7 @@ glm::dvec3 FEEditorSelectedObject::MouseRay(const double MouseX, const double Mo
 
 void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, const double MouseY)
 {
-	SELECTED.ObjectsUnderMouse.clear();
+	SELECTED.SceneEntitiesUnderMouse.clear();
 	SELECTED.InstancedSubObjectsInfo.clear();
 
 	const glm::vec3 MouseRayVector = MouseRay(MouseX, MouseY);
@@ -188,26 +188,27 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 						}
 					}
 
-					SELECTED.ObjectsUnderMouse.push_back(InstancedEntity);
+					SELECTED.SceneEntitiesUnderMouse.push_back(InstancedEntity);
 				}
 				else
 				{*/
-					SELECTED.ObjectsUnderMouse.push_back(SCENE.GetEntity(EntityList[i]));
+					SELECTED.SceneEntitiesUnderMouse.push_back(NewStyleEntity/*SCENE.GetEntity(EntityList[i])*/);
 				//}
 			}
 		}
 	}
 
-	const std::vector<std::string> TerrainList = SCENE.GetTerrainList();
+	// FIX ME!
+	/*const std::vector<std::string> TerrainList = SCENE.GetTerrainList();
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
 		float Distance = 0;
 		FEAABB Box = SCENE.GetTerrain(TerrainList[i])->GetAABB();
 		if (Box.RayIntersect(ENGINE.GetCamera()->GetPosition(), MouseRayVector, Distance))
 		{
-			SELECTED.ObjectsUnderMouse.push_back(SCENE.GetTerrain(TerrainList[i]));
+			SELECTED.SceneEntitiesUnderMouse.push_back(SCENE.GetTerrain(TerrainList[i]));
 		}
-	}
+	}*/
 }
 
 int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, const double MouseY)
@@ -224,7 +225,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 	ENGINE.SetClearColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
 	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-	for (size_t i = 0; i < SELECTED.ObjectsUnderMouse.size(); i++)
+	for (size_t i = 0; i < SELECTED.SceneEntitiesUnderMouse.size(); i++)
 	{
 #ifdef EDITOR_SELECTION_DEBUG_MODE
 		int r = (i + 1) * 50 & 255;
@@ -235,82 +236,108 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 		int g = ((i + 1) >> 8) & 255;
 		int b = ((i + 1) >> 16) & 255;
 #endif
-		
-		if (SELECTED.ObjectsUnderMouse[i]->GetType() == FE_ENTITY)
+		FENewEntity* PotentiallySelectedEntity = SELECTED.SceneEntitiesUnderMouse[i];
+		if (PotentiallySelectedEntity->HasComponent<FERenderableComponent>())
 		{
-			PotentiallySelectedEntity = SCENE.GetEntity(SELECTED.ObjectsUnderMouse[i]->GetObjectID());
-			if (!PotentiallySelectedEntity->IsVisible())
+			FERenderableComponent& RenderableComponent = PotentiallySelectedEntity->GetComponent<FERenderableComponent>();
+			if (!RenderableComponent.OldStyleEntity->IsVisible())
 				continue;
 
-			for (int j = 0; j < PotentiallySelectedEntity->Prefab->ComponentsCount(); j++)
+			for (int j = 0; j < RenderableComponent.OldStyleEntity->Prefab->ComponentsCount(); j++)
 			{
-				FEMaterial* RegularMaterial = PotentiallySelectedEntity->Prefab->GetComponent(j)->GameModel->Material;
-				PotentiallySelectedEntity->Prefab->GetComponent(j)->GameModel->Material = PixelAccurateSelectionMaterial;
+				FEMaterial* RegularMaterial = RenderableComponent.OldStyleEntity->Prefab->GetComponent(j)->GameModel->Material;
+				RenderableComponent.OldStyleEntity->Prefab->GetComponent(j)->GameModel->Material = PixelAccurateSelectionMaterial;
 				PixelAccurateSelectionMaterial->SetBaseColor(glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
 				PixelAccurateSelectionMaterial->ClearAllTexturesInfo();
 				PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
 				PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
 
-				RENDERER.RenderEntity(PotentiallySelectedEntity, ENGINE.GetCamera(), false, j);
+				RENDERER.RenderEntity(RenderableComponent.OldStyleEntity, ENGINE.GetCamera(), false, j);
 
-				PotentiallySelectedEntity->Prefab->GetComponent(j)->GameModel->Material = RegularMaterial;
+				RenderableComponent.OldStyleEntity->Prefab->GetComponent(j)->GameModel->Material = RegularMaterial;
 			}
+
 			PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr);
 			PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr, 1);
 		}
-		else if (SELECTED.ObjectsUnderMouse[i]->GetType() == FE_ENTITY_INSTANCED)
-		{
-			FEEntityInstanced* PotentiallySelectedEntityInstanced = reinterpret_cast<FEEntityInstanced*>(SCENE.GetEntity((SELECTED.ObjectsUnderMouse[i]->GetObjectID())));
-			if (!PotentiallySelectedEntityInstanced->IsVisible())
-				continue;
 
-			if (InstancedSubObjectsInfo.find(PotentiallySelectedEntityInstanced) == InstancedSubObjectsInfo.end())
-			{
-				for (int j = 0; j < PotentiallySelectedEntityInstanced->Prefab->ComponentsCount(); j++)
-				{
-					FEMaterial* RegularMaterial = PotentiallySelectedEntityInstanced->Prefab->GetComponent(j)->GameModel->Material;
-					PotentiallySelectedEntityInstanced->Prefab->GetComponent(j)->GameModel->Material = PixelAccurateSelectionMaterial;
 
-					PixelAccurateSelectionMaterial->SetBaseColor(glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
-					PixelAccurateSelectionMaterial->ClearAllTexturesInfo();
-					PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
-					PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
+		//if (SELECTED.SceneEntitiesUnderMouse[i]->GetType() == FE_ENTITY)
+		//{
+		//	PotentiallySelectedEntity = SCENE.GetEntity(SELECTED.SceneEntitiesUnderMouse[i]->GetObjectID());
+		//	if (!PotentiallySelectedEntity->IsVisible())
+		//		continue;
 
-					PixelAccurateSelectionMaterial->Shader = FEPixelAccurateInstancedSelection;
-					FEMaterial* RegularBillboardMaterials = PotentiallySelectedEntityInstanced->Prefab->GetComponent(j)->GameModel->GetBillboardMaterial();
-					PotentiallySelectedEntityInstanced->Prefab->GetComponent(j)->GameModel->SetBillboardMaterial(PixelAccurateSelectionMaterial);
+		//	for (int j = 0; j < PotentiallySelectedEntity->Prefab->ComponentsCount(); j++)
+		//	{
+		//		FEMaterial* RegularMaterial = PotentiallySelectedEntity->Prefab->GetComponent(j)->GameModel->Material;
+		//		PotentiallySelectedEntity->Prefab->GetComponent(j)->GameModel->Material = PixelAccurateSelectionMaterial;
+		//		PixelAccurateSelectionMaterial->SetBaseColor(glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
+		//		PixelAccurateSelectionMaterial->ClearAllTexturesInfo();
+		//		PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
+		//		PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
 
-					RENDERER.RenderEntityInstanced(PotentiallySelectedEntityInstanced, ENGINE.GetCamera(), nullptr, false, false, j);
+		//		RENDERER.RenderEntity(PotentiallySelectedEntity, ENGINE.GetCamera(), false, j);
 
-					PixelAccurateSelectionMaterial->Shader = FEPixelAccurateSelection;
-					PotentiallySelectedEntityInstanced->Prefab->GetComponent(j)->GameModel->SetBillboardMaterial(RegularBillboardMaterials);
-					PotentiallySelectedEntityInstanced->Prefab->GetComponent(j)->GameModel->Material = RegularMaterial;
+		//		PotentiallySelectedEntity->Prefab->GetComponent(j)->GameModel->Material = RegularMaterial;
+		//	}
+		//	PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr);
+		//	PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr, 1);
+		//}
+		//else if (SELECTED.SceneEntitiesUnderMouse[i]->GetType() == FE_ENTITY_INSTANCED)
+		//{
+		//	FEEntityInstanced* PotentiallySelectedEntityInstanced = reinterpret_cast<FEEntityInstanced*>(SCENE.GetEntity((SELECTED.SceneEntitiesUnderMouse[i]->GetObjectID())));
+		//	if (!PotentiallySelectedEntityInstanced->IsVisible())
+		//		continue;
 
-					PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr);
-					PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr, 1);
-				}
-			}
-		}
-		else if (SELECTED.ObjectsUnderMouse[i]->GetType() == FE_TERRAIN)
-		{
-			FETerrain* PotentiallySelectedTerrain = SCENE.GetTerrain(SELECTED.ObjectsUnderMouse[i]->GetObjectID());
-			if (PotentiallySelectedTerrain != nullptr)
-			{
-				if (!PotentiallySelectedTerrain->IsVisible())
-					continue;
+		//	if (InstancedSubObjectsInfo.find(PotentiallySelectedEntityInstanced) == InstancedSubObjectsInfo.end())
+		//	{
+		//		for (int j = 0; j < PotentiallySelectedEntityInstanced->Prefab->ComponentsCount(); j++)
+		//		{
+		//			FEMaterial* RegularMaterial = PotentiallySelectedEntityInstanced->Prefab->GetComponent(j)->GameModel->Material;
+		//			PotentiallySelectedEntityInstanced->Prefab->GetComponent(j)->GameModel->Material = PixelAccurateSelectionMaterial;
 
-				PotentiallySelectedTerrain->Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
-				PotentiallySelectedTerrain->Shader->UpdateParameterData("baseColor", glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
-				RENDERER.RenderTerrain(PotentiallySelectedTerrain, ENGINE.GetCamera());
-				PotentiallySelectedTerrain->Shader->UpdateParameterData("baseColor", glm::vec3(1.0f));
-				PotentiallySelectedTerrain->Shader = RESOURCE_MANAGER.GetShader("5A3E4F5C13115856401F1D1C"/*"FETerrainShader"*/);
-			}
-		}
+		//			PixelAccurateSelectionMaterial->SetBaseColor(glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
+		//			PixelAccurateSelectionMaterial->ClearAllTexturesInfo();
+		//			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
+		//			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
+
+		//			PixelAccurateSelectionMaterial->Shader = FEPixelAccurateInstancedSelection;
+		//			FEMaterial* RegularBillboardMaterials = PotentiallySelectedEntityInstanced->Prefab->GetComponent(j)->GameModel->GetBillboardMaterial();
+		//			PotentiallySelectedEntityInstanced->Prefab->GetComponent(j)->GameModel->SetBillboardMaterial(PixelAccurateSelectionMaterial);
+
+		//			RENDERER.RenderEntityInstanced(PotentiallySelectedEntityInstanced, ENGINE.GetCamera(), nullptr, false, false, j);
+
+		//			PixelAccurateSelectionMaterial->Shader = FEPixelAccurateSelection;
+		//			PotentiallySelectedEntityInstanced->Prefab->GetComponent(j)->GameModel->SetBillboardMaterial(RegularBillboardMaterials);
+		//			PotentiallySelectedEntityInstanced->Prefab->GetComponent(j)->GameModel->Material = RegularMaterial;
+
+		//			PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr);
+		//			PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr, 1);
+		//		}
+		//	}
+		//}
+		//else if (SELECTED.SceneEntitiesUnderMouse[i]->GetType() == FE_TERRAIN)
+		//{
+		//	FETerrain* PotentiallySelectedTerrain = SCENE.GetTerrain(SELECTED.SceneEntitiesUnderMouse[i]->GetObjectID());
+		//	if (PotentiallySelectedTerrain != nullptr)
+		//	{
+		//		if (!PotentiallySelectedTerrain->IsVisible())
+		//			continue;
+
+		//		PotentiallySelectedTerrain->Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
+		//		PotentiallySelectedTerrain->Shader->UpdateParameterData("baseColor", glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
+		//		RENDERER.RenderTerrain(PotentiallySelectedTerrain, ENGINE.GetCamera());
+		//		PotentiallySelectedTerrain->Shader->UpdateParameterData("baseColor", glm::vec3(1.0f));
+		//		PotentiallySelectedTerrain->Shader = RESOURCE_MANAGER.GetShader("5A3E4F5C13115856401F1D1C"/*"FETerrainShader"*/);
+		//	}
+		//}
 	}
 
-	int LastColorShiftIndex = static_cast<int>(SELECTED.ObjectsUnderMouse.size() - 1);
+	int LastColorShiftIndex = static_cast<int>(SELECTED.SceneEntitiesUnderMouse.size() - 1);
 
-	auto it = InstancedSubObjectsInfo.begin();
+	// FIX ME!
+	/*auto it = InstancedSubObjectsInfo.begin();
 	while (it != InstancedSubObjectsInfo.end())
 	{
 		for (size_t j = 0; j < it->second.size(); j++)
@@ -341,7 +368,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			DummyEntity->SetVisibility(false);
 		}
 		it++;
-	}
+	}*/
 
 	FE_GL_ERROR(glReadPixels(static_cast<GLint>(MouseX), GLint(ENGINE.GetRenderTargetHeight() - MouseY), 1, 1, GL_RGB, GL_UNSIGNED_BYTE, ColorUnderMouse));
 	PixelAccurateSelectionFB->UnBind();
@@ -349,7 +376,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 	ENGINE.SetClearColor(OriginalClearColor);
 
 #ifndef EDITOR_SELECTION_DEBUG_MODE
-	if (!SELECTED.ObjectsUnderMouse.empty())
+	if (!SELECTED.SceneEntitiesUnderMouse.empty())
 	{
 		ColorIndex = 0;
 		ColorIndex |= static_cast<int>(ColorUnderMouse[2]);
@@ -360,9 +387,9 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 
 		ColorIndex -= 1;
 
-		if (ColorIndex != -1 && ColorIndex >= static_cast<int>(SELECTED.ObjectsUnderMouse.size()))
+		if (ColorIndex != -1 && ColorIndex >= static_cast<int>(SELECTED.SceneEntitiesUnderMouse.size()))
 		{
-			ColorIndex -= static_cast<int>(SELECTED.ObjectsUnderMouse.size());
+			ColorIndex -= static_cast<int>(SELECTED.SceneEntitiesUnderMouse.size());
 
 			const FEEntityInstanced* SelectedSubObjectInInstance = nullptr;
 			auto it = InstancedSubObjectsInfo.begin();
@@ -381,9 +408,9 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 
 			if (SelectedSubObjectInInstance != nullptr)
 			{
-				for (size_t i = 0; i < SELECTED.ObjectsUnderMouse.size(); i++)
+				for (size_t i = 0; i < SELECTED.SceneEntitiesUnderMouse.size(); i++)
 				{
-					if (SELECTED.ObjectsUnderMouse[i]->GetObjectID() == SelectedSubObjectInInstance->GetObjectID())
+					if (SELECTED.SceneEntitiesUnderMouse[i]->GetObjectID() == SelectedSubObjectInInstance->GetObjectID())
 					{
 						return static_cast<int>(i);
 					}
@@ -501,7 +528,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 		}
 	}
 
-	//// Temporary solution, becuase of the lack of proper ECS system
+	//// Temporary solution, because of the lack of proper ECS system
 	//if (Container != nullptr && Container->GetType() == FE_ENTITY)
 	//{
 	//	FEEntity* SelectedEntity = reinterpret_cast<FEEntity*>(Container);
@@ -616,29 +643,23 @@ int FEEditorSelectedObject::DebugGetLastColorIndex() const
 
 void FEEditorSelectedObject::SetSelectedByIndex(const size_t Index)
 {
-	if (Index < 0 || Index >= ObjectsUnderMouse.size())
+	if (Index < 0 || Index >= SceneEntitiesUnderMouse.size())
 		return;
 
 	if (Container != nullptr)
 	{
-		if (SCENE.GetEntityInstanced(Container->GetObjectID()) != nullptr)
+		// FIX ME!
+		/*if (SCENE.GetEntityInstanced(Container->GetObjectID()) != nullptr)
 		{
-			if (ObjectsUnderMouse[Index]->GetObjectID() != Container->GetObjectID())
+			if (SceneEntitiesUnderMouse[Index]->GetObjectID() != Container->GetObjectID())
 			{
 				SCENE.GetEntityInstanced(Container->GetObjectID())->SetSelectMode(false);
 				InstancedSubObjectIndexSelected = -1;
 			}
-		}
+		}*/
 	}
 
-	// Temporary solution, becuase of the lack of proper ECS system
-	FENewEntity* NewEntity = SCENE.GetNewStyleEntityByOldStyleID(ObjectsUnderMouse[Index]->GetObjectID());
-	if (NewEntity != nullptr)
-	{
-		Container = NewEntity;
-	}
-
-	//Container = ObjectsUnderMouse[Index];
+	Container = SceneEntitiesUnderMouse[Index];
 	if (OnUpdateFunc != nullptr)
 		OnUpdateFunc();
 }

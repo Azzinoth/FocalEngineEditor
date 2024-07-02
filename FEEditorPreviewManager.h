@@ -30,7 +30,7 @@ private:
 	void UpdateAll();
 
 	FEFramebuffer* PreviewFB;
-	FEEntity* PreviewEntity;
+	FENewEntity* PreviewEntity;
 	FEPrefab* PreviewPrefab;
 	FEGameModel* PreviewGameModel;
 	FEMaterial* MeshPreviewMaterial;
@@ -41,7 +41,7 @@ private:
 	std::unordered_map<std::string, FETexture*> PrefabPreviewTextures;
 
 	static glm::vec4 OriginalClearColor;
-	static FETransformComponent OriginalMeshTransform;
+	static FETransformComponent OriginalTransform;
 	static glm::vec3 OriginalCameraPosition;
 	static float OriginalAspectRation;
 	static float OriginalCameraPitch;
