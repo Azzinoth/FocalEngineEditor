@@ -1183,35 +1183,53 @@ void FEProject::LoadScene()
 			}
 			else
 			{
+				FENewEntity* NewEntity = SCENE.AddNewStyleEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+				// For compatibility with old projects.
 				if (Root["entities"][EntityList[i]].isMember("gameModel"))
 				{
-					FEPrefab* TempPrefab = RESOURCE_MANAGER.CreatePrefab(RESOURCE_MANAGER.GetGameModel(Root["entities"][EntityList[i]]["gameModel"].asCString()));
-					SCENE.AddEntity(TempPrefab, Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+					//FEPrefab* TempPrefab = RESOURCE_MANAGER.CreatePrefab(RESOURCE_MANAGER.GetGameModel(Root["entities"][EntityList[i]]["gameModel"].asCString()));
+					//SCENE.AddEntity(TempPrefab, Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+					
+					FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Root["entities"][EntityList[i]]["gameModel"].asCString());
+					NewEntity->AddComponent<FEGameModelComponent>(GameModel);
 				}
 				else
 				{
-					SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
-															   Root["entities"][EntityList[i]]["name"].asString(),
-															   Root["entities"][EntityList[i]]["ID"].asString());
+					/*SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
+															     Root["entities"][EntityList[i]]["name"].asString(),
+															     Root["entities"][EntityList[i]]["ID"].asString());*/
+
+					FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString())->GetComponent(0)->GameModel;
+					NewEntity->AddComponent<FEGameModelComponent>(GameModel);
 				}
 
 				if (abs(ProjectVersion - 0.025f) <= FLT_EPSILON)
-					SCENE.GetEntity(EntityList[i])->SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
-				
-				ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(EntityList[i])->Transform);
+				{
+					//SCENE.GetEntity(EntityList[i])->SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
+					NewEntity->GetComponent<FEGameModelComponent>().SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
+				}
+					
+				ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &NewEntity->GetComponent<FETransformComponent>());
+				/*ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(EntityList[i])->Transform);
 				FENewEntity* NewEntity = SCENE.GetNewStyleEntityByOldStyleID(EntityList[i]);
 				if (NewEntity != nullptr)
 				{
 					NewEntity->GetComponent<FETransformComponent>() = SCENE.GetEntity(EntityList[i])->Transform;
-				}
+				}*/
 			}
 		}
+		// For compatibility with old projects.
 		else
 		{
-			SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
+			FENewEntity* NewEntity = SCENE.AddNewStyleEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+			FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString())->GetComponent(0)->GameModel;
+			NewEntity->AddComponent<FEGameModelComponent>(GameModel);
+			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &NewEntity->GetComponent<FETransformComponent>());
+
+			/*SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
 							EntityList[i],
 							Root["entities"][EntityList[i]]["ID"].asString());
-			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(EntityList[i])->Transform);
+			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(EntityList[i])->Transform);*/
 		}
 	}
 
@@ -1447,6 +1465,7 @@ void FEProject::AddFileToDeleteList(const std::string FileName)
 	FilesToDelete.push_back(FileName);
 }
 
+// FIX ME! Deprecate.
 void FEProject::LoadSceneVer0()
 {
 	std::ifstream SceneFile;

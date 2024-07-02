@@ -99,12 +99,9 @@ static void CreateNewEntityCallBack(const std::vector<FEObject*> SelectionsResul
 		if (SelectedPrefab == nullptr)
 			return;
 
-		// FIX ME!
-		FEEntity* NewEntity = SCENE.AddEntity(SelectedPrefab);
-		FENewEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(NewEntity->GetObjectID());
-		NewNewEntity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-		//NewEntity->Transform.SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-		SELECTED.SetSelected(NewNewEntity);
+		FENewEntity* NewEntity = SCENE.AddNewStyleEntity();
+		NewEntity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+		SELECTED.SetSelected(NewEntity);
 
 		PROJECT_MANAGER.GetCurrent()->SetModified(true);
 	}
@@ -391,8 +388,8 @@ void FEEditorSceneGraphWindow::Render()
 		if (ImGui::IsItemClicked())
 		{
 			// FIX ME!
-			FENewEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i])->GetObjectID());
-			SELECTED.SetSelected(NewNewEntity);
+			//FENewEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i])->GetObjectID());
+			//SELECTED.SetSelected(NewNewEntity);
 			SELECTED.SetDirtyFlag(false);
 		}
 
@@ -638,10 +635,10 @@ void FEEditorSceneGraphWindow::Render()
 		(SELECTED.GetSelected()->GetType() == FE_ENTITY || SELECTED.GetSelected()->GetType() == FE_ENTITY_INSTANCED || SELECTED.GetSelected()->GetType() == FE_TERRAIN) &&
 		bDisplaySelectedObjAABB)
 	{
-		if (SELECTED.GetSelected()->HasComponent<FERenderableComponent>())
+		if (SELECTED.GetSelected()->HasComponent<FEGameModelComponent>())
 		{
-			FEEntity* OldStyleEntity = SELECTED.GetSelected()->GetComponent<FERenderableComponent>().OldStyleEntity;
-			FEAABB SelectedAABB = OldStyleEntity->GetAABB().Transform(SELECTED.GetSelected()->GetComponent<FETransformComponent>().GetTransformMatrix());
+			FEGameModel* GameModel = SELECTED.GetSelected()->GetComponent<FEGameModelComponent>().GameModel;
+			FEAABB SelectedAABB = GameModel->GetMesh()->GetAABB().Transform(SELECTED.GetSelected()->GetComponent<FETransformComponent>().GetTransformMatrix());
 			//const FEAABB SelectedAABB = SELECTED.GetEntity() != nullptr ? SELECTED.GetEntity()->GetAABB() : SELECTED.GetTerrain()->GetAABB();
 
 			RENDERER.DrawAABB(SelectedAABB);

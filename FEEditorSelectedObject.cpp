@@ -159,16 +159,21 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 	SELECTED.InstancedSubObjectsInfo.clear();
 
 	const glm::vec3 MouseRayVector = MouseRay(MouseX, MouseY);
-	const std::vector<std::string> EntityList = SCENE.GetEntityList();
+	const std::vector<std::string> EntityList = SCENE.GetNewEntityList();
 	for (size_t i = 0; i < EntityList.size(); i++)
 	{
 		float Distance = 0;
 
-		FEEntity* Entity = SCENE.GetEntity(EntityList[i]);
-		FENewEntity* NewStyleEntity = SCENE.GetNewStyleEntityByOldStyleID(Entity->GetObjectID());
-		if (NewStyleEntity != nullptr && NewStyleEntity->HasComponent<FERenderableComponent>())
+		//FEEntity* Entity = SCENE.GetEntity(EntityList[i]);
+		//FENewEntity* NewStyleEntity = SCENE.GetNewStyleEntityByOldStyleID(Entity->GetObjectID());
+
+		FENewEntity* NewStyleEntity = SCENE.GetNewStyleEntity(EntityList[i]);
+		if (NewStyleEntity != nullptr && NewStyleEntity->HasComponent<FEGameModelComponent>())
 		{
-			FEAABB Box = Entity->GetAABB().Transform(NewStyleEntity->GetComponent<FETransformComponent>().GetTransformMatrix());
+			FEGameModelComponent& GameModelComponent = NewStyleEntity->GetComponent<FEGameModelComponent>();
+
+			FEAABB Box = GameModelComponent.GameModel->GetMesh()->GetAABB().Transform(NewStyleEntity->GetComponent<FETransformComponent>().GetTransformMatrix());
+			//FEAABB Box = Entity->GetAABB().Transform(NewStyleEntity->GetComponent<FETransformComponent>().GetTransformMatrix());
 			//FEAABB Box = SCENE.GetEntity(EntityList[i])->GetAABB();
 			if (Box.RayIntersect(ENGINE.GetCamera()->GetPosition(), MouseRayVector, Distance))
 			{
@@ -237,25 +242,38 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 		int b = ((i + 1) >> 16) & 255;
 #endif
 		FENewEntity* PotentiallySelectedEntity = SELECTED.SceneEntitiesUnderMouse[i];
-		if (PotentiallySelectedEntity->HasComponent<FERenderableComponent>())
+		if (PotentiallySelectedEntity->HasComponent<FEGameModelComponent>())
 		{
-			FERenderableComponent& RenderableComponent = PotentiallySelectedEntity->GetComponent<FERenderableComponent>();
-			if (!RenderableComponent.OldStyleEntity->IsVisible())
+			FEGameModelComponent& GameModelComponent = PotentiallySelectedEntity->GetComponent<FEGameModelComponent>();
+			if (!GameModelComponent.IsVisible())
 				continue;
 
-			for (int j = 0; j < RenderableComponent.OldStyleEntity->Prefab->ComponentsCount(); j++)
-			{
-				FEMaterial* RegularMaterial = RenderableComponent.OldStyleEntity->Prefab->GetComponent(j)->GameModel->Material;
-				RenderableComponent.OldStyleEntity->Prefab->GetComponent(j)->GameModel->Material = PixelAccurateSelectionMaterial;
+			// FIX ME! Prefab not supported
+			FEMaterial* RegularMaterial = GameModelComponent.GameModel->Material;
+			GameModelComponent.GameModel->Material = PixelAccurateSelectionMaterial;
+			PixelAccurateSelectionMaterial->SetBaseColor(glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
+			PixelAccurateSelectionMaterial->ClearAllTexturesInfo();
+			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
+			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
+
+			RENDERER.RenderGameModelComponent(GameModelComponent, PotentiallySelectedEntity->GetComponent<FETransformComponent>(), ENGINE.GetCamera(), false);
+			//RENDERER.RenderEntity(GameModelComponent.OldStyleEntity, ENGINE.GetCamera(), false, j);
+
+			GameModelComponent.GameModel->Material = RegularMaterial;
+
+			//for (int j = 0; j < GameModelComponent.OldStyleEntity->Prefab->ComponentsCount(); j++)
+			//{
+				/*FEMaterial* RegularMaterial = GameModelComponent.OldStyleEntity->Prefab->GetComponent(j)->GameModel->Material;
+				GameModelComponent.OldStyleEntity->Prefab->GetComponent(j)->GameModel->Material = PixelAccurateSelectionMaterial;
 				PixelAccurateSelectionMaterial->SetBaseColor(glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
 				PixelAccurateSelectionMaterial->ClearAllTexturesInfo();
 				PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
 				PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
 
-				RENDERER.RenderEntity(RenderableComponent.OldStyleEntity, ENGINE.GetCamera(), false, j);
+				RENDERER.RenderEntity(GameModelComponent.OldStyleEntity, ENGINE.GetCamera(), false, j);
 
-				RenderableComponent.OldStyleEntity->Prefab->GetComponent(j)->GameModel->Material = RegularMaterial;
-			}
+				GameModelComponent.OldStyleEntity->Prefab->GetComponent(j)->GameModel->Material = RegularMaterial;*/
+			//}
 
 			PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr);
 			PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr, 1);
@@ -451,7 +469,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 	//FE_GL_ERROR(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT));
 
-	if (Container == nullptr || !Container->HasComponent<FERenderableComponent>())
+	if (Container == nullptr || !Container->HasComponent<FEGameModelComponent>())
 	{
 		HALO_SELECTION_EFFECT.HaloObjectsFb->UnBind();
 		ENGINE.SetClearColor(OriginalClearColor);
@@ -460,10 +478,22 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 		return;
 	}
 
-	FERenderableComponent& RenderableComponent = Container->GetComponent<FERenderableComponent>();
-	FEEntity* SelectedEntity = RenderableComponent.OldStyleEntity;
+	FEGameModelComponent& GameModelComponent = Container->GetComponent<FEGameModelComponent>();
 
-	if (SelectedEntity->GetType() == FE_ENTITY)
+	FEMaterial* RegularMaterial = GameModelComponent.GameModel->Material;
+
+	GameModelComponent.GameModel->Material = HALO_SELECTION_EFFECT.HaloMaterial;
+	HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
+	HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
+
+	RENDERER.RenderGameModelComponent(GameModelComponent, Container->GetComponent<FETransformComponent>(), ENGINE.GetCamera(), false);
+	//RENDERER.RenderEntity(SelectedEntity, ENGINE.GetCamera(), false, i);
+
+	GameModelComponent.GameModel->Material = RegularMaterial;
+
+	// FIX ME!
+	//FEEntity* SelectedEntity = GameModelComponent.OldStyleEntity;
+	/*if (SelectedEntity->GetType() == FE_ENTITY)
 	{
 		for (int i = 0; i < SelectedEntity->Prefab->ComponentsCount(); i++)
 		{
@@ -526,7 +556,9 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 				SelectedInstancedEntity->Prefab->GetComponent(i)->GameModel->Material = RegularMaterial;
 			}
 		}
-	}
+	}*/
+
+
 
 	//// Temporary solution, because of the lack of proper ECS system
 	//if (Container != nullptr && Container->GetType() == FE_ENTITY)

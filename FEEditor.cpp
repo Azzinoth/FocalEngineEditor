@@ -7,16 +7,29 @@ bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
 {
 	if (Object->GetType() == FE_PREFAB)
 	{
-		// FIX ME!
-		FEEntity* NewEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Object->GetObjectID()));
-		FENewEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(NewEntity->GetObjectID());
+		FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Object->GetObjectID())->GetComponent(0)->GameModel;
+
+		FENewEntity* NewNewEntity = SCENE.AddNewStyleEntity(Object->GetName());
+		NewNewEntity->GetComponent<FEGameModelComponent>().GameModel = GameModel;
 		NewNewEntity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-		//NewEntity->Transform.SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
 		SELECTED.SetSelected(NewNewEntity);
 		PROJECT_MANAGER.GetCurrent()->SetModified(true);
 
 		return true;
 	}
+
+	// FIX ME!
+	//if (Object->GetType() == FE_PREFAB)
+	//{
+	//	FEEntity* NewEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Object->GetObjectID()));
+	//	FENewEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(NewEntity->GetObjectID());
+	//	NewNewEntity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+	//	//NewEntity->Transform.SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+	//	SELECTED.SetSelected(NewNewEntity);
+	//	PROJECT_MANAGER.GetCurrent()->SetModified(true);
+
+	//	return true;
+	//}
 
 	return false;
 }
@@ -198,11 +211,13 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 			// FIX ME!
 			// There should be proper FEScene::DuplicateNewStyleEntity that will duplicate the entity and all its components
 			// Also place it in same scene graph node as the original entity ?
-			FEEntity* NewEntity = SCENE.AddEntity(SCENE.GetEntity(EDITOR.GetSceneEntityIDInClipboard())->Prefab, "");
-			FENewEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(NewEntity->GetObjectID());
 			FENewEntity* EntityToCopy = SCENE.GetNewStyleEntity(EDITOR.GetSceneEntityIDInClipboard());
+			FENewEntity* NewNewEntity = SCENE.AddNewStyleEntity(EntityToCopy->GetName() + "_Copy");
 			NewNewEntity->GetComponent<FETransformComponent>() = EntityToCopy->GetComponent<FETransformComponent>();
 			NewNewEntity->GetComponent<FETransformComponent>().SetPosition(EntityToCopy->GetComponent<FETransformComponent>().GetPosition() * 1.1f);
+			if (EntityToCopy->HasComponent<FEGameModelComponent>())
+				NewNewEntity->AddComponent<FEGameModelComponent>(EntityToCopy->GetComponent<FEGameModelComponent>().GameModel);
+			
 			
 			SELECTED.SetSelected(NewNewEntity);
 		}
@@ -249,31 +264,31 @@ void FEEditor::InitializeResources()
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("637C784B2E5E5C6548190E1B"/*"scaleGizmoMesh"*/));
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("19622421516E5B317E1B5360"/*"rotateGizmoMesh"*/));
 
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoEntity);
 
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoEntity);
 
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
+	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity);
 
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(PREVIEW_MANAGER.PreviewEntity);

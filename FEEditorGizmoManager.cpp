@@ -22,14 +22,15 @@ void GizmoManager::InitializeResources()
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.9f, 0.1f, 0.1f), "baseColor"));
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
 	TransformationXGizmoEntity = SCENE.AddNewStyleEntity("TransformationXGizmoEntity");
-	TransformationXGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationXGizmoGM"), "TransformationXGizmoEntity"));
-	RESOURCE_MANAGER.MakePrefabStandard(TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
-	TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
+	//TransformationXGizmoEntity->AddComponent<FEGameModelComponent>(SCENE.AddEntity(new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationXGizmoGM"), "TransformationXGizmoEntity"));
+	TransformationXGizmoEntity->AddComponent<FEGameModelComponent>(new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationXGizmoGM"));
+	TransformationXGizmoEntity->SetName("TransformationXGizmoEntity");
+	RESOURCE_MANAGER.MakeGameModelStandard(TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+	TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	TransformationXGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	TransformationXGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
-	TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	// Temporary overly complicated solution, because of new and old entity system.
 	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
 
@@ -41,14 +42,15 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
 
 	TransformationYGizmoEntity = SCENE.AddNewStyleEntity("TransformationYGizmoEntity");
-	TransformationYGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationYGizmoGM"), "TransformationYGizmoEntity"));
-	RESOURCE_MANAGER.MakePrefabStandard(TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
-	TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
+	//TransformationYGizmoEntity->AddComponent<FERenderableComponent>(new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationYGizmoGM"), "TransformationYGizmoEntity"));
+	TransformationYGizmoEntity->AddComponent<FEGameModelComponent>(new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationYGizmoGM"));
+	TransformationYGizmoEntity->SetName("TransformationYGizmoEntity");
+	RESOURCE_MANAGER.MakeGameModelStandard(TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+	TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	TransformationYGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	TransformationYGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f));
-	TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	/*TransformationYGizmoEntity = SCENE.AddEntity(new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationYGizmoGM"), "transformationYGizmoEntity");
 	RESOURCE_MANAGER.MakePrefabStandard(TransformationYGizmoEntity->Prefab);
 	RESOURCE_MANAGER.MakeGameModelStandard(TransformationYGizmoEntity->Prefab->GetComponent(0)->GameModel);
@@ -67,14 +69,15 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
 
 	TransformationZGizmoEntity = SCENE.AddNewStyleEntity("TransformationZGizmoEntity");
-	TransformationZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationZGizmoGM"), "TransformationZGizmoEntity"));
-	RESOURCE_MANAGER.MakePrefabStandard(TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
-	TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
+	//TransformationZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationZGizmoGM"), "TransformationZGizmoEntity"));
+	TransformationZGizmoEntity->AddComponent<FEGameModelComponent>(new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationZGizmoGM"));
+	TransformationYGizmoEntity->SetName("TransformationZGizmoEntity");
+	RESOURCE_MANAGER.MakeGameModelStandard(TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+	TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	TransformationZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	TransformationZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
-	TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	/*TransformationZGizmoEntity = SCENE.AddEntity(new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationZGizmoGM"), "transformationZGizmoEntity");
 	RESOURCE_MANAGER.MakePrefabStandard(TransformationZGizmoEntity->Prefab);
 	RESOURCE_MANAGER.MakeGameModelStandard(TransformationZGizmoEntity->Prefab->GetComponent(0)->GameModel);
@@ -93,15 +96,16 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
 
 	TransformationXYGizmoEntity = SCENE.AddNewStyleEntity("TransformationXYGizmoEntity");
-	TransformationXYGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXYGizmoGM"), "TransformationXYGizmoEntity"));
-	RESOURCE_MANAGER.MakePrefabStandard(TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
-	TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
+	//TransformationXYGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXYGizmoGM"), "TransformationXYGizmoEntity"));
+	TransformationXYGizmoEntity->AddComponent<FEGameModelComponent>(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXYGizmoGM"));
+	TransformationXYGizmoEntity->SetName("TransformationXYGizmoEntity");
+	RESOURCE_MANAGER.MakeGameModelStandard(TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+	TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	TransformationXYGizmoEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.005f, 0.005f, 0.0f));
 	TransformationXYGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale, GizmosScale, GizmosScale * 0.02f));
 	TransformationXYGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
-	TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	//TransformationXYGizmoEntity = SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXYGizmoGM"), "transformationXYGizmoEntity");
 	//RESOURCE_MANAGER.MakePrefabStandard(TransformationXYGizmoEntity->Prefab);
 	//RESOURCE_MANAGER.MakeGameModelStandard(TransformationXYGizmoEntity->Prefab->GetComponent(0)->GameModel);
@@ -120,15 +124,16 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
 
 	TransformationYZGizmoEntity = SCENE.AddNewStyleEntity("TransformationYZGizmoEntity");
-	TransformationYZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationYZGizmoGM"), "TransformationYZGizmoEntity"));
-	RESOURCE_MANAGER.MakePrefabStandard(TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
-	TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
+	//TransformationYZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationYZGizmoGM"), "TransformationYZGizmoEntity"));
+	TransformationYZGizmoEntity->AddComponent<FEGameModelComponent>(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationYZGizmoGM"));
+	TransformationYZGizmoEntity->SetName("TransformationYZGizmoEntity");
+	RESOURCE_MANAGER.MakeGameModelStandard(TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+	TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	TransformationYZGizmoEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0f, 0.005f, 0.005f));
 	TransformationYZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale * 0.02f, GizmosScale, GizmosScale));
 	TransformationYZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	//TransformationYZGizmoEntity = SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationYZGizmoGM"), "transformationYZGizmoEntity");
 	//RESOURCE_MANAGER.MakePrefabStandard(TransformationYZGizmoEntity->Prefab);
 	//RESOURCE_MANAGER.MakeGameModelStandard(TransformationYZGizmoEntity->Prefab->GetComponent(0)->GameModel);
@@ -147,15 +152,16 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
 
 	TransformationXZGizmoEntity = SCENE.AddNewStyleEntity("TransformationXZGizmoEntity");
-	TransformationXZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXZGizmoGM"), "TransformationXZGizmoEntity"));
-	RESOURCE_MANAGER.MakePrefabStandard(TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
-	TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
+	//TransformationXZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXZGizmoGM"), "TransformationXZGizmoEntity"));
+	TransformationXZGizmoEntity->SetName("TransformationXZGizmoEntity");
+	TransformationXZGizmoEntity->AddComponent<FEGameModelComponent>(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXZGizmoGM"));
+	RESOURCE_MANAGER.MakeGameModelStandard(TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+	TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	TransformationXZGizmoEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.005f, 0.0f, 0.005f));
 	TransformationXZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale, GizmosScale * 0.02f, GizmosScale));
 	TransformationXZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	//TransformationXZGizmoEntity = SCENE.AddEntity(new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXZGizmoGM"), "transformationXZGizmoEntity");
 	//RESOURCE_MANAGER.MakePrefabStandard(TransformationXZGizmoEntity->Prefab);
 	//RESOURCE_MANAGER.MakeGameModelStandard(TransformationXZGizmoEntity->Prefab->GetComponent(0)->GameModel);
@@ -179,14 +185,15 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
 
 	ScaleXGizmoEntity = SCENE.AddNewStyleEntity("ScaleXGizmoEntity");
-	ScaleXGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleXGizmoGM"), "ScaleXGizmoEntity"));
-	RESOURCE_MANAGER.MakePrefabStandard(ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
-	ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
+	//ScaleXGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleXGizmoGM"), "ScaleXGizmoEntity"));
+	ScaleXGizmoEntity->AddComponent<FEGameModelComponent>(new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleXGizmoGM"));
+	ScaleXGizmoEntity->SetName("ScaleXGizmoEntity");
+	RESOURCE_MANAGER.MakeGameModelStandard(ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+	ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	ScaleXGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	ScaleXGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
-	ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	/*ScaleXGizmoEntity = SCENE.AddEntity(new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "scaleXGizmoGM"), "scaleXGizmoEntity");
 	RESOURCE_MANAGER.MakePrefabStandard(ScaleXGizmoEntity->Prefab);
 	RESOURCE_MANAGER.MakeGameModelStandard(ScaleXGizmoEntity->Prefab->GetComponent(0)->GameModel);
@@ -205,14 +212,15 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
 
 	ScaleYGizmoEntity = SCENE.AddNewStyleEntity("ScaleYGizmoEntity");
-	ScaleYGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleYGizmoGM"), "ScaleYGizmoEntity"));
-	RESOURCE_MANAGER.MakePrefabStandard(ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
-	ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
+	//ScaleYGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleYGizmoGM"), "ScaleYGizmoEntity"));
+	ScaleYGizmoEntity->AddComponent<FEGameModelComponent>(new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleYGizmoGM"));
+	ScaleYGizmoEntity->SetName("ScaleYGizmoEntity");
+	RESOURCE_MANAGER.MakeGameModelStandard(ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+	ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	ScaleYGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	ScaleYGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f));
-	ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	/*ScaleYGizmoEntity = SCENE.AddEntity(new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "scaleYGizmoGM"), "scaleYGizmoEntity");
 	RESOURCE_MANAGER.MakePrefabStandard(ScaleYGizmoEntity->Prefab);
 	RESOURCE_MANAGER.MakeGameModelStandard(ScaleYGizmoEntity->Prefab->GetComponent(0)->GameModel);
@@ -231,14 +239,15 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
 
 	ScaleZGizmoEntity = SCENE.AddNewStyleEntity("ScaleZGizmoEntity");
-	ScaleZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleZGizmoGM"), "ScaleZGizmoEntity"));
-	RESOURCE_MANAGER.MakePrefabStandard(ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
-	ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
+	//ScaleZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleZGizmoGM"), "ScaleZGizmoEntity"));
+	ScaleZGizmoEntity->AddComponent<FEGameModelComponent>(new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleZGizmoGM"));
+	ScaleZGizmoEntity->SetName("ScaleZGizmoEntity");
+	RESOURCE_MANAGER.MakeGameModelStandard(ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+	ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	ScaleZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	ScaleZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
-	ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	/*ScaleZGizmoEntity = SCENE.AddEntity(new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "scaleZGizmoGM"), "scaleZGizmoEntity");
 	RESOURCE_MANAGER.MakePrefabStandard(ScaleZGizmoEntity->Prefab);
 	RESOURCE_MANAGER.MakeGameModelStandard(ScaleZGizmoEntity->Prefab->GetComponent(0)->GameModel);
@@ -261,14 +270,15 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
 
 	RotateXGizmoEntity = SCENE.AddNewStyleEntity("RotateXGizmoEntity");
-	RotateXGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(RotateGizmoMesh, CurrentMaterial, "RotateXGizmoGM"), "RotateXGizmoEntity"));
-	RESOURCE_MANAGER.MakePrefabStandard(RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
-	RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
+	//RotateXGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(RotateGizmoMesh, CurrentMaterial, "RotateXGizmoGM"), "RotateXGizmoEntity"));
+	RotateXGizmoEntity->AddComponent<FEGameModelComponent>(new FEGameModel(RotateGizmoMesh, CurrentMaterial, "RotateXGizmoGM"));
+	RotateXGizmoEntity->SetName("RotateXGizmoEntity");
+	RESOURCE_MANAGER.MakeGameModelStandard(RotateXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+	RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	RotateXGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateXGizmoEntity->GetComponent<FETransformComponent>().SetRotation(RotateXStandardRotation);
-	RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	/*RotateXGizmoEntity = SCENE.AddEntity(new FEGameModel(RotateGizmoMesh, CurrentMaterial, "rotateXGizmoGM"), "rotateXGizmoEntity");
 	RESOURCE_MANAGER.MakePrefabStandard(RotateXGizmoEntity->Prefab);
 	RESOURCE_MANAGER.MakeGameModelStandard(RotateXGizmoEntity->Prefab->GetComponent(0)->GameModel);
@@ -287,14 +297,15 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
 
 	RotateYGizmoEntity = SCENE.AddNewStyleEntity("RotateYGizmoEntity");
-	RotateYGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(RotateGizmoMesh, CurrentMaterial, "RotateYGizmoGM"), "RotateYGizmoEntity"));
-	RESOURCE_MANAGER.MakePrefabStandard(RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
-	RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
+	//RotateYGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(RotateGizmoMesh, CurrentMaterial, "RotateYGizmoGM"), "RotateYGizmoEntity"));
+	RotateYGizmoEntity->AddComponent<FEGameModelComponent>(new FEGameModel(RotateGizmoMesh, CurrentMaterial, "RotateYGizmoGM"));
+	RotateYGizmoEntity->SetName("RotateYGizmoEntity");
+	RESOURCE_MANAGER.MakeGameModelStandard(RotateYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+	RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	RotateYGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateYGizmoEntity->GetComponent<FETransformComponent>().SetRotation(RotateYStandardRotation);
-	RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	/*RotateYGizmoEntity = SCENE.AddEntity(new FEGameModel(RotateGizmoMesh, CurrentMaterial, "rotateYGizmoGM"), "rotateYGizmoEntity");
 	RESOURCE_MANAGER.MakePrefabStandard(RotateYGizmoEntity->Prefab);
 	RESOURCE_MANAGER.MakeGameModelStandard(RotateYGizmoEntity->Prefab->GetComponent(0)->GameModel);
@@ -313,14 +324,15 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
 
 	RotateZGizmoEntity = SCENE.AddNewStyleEntity("RotateZGizmoEntity");
-	RotateZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(RotateGizmoMesh, CurrentMaterial, "RotateZGizmoGM"), "RotateZGizmoEntity"));
-	RESOURCE_MANAGER.MakePrefabStandard(RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab);
-	RESOURCE_MANAGER.MakeGameModelStandard(RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel);
-	RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
+	//RotateZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(new FEGameModel(RotateGizmoMesh, CurrentMaterial, "RotateZGizmoGM"), "RotateZGizmoEntity"));
+	RotateZGizmoEntity->AddComponent<FEGameModelComponent>(new FEGameModel(RotateGizmoMesh, CurrentMaterial, "RotateZGizmoGM"));
+	RotateZGizmoEntity->SetName("RotateZGizmoEntity");
+	RESOURCE_MANAGER.MakeGameModelStandard(RotateZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+	RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	RotateZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(RotateZStandardRotation);
-	RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	/*RotateZGizmoEntity = SCENE.AddEntity(new FEGameModel(RotateGizmoMesh, CurrentMaterial, "rotateZGizmoGM"), "rotateZGizmoEntity");
 	RESOURCE_MANAGER.MakePrefabStandard(RotateZGizmoEntity->Prefab);
 	RESOURCE_MANAGER.MakeGameModelStandard(RotateZGizmoEntity->Prefab->GetComponent(0)->GameModel);
@@ -341,13 +353,13 @@ void GizmoManager::InitializeResources()
 
 void GizmoManager::HideAllGizmo()
 {
-	TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
-	TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
-	TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
+	TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 
-	TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
-	TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
-	TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
+	TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 
 	bTransformationXGizmoActive = false;
 	bTransformationYGizmoActive = false;
@@ -357,17 +369,17 @@ void GizmoManager::HideAllGizmo()
 	bTransformationYZGizmoActive = false;
 	bTransformationXZGizmoActive = false;
 
-	ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
-	ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
-	ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
+	ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 
 	bScaleXGizmoActive = false;
 	bScaleYGizmoActive = false;
 	bScaleZGizmoActive = false;
 
-	RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
-	RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
-	RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
+	RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 
 	bRotateXGizmoActive = false;
 	bRotateYGizmoActive = false;
@@ -395,29 +407,29 @@ void GizmoManager::UpdateGizmoState(int NewState)
 	{
 		case TRANSFORM_GIZMOS:
 		{
-			TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
+			TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
 
-			TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
+			TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
 
 			break;
 		}
 		case SCALE_GIZMOS:
 		{
-			ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
+			ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
 			
 			break;
 		}
 		case ROTATE_GIZMOS:
 		{
-			RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
+			RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
 		
 			break;
 		}
@@ -470,86 +482,86 @@ void GizmoManager::Render()
 	if (GIZMO_MANAGER.GizmosState == TRANSFORM_GIZMOS)
 	{
 		// X Gizmos
-		GIZMO_MANAGER.TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
+		GIZMO_MANAGER.TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
 		if (GIZMO_MANAGER.bTransformationXZGizmoActive || GIZMO_MANAGER.bTransformationXYGizmoActive || GIZMO_MANAGER.bTransformationXGizmoActive)
-			GIZMO_MANAGER.TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 		// Y Gizmos
-		GIZMO_MANAGER.TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
+		GIZMO_MANAGER.TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
 		if (GIZMO_MANAGER.bTransformationYZGizmoActive || GIZMO_MANAGER.bTransformationXYGizmoActive || GIZMO_MANAGER.bTransformationYGizmoActive)
-			GIZMO_MANAGER.TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 		// Z Gizmos
-		GIZMO_MANAGER.TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
+		GIZMO_MANAGER.TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
 		if (GIZMO_MANAGER.bTransformationYZGizmoActive || GIZMO_MANAGER.bTransformationXZGizmoActive || GIZMO_MANAGER.bTransformationZGizmoActive)
-			GIZMO_MANAGER.TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 		// XY Gizmos 
-		GIZMO_MANAGER.TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
+		GIZMO_MANAGER.TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
 		if (GIZMO_MANAGER.bTransformationXYGizmoActive)
-			GIZMO_MANAGER.TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 		// YZ Gizmos
-		GIZMO_MANAGER.TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
+		GIZMO_MANAGER.TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
 		if (GIZMO_MANAGER.bTransformationYZGizmoActive)
-			GIZMO_MANAGER.TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 		// XZ Gizmos
-		GIZMO_MANAGER.TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
+		GIZMO_MANAGER.TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
 		if (GIZMO_MANAGER.bTransformationXZGizmoActive)
-			GIZMO_MANAGER.TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 	}
 	else if (GIZMO_MANAGER.GizmosState == SCALE_GIZMOS)
 	{
 		// X Gizmos
-		GIZMO_MANAGER.ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
+		GIZMO_MANAGER.ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
 		if (GIZMO_MANAGER.bScaleXGizmoActive)
-			GIZMO_MANAGER.ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 		// Y Gizmos
-		GIZMO_MANAGER.ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
+		GIZMO_MANAGER.ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
 		if (GIZMO_MANAGER.bScaleYGizmoActive)
-			GIZMO_MANAGER.ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 		// Z Gizmos
-		GIZMO_MANAGER.ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
+		GIZMO_MANAGER.ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
 		if (GIZMO_MANAGER.bScaleZGizmoActive)
-			GIZMO_MANAGER.ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 	}
 	else if (GIZMO_MANAGER.GizmosState == ROTATE_GIZMOS)
 	{
 		if (SELECTED.SELECTED.GetSelected() != nullptr)
 		{
-			GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
+			GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
 		}
 
 		// X Gizmos
-		GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
+		GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
 		if (GIZMO_MANAGER.bRotateXGizmoActive)
 		{
-			GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
-			GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
-			GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
+			GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+			GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 		}
 
 		// Y Gizmos
-		GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
+		GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
 		if (GIZMO_MANAGER.bRotateYGizmoActive)
 		{
-			GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
-			GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
-			GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
+			GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+			GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 		}
 
 		// Z Gizmos
-		GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
+		GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
 		if (GIZMO_MANAGER.bRotateZGizmoActive)
 		{
-			GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->Prefab->GetComponent(0)->GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
-			GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
-			GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(false);
+			GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+			GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+			GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 		}
 	}
 }
@@ -954,24 +966,24 @@ void GizmoManager::OnSelectedObjectUpdate()
 
 		if (GIZMO_MANAGER.GizmosState == TRANSFORM_GIZMOS)
 		{
-			GIZMO_MANAGER.TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			GIZMO_MANAGER.TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			GIZMO_MANAGER.TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			GIZMO_MANAGER.TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			GIZMO_MANAGER.TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			GIZMO_MANAGER.TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
+			GIZMO_MANAGER.TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GIZMO_MANAGER.TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GIZMO_MANAGER.TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GIZMO_MANAGER.TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GIZMO_MANAGER.TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GIZMO_MANAGER.TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
 		}
 		else if (GIZMO_MANAGER.GizmosState == SCALE_GIZMOS)
 		{
-			GIZMO_MANAGER.ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			GIZMO_MANAGER.ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			GIZMO_MANAGER.ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
+			GIZMO_MANAGER.ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GIZMO_MANAGER.ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GIZMO_MANAGER.ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
 		}
 		else if (GIZMO_MANAGER.GizmosState == ROTATE_GIZMOS)
 		{
-			GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
-			GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetVisibility(true);
+			GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
 		}
 	}
 }
@@ -1055,10 +1067,11 @@ void GizmoManager::ReInitializeEntities()
 
 	// TransformationXGizmo
 	TransformationXGizmoEntity = SCENE.AddNewStyleEntity("TransformationXGizmoEntity");
-	TransformationXGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationXGizmoGM")[0], "TransformationXGizmoEntity"));
-	TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
-	TransformationXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	TransformationXGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationXGizmoGM")[0]);
+	TransformationXGizmoEntity->SetName("TransformationXGizmoEntity");
+	TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
+	TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	TransformationXGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	TransformationXGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
 	// Temporary overly complicated solution, because of new and old entity system.
@@ -1066,181 +1079,133 @@ void GizmoManager::ReInitializeEntities()
 
 	// TransformationYGizmo
 	TransformationYGizmoEntity = SCENE.AddNewStyleEntity("TransformationYGizmoEntity");
-	TransformationYGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationYGizmoGM")[0], "TransformationYGizmoEntity"));
-	TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
-	TransformationYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	TransformationYGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationYGizmoGM")[0]);
+	TransformationYGizmoEntity->SetName("TransformationYGizmoEntity");
+	TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
+	TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	TransformationYGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	TransformationYGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f));
-	//TransformationYGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationYGizmoGM")[0], "transformationYGizmoEntity");
-	//TransformationYGizmoEntity->SetCastShadows(false);
-	//TransformationYGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
-	//TransformationYGizmoEntity->Transform.SetRotation(glm::vec3(0.0f));
-	//TransformationYGizmoEntity->SetIsPostprocessApplied(false);
 	// Temporary overly complicated solution, because of new and old entity system.
 	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
 
 	// TransformationZGizmo
 	TransformationZGizmoEntity = SCENE.AddNewStyleEntity("TransformationZGizmoEntity");
-	TransformationZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationZGizmoGM")[0], "TransformationZGizmoEntity"));
-	TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
-	TransformationZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	TransformationZGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationZGizmoGM")[0]);
+	TransformationZGizmoEntity->SetName("TransformationZGizmoEntity");
+	TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
+	TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	TransformationZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	TransformationZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
-	//TransformationZGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationZGizmoGM")[0], "transformationZGizmoEntity");
-	//TransformationZGizmoEntity->SetCastShadows(false);
-	//TransformationZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
-	//TransformationZGizmoEntity->Transform.SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
-	//TransformationZGizmoEntity->SetIsPostprocessApplied(false);
-	// Temporary overly complicated solution, because of new and old entity system.
 	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
 
 	// Plane gizmos
 	TransformationXYGizmoEntity = SCENE.AddNewStyleEntity("TransformationXYGizmoEntity");
-	TransformationXYGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationXYGizmoGM")[0], "TransformationXYGizmoEntity"));
-	TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
-	TransformationXYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	TransformationXYGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationXYGizmoGM")[0]);
+	TransformationXYGizmoEntity->SetName("TransformationXYGizmoEntity");
+	TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
+	TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	TransformationXYGizmoEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.005f, 0.005f, 0.0f));
 	TransformationXYGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale, GizmosScale, GizmosScale * 0.02f));
 	TransformationXYGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
-	/*TransformationXYGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationXYGizmoGM")[0], "transformationXYGizmoEntity");
-	TransformationXYGizmoEntity->SetCastShadows(false);
-	TransformationXYGizmoEntity->Transform.SetPosition(glm::vec3(0.005f, 0.005f, 0.0f));
-	TransformationXYGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale, GizmosScale, GizmosScale * 0.02f));
-	TransformationXYGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
-	TransformationXYGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
 	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
 
 	TransformationYZGizmoEntity = SCENE.AddNewStyleEntity("TransformationYZGizmoEntity");
-	TransformationYZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationYZGizmoGM")[0], "TransformationYZGizmoEntity"));
-	TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
-	TransformationYZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	TransformationYZGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationYZGizmoGM")[0]);
+	TransformationYZGizmoEntity->SetName("TransformationYZGizmoEntity");
+	TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
+	TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	TransformationYZGizmoEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0f, 0.005f, 0.005f));
 	TransformationYZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale * 0.02f, GizmosScale, GizmosScale));
 	TransformationYZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	/*TransformationYZGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationYZGizmoGM")[0], "transformationYZGizmoEntity");
-	TransformationYZGizmoEntity->SetCastShadows(false);
-	TransformationYZGizmoEntity->Transform.SetPosition(glm::vec3(0.0f, 0.005f, 0.005f));
-	TransformationYZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 0.02f, GizmosScale, GizmosScale));
-	TransformationYZGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	TransformationYZGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
 	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationYZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
 
 	TransformationXZGizmoEntity = SCENE.AddNewStyleEntity("TransformationXZGizmoEntity");
-	TransformationXZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationXZGizmoGM")[0], "TransformationXZGizmoEntity"));
-	TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
-	TransformationXZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	TransformationXZGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationXZGizmoGM")[0]);
+	TransformationXZGizmoEntity->SetName("TransformationXZGizmoEntity");
+	TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
+	TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	TransformationXZGizmoEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.005f, 0.0f, 0.005f));
 	TransformationXZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale, GizmosScale * 0.02f, GizmosScale));
 	TransformationXZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	/*TransformationXZGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("TransformationXZGizmoGM")[0], "transformationXZGizmoEntity");
-	TransformationXZGizmoEntity->SetCastShadows(false);
-	TransformationXZGizmoEntity->Transform.SetPosition(glm::vec3(0.005f, 0.0f, 0.005f));
-	TransformationXZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale, GizmosScale * 0.02f, GizmosScale));
-	TransformationXZGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	TransformationXZGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
 	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
 
 	// ScaleXGizmo
 	ScaleXGizmoEntity = SCENE.AddNewStyleEntity("ScaleXGizmoEntity");
-	ScaleXGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("ScaleXGizmoGM")[0], "ScaleXGizmoEntity"));
-	ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
-	ScaleXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	ScaleXGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("ScaleXGizmoGM")[0]);
+	ScaleXGizmoEntity->SetName("ScaleXGizmoEntity");
+	ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
+	ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	ScaleXGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	ScaleXGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
-	/*ScaleXGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("scaleXGizmoGM")[0], "scaleXGizmoEntity");
-	ScaleXGizmoEntity->SetCastShadows(false);
-	ScaleXGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
-	ScaleXGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
-	ScaleXGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
 	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
 
 	// ScaleYGizmo
 	ScaleYGizmoEntity = SCENE.AddNewStyleEntity("ScaleYGizmoEntity");
-	ScaleYGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("ScaleYGizmoGM")[0], "ScaleYGizmoEntity"));
-	ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
-	ScaleYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	ScaleYGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("ScaleYGizmoGM")[0]);
+	ScaleYGizmoEntity->SetName("ScaleYGizmoEntity");
+	ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
+	ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	ScaleYGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	ScaleYGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f));
-	/*ScaleYGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("scaleYGizmoGM")[0], "scaleYGizmoEntity");
-	ScaleYGizmoEntity->SetCastShadows(false);
-	ScaleYGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
-	ScaleYGizmoEntity->Transform.SetRotation(glm::vec3(0.0f));
-	ScaleYGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
 	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
 
 	// ScaleZGizmo
 	ScaleZGizmoEntity = SCENE.AddNewStyleEntity("ScaleZGizmoEntity");
-	ScaleZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("ScaleZGizmoGM")[0], "ScaleZGizmoEntity"));
-	ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
-	ScaleZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	ScaleZGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("ScaleZGizmoGM")[0]);
+	ScaleZGizmoEntity->SetName("ScaleZGizmoEntity");
+	ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
+	ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	ScaleZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	ScaleZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
-	/*ScaleZGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("scaleZGizmoGM")[0], "scaleZGizmoEntity");
-	ScaleZGizmoEntity->SetCastShadows(false);
-	ScaleZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale));
-	ScaleZGizmoEntity->Transform.SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
-	ScaleZGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
 	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
 
 	// RotateXGizmo
 	RotateXGizmoEntity = SCENE.AddNewStyleEntity("RotateXGizmoEntity");
-	RotateXGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("RotateXGizmoGM")[0], "RotateXGizmoEntity"));
-	RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
-	RotateXGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	RotateXGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("RotateXGizmoGM")[0]);
+	RotateXGizmoEntity->SetName("RotateXGizmoEntity");
+	RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
+	RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	RotateXGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateXGizmoEntity->GetComponent<FETransformComponent>().SetRotation(RotateXStandardRotation);
-	/*RotateXGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("rotateXGizmoGM")[0], "rotateXGizmoEntity");
-	RotateXGizmoEntity->SetCastShadows(false);
-	RotateXGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 2.0f));
-	RotateXGizmoEntity->Transform.SetRotation(RotateXStandardRotation);
-	RotateXGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
 	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
 
 	// RotateYGizmo
 	RotateYGizmoEntity = SCENE.AddNewStyleEntity("RotateYGizmoEntity");
-	RotateYGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("RotateYGizmoGM")[0], "RotateYGizmoEntity"));
-	RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
-	RotateYGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	RotateYGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("RotateYGizmoGM")[0]);
+	RotateYGizmoEntity->SetName("RotateYGizmoEntity");
+	RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
+	RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	RotateYGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateYGizmoEntity->GetComponent<FETransformComponent>().SetRotation(RotateYStandardRotation);
-	/*RotateYGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("rotateYGizmoGM")[0], "rotateYGizmoEntity");
-	RotateYGizmoEntity->SetCastShadows(false);
-	RotateYGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 2.0f));
-	RotateYGizmoEntity->Transform.SetRotation(RotateYStandardRotation);
-	RotateYGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
 	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
 
 	// RotateZGizmo
 	RotateZGizmoEntity = SCENE.AddNewStyleEntity("RotateZGizmoEntity");
-	RotateZGizmoEntity->AddComponent<FERenderableComponent>(SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("RotateZGizmoGM")[0], "RotateZGizmoEntity"));
-	RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetCastShadows(false);
-	RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetReceivingShadows(false);
-	RotateZGizmoEntity->GetComponent<FERenderableComponent>().OldStyleEntity->SetIsPostprocessApplied(false);
+	RotateZGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("RotateZGizmoGM")[0]);
+	RotateZGizmoEntity->SetName("RotateZGizmoEntity");
+	RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
+	RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
+	RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	RotateZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(RotateZStandardRotation);
-	/*RotateZGizmoEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefabByName("rotateZGizmoGM")[0], "rotateZGizmoEntity");
-	RotateZGizmoEntity->SetCastShadows(false);
-	RotateZGizmoEntity->Transform.SetScale(glm::vec3(GizmosScale * 2.0f));
-	RotateZGizmoEntity->Transform.SetRotation(RotateZStandardRotation);
-	RotateZGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
 	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
 }
