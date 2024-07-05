@@ -420,7 +420,7 @@ void FEEditorInspectorWindow::Render()
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 	ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None);
-	
+
 	if (SELECTED.GetSelected() == nullptr)
 	{
 		ImGui::PopStyleVar();
@@ -496,6 +496,271 @@ void FEEditorInspectorWindow::Render()
 		ImGui::PopStyleColor();
 		ImGui::PopStyleColor();
 		ImGui::PopStyleColor();
+	}
+
+	if (EntitySelected->HasComponent<FEInstancedRenderingComponent>())
+	{
+		FEInstancedRenderingComponent& InstancedComponent = EntitySelected->GetComponent<FEInstancedRenderingComponent>();
+
+		if (SELECTED.InstancedSubObjectIndexSelected != -1)
+		{
+			std::string InstancedSubObjectInfo = "index: ";
+
+			ImGui::Text("Selected instance info:");
+			InstancedSubObjectInfo = "index: " + std::to_string(SELECTED.InstancedSubObjectIndexSelected);
+			ImGui::Text(InstancedSubObjectInfo.c_str());
+
+			FETransformComponent TempTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(SELECTED.InstancedSubObjectIndexSelected));
+			ShowTransformConfiguration("selected instance", &TempTransform);
+
+			INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(EntitySelected, SELECTED.InstancedSubObjectIndexSelected, TempTransform.GetTransformMatrix());
+			//InstancedEntity->ModifyInstance(SELECTED.InstancedSubObjectIndexSelected, TempTransform.GetTransformMatrix());
+
+			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.55f, 0.55f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
+
+			if (ImGui::ImageButton((void*)(intptr_t)ArrowToGroundIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+			{
+				INSTANCED_RENDERING_SYSTEM.TryToSnapIndividualInstance(EntitySelected, SELECTED.InstancedSubObjectIndexSelected);
+				//InstancedEntity->TryToSnapInstance(SELECTED.InstancedSubObjectIndexSelected);
+			}
+			ShowToolTip("Selected instance will attempt to snap to the terrain.");
+
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+		}
+		else
+		{
+			ImGui::Text("Snapped to: ");
+			ImGui::SameLine();
+
+			const std::vector<std::string> TerrainList = SCENE.GetTerrainList();
+			static std::string CurrentTerrain = "none";
+
+			if (InstancedComponent.GetSnappedToTerrain() == nullptr)
+			{
+				CurrentTerrain = "none";
+			}
+			else
+			{
+				CurrentTerrain = InstancedComponent.GetSnappedToTerrain()->GetName();
+			}
+
+			ImGui::SetNextItemWidth(220);
+			if (ImGui::BeginCombo("##Terrain", CurrentTerrain.c_str(), ImGuiWindowFlags_None))
+			{
+				const bool is_selected = (CurrentTerrain == "none");
+				if (ImGui::Selectable("none", is_selected))
+				{
+					//if (InstancedComponent.GetSnappedToTerrain() != nullptr)
+					//	InstancedComponent.GetSnappedToTerrain()->UnSnapInstancedEntity(InstancedEntity);
+				}
+
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+
+				for (size_t i = 0; i < TerrainList.size(); i++)
+				{
+					const bool is_selected = (CurrentTerrain == TerrainList[i]);
+					if (ImGui::Selectable(SCENE.GetTerrain(TerrainList[i])->GetName().c_str(), is_selected))
+					{
+						//SCENE.GetTerrain(TerrainList[i])->SnapInstancedEntity(InstancedEntity);
+					}
+
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			if (InstancedComponent.GetSnappedToTerrain() != nullptr)
+			{
+				ImGui::Text("Terrain layer: ");
+				ImGui::SameLine();
+
+				const int CurrentLayer = InstancedComponent.GetTerrainLayer();
+				FETerrain* CurrentTerrain = InstancedComponent.GetSnappedToTerrain();
+
+				std::string caption = "none";
+				const auto layer = CurrentTerrain->GetLayerInSlot(CurrentLayer);
+				if (layer != nullptr)
+					caption = layer->GetName();
+
+				ImGui::SetNextItemWidth(220);
+				if (ImGui::BeginCombo("##TerrainLayers", caption.c_str(), ImGuiWindowFlags_None))
+				{
+					const bool is_selected = (CurrentLayer == -1);
+					ImGui::PushID("none_TerrainLayers_entity");
+					if (ImGui::Selectable("none", is_selected))
+					{
+						//if (CurrentTerrain != nullptr)
+							//CurrentTerrain->UnConnectInstancedEntityFromLayer(InstancedEntity);
+					}
+					ImGui::PopID();
+
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+
+					for (size_t i = 0; i < FE_TERRAIN_MAX_LAYERS; i++)
+					{
+						FETerrainLayer* layer = CurrentTerrain->GetLayerInSlot(i);
+						if (layer == nullptr)
+							break;
+
+						const bool is_selected = (CurrentLayer == i);
+						ImGui::PushID(layer->GetObjectID().c_str());
+						if (ImGui::Selectable(layer->GetName().c_str(), is_selected))
+						{
+							//CurrentTerrain->ConnectInstancedEntityToLayer(InstancedEntity, int(i));
+						}
+						ImGui::PopID();
+
+						if (is_selected)
+							ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+
+				if (CurrentLayer != -1)
+				{
+					ImGui::Text("Minimal layer intensity to spawn:");
+					float MinLevel = InstancedComponent.GetMinimalLayerIntensityToSpawn();
+					ImGui::SameLine();
+					ImGui::SetNextItemWidth(80);
+					ImGui::DragFloat("##minLevel", &MinLevel);
+					InstancedComponent.SetMinimalLayerIntensityToSpawn(MinLevel);
+				}
+			}
+
+			ImGui::Separator();
+
+			ImGui::Text("Seed:");
+			int seed = InstancedComponent.SpawnInfo.Seed;
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(200);
+			ImGui::DragInt("##Seed", &seed);
+			InstancedComponent.SpawnInfo.Seed = seed;
+
+			ImGui::Text("Object count:");
+			int ObjectCount = InstancedComponent.SpawnInfo.ObjectCount;
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(200);
+			ImGui::DragInt("##Object count", &ObjectCount);
+			if (ObjectCount <= 0)
+				ObjectCount = 1;
+			InstancedComponent.SpawnInfo.ObjectCount = ObjectCount;
+
+			ImGui::Text("Radius:");
+			float radius = InstancedComponent.SpawnInfo.Radius;
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(200);
+			ImGui::DragFloat("##Radius", &radius);
+			if (radius < 0.0f)
+				radius = 0.1f;
+			InstancedComponent.SpawnInfo.Radius = radius;
+
+			// Scale deviation.
+			ImGui::Text("Scale: ");
+
+			ImGui::SameLine();
+			ImGui::Text("min ");
+
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(100);
+			float MinScale = InstancedComponent.SpawnInfo.GetMinScale();
+			ImGui::DragFloat("##minScale", &MinScale, 0.01f);
+			InstancedComponent.SpawnInfo.SetMinScale(MinScale);
+
+			ImGui::SameLine();
+			ImGui::Text("max ");
+
+			ImGui::SameLine();
+			float MaxScale = InstancedComponent.SpawnInfo.GetMaxScale();
+			ImGui::SetNextItemWidth(100);
+			ImGui::DragFloat("##maxScale", &MaxScale, 0.01f);
+			InstancedComponent.SpawnInfo.SetMaxScale(MaxScale);
+
+			ImGui::Text("Rotation deviation:");
+			float RotationDeviationX = InstancedComponent.SpawnInfo.RotationDeviation.x;
+			ImGui::Text("X:");
+			ImGui::SameLine();
+			ImGui::DragFloat("##Rotation deviation X", &RotationDeviationX, 0.01f);
+			if (RotationDeviationX < 0.01f)
+				RotationDeviationX = 0.01f;
+			if (RotationDeviationX > 1.0f)
+				RotationDeviationX = 1.0f;
+			InstancedComponent.SpawnInfo.RotationDeviation.x = RotationDeviationX;
+
+			float RotationDeviationY = InstancedComponent.SpawnInfo.RotationDeviation.y;
+			ImGui::Text("Y:");
+			ImGui::SameLine();
+			ImGui::DragFloat("##Rotation deviation Y", &RotationDeviationY, 0.01f);
+			if (RotationDeviationY < 0.01f)
+				RotationDeviationY = 0.01f;
+			if (RotationDeviationY > 1.0f)
+				RotationDeviationY = 1.0f;
+			InstancedComponent.SpawnInfo.RotationDeviation.y = RotationDeviationY;
+
+			float RotationDeviationZ = InstancedComponent.SpawnInfo.RotationDeviation.z;
+			ImGui::Text("Z:");
+			ImGui::SameLine();
+			ImGui::DragFloat("##Rotation deviation z", &RotationDeviationZ, 0.01f);
+			if (RotationDeviationZ < 0.01f)
+				RotationDeviationZ = 0.01f;
+			if (RotationDeviationZ > 1.0f)
+				RotationDeviationZ = 1.0f;
+			InstancedComponent.SpawnInfo.RotationDeviation.z = RotationDeviationZ;
+
+			if (ImGui::Button("Spawn/Re-Spawn"))
+			{
+				INSTANCED_RENDERING_SYSTEM.ClearInstance(EntitySelected);
+				INSTANCED_RENDERING_SYSTEM.PopulateInstance(EntitySelected, InstancedComponent.SpawnInfo);
+				//InstancedComponent.Clear();
+				//InstancedComponent.Populate(InstancedComponent.SpawnInfo);
+			}
+
+			if (ImGui::Button("Add instance"))
+			{
+				glm::mat4 NewInstanceMatrix = glm::identity<glm::mat4>();
+				NewInstanceMatrix = glm::translate(NewInstanceMatrix, ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+				//InstancedComponent.AddInstance(NewInstanceMatrix);
+				INSTANCED_RENDERING_SYSTEM.AddIndividualInstance(EntitySelected, NewInstanceMatrix);
+
+				PROJECT_MANAGER.GetCurrent()->SetModified(true);
+			}
+
+			if (INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected))
+			{
+				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.0f, 0.75f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.0f, 1.0f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.0f, 1.0f, 0.0f));
+			}
+			else
+			{
+				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.55f, 0.55f, 0.95f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
+			}
+
+			ImGui::Separator();
+			if (ImGui::ImageButton((void*)(intptr_t)MouseCursorIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+			{
+				INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(EntitySelected, !INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected));
+				//SCENE.SetIndividualSelectMode(InstancedEntity, !InstancedComponent.IsIndividualSelectMode());
+				if (!INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected))
+				{
+					SELECTED.Clear();
+					SELECTED.SetSelected(EntitySelected);
+				}
+			}
+			ShowToolTip("Individual selection mode - Used to select individual instances.");
+
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+		}
 	}
 
 	// FIX ME!
@@ -837,7 +1102,7 @@ void FEEditorInspectorWindow::Render()
 	//				PROJECT_MANAGER.GetCurrent()->SetModified(true);
 	//			}
 
-	//			if (InstancedEntity->IsSelectMode())
+	//			if (InstancedEntity->IsIndividualSelectMode())
 	//			{
 	//				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.0f, 0.75f, 0.0f));
 	//				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.0f, 1.0f, 0.0f));
@@ -853,8 +1118,8 @@ void FEEditorInspectorWindow::Render()
 	//			ImGui::Separator();
 	//			if (ImGui::ImageButton((void*)(intptr_t)MouseCursorIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 	//			{
-	//				SCENE.SetSelectMode(InstancedEntity, !InstancedEntity->IsSelectMode());
-	//				if (!InstancedEntity->IsSelectMode())
+	//				SCENE.SetIndividualSelectMode(InstancedEntity, !InstancedEntity->IsIndividualSelectMode());
+	//				if (!InstancedEntity->IsIndividualSelectMode())
 	//				{
 	//					SELECTED.Clear();
 	//					// FIX ME!

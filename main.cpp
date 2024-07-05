@@ -25,7 +25,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ENGINE.Render();
 
 #ifdef EDITOR_SELECTION_DEBUG_MODE
-		std::string objectsUnderMouse = "objectsUnderMouse: " + std::to_string(SELECTED.ObjectsUnderMouse.size());
+		std::string objectsUnderMouse = "SceneEntitiesUnderMouse: " + std::to_string(SELECTED.SceneEntitiesUnderMouse.size());
 		ImGui::Text(objectsUnderMouse.c_str());
 
 		std::string colorIndex = "colorIndex: " + std::to_string(SELECTED.ColorIndex);

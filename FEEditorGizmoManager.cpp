@@ -459,6 +459,10 @@ void GizmoManager::DeactivateAllGizmo()
 
 void GizmoManager::Render()
 {
+	// If we cleared the scene, we should not render gizmos.
+	if (SCENE.GetEntityByName("TransformationXGizmoEntity").empty() || SCENE.GetEntityByName("TransformationXGizmoEntity")[0] == nullptr)
+		return;
+
 	if (SELECTED.GetSelected() == nullptr || SELECTED.GetSelected()->GetType() == FE_CAMERA)
 	{
 		HideAllGizmo();
