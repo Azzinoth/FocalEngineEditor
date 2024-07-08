@@ -64,7 +64,7 @@ void DeleteTexturePopup::Render()
 
 std::vector<FEMaterial*> DeleteTexturePopup::MaterialsThatUsesTexture(const FETexture* Texture)
 {
-	std::vector<FEMaterial*> result;
+	std::vector<FEMaterial*> Result;
 	const std::vector<std::string> MateriasList = RESOURCE_MANAGER.GetMaterialList();
 
 	for (size_t i = 0; i < MateriasList.size(); i++)
@@ -75,7 +75,7 @@ std::vector<FEMaterial*> DeleteTexturePopup::MaterialsThatUsesTexture(const FETe
 		{
 			if (CurrentMaterial->Textures[j] == Texture)
 			{
-				result.push_back(CurrentMaterial);
+				Result.push_back(CurrentMaterial);
 				break;
 			}
 		}
@@ -84,15 +84,15 @@ std::vector<FEMaterial*> DeleteTexturePopup::MaterialsThatUsesTexture(const FETe
 	const std::vector<std::string> TerrainList = SCENE.GetTerrainList();
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		const FETerrain* CurrentTerrain = SCENE.GetTerrain(TerrainList[i]);
-		//if (CurrentTerrain->heightMap != nullptr && CurrentTerrain->heightMap->getObjectID() == Texture->getObjectID())
-		//{
-		//	continue;
-		//	result.push_back(nullptr);
-		//}
+		/*FEEntity* CurrentTerrain = SCENE.GetNewStyleEntity(TerrainList[i]);
+		FETerrainComponent& TerrainComponent = CurrentTerrain->GetComponent<FETerrainComponent>();
+		if (TerrainComponent.HeightMap != nullptr && TerrainComponent.HeightMap->GetObjectID() == Texture->GetObjectID())
+		{
+			Result.push_back(nullptr);
+		}*/
 	}
 
-	return result;
+	return Result;
 }
 
 void DeleteTexturePopup::DeleteTexture(FETexture* Texture)
@@ -161,11 +161,11 @@ void DeleteMeshPopup::Render()
 		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		// check if this mesh is used in some game model
 		// to-do: should be done through counter, not by searching each time.
-		const int result = TimesMeshUsed(ObjToWorkWith);
+		const int Result = TimesMeshUsed(ObjToWorkWith);
 
 		ImGui::Text(("Do you want to delete \"" + ObjToWorkWith->GetName() + "\" mesh ?").c_str());
-		if (result > 0)
-			ImGui::Text(("It is used in " + std::to_string(result) + " game models !").c_str());
+		if (Result > 0)
+			ImGui::Text(("It is used in " + std::to_string(Result) + " game models !").c_str());
 
 		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 4.0f - 120 / 2.0f);
 		if (ImGui::Button("Delete", ImVec2(120, 0)))
@@ -194,17 +194,17 @@ void DeleteMeshPopup::Render()
 
 int DeleteMeshPopup::TimesMeshUsed(const FEMesh* Mesh)
 {
-	int result = 0;
+	int Result = 0;
 	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
 
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
 		const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
 		if (CurrentGameModel->Mesh == Mesh)
-			result++;
+			Result++;
 	}
 
-	return result;
+	return Result;
 }
 
 void DeleteMeshPopup::DeleteMesh(FEMesh* Mesh)
@@ -267,11 +267,11 @@ void DeleteGameModelPopup::Render()
 		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		// check if this game model is used in some prefabs
 		// to-do: should be done through counter, not by searching each time.
-		const int result = TimesGameModelUsed(ObjToWorkWith);
+		const int Result = TimesGameModelUsed(ObjToWorkWith);
 
 		ImGui::Text(("Do you want to delete \"" + ObjToWorkWith->GetName() + "\" game model ?").c_str());
-		if (result > 0)
-			ImGui::Text(("It is used in " + std::to_string(result) + " prefabs !").c_str());
+		if (Result > 0)
+			ImGui::Text(("It is used in " + std::to_string(Result) + " prefabs !").c_str());
 
 		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 4.0f - 120.0f / 2.0f);
 		if (ImGui::Button("Delete", ImVec2(120, 0)))
@@ -301,7 +301,7 @@ void DeleteGameModelPopup::Render()
 
 int DeleteGameModelPopup::TimesGameModelUsed(const FEGameModel* GameModel)
 {
-	int result = 0;
+	int Result = 0;
 	const std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
 
 	for (int i = 0; i < PrefabList.size(); i++)
@@ -310,11 +310,11 @@ int DeleteGameModelPopup::TimesGameModelUsed(const FEGameModel* GameModel)
 		for (int j = 0; j < CurrentPrefab->ComponentsCount(); j++)
 		{
 			if (CurrentPrefab->GetComponent(j)->GameModel == GameModel)
-				result++;
+				Result++;
 		}
 	}
 
-	return result;
+	return Result;
 }
 
 void DeleteGameModelPopup::DeleteGameModel(FEGameModel* GameModel)
@@ -359,11 +359,11 @@ void DeletePrefabPopup::Render()
 		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		// check if this prefab is used in some entities
 		// to-do: should be done through counter, not by searching each time.
-		const int result = TimesPrefabUsed(ObjToWorkWith);
+		const int Result = TimesPrefabUsed(ObjToWorkWith);
 
 		ImGui::Text(("Do you want to delete \"" + ObjToWorkWith->GetName() + "\" prefab ?").c_str());
-		if (result > 0)
-			ImGui::Text(("It is used in " + std::to_string(result) + " entities !").c_str());
+		if (Result > 0)
+			ImGui::Text(("It is used in " + std::to_string(Result) + " entities !").c_str());
 
 		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 4.0f - 120.0f / 2.0f);
 		if (ImGui::Button("Delete", ImVec2(120, 0)))
@@ -393,17 +393,18 @@ void DeletePrefabPopup::Render()
 
 int DeletePrefabPopup::TimesPrefabUsed(const FEPrefab* Prefab)
 {
-	int result = 0;
-	const std::vector<std::string> EntitiesList = SCENE.GetEntityList();
+	int Result = 0;
+	// FIX ME! Prefabs
+	/*const std::vector<std::string> EntitiesList = SCENE.GetEntityList();
 
 	for (size_t i = 0; i < EntitiesList.size(); i++)
 	{
 		const FEEntity* CurrentEntity = SCENE.GetEntity(EntitiesList[i]);
 		if (CurrentEntity->Prefab == Prefab)
-			result++;
-	}
+			Result++;
+	}*/
 
-	return result;
+	return Result;
 }
 
 void DeletePrefabPopup::DeletePrefab(FEPrefab* Prefab)
@@ -447,11 +448,11 @@ void DeleteMaterialPopup::Render()
 		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		// check if this material is used in some game model
 		// to-do: should be done through counter, not by searching each time.
-		const int result = TimesMaterialUsed(ObjToWorkWith);
+		const int Result = TimesMaterialUsed(ObjToWorkWith);
 
 		ImGui::Text(("Do you want to delete \"" + ObjToWorkWith->GetName() + "\" material ?").c_str());
-		if (result > 0)
-			ImGui::Text(("It is used in " + std::to_string(result) + " game models !").c_str());
+		if (Result > 0)
+			ImGui::Text(("It is used in " + std::to_string(Result) + " game models !").c_str());
 
 		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 4.0f - 120 / 2.0f);
 		if (ImGui::Button("Delete", ImVec2(120, 0)))
@@ -481,17 +482,17 @@ void DeleteMaterialPopup::Render()
 
 int DeleteMaterialPopup::TimesMaterialUsed(const FEMaterial* Material)
 {
-	int result = 0;
+	int Result = 0;
 	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
 
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
 		const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
 		if (CurrentGameModel->Material == Material)
-			result++;
+			Result++;
 	}
 
-	return result;
+	return Result;
 }
 
 void DeleteMaterialPopup::DeleteMaterial(FEMaterial* Material)

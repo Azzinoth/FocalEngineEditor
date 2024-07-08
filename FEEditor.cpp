@@ -9,7 +9,7 @@ bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
 	{
 		FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Object->GetObjectID())->GetComponent(0)->GameModel;
 
-		FENewEntity* NewNewEntity = SCENE.AddNewStyleEntity(Object->GetName());
+		FEEntity* NewNewEntity = SCENE.AddNewStyleEntity(Object->GetName());
 		NewNewEntity->GetComponent<FEGameModelComponent>().GameModel = GameModel;
 		NewNewEntity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
 		SELECTED.SetSelected(NewNewEntity);
@@ -22,7 +22,7 @@ bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
 	//if (Object->GetType() == FE_PREFAB)
 	//{
 	//	FEEntity* NewEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Object->GetObjectID()));
-	//	FENewEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(NewEntity->GetObjectID());
+	//	FEEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(NewEntity->GetObjectID());
 	//	NewNewEntity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
 	//	//NewEntity->Transform.SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
 	//	SELECTED.SetSelected(NewNewEntity);
@@ -124,9 +124,9 @@ void FEEditor::MouseButtonCallback(const int Button, const int Action, int Mods)
 	if (Button == GLFW_MOUSE_BUTTON_1 && Action == GLFW_PRESS)
 	{
 		bool bEditingTerrain = false;
-		if (SELECTED.GetTerrain() != nullptr)
+		if (SELECTED.GetSelected() != nullptr && SELECTED.GetSelected()->HasComponent<FETerrainComponent>())
 		{
-			bEditingTerrain = SELECTED.GetTerrain()->GetBrushMode() != FE_TERRAIN_BRUSH_NONE;
+			bEditingTerrain = TERRAIN_SYSTEM.GetBrushMode() != FE_TERRAIN_BRUSH_NONE;
 		}
 		
 		if (!bEditingTerrain)
@@ -173,26 +173,17 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 
 	if (!ImGui::GetIO().WantCaptureKeyboard && Key == GLFW_KEY_DELETE)
 	{
-		if (SELECTED.GetSelected() != nullptr && SELECTED.GetSelected()->GetType() == FE_ENTITY_INSTANCED)
+		if (SELECTED.GetSelected() != nullptr)
 		{
-			if (SELECTED.InstancedSubObjectIndexSelected != -1)
+			if (SELECTED.InstancedSubObjectIndexSelected != -1 && SELECTED.GetSelected()->HasComponent<FEInstancedComponent>())
 			{
-				FEEntityInstanced* SelectedEntityInstanced = SCENE.GetEntityInstanced(SELECTED.GetSelected()->GetObjectID());
-				SelectedEntityInstanced->DeleteInstance(SELECTED.InstancedSubObjectIndexSelected);
-				SELECTED.Clear();
-				PROJECT_MANAGER.GetCurrent()->SetModified(true);
+				INSTANCED_RENDERING_SYSTEM.DeleteIndividualInstance(SELECTED.GetSelected(), SELECTED.InstancedSubObjectIndexSelected);
 			}
-		}
+			else
+			{
+				SCENE.DeleteNewEntity(SELECTED.GetSelected());
+			}
 
-		if (SELECTED.GetEntity() != nullptr)
-		{
-			SCENE.DeleteEntity(SELECTED.GetEntity()->GetObjectID());
-			SELECTED.Clear();
-			PROJECT_MANAGER.GetCurrent()->SetModified(true);
-		}
-		else if (SELECTED.GetTerrain() != nullptr)
-		{
-			SCENE.DeleteTerrain(SELECTED.GetTerrain()->GetObjectID());
 			SELECTED.Clear();
 			PROJECT_MANAGER.GetCurrent()->SetModified(true);
 		}
@@ -211,8 +202,8 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 			// FIX ME!
 			// There should be proper FEScene::DuplicateNewStyleEntity that will duplicate the entity and all its components
 			// Also place it in same scene graph node as the original entity ?
-			FENewEntity* EntityToCopy = SCENE.GetNewStyleEntity(EDITOR.GetSceneEntityIDInClipboard());
-			FENewEntity* NewNewEntity = SCENE.AddNewStyleEntity(EntityToCopy->GetName() + "_Copy");
+			FEEntity* EntityToCopy = SCENE.GetNewStyleEntity(EDITOR.GetSceneEntityIDInClipboard());
+			FEEntity* NewNewEntity = SCENE.AddNewStyleEntity(EntityToCopy->GetName() + "_Copy");
 			NewNewEntity->GetComponent<FETransformComponent>() = EntityToCopy->GetComponent<FETransformComponent>();
 			NewNewEntity->GetComponent<FETransformComponent>().SetPosition(EntityToCopy->GetComponent<FETransformComponent>().GetPosition() * 1.1f);
 			if (EntityToCopy->HasComponent<FEGameModelComponent>())
@@ -315,9 +306,9 @@ void FEEditor::MouseMoveCallback(double Xpos, double Ypos)
 
 	if (SELECTED.GetSelected() != nullptr)
 	{
-		if (SELECTED.GetTerrain() != nullptr)
+		if (SELECTED.GetSelected() != nullptr && SELECTED.GetSelected()->HasComponent<FETerrainComponent>())
 		{
-			if (SELECTED.GetTerrain()->GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
+			if (TERRAIN_SYSTEM.GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
 				return;
 		}
 
@@ -936,13 +927,13 @@ void FEEditor::DisplayEffectsWindow() const
 
 	if (ImGui::CollapsingHeader("Sky", 0))
 	{
-		bool bEnabledSky = RENDERER.IsSkyEnabled();
+		bool bEnabledSky = SKY_DOME_SYSTEM.IsEnabled();
 		if (ImGui::Checkbox("enable sky", &bEnabledSky))
 		{
-			RENDERER.SetSkyEnabled(bEnabledSky);
+			SKY_DOME_SYSTEM.SetEnabled(bEnabledSky);
 		}
 
-		ImGui::Text("Sphere size:");
+		/*ImGui::Text("Sphere size:");
 		ImGui::SetNextItemWidth(FieldWidth);
 		float size = RENDERER.GetDistanceToSky();
 		ImGui::DragFloat("##Sphere size", &size, 0.01f, 0.0f, 200.0f);
@@ -954,7 +945,7 @@ void FEEditor::DisplayEffectsWindow() const
 		if (ResetButton->IsClicked())
 		{
 			RENDERER.SetDistanceToSky(50.0f);
-		}
+		}*/
 		ImGui::PopID();
 	}
 
@@ -1089,27 +1080,6 @@ void FEEditor::DisplayEffectsWindow() const
 			ImGui::DragFloat("SSAO small details weight", &TempFloat, 0.01f);
 			RENDERER.SetSSAOSmallDetailsWeight(TempFloat);
 		}
-
-		/*bool bEnabledSky = RENDERER.IsSkyEnabled();
-		if (ImGui::Checkbox("enable sky", &bEnabledSky))
-		{
-			RENDERER.SetSkyEnabld(bEnabledSky);
-		}
-
-		ImGui::Text("Sphere size:");
-		ImGui::SetNextItemWidth(FieldWidth);
-		float size = RENDERER.GetDistanceToSky();
-		ImGui::DragFloat("##Sphere size", &size, 0.01f, 0.0f, 200.0f);
-		RENDERER.SetDistanceToSky(size);
-
-		ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
-		{
-			RENDERER.SetDistanceToSky(50.0f);
-		}
-		ImGui::PopID();*/
 	}
 
 	ImGui::PopStyleVar();

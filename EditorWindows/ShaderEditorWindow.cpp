@@ -469,10 +469,11 @@ void ShaderEditorWindow::ReplaceShader(FEShader* OldShader, FEShader* NewShader)
 	const std::vector<std::string> TerrainList = SCENE.GetTerrainList();
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		FETerrain* TempTerrain = SCENE.GetTerrain(TerrainList[i]);
-		if (TempTerrain->Shader->GetNameHash() == OldShader->GetNameHash())
+		FEEntity* TempTerrain = SCENE.GetNewStyleEntity(TerrainList[i]);
+		FETerrainComponent& TerrainComponent = TempTerrain->GetComponent<FETerrainComponent>();
+		if (TerrainComponent.Shader->GetNameHash() == OldShader->GetNameHash())
 		{
-			TempTerrain->Shader = NewShader;
+			TerrainComponent.Shader = NewShader;
 		}
 	}
 }

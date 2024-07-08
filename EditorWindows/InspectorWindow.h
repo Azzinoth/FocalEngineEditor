@@ -16,6 +16,9 @@ class FEEditorInspectorWindow
     void DisplayLightsProperties() const;
 
     // Terrain settings
+    static FEEntity* TerrainToWorkWith;
+    static void CreateNewTerrainLayerWithMaterialCallBack(std::vector<FEObject*> SelectionsResult);
+    static void ChangeMaterialInTerrainLayerCallBack(std::vector<FEObject*> SelectionsResult);
     ImGuiButton* ExportHeightMapButton = nullptr;
     ImGuiButton* ImportHeightMapButton = nullptr;
     ImGuiImageButton* SculptBrushButton = nullptr;
@@ -29,7 +32,7 @@ class FEEditorInspectorWindow
     std::vector<int> TerrainChangeMaterialIndecies;
     std::vector<DragAndDropTarget*> TerrainChangeLayerMaterialTargets;
     int HoveredTerrainLayerItem = -1;
-    void DisplayTerrainSettings(FETerrain* Terrain);
+    void DisplayTerrainSettings(FEEntity* TerrainEntity);
     int TerrainLayerRenameIndex = -1;
     char TerrainLayerRename[1024];
     bool bLastFrameTerrainLayerRenameEditWasVisiable = false;

@@ -2,6 +2,7 @@
 
 FEEditorInspectorWindow* FEEditorInspectorWindow::Instance = nullptr;
 FEEntity* FEEditorInspectorWindow::EntityToModify = nullptr;
+FEEntity* FEEditorInspectorWindow::TerrainToWorkWith = nullptr;
 
 FEEditorInspectorWindow::FEEditorInspectorWindow()
 {
@@ -143,7 +144,7 @@ void FEEditorInspectorWindow::ShowTransformConfiguration(FEObject* Object, FETra
 	// ********************* REAL WORLD COMPARISON SCALE *********************
 	if (Object->GetType() == FE_ENTITY || Object->GetType() == FE_ENTITY_INSTANCED)
 	{
-		FENewEntity* Entity = SCENE.GetNewStyleEntity(Object->GetObjectID());
+		FEEntity* Entity = SCENE.GetNewStyleEntity(Object->GetObjectID());
 		if (Entity == nullptr)
 			return;
 
@@ -176,27 +177,29 @@ void FEEditorInspectorWindow::ShowTransformConfiguration(FEObject* Object, FETra
 
 bool FEEditorInspectorWindow::EntityChangePrefabTargetCallBack(FEObject* Object, void** EntityPointer)
 {
-	FEEntity* Entity = SELECTED.GetEntity();
+	// FIX ME! Prefabs
+	/*FEEntity* Entity = SELECTED.GetEntity();
 	if (Entity == nullptr)
 		return false;
 
 	Entity->Prefab = (RESOURCE_MANAGER.GetPrefab(Object->GetObjectID()));
-	return true;
+	return true;*/
+	return false;
 }
 
 bool FEEditorInspectorWindow::TerrainChangeMaterialTargetCallBack(FEObject* Object, void** LayerIndex)
 {
-	FETerrain* Terrain = SELECTED.GetTerrain();
-	if (Terrain == nullptr)
+	if (SELECTED.GetSelected() == nullptr || !SELECTED.GetSelected()->HasComponent<FETerrainComponent>())
 		return false;
 
 	FEMaterial* MaterialToAssign = RESOURCE_MANAGER.GetMaterial(Object->GetObjectID());
 	if (!MaterialToAssign->IsCompackPacking())
 		return false;
 
+	FETerrainComponent& Terrain = SELECTED.GetSelected()->GetComponent<FETerrainComponent>();
 	const int TempLayerIndex = *(int*)LayerIndex;
 	if (TempLayerIndex >= 0 && TempLayerIndex < FE_TERRAIN_MAX_LAYERS)
-		Terrain->GetLayerInSlot(TempLayerIndex)->SetMaterial(MaterialToAssign);
+		Terrain.GetLayerInSlot(TempLayerIndex)->SetMaterial(MaterialToAssign);
 
 	return true;
 }
@@ -384,9 +387,10 @@ void FEEditorInspectorWindow::DisplayLightProperties(FELight* Light) const
 	Light->SetIntensity(intensity);
 }
 
+// FIX ME!
 void FEEditorInspectorWindow::ChangePrefabOfEntityCallBack(const std::vector<FEObject*> SelectionsResult)
 {
-	if (EntityToModify == nullptr)
+	/*if (EntityToModify == nullptr)
 		return;
 
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_PREFAB)
@@ -396,7 +400,7 @@ void FEEditorInspectorWindow::ChangePrefabOfEntityCallBack(const std::vector<FEO
 			return;
 
 		EntityToModify->Prefab = SelectedPrefab;
-	}
+	}*/
 }
 
 void FEEditorInspectorWindow::DisplayLightsProperties() const
@@ -428,7 +432,7 @@ void FEEditorInspectorWindow::Render()
 		return;
 	}
 
-	FENewEntity* EntitySelected = SELECTED.GetSelected();
+	FEEntity* EntitySelected = SELECTED.GetSelected();
 
 	if (EntitySelected->HasComponent<FETagComponent>())
 	{
@@ -498,9 +502,9 @@ void FEEditorInspectorWindow::Render()
 		ImGui::PopStyleColor();
 	}
 
-	if (EntitySelected->HasComponent<FEInstancedRenderingComponent>())
+	if (EntitySelected->HasComponent<FEInstancedComponent>())
 	{
-		FEInstancedRenderingComponent& InstancedComponent = EntitySelected->GetComponent<FEInstancedRenderingComponent>();
+		FEInstancedComponent& InstancedComponent = EntitySelected->GetComponent<FEInstancedComponent>();
 
 		if (SELECTED.InstancedSubObjectIndexSelected != -1)
 		{
@@ -551,25 +555,27 @@ void FEEditorInspectorWindow::Render()
 			ImGui::SetNextItemWidth(220);
 			if (ImGui::BeginCombo("##Terrain", CurrentTerrain.c_str(), ImGuiWindowFlags_None))
 			{
-				const bool is_selected = (CurrentTerrain == "none");
-				if (ImGui::Selectable("none", is_selected))
+				const bool bIsSelected = (CurrentTerrain == "none");
+				if (ImGui::Selectable("none", bIsSelected))
 				{
-					//if (InstancedComponent.GetSnappedToTerrain() != nullptr)
-					//	InstancedComponent.GetSnappedToTerrain()->UnSnapInstancedEntity(InstancedEntity);
+					if (InstancedComponent.GetSnappedToTerrain() != nullptr)
+					{
+						TERRAIN_SYSTEM.UnSnapInstancedEntity(InstancedComponent.GetSnappedToTerrain(), EntitySelected);
+					}
 				}
 
-				if (is_selected)
+				if (bIsSelected)
 					ImGui::SetItemDefaultFocus();
 
 				for (size_t i = 0; i < TerrainList.size(); i++)
 				{
-					const bool is_selected = (CurrentTerrain == TerrainList[i]);
-					if (ImGui::Selectable(SCENE.GetTerrain(TerrainList[i])->GetName().c_str(), is_selected))
+					const bool bIsSelected = (CurrentTerrain == TerrainList[i]);
+					if (ImGui::Selectable(SCENE.GetNewStyleEntity(TerrainList[i])->GetName().c_str(), bIsSelected))
 					{
-						//SCENE.GetTerrain(TerrainList[i])->SnapInstancedEntity(InstancedEntity);
+						TERRAIN_SYSTEM.SnapInstancedEntity(SCENE.GetNewStyleEntity(TerrainList[i]), EntitySelected);
 					}
 
-					if (is_selected)
+					if (bIsSelected)
 						ImGui::SetItemDefaultFocus();
 				}
 				ImGui::EndCombo();
@@ -581,43 +587,43 @@ void FEEditorInspectorWindow::Render()
 				ImGui::SameLine();
 
 				const int CurrentLayer = InstancedComponent.GetTerrainLayer();
-				FETerrain* CurrentTerrain = InstancedComponent.GetSnappedToTerrain();
+				FEEntity* TerrainEntity = InstancedComponent.GetSnappedToTerrain();
+				FETerrainComponent& TerrainComponent = TerrainEntity->GetComponent<FETerrainComponent>();
 
-				std::string caption = "none";
-				const auto layer = CurrentTerrain->GetLayerInSlot(CurrentLayer);
-				if (layer != nullptr)
-					caption = layer->GetName();
+				std::string Caption = "none";
+				FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(CurrentLayer);
+				if (Layer != nullptr)
+					Caption = Layer->GetName();
 
 				ImGui::SetNextItemWidth(220);
-				if (ImGui::BeginCombo("##TerrainLayers", caption.c_str(), ImGuiWindowFlags_None))
+				if (ImGui::BeginCombo("##TerrainLayers", Caption.c_str(), ImGuiWindowFlags_None))
 				{
-					const bool is_selected = (CurrentLayer == -1);
+					const bool bIsSelected = (CurrentLayer == -1);
 					ImGui::PushID("none_TerrainLayers_entity");
-					if (ImGui::Selectable("none", is_selected))
+					if (ImGui::Selectable("none", bIsSelected))
 					{
-						//if (CurrentTerrain != nullptr)
-							//CurrentTerrain->UnConnectInstancedEntityFromLayer(InstancedEntity);
+						TERRAIN_SYSTEM.UnConnectInstancedEntityFromLayer(EntitySelected);
 					}
 					ImGui::PopID();
 
-					if (is_selected)
+					if (bIsSelected)
 						ImGui::SetItemDefaultFocus();
 
 					for (size_t i = 0; i < FE_TERRAIN_MAX_LAYERS; i++)
 					{
-						FETerrainLayer* layer = CurrentTerrain->GetLayerInSlot(i);
-						if (layer == nullptr)
+						FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(i);
+						if (Layer == nullptr)
 							break;
 
-						const bool is_selected = (CurrentLayer == i);
-						ImGui::PushID(layer->GetObjectID().c_str());
-						if (ImGui::Selectable(layer->GetName().c_str(), is_selected))
+						const bool bIsSelected = (CurrentLayer == i);
+						ImGui::PushID(/*Layer->GetObjectID().c_str()*/static_cast<int>(i));
+						if (ImGui::Selectable(Layer->GetName().c_str(), bIsSelected))
 						{
-							//CurrentTerrain->ConnectInstancedEntityToLayer(InstancedEntity, int(i));
+							TERRAIN_SYSTEM.ConnectInstancedEntityToLayer(TerrainEntity, EntitySelected, static_cast<int>(i));
 						}
 						ImGui::PopID();
 
-						if (is_selected)
+						if (bIsSelected)
 							ImGui::SetItemDefaultFocus();
 					}
 					ImGui::EndCombo();
@@ -717,15 +723,12 @@ void FEEditorInspectorWindow::Render()
 			{
 				INSTANCED_RENDERING_SYSTEM.ClearInstance(EntitySelected);
 				INSTANCED_RENDERING_SYSTEM.PopulateInstance(EntitySelected, InstancedComponent.SpawnInfo);
-				//InstancedComponent.Clear();
-				//InstancedComponent.Populate(InstancedComponent.SpawnInfo);
 			}
 
 			if (ImGui::Button("Add instance"))
 			{
 				glm::mat4 NewInstanceMatrix = glm::identity<glm::mat4>();
 				NewInstanceMatrix = glm::translate(NewInstanceMatrix, ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-				//InstancedComponent.AddInstance(NewInstanceMatrix);
 				INSTANCED_RENDERING_SYSTEM.AddIndividualInstance(EntitySelected, NewInstanceMatrix);
 
 				PROJECT_MANAGER.GetCurrent()->SetModified(true);
@@ -748,7 +751,6 @@ void FEEditorInspectorWindow::Render()
 			if (ImGui::ImageButton((void*)(intptr_t)MouseCursorIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
 				INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(EntitySelected, !INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected));
-				//SCENE.SetIndividualSelectMode(InstancedEntity, !InstancedComponent.IsIndividualSelectMode());
 				if (!INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected))
 				{
 					SELECTED.Clear();
@@ -763,429 +765,37 @@ void FEEditorInspectorWindow::Render()
 		}
 	}
 
-	// FIX ME!
-	//if (SELECTED.GetEntity() != nullptr)
-	//{
-	//	FEEntity* Entity = SELECTED.GetEntity();
+	if (EntitySelected->HasComponent<FETerrainComponent>())
+	{
+		FETerrainComponent& TerrainComponent = EntitySelected->GetComponent<FETerrainComponent>();
+		DisplayTerrainSettings(EntitySelected);
+
+		if (TERRAIN_SYSTEM.GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
+		{
+			// To hide gizmos.
+			SELECTED.SetSelected(EntitySelected);
+
+			TERRAIN_SYSTEM.SetBrushActive(EntitySelected, bLeftMousePressed);
+
+			if (bShiftPressed)
+			{
+				if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW)
+					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED);
+			}
+			else
+			{
+				if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED)
+					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW);
+			}
+		}
+		else
+		{
+			// To show gizmos.
+			SELECTED.SetSelected(EntitySelected);
+		}
+	}
 
-	//	if (Entity->GetType() == FE_ENTITY)
-	//	{
-	//		ShowTransformConfiguration(Entity, &Entity->Transform);
 
-	//		ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.5f, 0.5f, 0.5f));
-	//		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.95f, 0.90f, 0.0f));
-	//		ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.1f, 1.0f, 0.1f, 1.0f));
-
-	//		ImGui::InputInt("Force old matrix order", &Entity->Transform.OldWayForce);
-	//		ImGui::Checkbox("Use old matrix order globaly", &Entity->Transform.OldWayGlobal);
-
-	//		bool bActive = Entity->IsWireframeMode();
-	//		ImGui::Checkbox("WireframeMode", &bActive);
-	//		Entity->SetWireframeMode(bActive);
-
-	//		ImGui::Separator();
-	//		ImGui::Text("Prefab : ");
-	//		// Temporary solution, becuase of the lack of proper ECS system
-	//		if (Entity->Prefab != nullptr)
-	//		{
-	//			FETexture* PreviewTexture = PREVIEW_MANAGER.GetPrefabPreview(Entity->Prefab->GetObjectID());
-
-	//			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
-	//			{
-	//				EntityToModify = Entity;
-	//				SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, ChangePrefabOfEntityCallBack, Entity->Prefab);
-
-	//			}
-	//			EntityChangePrefabTarget->StickToItem();
-	//		}
-	//		else
-	//		{
-	//			ImGui::Text("No prefab assigned.");
-	//		}
-
-	//		bool bOpenContextMenu = false;
-	//		if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
-	//			bOpenContextMenu = true;
-
-	//		if (bOpenContextMenu)
-	//			ImGui::OpenPopup("##Inspector_context_menu");
-
-	//		CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = false;
-	//		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-	//		if (ImGui::BeginPopup("##Inspector_context_menu"))
-	//		{
-	//			CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = true;
-
-	//			if (ImGui::MenuItem("Show in folder"))
-	//			{
-	//				CONTENT_BROWSER_WINDOW.OpenItemParentFolder(Entity->Prefab);
-	//			}
-
-	//			ImGui::EndPopup();
-	//		}
-	//		ImGui::PopStyleVar();
-
-	//		ImGui::Separator();
-
-	//		ImGui::PopStyleColor();
-	//		ImGui::PopStyleColor();
-	//		ImGui::PopStyleColor();
-	//	}
-	//	else if (Entity->GetType() == FE_ENTITY_INSTANCED)
-	//	{
-	//		FEEntityInstanced* InstancedEntity = reinterpret_cast<FEEntityInstanced*>(Entity);
-
-	//		if (SELECTED.InstancedSubObjectIndexSelected != -1)
-	//		{
-	//			std::string InstancedSubObjectInfo = "index: ";
-
-	//			ImGui::Text("Selected instance info:");
-	//			InstancedSubObjectInfo = "index: " + std::to_string(SELECTED.InstancedSubObjectIndexSelected);
-	//			ImGui::Text(InstancedSubObjectInfo.c_str());
-
-	//			FETransformComponent TempTransform = FETransformComponent(InstancedEntity->GetTransformedInstancedMatrix(SELECTED.InstancedSubObjectIndexSelected));
-	//			ShowTransformConfiguration("selected instance", &TempTransform);
-	//			InstancedEntity->ModifyInstance(SELECTED.InstancedSubObjectIndexSelected, TempTransform.GetTransformMatrix());
-
-	//			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.55f, 0.55f, 0.95f));
-	//			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
-	//			ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
-
-	//			if (ImGui::ImageButton((void*)(intptr_t)ArrowToGroundIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
-	//			{
-	//				InstancedEntity->TryToSnapInstance(SELECTED.InstancedSubObjectIndexSelected);
-	//			}
-	//			ShowToolTip("Selected instance will attempt to snap to the terrain.");
-
-	//			ImGui::PopStyleColor();
-	//			ImGui::PopStyleColor();
-	//			ImGui::PopStyleColor();
-	//		}
-	//		else
-	//		{
-	//			ShowTransformConfiguration(Entity, &Entity->Transform);
-
-	//			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.5f, 0.5f, 0.5f));
-	//			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.95f, 0.90f, 0.0f));
-	//			ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.1f, 1.0f, 0.1f, 1.0f));
-
-	//			ImGui::Separator();
-
-	//			ImGui::Text("Prefab : ");
-	//			FETexture* PreviewTexture = PREVIEW_MANAGER.GetPrefabPreview(Entity->Prefab->GetObjectID());
-	//			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
-	//			{
-	//				EntityToModify = Entity;
-	//				SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, ChangePrefabOfEntityCallBack, Entity->Prefab);
-	//			}
-	//			EntityChangePrefabTarget->StickToItem();
-
-	//			bool bOpenContextMenu = false;
-	//			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
-	//				bOpenContextMenu = true;
-
-	//			if (bOpenContextMenu)
-	//				ImGui::OpenPopup("##Inspector_context_menu");
-
-	//			CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = false;
-	//			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-	//			if (ImGui::BeginPopup("##Inspector_context_menu"))
-	//			{
-	//				CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = true;
-
-	//				if (ImGui::MenuItem("Show in folder"))
-	//				{
-	//					CONTENT_BROWSER_WINDOW.OpenItemParentFolder(Entity->Prefab);
-	//				}
-
-	//				ImGui::EndPopup();
-	//			}
-	//			ImGui::PopStyleVar();
-	//			ImGui::Separator();
-
-	//			ImGui::PopStyleColor();
-	//			ImGui::PopStyleColor();
-	//			ImGui::PopStyleColor();
-
-	//			ImGui::Text("Snapped to: ");
-	//			ImGui::SameLine();
-
-	//			const std::vector<std::string> TerrainList = SCENE.GetTerrainList();
-	//			static std::string CurrentTerrain = "none";
-
-	//			if (InstancedEntity->GetSnappedToTerrain() == nullptr)
-	//			{
-	//				CurrentTerrain = "none";
-	//			}
-	//			else
-	//			{
-	//				CurrentTerrain = InstancedEntity->GetSnappedToTerrain()->GetName();
-	//			}
-
-	//			ImGui::SetNextItemWidth(220);
-	//			if (ImGui::BeginCombo("##Terrain", CurrentTerrain.c_str(), ImGuiWindowFlags_None))
-	//			{
-	//				const bool is_selected = (CurrentTerrain == "none");
-	//				if (ImGui::Selectable("none", is_selected))
-	//				{
-	//					if (InstancedEntity->GetSnappedToTerrain() != nullptr)
-	//						InstancedEntity->GetSnappedToTerrain()->UnSnapInstancedEntity(InstancedEntity);
-	//				}
-
-	//				if (is_selected)
-	//					ImGui::SetItemDefaultFocus();
-
-	//				for (size_t i = 0; i < TerrainList.size(); i++)
-	//				{
-	//					const bool is_selected = (CurrentTerrain == TerrainList[i]);
-	//					if (ImGui::Selectable(SCENE.GetTerrain(TerrainList[i])->GetName().c_str(), is_selected))
-	//					{
-	//						SCENE.GetTerrain(TerrainList[i])->SnapInstancedEntity(InstancedEntity);
-	//					}
-
-	//					if (is_selected)
-	//						ImGui::SetItemDefaultFocus();
-	//				}
-	//				ImGui::EndCombo();
-	//			}
-
-	//			if (InstancedEntity->GetSnappedToTerrain() != nullptr)
-	//			{
-	//				ImGui::Text("Terrain layer: ");
-	//				ImGui::SameLine();
-
-	//				const int CurrentLayer = InstancedEntity->GetTerrainLayer();
-	//				FETerrain* CurrentTerrain = InstancedEntity->GetSnappedToTerrain();
-
-	//				std::string caption = "none";
-	//				const auto layer = CurrentTerrain->GetLayerInSlot(CurrentLayer);
-	//				if (layer != nullptr)
-	//					caption = layer->GetName();
-
-	//				ImGui::SetNextItemWidth(220);
-	//				if (ImGui::BeginCombo("##TerrainLayers", caption.c_str(), ImGuiWindowFlags_None))
-	//				{
-	//					const bool is_selected = (CurrentLayer == -1);
-	//					ImGui::PushID("none_TerrainLayers_entity");
-	//					if (ImGui::Selectable("none", is_selected))
-	//					{
-	//						if (CurrentTerrain != nullptr)
-	//							CurrentTerrain->UnConnectInstancedEntityFromLayer(InstancedEntity);
-	//					}
-	//					ImGui::PopID();
-
-	//					if (is_selected)
-	//						ImGui::SetItemDefaultFocus();
-
-	//					for (size_t i = 0; i < FE_TERRAIN_MAX_LAYERS; i++)
-	//					{
-	//						FETerrainLayer* layer = CurrentTerrain->GetLayerInSlot(i);
-	//						if (layer == nullptr)
-	//							break;
-
-	//						const bool is_selected = (CurrentLayer == i);
-	//						ImGui::PushID(layer->GetObjectID().c_str());
-	//						if (ImGui::Selectable(layer->GetName().c_str(), is_selected))
-	//						{
-	//							CurrentTerrain->ConnectInstancedEntityToLayer(InstancedEntity, int(i));
-	//						}
-	//						ImGui::PopID();
-
-	//						if (is_selected)
-	//							ImGui::SetItemDefaultFocus();
-	//					}
-	//					ImGui::EndCombo();
-	//				}
-
-	//				if (CurrentLayer != -1)
-	//				{
-	//					ImGui::Text("Minimal layer intensity:");
-	//					float MinLevel = InstancedEntity->GetMinimalLayerIntensity();
-	//					ImGui::SameLine();
-	//					ImGui::SetNextItemWidth(80);
-	//					ImGui::DragFloat("##minLevel", &MinLevel);
-	//					InstancedEntity->SetMinimalLayerIntensity(MinLevel);
-	//				}
-	//			}
-
-	//			ImGui::Separator();
-
-	//			ImGui::Text("Seed:");
-	//			int seed = InstancedEntity->SpawnInfo.Seed;
-	//			ImGui::SameLine();
-	//			ImGui::SetNextItemWidth(200);
-	//			ImGui::DragInt("##Seed", &seed);
-	//			InstancedEntity->SpawnInfo.Seed = seed;
-
-	//			ImGui::Text("Object count:");
-	//			int ObjectCount = InstancedEntity->SpawnInfo.ObjectCount;
-	//			ImGui::SameLine();
-	//			ImGui::SetNextItemWidth(200);
-	//			ImGui::DragInt("##Object count", &ObjectCount);
-	//			if (ObjectCount <= 0)
-	//				ObjectCount = 1;
-	//			InstancedEntity->SpawnInfo.ObjectCount = ObjectCount;
-
-	//			ImGui::Text("Radius:");
-	//			float radius = InstancedEntity->SpawnInfo.Radius;
-	//			ImGui::SameLine();
-	//			ImGui::SetNextItemWidth(200);
-	//			ImGui::DragFloat("##Radius", &radius);
-	//			if (radius < 0.0f)
-	//				radius = 0.1f;
-	//			InstancedEntity->SpawnInfo.Radius = radius;
-
-	//			// Scale deviation.
-	//			ImGui::Text("Scale: ");
-
-	//			ImGui::SameLine();
-	//			ImGui::Text("min ");
-
-	//			ImGui::SameLine();
-	//			ImGui::SetNextItemWidth(100);
-	//			float MinScale = InstancedEntity->SpawnInfo.GetMinScale();
-	//			ImGui::DragFloat("##minScale", &MinScale, 0.01f);
-	//			InstancedEntity->SpawnInfo.SetMinScale(MinScale);
-
-	//			ImGui::SameLine();
-	//			ImGui::Text("max ");
-
-	//			ImGui::SameLine();
-	//			float MaxScale = InstancedEntity->SpawnInfo.GetMaxScale();
-	//			ImGui::SetNextItemWidth(100);
-	//			ImGui::DragFloat("##maxScale", &MaxScale, 0.01f);
-	//			InstancedEntity->SpawnInfo.SetMaxScale(MaxScale);
-
-	//			ImGui::Text("Rotation deviation:");
-	//			float RotationDeviationX = InstancedEntity->SpawnInfo.RotationDeviation.x;
-	//			ImGui::Text("X:");
-	//			ImGui::SameLine();
-	//			ImGui::DragFloat("##Rotation deviation X", &RotationDeviationX, 0.01f);
-	//			if (RotationDeviationX < 0.01f)
-	//				RotationDeviationX = 0.01f;
-	//			if (RotationDeviationX > 1.0f)
-	//				RotationDeviationX = 1.0f;
-	//			InstancedEntity->SpawnInfo.RotationDeviation.x = RotationDeviationX;
-
-	//			float RotationDeviationY = InstancedEntity->SpawnInfo.RotationDeviation.y;
-	//			ImGui::Text("Y:");
-	//			ImGui::SameLine();
-	//			ImGui::DragFloat("##Rotation deviation Y", &RotationDeviationY, 0.01f);
-	//			if (RotationDeviationY < 0.01f)
-	//				RotationDeviationY = 0.01f;
-	//			if (RotationDeviationY > 1.0f)
-	//				RotationDeviationY = 1.0f;
-	//			InstancedEntity->SpawnInfo.RotationDeviation.y = RotationDeviationY;
-
-	//			float RotationDeviationZ = InstancedEntity->SpawnInfo.RotationDeviation.z;
-	//			ImGui::Text("Z:");
-	//			ImGui::SameLine();
-	//			ImGui::DragFloat("##Rotation deviation z", &RotationDeviationZ, 0.01f);
-	//			if (RotationDeviationZ < 0.01f)
-	//				RotationDeviationZ = 0.01f;
-	//			if (RotationDeviationZ > 1.0f)
-	//				RotationDeviationZ = 1.0f;
-	//			InstancedEntity->SpawnInfo.RotationDeviation.z = RotationDeviationZ;
-
-	//			if (ImGui::Button("Spawn/Re-Spawn"))
-	//			{
-	//				InstancedEntity->Clear();
-	//				InstancedEntity->Populate(InstancedEntity->SpawnInfo);
-	//			}
-
-	//			if (ImGui::Button("Add instance"))
-	//			{
-	//				glm::mat4 NewInstanceMatrix = glm::identity<glm::mat4>();
-	//				NewInstanceMatrix = glm::translate(NewInstanceMatrix, ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-	//				InstancedEntity->AddInstance(NewInstanceMatrix);
-
-	//				PROJECT_MANAGER.GetCurrent()->SetModified(true);
-	//			}
-
-	//			if (InstancedEntity->IsIndividualSelectMode())
-	//			{
-	//				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.0f, 0.75f, 0.0f));
-	//				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.0f, 1.0f, 0.0f));
-	//				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.0f, 1.0f, 0.0f));
-	//			}
-	//			else
-	//			{
-	//				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.55f, 0.55f, 0.95f));
-	//				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
-	//				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
-	//			}
-
-	//			ImGui::Separator();
-	//			if (ImGui::ImageButton((void*)(intptr_t)MouseCursorIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
-	//			{
-	//				SCENE.SetIndividualSelectMode(InstancedEntity, !InstancedEntity->IsIndividualSelectMode());
-	//				if (!InstancedEntity->IsIndividualSelectMode())
-	//				{
-	//					SELECTED.Clear();
-	//					// FIX ME!
-	//					//SELECTED.SetSelected(InstancedEntity);
-	//				}
-	//			}
-	//			ShowToolTip("Individual selection mode - Used to select individual instances.");
-
-	//			ImGui::PopStyleColor();
-	//			ImGui::PopStyleColor();
-	//			ImGui::PopStyleColor();
-	//		}
-	//	}
-	//}
-	//else if (SELECTED.GetTerrain() != nullptr)
-	//{
-	//	FETerrain* CurrentTerrain = SELECTED.GetTerrain();
-	//	DisplayTerrainSettings(CurrentTerrain);
-
-	//	if (CurrentTerrain->GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
-	//	{
-	//		// FIX ME!
-	//		// To hide gizmos.
-	//		/*if (SELECTED.GetTerrain() != nullptr)
-	//			SELECTED.SetSelected(SELECTED.GetTerrain());*/
-
-	//		CurrentTerrain->SetBrushActive(bLeftMousePressed);
-
-	//		if (bShiftPressed)
-	//		{
-	//			if (CurrentTerrain->GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW)
-	//				CurrentTerrain->SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED);
-	//		}
-	//		else
-	//		{
-	//			if (CurrentTerrain->GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED)
-	//				CurrentTerrain->SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW);
-	//		}
-
-	//		/*if (EDITOR.bLeftMousePressed)
-	//		{
-	//			if (EDITOR.bShiftPressed)
-	//			{
-	//				currentTerrain->setBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED);
-	//			}
-	//			else
-	//			{
-	//				currentTerrain->setBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW);
-	//			}
-	//		}
-	//		else
-	//		{
-	//			currentTerrain->setBrushMode(FE_TERRAIN_BRUSH_NONE);
-	//		}*/
-
-	//		//currentTerrain->setBrushActive(EDITOR.bLeftMousePressed);
-	//		//currentTerrain->setBrushInversed(EDITOR.bShiftPressed);
-	//	}
-	//	else
-	//	{
-	//		// FIX ME!
-	//		// To show gizmos.
-	//		/*if (SELECTED.GetTerrain() != nullptr)
-	//			SELECTED.SetSelected(SELECTED.GetTerrain());*/
-	//	}
-	//}
 	//else if (SELECTED.GetLight() != nullptr)
 	//{
 	//	DisplayLightProperties(SELECTED.GetLight());
@@ -1250,8 +860,7 @@ void FEEditorInspectorWindow::Render()
 	ImGui::End();
 }
 
-static FETerrain* TerrainToWorkWith = nullptr;
-static void CreateNewTerrainLayerWithMaterialCallBack(std::vector<FEObject*> SelectionsResult)
+void FEEditorInspectorWindow::CreateNewTerrainLayerWithMaterialCallBack(std::vector<FEObject*> SelectionsResult)
 {
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_MATERIAL)
 	{
@@ -1262,14 +871,14 @@ static void CreateNewTerrainLayerWithMaterialCallBack(std::vector<FEObject*> Sel
 		if (SelectedMaterial == nullptr)
 			return;
 
-		RESOURCE_MANAGER.ActivateTerrainVacantLayerSlot(TerrainToWorkWith, SelectedMaterial);
+		TERRAIN_SYSTEM.ActivateVacantLayerSlot(TerrainToWorkWith, SelectedMaterial);
 	}
 
 	TerrainToWorkWith = nullptr;
 }
 
 static size_t TempLayerIndex = -1;
-static void ChangeMaterialInTerrainLayerCallBack(std::vector<FEObject*> SelectionsResult)
+void FEEditorInspectorWindow::ChangeMaterialInTerrainLayerCallBack(std::vector<FEObject*> SelectionsResult)
 {
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_MATERIAL)
 	{
@@ -1280,28 +889,30 @@ static void ChangeMaterialInTerrainLayerCallBack(std::vector<FEObject*> Selectio
 		if (SelectedMaterial == nullptr)
 			return;
 
-		TerrainToWorkWith->GetLayerInSlot(TempLayerIndex)->SetMaterial(SelectedMaterial);
+		FETerrainComponent& TerrainComponent = TerrainToWorkWith->GetComponent<FETerrainComponent>();
+		TerrainComponent.GetLayerInSlot(TempLayerIndex)->SetMaterial(SelectedMaterial);
 	}
 
 	TerrainToWorkWith = nullptr;
 	TempLayerIndex = -1;
 }
 
-void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
+void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 {
-	if (TerrainChangeLayerMaterialTargets.size() != Terrain->LayersUsed())
+	FETerrainComponent& TerrainComponent = TerrainEntity->GetComponent<FETerrainComponent>();
+	if (TerrainChangeLayerMaterialTargets.size() != TerrainComponent.LayersUsed())
 	{
 		for (size_t i = 0; i < TerrainChangeLayerMaterialTargets.size(); i++)
 		{
 			delete TerrainChangeLayerMaterialTargets[i];
 		}
 
-		TerrainChangeLayerMaterialTargets.resize(Terrain->LayersUsed());
-		TerrainChangeMaterialIndecies.resize(Terrain->LayersUsed());
-		for (size_t i = 0; i < size_t(Terrain->LayersUsed()); i++)
+		TerrainChangeLayerMaterialTargets.resize(TerrainComponent.LayersUsed());
+		TerrainChangeMaterialIndecies.resize(TerrainComponent.LayersUsed());
+		for (size_t i = 0; i < size_t(TerrainComponent.LayersUsed()); i++)
 		{
 			TerrainChangeMaterialIndecies[i] = int(i);
-			TerrainChangeLayerMaterialTargets[i] = DRAG_AND_DROP_MANAGER.AddTarget(FE_MATERIAL, TerrainChangeMaterialTargetCallBack, (void**)&TerrainChangeMaterialIndecies[i], "Drop to assing material to " + Terrain->GetLayerInSlot(i)->GetName());
+			TerrainChangeLayerMaterialTargets[i] = DRAG_AND_DROP_MANAGER.AddTarget(FE_MATERIAL, TerrainChangeMaterialTargetCallBack, (void**)&TerrainChangeMaterialIndecies[i], "Drop to assing material to " + TerrainComponent.GetLayerInSlot(i)->GetName());
 		}
 	}
 
@@ -1309,29 +920,29 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 	{
 		if (ImGui::BeginTabItem("General"))
 		{
-			bool bActive = Terrain->IsWireframeMode();
+			bool bActive = TerrainComponent.IsWireframeMode();
 			ImGui::Checkbox("WireframeMode", &bActive);
-			Terrain->SetWireframeMode(bActive);
+			TerrainComponent.SetWireframeMode(bActive);
 
 			int IData = *(int*)RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/)->GetParameterData("debugFlag");
 			ImGui::SliderInt("debugFlag", &IData, 0, 10);
 			RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/)->UpdateParameterData("debugFlag", IData);
 
-			float DisplacementScale = Terrain->GetDisplacementScale();
+			float DisplacementScale = TerrainComponent.GetDisplacementScale();
 			ImGui::DragFloat("displacementScale", &DisplacementScale, 0.02f, -10.0f, 10.0f);
-			Terrain->SetDisplacementScale(DisplacementScale);
+			TerrainComponent.SetDisplacementScale(DisplacementScale);
 
-			float LODLevel = Terrain->GetLODLevel();
+			float LODLevel = TerrainComponent.GetLODLevel();
 			ImGui::DragFloat("LODlevel", &LODLevel, 2.0f, 2.0f, 128.0f);
-			Terrain->SetLODLevel(LODLevel);
+			TerrainComponent.SetLODLevel(LODLevel);
 			ShowToolTip("Bigger LODlevel more details terraine will have and less performance you will get.");
 
-			float ChunkPerSide = Terrain->GetChunkPerSide();
+			float ChunkPerSide = TerrainComponent.GetChunkPerSide();
 			ImGui::DragFloat("chunkPerSide", &ChunkPerSide, 2.0f, 1.0f, 16.0f);
-			Terrain->SetChunkPerSide(ChunkPerSide);
+			TerrainComponent.SetChunkPerSide(ChunkPerSide);
 
 			// ********************* REAL WORLD COMPARISON SCALE *********************
-			FEAABB RealAABB = Terrain->GetAABB();
+			FEAABB RealAABB = TERRAIN_SYSTEM.GetAABB(TerrainEntity);
 			glm::vec3 min = RealAABB.GetMin();
 			glm::vec3 max = RealAABB.GetMax();
 
@@ -1345,7 +956,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 			ImGui::Text(SizeInM.c_str());
 			// ********************* REAL WORLD COMPARISON SCALE END *********************
 
-			ShowTransformConfiguration(Terrain, &Terrain->Transform);
+			//ShowTransformConfiguration(Terrain, &TerrainComponent.Transform);
 
 			ImGui::EndTabItem();
 		}
@@ -1354,13 +965,13 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 			ExportHeightMapButton->Render();
 			if (ExportHeightMapButton->IsClicked())
 			{
-				std::string filePath = "";
-				FILE_SYSTEM.ShowFileSaveDialog(filePath, TEXTURE_LOAD_FILTER, 1);
+				std::string FilePath = "";
+				FILE_SYSTEM.ShowFileSaveDialog(FilePath, TEXTURE_LOAD_FILTER, 1);
 
-				if (!filePath.empty())
+				if (!FilePath.empty())
 				{
-					filePath += ".png";
-					RESOURCE_MANAGER.ExportFETextureToPNG(Terrain->HeightMap, filePath.c_str());
+					FilePath += ".png";
+					RESOURCE_MANAGER.ExportFETextureToPNG(TerrainComponent.HeightMap, FilePath.c_str());
 				}
 			}
 
@@ -1373,7 +984,8 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 
 				if (!FilePath.empty())
 				{
-					FETexture* LoadedTexture = RESOURCE_MANAGER.LoadPNGHeightmap(FilePath.c_str(), Terrain);
+					TERRAIN_SYSTEM.LoadHeightMap(FilePath.c_str(), TerrainEntity);
+					FETexture* LoadedTexture = TerrainComponent.HeightMap;// RESOURCE_MANAGER.LoadPNGHeightmap(FilePath.c_str(), Terrain);
 					if (LoadedTexture == RESOURCE_MANAGER.NoTexture)
 					{
 						LOG.Add(std::string("can't load height map: ") + FilePath, "FE_LOG_LOADING", FE_LOG_ERROR);
@@ -1386,21 +998,21 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 				}
 			}
 
-			float HighScale = Terrain->GetHightScale();
+			float HighScale = TerrainComponent.GetHightScale();
 			ImGui::DragFloat("hight range in m", &HighScale);
-			Terrain->SetHightScale(HighScale);
+			TerrainComponent.SetHightScale(HighScale);
 
-			float CurrentBrushSize = Terrain->GetBrushSize();
+			float CurrentBrushSize = TERRAIN_SYSTEM.GetBrushSize();
 			ImGui::DragFloat("brushSize", &CurrentBrushSize, 0.1f, 0.01f, 100.0f);
-			Terrain->SetBrushSize(CurrentBrushSize);
+			TERRAIN_SYSTEM.SetBrushSize(CurrentBrushSize);
 
-			float CurrentBrushIntensity = Terrain->GetBrushIntensity();
+			float CurrentBrushIntensity = TERRAIN_SYSTEM.GetBrushIntensity();
 			ImGui::DragFloat("brushIntensity", &CurrentBrushIntensity, 0.0001f, 0.0001f, 10.0f);
-			Terrain->SetBrushIntensity(CurrentBrushIntensity);
+			TERRAIN_SYSTEM.SetBrushIntensity(CurrentBrushIntensity);
 
 			SetDefaultStyle(SculptBrushButton);
-			if (Terrain->GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW ||
-				Terrain->GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED)
+			if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW ||
+				TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED)
 				SetSelectedStyle(SculptBrushButton);
 
 			SculptBrushButton->Render();
@@ -1408,19 +1020,19 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 
 			if (SculptBrushButton->IsClicked())
 			{
-				if (Terrain->GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW ||
-					Terrain->GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED)
+				if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW ||
+					TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED)
 				{
-					Terrain->SetBrushMode(FE_TERRAIN_BRUSH_NONE);
+					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_NONE);
 				}
 				else
 				{
-					Terrain->SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW);
+					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW);
 				}
 			}
 
 			SetDefaultStyle(LevelBrushButton);
-			if (Terrain->GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_LEVEL)
+			if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_LEVEL)
 				SetSelectedStyle(LevelBrushButton);
 
 			ImGui::SameLine();
@@ -1429,18 +1041,18 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 
 			if (LevelBrushButton->IsClicked())
 			{
-				if (Terrain->GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_LEVEL)
+				if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_LEVEL)
 				{
-					Terrain->SetBrushMode(FE_TERRAIN_BRUSH_NONE);
+					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_NONE);
 				}
 				else
 				{
-					Terrain->SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_LEVEL);
+					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_LEVEL);
 				}
 			}
 
 			SetDefaultStyle(SmoothBrushButton);
-			if (Terrain->GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_SMOOTH)
+			if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_SMOOTH)
 				SetSelectedStyle(SmoothBrushButton);
 
 			ImGui::SameLine();
@@ -1449,13 +1061,13 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 
 			if (SmoothBrushButton->IsClicked())
 			{
-				if (Terrain->GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_SMOOTH)
+				if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_SMOOTH)
 				{
-					Terrain->SetBrushMode(FE_TERRAIN_BRUSH_NONE);
+					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_NONE);
 				}
 				else
 				{
-					Terrain->SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_SMOOTH);
+					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_SMOOTH);
 				}
 			}
 
@@ -1463,39 +1075,39 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 		}
 		if (ImGui::BeginTabItem("Paint"))
 		{
-			glm::vec2 TileMult = Terrain->GetTileMult();
+			glm::vec2 TileMult = TerrainComponent.GetTileMult();
 			ImGui::DragFloat2("all layers tile factors", &TileMult[0], 0.1f, 1.0f, 100.0f);
-			Terrain->SetTileMult(TileMult);
+			TerrainComponent.SetTileMult(TileMult);
 
-			float CurrentBrushSize = Terrain->GetBrushSize();
+			float CurrentBrushSize = TERRAIN_SYSTEM.GetBrushSize();
 			ImGui::DragFloat("brushSize", &CurrentBrushSize, 0.1f, 0.01f, 100.0f);
-			Terrain->SetBrushSize(CurrentBrushSize);
+			TERRAIN_SYSTEM.SetBrushSize(CurrentBrushSize);
 
-			float CurrentBrushIntensity = Terrain->GetBrushIntensity();
+			float CurrentBrushIntensity = TERRAIN_SYSTEM.GetBrushIntensity();
 			ImGui::DragFloat("brushIntensity", &CurrentBrushIntensity, 0.0001f, 0.0001f, 10.0f);
-			Terrain->SetBrushIntensity(CurrentBrushIntensity);
+			TERRAIN_SYSTEM.SetBrushIntensity(CurrentBrushIntensity);
 
 			SetDefaultStyle(LayerBrushButton);
-			if (Terrain->GetBrushMode() == FE_TERRAIN_BRUSH_LAYER_DRAW)
+			if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_LAYER_DRAW)
 				SetSelectedStyle(LayerBrushButton);
 
 			LayerBrushButton->Render();
 			ShowToolTip("Layer draw brush. Left mouse to paint currently selected layer, hold shift to decrease layer influence.");
 			static int SelectedLayer = -1;
-			if (SelectedLayer != -1 && Terrain->GetLayerInSlot(SelectedLayer) == nullptr)
+			if (SelectedLayer != -1 && TerrainComponent.GetLayerInSlot(SelectedLayer) == nullptr)
 				SelectedLayer = -1;
 
 			if (LayerBrushButton->IsClicked())
 			{
 				if (SelectedLayer != -1)
 				{
-					if (Terrain->GetBrushMode() == FE_TERRAIN_BRUSH_LAYER_DRAW)
+					if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_LAYER_DRAW)
 					{
-						Terrain->SetBrushMode(FE_TERRAIN_BRUSH_NONE);
+						TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_NONE);
 					}
 					else
 					{
-						Terrain->SetBrushMode(FE_TERRAIN_BRUSH_LAYER_DRAW);
+						TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_LAYER_DRAW);
 					}
 				}
 
@@ -1524,13 +1136,13 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 
 			for (size_t i = 0; i < FE_TERRAIN_MAX_LAYERS; i++)
 			{
-				FETerrainLayer* layer = Terrain->GetLayerInSlot(i);
-				if (layer == nullptr)
+				FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(i);
+				if (Layer == nullptr)
 					break;
 
 				ImVec2 PostionBeforeDraw = ImGui::GetCursorPos();
 
-				ImVec2 TextSize = ImGui::CalcTextSize(layer->GetName().c_str());
+				ImVec2 TextSize = ImGui::CalcTextSize(Layer->GetName().c_str());
 				ImGui::SetCursorPos(PostionBeforeDraw + ImVec2(ImGui::GetContentRegionAvail().x / 2.0f - TextSize.x / 2.0f, 16));
 
 				if (TerrainLayerRenameIndex == i)
@@ -1549,14 +1161,14 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 						ImGui::IsMouseClicked(0) && !ImGui::IsItemHovered() || ImGui::GetFocusID() != ImGui::GetID("##newNameTerrainLayerEditor"))
 					{
 						PROJECT_MANAGER.GetCurrent()->SetModified(true);
-						layer->SetName(TerrainLayerRename);
+						Layer->SetName(TerrainLayerRename);
 
 						TerrainLayerRenameIndex = -1;
 					}
 				}
 				else
 				{
-					ImGui::Text(layer->GetName().c_str());
+					ImGui::Text(Layer->GetName().c_str());
 				}
 				ImGui::SetCursorPos(PostionBeforeDraw);
 
@@ -1564,7 +1176,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 				if (ImGui::Selectable("##item", SelectedLayer == i ? true : false, ImGuiSelectableFlags_None, ImVec2(ImGui::GetContentRegionAvail().x - 0, 64)))
 				{
 					SelectedLayer = int(i);
-					Terrain->SetBrushLayerIndex(SelectedLayer);
+					TERRAIN_SYSTEM.SetBrushLayerIndex(SelectedLayer);
 				}
 				TerrainChangeLayerMaterialTargets[i]->StickToItem();
 				ImGui::PopID();
@@ -1574,7 +1186,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 
 				ImGui::SetCursorPos(PostionBeforeDraw);
 				ImColor ImageTint = ImGui::IsItemHovered() ? ImColor(1.0f, 1.0f, 1.0f, 0.5f) : ImColor(1.0f, 1.0f, 1.0f, 1.0f);
-				FETexture* PreviewTexture = PREVIEW_MANAGER.GetMaterialPreview(layer->GetMaterial()->GetObjectID());
+				FETexture* PreviewTexture = PREVIEW_MANAGER.GetMaterialPreview(Layer->GetMaterial()->GetObjectID());
 				ImGui::Image((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImageTint);
 			}
 
@@ -1595,7 +1207,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 			{
 				bContextMenuOpened = true;
 
-				if (Terrain->GetLayerInSlot(FE_TERRAIN_MAX_LAYERS - 1) != nullptr)
+				if (TerrainComponent.GetLayerInSlot(FE_TERRAIN_MAX_LAYERS - 1) != nullptr)
 					ImGui::BeginDisabled();
 
 				if (ImGui::MenuItem("Add layer..."))
@@ -1616,21 +1228,21 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 					}
 					else
 					{
-						TerrainToWorkWith = Terrain;
+						TerrainToWorkWith = TerrainEntity;
 						SelectFEObjectPopUp::getInstance().Show(FE_MATERIAL, CreateNewTerrainLayerWithMaterialCallBack, nullptr, FinalMaterialList);
 					}
 				}
 
-				if (Terrain->GetLayerInSlot(FE_TERRAIN_MAX_LAYERS - 1) != nullptr)
+				if (TerrainComponent.GetLayerInSlot(FE_TERRAIN_MAX_LAYERS - 1) != nullptr)
 					ImGui::EndDisabled();
 
 				if (HoveredTerrainLayerItem != -1)
 				{
-					FETerrainLayer* layer = Terrain->GetLayerInSlot(HoveredTerrainLayerItem);
-					if (layer != nullptr)
+					FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(HoveredTerrainLayerItem);
+					if (Layer != nullptr)
 					{
 						ImGui::Separator();
-						std::string LayerName = layer->GetName();
+						std::string LayerName = Layer->GetName();
 						ImGui::Text((std::string("Actions with ") + LayerName).c_str());
 						ImGui::Separator();
 
@@ -1638,23 +1250,23 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 						{
 							TerrainLayerRenameIndex = HoveredTerrainLayerItem;
 
-							strcpy_s(TerrainLayerRename, layer->GetName().size() + 1, layer->GetName().c_str());
+							strcpy_s(TerrainLayerRename, Layer->GetName().size() + 1, Layer->GetName().c_str());
 							bLastFrameTerrainLayerRenameEditWasVisiable = false;
 						}
 
 						if (ImGui::MenuItem("Fill"))
 						{
-							RESOURCE_MANAGER.FillTerrainLayerMask(Terrain, HoveredTerrainLayerItem);
+							TERRAIN_SYSTEM.FillTerrainLayerMask(TerrainEntity, HoveredTerrainLayerItem);
 						}
 
 						if (ImGui::MenuItem("Clear"))
 						{
-							RESOURCE_MANAGER.ClearTerrainLayerMask(Terrain, HoveredTerrainLayerItem);
+							TERRAIN_SYSTEM.ClearTerrainLayerMask(TerrainEntity, HoveredTerrainLayerItem);
 						}
 
 						if (ImGui::MenuItem("Delete"))
 						{
-							RESOURCE_MANAGER.DeleteTerrainLayerMask(Terrain, HoveredTerrainLayerItem);
+							TERRAIN_SYSTEM.DeleteTerrainLayerMask(TerrainEntity, HoveredTerrainLayerItem);
 						}
 
 						ImGui::Separator();
@@ -1677,30 +1289,30 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FETerrain* Terrain)
 							}
 							else
 							{
-								TerrainToWorkWith = Terrain;
+								TerrainToWorkWith = TerrainEntity;
 								TempLayerIndex = HoveredTerrainLayerItem;
-								SelectFEObjectPopUp::getInstance().Show(FE_MATERIAL, ChangeMaterialInTerrainLayerCallBack, Terrain->GetLayerInSlot(HoveredTerrainLayerItem)->GetMaterial(), FinalMaterialList);
+								SelectFEObjectPopUp::getInstance().Show(FE_MATERIAL, ChangeMaterialInTerrainLayerCallBack, TerrainComponent.GetLayerInSlot(HoveredTerrainLayerItem)->GetMaterial(), FinalMaterialList);
 							}
 						}
 
 						if (ImGui::MenuItem("Export mask..."))
 						{
-							std::string filePath = "";
-							FILE_SYSTEM.ShowFileSaveDialog(filePath, TEXTURE_LOAD_FILTER, 1);
-							if (!filePath.empty())
+							std::string FilePath = "";
+							FILE_SYSTEM.ShowFileSaveDialog(FilePath, TEXTURE_LOAD_FILTER, 1);
+							if (!FilePath.empty())
 							{
-								filePath += ".png";
-								RESOURCE_MANAGER.SaveTerrainLayerMask(filePath.c_str(), Terrain, HoveredTerrainLayerItem);
+								FilePath += ".png";
+								TERRAIN_SYSTEM.SaveTerrainLayerMask(TerrainEntity, FilePath, HoveredTerrainLayerItem);
 							}
 						}
 
 						if (ImGui::MenuItem("Import mask..."))
 						{
-							std::string filePath = "";
-							FILE_SYSTEM.ShowFileOpenDialog(filePath, TEXTURE_LOAD_FILTER, 1);
-							if (!filePath.empty())
+							std::string FilePath = "";
+							FILE_SYSTEM.ShowFileOpenDialog(FilePath, TEXTURE_LOAD_FILTER, 1);
+							if (!FilePath.empty())
 							{
-								RESOURCE_MANAGER.LoadTerrainLayerMask(filePath.c_str(), Terrain, HoveredTerrainLayerItem);
+								TERRAIN_SYSTEM.LoadTerrainLayerMask(TerrainEntity, FilePath, HoveredTerrainLayerItem);
 								PROJECT_MANAGER.GetCurrent()->SetModified(true);
 							}
 						}

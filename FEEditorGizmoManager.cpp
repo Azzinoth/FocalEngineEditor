@@ -388,9 +388,9 @@ void GizmoManager::HideAllGizmo()
 
 void GizmoManager::UpdateGizmoState(int NewState)
 {
-	if (SELECTED.GetTerrain() != nullptr)
+	if (SELECTED.GetSelected() != nullptr && SELECTED.GetSelected()->HasComponent<FETerrainComponent>())
 	{
-		if (SELECTED.GetTerrain()->GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
+		if (TERRAIN_SYSTEM.GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
 			return;
 	}
 
@@ -577,7 +577,7 @@ bool GizmoManager::WasSelected(int Index)
 	if (SELECTED.SceneEntitiesUnderMouse[Index]->GetType() == FE_CAMERA)
 		return true;
 
-	FENewEntity* SelectedEntity = SELECTED.SceneEntitiesUnderMouse[Index];
+	FEEntity* SelectedEntity = SELECTED.SceneEntitiesUnderMouse[Index];
 	FETransformComponent& CurrentTransform = SelectedEntity->GetComponent<FETransformComponent>();
 
 	if (GizmosState == TRANSFORM_GIZMOS && SelectedEntity->GetObjectID() == TransformationXGizmoEntity->GetObjectID())
@@ -782,6 +782,8 @@ void GizmoManager::MouseMoveTransformationGizmos()
 	float LastFrameMouseRayParametricIntersection = 0.0f;
 	float LastFrameGizmoRayParametricIntersection = 0.0f;
 
+	bool bAppliedSomeChanges = false;
+
 	if (GIZMO_MANAGER.bTransformationXGizmoActive)
 	{
 		const glm::vec3 LastMouseRayVector = SELECTED.MouseRay(LastMouseX, LastMouseY);
@@ -795,7 +797,11 @@ void GizmoManager::MouseMoveTransformationGizmos()
 								  MouseRayParametricIntersection, GizmoRayParametricIntersection);
 
 		const float Difference = GizmoRayParametricIntersection - LastFrameGizmoRayParametricIntersection;
-		MoveSelectedEntityAlongAxis(glm::vec3(Difference, 0.0f, 0.0f), ObjTransform);
+		if (abs(Difference) > FLT_EPSILON)
+		{
+			bAppliedSomeChanges = true;
+			MoveSelectedEntityAlongAxis(glm::vec3(Difference, 0.0f, 0.0f), ObjTransform);
+		}
 	}
 
 	if (GIZMO_MANAGER.bTransformationYGizmoActive)
@@ -811,7 +817,11 @@ void GizmoManager::MouseMoveTransformationGizmos()
 								  MouseRayParametricIntersection, GizmoRayParametricIntersection);
 
 		const float Difference = GizmoRayParametricIntersection - LastFrameGizmoRayParametricIntersection;
-		MoveSelectedEntityAlongAxis(glm::vec3(0.0f, Difference, 0.0f), ObjTransform);
+		if (abs(Difference) > FLT_EPSILON)
+		{
+			bAppliedSomeChanges = true;
+			MoveSelectedEntityAlongAxis(glm::vec3(0.0f, Difference, 0.0f), ObjTransform);
+		}
 	}
 
 	if (GIZMO_MANAGER.bTransformationZGizmoActive)
@@ -827,28 +837,45 @@ void GizmoManager::MouseMoveTransformationGizmos()
 								  MouseRayParametricIntersection, GizmoRayParametricIntersection);
 
 		const float Difference = GizmoRayParametricIntersection - LastFrameGizmoRayParametricIntersection;
-		MoveSelectedEntityAlongAxis(glm::vec3(0.0f, 0.0f, Difference), ObjTransform);
+		if (abs(Difference) > FLT_EPSILON)
+		{
+			bAppliedSomeChanges = true;
+			MoveSelectedEntityAlongAxis(glm::vec3(0.0f, 0.0f, Difference), ObjTransform);
+		}
 	}
 
 	if (GIZMO_MANAGER.bTransformationXYGizmoActive)
 	{
 		const glm::vec3 Difference = GetMousePositionDifferenceOnPlane(glm::vec3(0.0f, 0.0f, 1.0f));
-		MoveSelectedEntityAlongAxis(Difference, ObjTransform);
+		if (!GEOMETRY.IsEpsilonEqual(Difference, glm::vec3(0.0f)))
+		{
+			bAppliedSomeChanges = true;
+			MoveSelectedEntityAlongAxis(Difference, ObjTransform);
+		}
 	}
 
 	if (GIZMO_MANAGER.bTransformationYZGizmoActive)
 	{
 		const glm::vec3 Difference = GetMousePositionDifferenceOnPlane(glm::vec3(1.0f, 0.0f, 0.0f));
-		MoveSelectedEntityAlongAxis(Difference, ObjTransform);
+		if (!GEOMETRY.IsEpsilonEqual(Difference, glm::vec3(0.0f)))
+		{
+			bAppliedSomeChanges = true;
+			MoveSelectedEntityAlongAxis(Difference, ObjTransform);
+		}
 	}
 
 	if (GIZMO_MANAGER.bTransformationXZGizmoActive)
 	{
 		const glm::vec3 Difference = GetMousePositionDifferenceOnPlane(glm::vec3(0.0f, 1.0f, 0.0f));
-		MoveSelectedEntityAlongAxis(Difference, ObjTransform);
+		if (!GEOMETRY.IsEpsilonEqual(Difference, glm::vec3(0.0f)))
+		{
+			bAppliedSomeChanges = true;
+			MoveSelectedEntityAlongAxis(Difference, ObjTransform);
+		}
 	}
 
-	ApplyChangesToSelectedObject(ObjTransform);
+	if (bAppliedSomeChanges)
+		ApplyChangesToSelectedObject(ObjTransform);
 }
 
 void GizmoManager::MouseMoveScaleGizmos()
@@ -959,9 +986,9 @@ void GizmoManager::OnSelectedObjectUpdate()
 	}
 	else
 	{
-		if (SELECTED.GetTerrain() != nullptr)
+		if (SELECTED.GetSelected() != nullptr && SELECTED.GetSelected()->HasComponent<FETerrainComponent>())
 		{
-			if (SELECTED.GetTerrain()->GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
+			if (TERRAIN_SYSTEM.GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
 			{
 				GIZMO_MANAGER.HideAllGizmo();
 				return;
@@ -997,7 +1024,15 @@ FETransformComponent GizmoManager::GetTransformComponentOfSelectedObject()
 	if (SELECTED.GetSelected() == nullptr)
 		return FETransformComponent();
 
-	return SELECTED.GetSelected()->GetComponent<FETransformComponent>();
+	if (SELECTED.InstancedSubObjectIndexSelected != -1 && SELECTED.GetSelected()->HasComponent<FEInstancedComponent>())
+	{
+		FEInstancedComponent& InstancedComponent = SELECTED.GetSelected()->GetComponent<FEInstancedComponent>();
+		return InstancedComponent.GetTransformedInstancedMatrix(SELECTED.InstancedSubObjectIndexSelected);
+	}
+	else
+	{
+		return SELECTED.GetSelected()->GetComponent<FETransformComponent>();
+	}
 
 	/*if (SELECTED.GetSelected()->GetType() == FE_ENTITY)
 	{
@@ -1033,11 +1068,12 @@ void GizmoManager::ApplyChangesToSelectedObject(FETransformComponent Changes)
 
 	if (SELECTED.InstancedSubObjectIndexSelected != -1)
 	{
-		//reinterpret_cast<FEEntityInstanced*>(SELECTED.GetEntity())->ModifyInstance(SELECTED.InstancedSubObjectIndexSelected, Changes.GetTransformMatrix());
-		assert(false);
+		INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(SELECTED.GetSelected(), SELECTED.InstancedSubObjectIndexSelected, Changes.GetTransformMatrix());
 	}
-
-	SELECTED.GetSelected()->GetComponent<FETransformComponent>() = Changes;
+	else
+	{
+		SELECTED.GetSelected()->GetComponent<FETransformComponent>() = Changes;
+	}
 
 	/*if (SELECTED.GetSelected()->GetType() == FE_ENTITY)
 	{

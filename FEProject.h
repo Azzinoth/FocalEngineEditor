@@ -21,7 +21,6 @@ public:
 	void SaveScene(bool bFullSave = false);
 	void SaveSceneTo(std::string NewPath);
 	void LoadScene();
-	void LoadSceneVer0();
 
 	FETexture* SceneScreenshot;
 	void CreateDummyScreenshot();

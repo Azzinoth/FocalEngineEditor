@@ -30,7 +30,7 @@ private:
 	void UpdateAll();
 
 	FEFramebuffer* PreviewFB;
-	FENewEntity* PreviewEntity;
+	FEEntity* PreviewEntity;
 	FEPrefab* PreviewPrefab;
 	FEGameModel* PreviewGameModel;
 	FEMaterial* MeshPreviewMaterial;

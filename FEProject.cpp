@@ -579,138 +579,142 @@ void FEProject::SaveScene(bool bFullSave)
 	Root["prefabs"] = PrefabData;
 
 	// Saving Entities.
-	std::vector<std::string> EntityList = SCENE.GetEntityList();
-	Json::Value EntityData;
-	for (size_t i = 0; i < EntityList.size(); i++)
-	{
-		FEEntity* Entity = SCENE.GetEntity(EntityList[i]);
-		if (EDITOR_INTERNAL_RESOURCES.IsInInternalEditorList(Entity))
-			continue;
+	//std::vector<std::string> EntityList = SCENE.GetEntityList();
+	//Json::Value EntityData;
+	//for (size_t i = 0; i < EntityList.size(); i++)
+	//{
+	//	FEEntity* Entity = SCENE.GetEntity(EntityList[i]);
+	//	if (EDITOR_INTERNAL_RESOURCES.IsInInternalEditorList(Entity))
+	//		continue;
 
-		// Temporary solution, becuase of the lack of proper ECS system
-		bool bOmit = false;
-		for (size_t j = 0; j < ListOfOmitedObjects.size(); j++)
-		{
-			if (Entity->GetName().find(ListOfOmitedObjects[j]) != std::string::npos)
-			{
-				bOmit = true;
-				break;
-			}
-		}
-		if (bOmit)
-			continue;
+	//	// Temporary solution, becuase of the lack of proper ECS system
+	//	bool bOmit = false;
+	//	for (size_t j = 0; j < ListOfOmitedObjects.size(); j++)
+	//	{
+	//		if (Entity->GetName().find(ListOfOmitedObjects[j]) != std::string::npos)
+	//		{
+	//			bOmit = true;
+	//			break;
+	//		}
+	//	}
+	//	if (bOmit)
+	//		continue;
 
-		EntityData[Entity->GetObjectID()]["ID"] = Entity->GetObjectID();
-		EntityData[Entity->GetObjectID()]["type"] = FEObjectTypeToString(Entity->GetType());
-		EntityData[Entity->GetObjectID()]["name"] = Entity->GetName();
-		EntityData[Entity->GetObjectID()]["visible"] = Entity->IsVisible();
-		// Temporary solution, becuase of the lack of proper ECS system
-		if (Entity->Prefab != nullptr)
-		{
-			EntityData[Entity->GetObjectID()]["prefab"] = Entity->Prefab->GetObjectID();
-		}
-		else
-		{
-			EntityData[Entity->GetObjectID()]["prefab"] = "none";
-		}
-		WriteTransformToJson(EntityData[Entity->GetObjectID()]["transformation"], &Entity->Transform);
+	//	EntityData[Entity->GetObjectID()]["ID"] = Entity->GetObjectID();
+	//	EntityData[Entity->GetObjectID()]["type"] = FEObjectTypeToString(Entity->GetType());
+	//	EntityData[Entity->GetObjectID()]["name"] = Entity->GetName();
+	//	EntityData[Entity->GetObjectID()]["visible"] = Entity->IsVisible();
+	//	// Temporary solution, because of the lack of proper ECS system
+	//	if (Entity->Prefab != nullptr)
+	//	{
+	//		EntityData[Entity->GetObjectID()]["prefab"] = Entity->Prefab->GetObjectID();
+	//	}
+	//	else
+	//	{
+	//		EntityData[Entity->GetObjectID()]["prefab"] = "none";
+	//	}
+	//	//WriteTransformToJson(EntityData[Entity->GetObjectID()]["transformation"], &Entity->Transform);
 
-		if (Entity->GetType() == FE_ENTITY_INSTANCED)
-		{
-			FEEntityInstanced* InstancedEntity = reinterpret_cast<FEEntityInstanced*>(Entity);
-			EntityData[Entity->GetObjectID()]["modificationsToSpawn"] = InstancedEntity->GetSpawnModificationCount() == 0 ? false : true;
-			if (InstancedEntity->GetSpawnModificationCount())
-			{
-				std::ofstream InfoFile;
-				Json::Value EntityFileRoot;
-				InfoFile.open(ProjectFolder + Entity->GetObjectID() + ".txt");
+	//	//if (Entity->GetType() == FE_ENTITY_INSTANCED)
+	//	//{
+	//	//	FEEntityInstanced* InstancedEntity = reinterpret_cast<FEEntityInstanced*>(Entity);
+	//	//	EntityData[Entity->GetObjectID()]["modificationsToSpawn"] = InstancedEntity->GetSpawnModificationCount() == 0 ? false : true;
+	//	//	if (InstancedEntity->GetSpawnModificationCount())
+	//	//	{
+	//	//		std::ofstream InfoFile;
+	//	//		Json::Value EntityFileRoot;
+	//	//		InfoFile.open(ProjectFolder + Entity->GetObjectID() + ".txt");
 
-				Json::Value ModificationsData;
-				auto ModificationList = InstancedEntity->GetSpawnModifications();
-				for (int j = 0; j < ModificationList.size(); j++)
-				{
-					ModificationsData[j]["type"] = static_cast<int>(ModificationList[j].Type);
-					ModificationsData[j]["index"] = ModificationList[j].Index;
-					if (ModificationList[j].Type != FE_CHANGE_DELETED)
-					{
-						for (int k = 0; k < 4; k++)
-						{
-							for (int p = 0; p < 4; p++)
-							{
-								ModificationsData[j]["modification"][k][p] = ModificationList[j].Modification[k][p];
-							}
-						}
-					}
-				}
-				EntityFileRoot["modifications"] = ModificationsData;
+	//	//		Json::Value ModificationsData;
+	//	//		auto ModificationList = InstancedEntity->GetSpawnModifications();
+	//	//		for (int j = 0; j < ModificationList.size(); j++)
+	//	//		{
+	//	//			ModificationsData[j]["type"] = static_cast<int>(ModificationList[j].Type);
+	//	//			ModificationsData[j]["index"] = ModificationList[j].Index;
+	//	//			if (ModificationList[j].Type != FE_CHANGE_DELETED)
+	//	//			{
+	//	//				for (int k = 0; k < 4; k++)
+	//	//				{
+	//	//					for (int p = 0; p < 4; p++)
+	//	//					{
+	//	//						ModificationsData[j]["modification"][k][p] = ModificationList[j].Modification[k][p];
+	//	//					}
+	//	//				}
+	//	//			}
+	//	//		}
+	//	//		EntityFileRoot["modifications"] = ModificationsData;
 
-				InfoFile << EntityFileRoot;
-				InfoFile.close();
-			}
+	//	//		InfoFile << EntityFileRoot;
+	//	//		InfoFile.close();
+	//	//	}
 
-			EntityData[Entity->GetObjectID()]["spawnInfo"]["seed"] = InstancedEntity->SpawnInfo.Seed;
-			EntityData[Entity->GetObjectID()]["spawnInfo"]["objectCount"] = InstancedEntity->SpawnInfo.ObjectCount;
-			EntityData[Entity->GetObjectID()]["spawnInfo"]["radius"] = InstancedEntity->SpawnInfo.Radius;
-			EntityData[Entity->GetObjectID()]["spawnInfo"]["minScale"] = InstancedEntity->SpawnInfo.GetMinScale();
-			EntityData[Entity->GetObjectID()]["spawnInfo"]["maxScale"] = InstancedEntity->SpawnInfo.GetMaxScale();
-			EntityData[Entity->GetObjectID()]["spawnInfo"]["rotationDeviation.x"] = InstancedEntity->SpawnInfo.RotationDeviation.x;
-			EntityData[Entity->GetObjectID()]["spawnInfo"]["rotationDeviation.y"] = InstancedEntity->SpawnInfo.RotationDeviation.y;
-			EntityData[Entity->GetObjectID()]["spawnInfo"]["rotationDeviation.z"] = InstancedEntity->SpawnInfo.RotationDeviation.z;
-			if (InstancedEntity->GetSnappedToTerrain() == nullptr)
-			{
-				EntityData[Entity->GetObjectID()]["snappedToTerrain"] = "none";
-			}
-			else
-			{
-				EntityData[Entity->GetObjectID()]["snappedToTerrain"] = InstancedEntity->GetSnappedToTerrain()->GetObjectID();
-				EntityData[Entity->GetObjectID()]["terrainLayer"] = InstancedEntity->GetTerrainLayer();
-				EntityData[Entity->GetObjectID()]["minimalLayerIntensity"] = InstancedEntity->GetMinimalLayerIntensity();
-			}
-		}
+	//	//	EntityData[Entity->GetObjectID()]["spawnInfo"]["seed"] = InstancedEntity->SpawnInfo.Seed;
+	//	//	EntityData[Entity->GetObjectID()]["spawnInfo"]["objectCount"] = InstancedEntity->SpawnInfo.ObjectCount;
+	//	//	EntityData[Entity->GetObjectID()]["spawnInfo"]["radius"] = InstancedEntity->SpawnInfo.Radius;
+	//	//	EntityData[Entity->GetObjectID()]["spawnInfo"]["minScale"] = InstancedEntity->SpawnInfo.GetMinScale();
+	//	//	EntityData[Entity->GetObjectID()]["spawnInfo"]["maxScale"] = InstancedEntity->SpawnInfo.GetMaxScale();
+	//	//	EntityData[Entity->GetObjectID()]["spawnInfo"]["rotationDeviation.x"] = InstancedEntity->SpawnInfo.RotationDeviation.x;
+	//	//	EntityData[Entity->GetObjectID()]["spawnInfo"]["rotationDeviation.y"] = InstancedEntity->SpawnInfo.RotationDeviation.y;
+	//	//	EntityData[Entity->GetObjectID()]["spawnInfo"]["rotationDeviation.z"] = InstancedEntity->SpawnInfo.RotationDeviation.z;
+	//	//	if (InstancedEntity->GetSnappedToTerrain() == nullptr)
+	//	//	{
+	//	//		EntityData[Entity->GetObjectID()]["snappedToTerrain"] = "none";
+	//	//	}
+	//	//	else
+	//	//	{
+	//	//		// FIX ME!
+	//	//		//EntityData[Entity->GetObjectID()]["snappedToTerrain"] = InstancedEntity->GetSnappedToTerrain()->GetObjectID();
+	//	//		EntityData[Entity->GetObjectID()]["terrainLayer"] = InstancedEntity->GetTerrainLayer();
+	//	//		EntityData[Entity->GetObjectID()]["minimalLayerIntensity"] = InstancedEntity->GetMinimalLayerIntensity();
+	//	//	}
+	//	//}
 
-		Entity->SetDirtyFlag(false);
-	}
-	Root["entities"] = EntityData;
+	//	Entity->SetDirtyFlag(false);
+	//}
+	//Root["entities"] = EntityData;
 
 	// Saving Terrains.
 	std::vector<std::string> TerrainList = SCENE.GetTerrainList();
 	Json::Value TerrainData;
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		FETerrain* Terrain = SCENE.GetTerrain(TerrainList[i]);
+		FEEntity* Terrain = SCENE.GetNewStyleEntity(TerrainList[i]);
+		FETerrainComponent& TerrainComponent = Terrain->GetComponent<FETerrainComponent>();
 
 		TerrainData[Terrain->GetObjectID()]["ID"] = Terrain->GetObjectID();
 		TerrainData[Terrain->GetObjectID()]["name"] = Terrain->GetName();
 
-		TerrainData[Terrain->GetObjectID()]["heightMap"]["ID"] = Terrain->HeightMap->GetObjectID();
-		TerrainData[Terrain->GetObjectID()]["heightMap"]["name"] = Terrain->HeightMap->GetName();
-		TerrainData[Terrain->GetObjectID()]["heightMap"]["fileName"] = Terrain->HeightMap->GetObjectID() + ".texture";
-		RESOURCE_MANAGER.SaveFETexture(Terrain->HeightMap, (GetProjectFolder() + Terrain->HeightMap->GetObjectID() + std::string(".texture")).c_str());
+		TerrainData[Terrain->GetObjectID()]["heightMap"]["ID"] = TerrainComponent.HeightMap->GetObjectID();
+		TerrainData[Terrain->GetObjectID()]["heightMap"]["name"] = TerrainComponent.HeightMap->GetName();
+		TerrainData[Terrain->GetObjectID()]["heightMap"]["fileName"] = TerrainComponent.HeightMap->GetObjectID() + ".texture";
+		RESOURCE_MANAGER.SaveFETexture(TerrainComponent.HeightMap, (GetProjectFolder() + TerrainComponent.HeightMap->GetObjectID() + std::string(".texture")).c_str());
 
-		TerrainData[Terrain->GetObjectID()]["hightScale"] = Terrain->GetHightScale();
-		TerrainData[Terrain->GetObjectID()]["displacementScale"] = Terrain->GetDisplacementScale();
-		TerrainData[Terrain->GetObjectID()]["tileMult"]["X"] = Terrain->GetTileMult().x;
-		TerrainData[Terrain->GetObjectID()]["tileMult"]["Y"] = Terrain->GetTileMult().y;
-		TerrainData[Terrain->GetObjectID()]["LODlevel"] = Terrain->GetLODLevel();
-		TerrainData[Terrain->GetObjectID()]["chunkPerSide"] = Terrain->GetChunkPerSide();
+		TerrainData[Terrain->GetObjectID()]["hightScale"] = TerrainComponent.GetHightScale();
+		TerrainData[Terrain->GetObjectID()]["displacementScale"] = TerrainComponent.GetDisplacementScale();
+		TerrainData[Terrain->GetObjectID()]["tileMult"]["X"] = TerrainComponent.GetTileMult().x;
+		TerrainData[Terrain->GetObjectID()]["tileMult"]["Y"] = TerrainComponent.GetTileMult().y;
+		TerrainData[Terrain->GetObjectID()]["LODlevel"] = TerrainComponent.GetLODLevel();
+		TerrainData[Terrain->GetObjectID()]["chunkPerSide"] = TerrainComponent.GetChunkPerSide();
 
-		WriteTransformToJson(TerrainData[Terrain->GetObjectID()]["transformation"], &Terrain->Transform);
+		// FIX ME!
+		WriteTransformToJson(TerrainData[Terrain->GetObjectID()]["transformation"], &Terrain->GetComponent<FETransformComponent>());
+		//WriteTransformToJson(TerrainData[Terrain->GetObjectID()]["transformation"], &Terrain->Transform);
 
 		// Saving terrains Layers.
-		for (int j = 0; j < Terrain->LayerMaps.size(); j++)
+		for (int j = 0; j < TerrainComponent.LayerMaps.size(); j++)
 		{
-			if (Terrain->LayerMaps[j] != nullptr)
+			if (TerrainComponent.LayerMaps[j] != nullptr)
 			{
-				TerrainData[Terrain->GetObjectID()]["layerMaps"][j]["ID"] = Terrain->LayerMaps[j]->GetObjectID();
-				TerrainData[Terrain->GetObjectID()]["layerMaps"][j]["name"] = Terrain->LayerMaps[j]->GetName();
-				TerrainData[Terrain->GetObjectID()]["layerMaps"][j]["fileName"] = Terrain->LayerMaps[j]->GetObjectID() + ".texture";
-				RESOURCE_MANAGER.SaveFETexture(Terrain->LayerMaps[j], (GetProjectFolder() + Terrain->LayerMaps[j]->GetObjectID() + std::string(".texture")).c_str());
+				TerrainData[Terrain->GetObjectID()]["layerMaps"][j]["ID"] = TerrainComponent.LayerMaps[j]->GetObjectID();
+				TerrainData[Terrain->GetObjectID()]["layerMaps"][j]["name"] = TerrainComponent.LayerMaps[j]->GetName();
+				TerrainData[Terrain->GetObjectID()]["layerMaps"][j]["fileName"] = TerrainComponent.LayerMaps[j]->GetObjectID() + ".texture";
+				RESOURCE_MANAGER.SaveFETexture(TerrainComponent.LayerMaps[j], (GetProjectFolder() + TerrainComponent.LayerMaps[j]->GetObjectID() + std::string(".texture")).c_str());
 			}
 		}
 
 		for (int j = 0; j < FE_TERRAIN_MAX_LAYERS; j++)
 		{
-			FETerrainLayer* CurrentLayer = Terrain->GetLayerInSlot(j);
+			FETerrainLayer* CurrentLayer = TerrainComponent.GetLayerInSlot(j);
 			if (CurrentLayer == nullptr)
 			{
 				TerrainData[Terrain->GetObjectID()]["layers"][j]["acive"] = false;
@@ -805,8 +809,8 @@ void FEProject::SaveScene(bool bFullSave)
 	// *********** Chromatic Aberration ***********
 	EffectsData["Chromatic Aberration"]["Shift strength"] = RENDERER.GetChromaticAberrationIntensity();
 	// *********** Sky ***********
-	EffectsData["Sky"]["Enabled"] = RENDERER.IsSkyEnabled() ? 1.0f : 0.0f;
-	EffectsData["Sky"]["Sphere size"] = RENDERER.GetDistanceToSky();
+	//EffectsData["Sky"]["Enabled"] = RENDERER.IsSkyEnabled() ? 1.0f : 0.0f;
+	//EffectsData["Sky"]["Sphere size"] = RENDERER.GetDistanceToSky();
 
 	Root["effects"] = EffectsData;
 
@@ -892,8 +896,6 @@ void FEProject::LoadScene()
 		if (ProjectVersion == 0.0f)
 		{
 			LOG.Add("Can't find version in scene file of project from " + ProjectFolder, "FE_LOG_LOADING", FE_LOG_WARNING);
-			LOG.Add("Trying to load project with old version of loader.", "FE_LOG_LOADING", FE_LOG_WARNING);
-			LoadSceneVer0();
 			return;
 		}
 		else if (ProjectVersion == 0.01f)
@@ -1040,24 +1042,26 @@ void FEProject::LoadScene()
 		}
 	}
 
-	// loading Terrains
+	// Loading Terrains.
 	std::vector<Json::String> TerrainList = Root["terrains"].getMemberNames();
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		FETerrain* NewTerrain = RESOURCE_MANAGER.CreateTerrain(false, Root["terrains"][TerrainList[i]]["name"].asString(), Root["terrains"][TerrainList[i]]["ID"].asString());
-		NewTerrain->HeightMap = RESOURCE_MANAGER.LoadFEHeightmap((ProjectFolder + Root["terrains"][TerrainList[i]]["heightMap"]["fileName"].asCString()).c_str(), NewTerrain, Root["terrains"][TerrainList[i]]["heightMap"]["name"].asCString());
+		FEEntity* NewEntity = SCENE.AddNewStyleEntity(Root["terrains"][TerrainList[i]]["name"].asString(), Root["terrains"][TerrainList[i]]["ID"].asString());
+		FETransformComponent& TransformComponent = NewEntity->GetComponent<FETransformComponent>();
+		FETerrainComponent& TerrainComponent = NewEntity->AddComponent<FETerrainComponent>();
+		TERRAIN_SYSTEM.LoadHeightMap((ProjectFolder + Root["terrains"][TerrainList[i]]["heightMap"]["fileName"].asCString()).c_str(), NewEntity);
 
-		NewTerrain->SetHightScale(Root["terrains"][TerrainList[i]]["hightScale"].asFloat());
-		NewTerrain->SetDisplacementScale(Root["terrains"][TerrainList[i]]["displacementScale"].asFloat());
+		TerrainComponent.SetHightScale(Root["terrains"][TerrainList[i]]["hightScale"].asFloat());
+		TerrainComponent.SetDisplacementScale(Root["terrains"][TerrainList[i]]["displacementScale"].asFloat());
 		glm::vec2 TileMult;
 		TileMult.x = Root["terrains"][TerrainList[i]]["tileMult"]["X"].asFloat();
 		TileMult.y = Root["terrains"][TerrainList[i]]["tileMult"]["Y"].asFloat();
-		NewTerrain->SetTileMult(TileMult);
-		NewTerrain->SetLODLevel(Root["terrains"][TerrainList[i]]["LODlevel"].asFloat());
-		NewTerrain->SetChunkPerSide(Root["terrains"][TerrainList[i]]["chunkPerSide"].asFloat());
-		NewTerrain->SetHightScale(Root["terrains"][TerrainList[i]]["hightScale"].asFloat());
-		NewTerrain->SetHightScale(Root["terrains"][TerrainList[i]]["hightScale"].asFloat());
-		ReadTransformToJson(Root["terrains"][TerrainList[i]]["transformation"], &NewTerrain->Transform);
+		TerrainComponent.SetTileMult(TileMult);
+		TerrainComponent.SetLODLevel(Root["terrains"][TerrainList[i]]["LODlevel"].asFloat());
+		TerrainComponent.SetChunkPerSide(Root["terrains"][TerrainList[i]]["chunkPerSide"].asFloat());
+		TerrainComponent.SetHightScale(Root["terrains"][TerrainList[i]]["hightScale"].asFloat());
+		TerrainComponent.SetHightScale(Root["terrains"][TerrainList[i]]["hightScale"].asFloat());
+		ReadTransformToJson(Root["terrains"][TerrainList[i]]["transformation"], &TransformComponent);
 
 		if (ProjectVersion >= 0.02f)
 		{
@@ -1065,10 +1069,8 @@ void FEProject::LoadScene()
 			{
 				if (Root["terrains"][TerrainList[i]].isMember("layerMaps"))
 				{
-					// Not using LoadFETextureAsync because these textures could be used for instanced entities initialization.
-					//FETexture* loadedTexture = RESOURCE_MANAGER.LoadFETextureAsync((projectFolder + root["terrains"][terrainList[i]]["layerMaps"][j]["fileName"].asCString()).c_str(), root["terrains"][terrainList[i]]["layerMaps"][j]["name"].asString(), nullptr, root["terrains"][terrainList[i]]["layerMaps"][j]["ID"].asString());
 					FETexture* LoadedTexture = RESOURCE_MANAGER.LoadFETexture((ProjectFolder + Root["terrains"][TerrainList[i]]["layerMaps"][j]["fileName"].asCString()).c_str(), Root["terrains"][TerrainList[i]]["layerMaps"][j]["name"].asString());
-					NewTerrain->LayerMaps[j] = LoadedTexture;
+					TerrainComponent.LayerMaps[j] = LoadedTexture;
 				}
 			}
 
@@ -1076,20 +1078,18 @@ void FEProject::LoadScene()
 			{
 				if (Root["terrains"][TerrainList[i]]["layers"][j]["acive"].asBool())
 				{
-					RESOURCE_MANAGER.ActivateTerrainVacantLayerSlot(NewTerrain, RESOURCE_MANAGER.GetMaterial(Root["terrains"][TerrainList[i]]["layers"][j]["materialID"].asCString()));
-					NewTerrain->GetLayerInSlot(j)->SetName(Root["terrains"][TerrainList[i]]["layers"][j]["name"].asCString());
+					TERRAIN_SYSTEM.ActivateVacantLayerSlot(NewEntity, RESOURCE_MANAGER.GetMaterial(Root["terrains"][TerrainList[i]]["layers"][j]["materialID"].asCString()));
+					TerrainComponent.GetLayerInSlot(j)->SetName(Root["terrains"][TerrainList[i]]["layers"][j]["name"].asCString());
 				}
 			}
 		}
-
-		SCENE.AddTerrain(NewTerrain);
 	}
 
 	// Loading entities.
 	std::vector<Json::String> EntityList = Root["entities"].getMemberNames();
 	for (size_t i = 0; i < EntityList.size(); i++)
 	{
-		FENewEntity* NewEntity = SCENE.AddNewStyleEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+		FEEntity* NewEntity = SCENE.AddNewStyleEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
 
 		if (Root["entities"][EntityList[i]].isMember("type"))
 		{
@@ -1097,7 +1097,7 @@ void FEProject::LoadScene()
 			{
 				FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString())->GetComponent(0)->GameModel;
 				FEGameModelComponent& GameModelComponent = NewEntity->AddComponent<FEGameModelComponent>(GameModel);
-				FEInstancedRenderingComponent& InstancedComponent = NewEntity->AddComponent<FEInstancedRenderingComponent>();
+				FEInstancedComponent& InstancedComponent = NewEntity->AddComponent<FEInstancedComponent>();
 
 				if (abs(ProjectVersion - 0.025f) <= FLT_EPSILON)
 					GameModelComponent.SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
@@ -1116,18 +1116,18 @@ void FEProject::LoadScene()
 
 				if (Root["entities"][EntityList[i]]["snappedToTerrain"].asString() != "none")
 				{
-					// FIX ME!
-					FETerrain* Terrain = SCENE.GetTerrain(Root["entities"][EntityList[i]]["snappedToTerrain"].asString());
-					Terrain->SnapInstancedEntity(NewEntity);
-					/*if (Root["entities"][EntityList[i]].isMember("terrainLayer"))
+					FEEntity* TerrainEntity = SCENE.GetNewStyleEntity(Root["entities"][EntityList[i]]["snappedToTerrain"].asString());
+					TERRAIN_SYSTEM.SnapInstancedEntity(TerrainEntity, NewEntity);
+
+					if (Root["entities"][EntityList[i]].isMember("terrainLayer"))
 					{
 						if (Root["entities"][EntityList[i]]["terrainLayer"].asInt() != -1)
 						{
-							Terrain->ConnectInstancedEntityToLayer(InstancedEntity, Root["entities"][EntityList[i]]["terrainLayer"].asInt());
+							TERRAIN_SYSTEM.ConnectInstancedEntityToLayer(TerrainEntity, NewEntity, Root["entities"][EntityList[i]]["terrainLayer"].asInt());
 						}
 
-						InstancedEntity->SetMinimalLayerIntensity(Root["entities"][EntityList[i]]["minimalLayerIntensity"].asFloat());
-					}*/
+						InstancedComponent.SetMinimalLayerIntensityToSpawn(Root["entities"][EntityList[i]]["minimalLayerIntensity"].asFloat());
+					}
 				}
 
 				INSTANCED_RENDERING_SYSTEM.PopulateInstance(NewEntity, SpawnInfo);
@@ -1185,7 +1185,6 @@ void FEProject::LoadScene()
 			}
 			else
 			{
-				
 				// For compatibility with old projects.
 				if (Root["entities"][EntityList[i]].isMember("gameModel"))
 				{
@@ -1213,7 +1212,7 @@ void FEProject::LoadScene()
 					
 				ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &NewEntity->GetComponent<FETransformComponent>());
 				/*ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(EntityList[i])->Transform);
-				FENewEntity* NewEntity = SCENE.GetNewStyleEntityByOldStyleID(EntityList[i]);
+				FEEntity* NewEntity = SCENE.GetNewStyleEntityByOldStyleID(EntityList[i]);
 				if (NewEntity != nullptr)
 				{
 					NewEntity->GetComponent<FETransformComponent>() = SCENE.GetEntity(EntityList[i])->Transform;
@@ -1223,7 +1222,7 @@ void FEProject::LoadScene()
 		// For compatibility with old projects.
 		else
 		{
-			//FENewEntity* NewEntity = SCENE.AddNewStyleEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+			//FEEntity* NewEntity = SCENE.AddNewStyleEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
 			FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString())->GetComponent(0)->GameModel;
 			NewEntity->AddComponent<FEGameModelComponent>(GameModel);
 			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &NewEntity->GetComponent<FETransformComponent>());
@@ -1323,8 +1322,12 @@ void FEProject::LoadScene()
 	// *********** Chromatic Aberration ***********
 	RENDERER.SetChromaticAberrationIntensity(Root["effects"]["Chromatic Aberration"]["Shift strength"].asFloat());
 	// *********** Sky ***********
-	RENDERER.SetSkyEnabled(Root["effects"]["Sky"]["Enabled"].asFloat() > 0.0f ? true : false);
-	RENDERER.SetDistanceToSky(Root["effects"]["Sky"]["Sphere size"].asFloat());
+	//SKY_DOME_SYSTEM.SetEnabled(Root["effects"]["Sky"]["Enabled"].asFloat() > 0.0f ? true : false);
+	//SKY_DOME_SYSTEM.SetDistanceToSky(Root["effects"]["Sky"]["Sphere size"].asFloat());
+	//Fix Me!
+	FEEntity* SkyDome = SCENE.AddNewStyleEntity("SkyDome");
+	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
+	SKY_DOME_SYSTEM.AddToEntity(SkyDome);
 
 	// loading Camera settings
 	ENGINE.GetCamera()->SetPosition(glm::vec3(Root["camera"]["position"]["X"].asFloat(),
@@ -1467,357 +1470,6 @@ void FEProject::AddFileToDeleteList(const std::string FileName)
 	FilesToDelete.push_back(FileName);
 }
 
-// FIX ME! Deprecate.
-void FEProject::LoadSceneVer0()
-{
-	//std::ifstream SceneFile;
-	//SceneFile.open(ProjectFolder + "scene.txt");
-
-	//std::string FileData((std::istreambuf_iterator<char>(SceneFile)), std::istreambuf_iterator<char>());
-
-	//Json::Value Root;
-	//JSONCPP_STRING Err;
-	//Json::CharReaderBuilder Builder;
-
-	//const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
-	//if (!Reader->parse(FileData.c_str(), FileData.c_str() + FileData.size(), &Root, &Err))
-	//	return;
-
-	//// correction for loading Meshes
-	//std::unordered_map<std::string, std::string> MeshNameToID;
-	//MeshNameToID["sphere"] = RESOURCE_MANAGER.GetMesh("7F251E3E0D08013E3579315F")->GetObjectID();
-	//MeshNameToID["cube"] = RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R")->GetObjectID();
-	//MeshNameToID["plane"] = RESOURCE_MANAGER.GetMesh("1Y251E6E6T78013635793156")->GetObjectID();
-	//// loading Meshes
-	//std::vector<Json::String> MeshList = Root["meshes"].getMemberNames();
-	//for (size_t i = 0; i < MeshList.size(); i++)
-	//{
-	//	RESOURCE_MANAGER.LoadFEMesh((ProjectFolder + Root["meshes"][MeshList[i]]["fileName"].asCString()).c_str(), Root["meshes"][MeshList[i]]["name"].asCString());
-	//	MeshNameToID[Root["meshes"][MeshList[i]]["name"].asCString()] = Root["meshes"][MeshList[i]]["ID"].asCString();
-	//}
-	//// correction for loading Textures
-	//std::unordered_map<std::string, std::string> TextureNameToID;
-	//// loading Textures
-	//std::vector<Json::String> TexturesList = Root["textures"].getMemberNames();
-	//for (size_t i = 0; i < TexturesList.size(); i++)
-	//{
-	//	// read type of texture if it is not standard then skip it.
-	//	if (Root["textures"][TexturesList[i]]["type"] == 33322)
-	//	{
-	//		continue;
-	//	}
-
-	//	FETexture* LoadedTexture = RESOURCE_MANAGER.LoadFETextureAsync((ProjectFolder + Root["textures"][TexturesList[i]]["fileName"].asCString()).c_str(), Root["textures"][TexturesList[i]]["name"].asString());
-	//	TextureNameToID[Root["textures"][TexturesList[i]]["name"].asString()] = LoadedTexture->GetObjectID();
-	//}
-
-	//// correction for loading Materials
-	//std::unordered_map<std::string, std::string> MaterialNameToID;
-	//// loading Materials
-	//std::vector<Json::String> MaterialsList = Root["materials"].getMemberNames();
-	//for (size_t i = 0; i < MaterialsList.size(); i++)
-	//{
-	//	FEMaterial* NewMaterial = RESOURCE_MANAGER.CreateMaterial(MaterialsList[i], Root["materials"][MaterialsList[i]]["ID"].asString());
-	//	MaterialNameToID[MaterialsList[i]] = NewMaterial->GetObjectID();
-
-	//	//newMat->shader = RESOURCE_MANAGER.getShader("FEPhongShader");
-	//	//newMat->shader = RESOURCE_MANAGER.getShader("FESolidColorShader");
-	//	NewMaterial->Shader = RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/);
-
-	//	std::vector<Json::String> MembersList = Root["materials"][MaterialsList[i]].getMemberNames();
-	//	for (size_t j = 0; j < MembersList.size(); j++)
-	//	{
-	//		if (MembersList[j] == "textures")
-	//		{
-	//			for (size_t k = 0; k < FE_MAX_TEXTURES_PER_MATERIAL; k++)
-	//			{
-	//				if (Root["materials"][MaterialsList[i]]["textures"].isMember(std::to_string(k).c_str()))
-	//				{
-	//					std::string TextureID = TextureNameToID[Root["materials"][MaterialsList[i]]["textures"][std::to_string(k).c_str()].asCString()];
-	//					NewMaterial->Textures[k] = RESOURCE_MANAGER.GetTexture(TextureID);
-	//				}
-	//			}
-	//		}
-
-	//		if (MembersList[j] == "textureBindings")
-	//		{
-	//			for (size_t k = 0; k < FE_MAX_TEXTURES_PER_MATERIAL; k++)
-	//			{
-	//				if (Root["materials"][MaterialsList[i]]["textureBindings"].isMember(std::to_string(k).c_str()))
-	//				{
-	//					int Binding = Root["materials"][MaterialsList[i]]["textureBindings"][std::to_string(k).c_str()].asInt();
-	//					NewMaterial->TextureBindings[k] = Binding;
-	//				}
-	//			}
-	//		}
-
-	//		if (MembersList[j] == "textureChannels")
-	//		{
-	//			for (size_t k = 0; k < FE_MAX_TEXTURES_PER_MATERIAL; k++)
-	//			{
-	//				if (Root["materials"][MaterialsList[i]]["textureChannels"].isMember(std::to_string(k).c_str()))
-	//				{
-	//					int Binding = Root["materials"][MaterialsList[i]]["textureChannels"][std::to_string(k).c_str()].asInt();
-	//					NewMaterial->TextureChannels[k] = Binding;
-	//				}
-	//			}
-	//		}
-	//	}
-
-	//	NewMaterial->SetMetalness(Root["materials"][MaterialsList[i]]["metalness"].asFloat());
-	//	NewMaterial->SetRoughness(Root["materials"][MaterialsList[i]]["roughness"].asFloat());
-	//	NewMaterial->SetNormalMapIntensity(Root["materials"][MaterialsList[i]]["normalMapIntensity"].asFloat());
-	//	NewMaterial->SetAmbientOcclusionIntensity(Root["materials"][MaterialsList[i]]["ambientOcclusionIntensity"].asFloat());
-	//	NewMaterial->SetAmbientOcclusionMapIntensity(Root["materials"][MaterialsList[i]]["ambientOcclusionMapIntensity"].asFloat());
-	//	NewMaterial->SetRoughnessMapIntensity(Root["materials"][MaterialsList[i]]["roughnessMapIntensity"].asFloat());
-	//	NewMaterial->SetMetalnessMapIntensity(Root["materials"][MaterialsList[i]]["metalnessMapIntensity"].asFloat());
-	//}
-
-	//// correction for loading gameModels
-	//std::unordered_map<std::string, std::string> GameModelNameToID;
-	//// loading gameModels
-	//std::vector<Json::String> GameModelList = Root["gameModels"].getMemberNames();
-	//for (size_t i = 0; i < GameModelList.size(); i++)
-	//{
-	//	FEGameModel* NewGameModel = RESOURCE_MANAGER.CreateGameModel(RESOURCE_MANAGER.GetMesh(MeshNameToID[Root["gameModels"][GameModelList[i]]["mesh"].asCString()]),
-	//		RESOURCE_MANAGER.GetMaterial(MaterialNameToID[Root["gameModels"][GameModelList[i]]["material"].asCString()]),
-	//		GameModelList[i], Root["gameModels"][GameModelList[i]]["ID"].asString());
-	//	GameModelNameToID[GameModelList[i]] = Root["gameModels"][GameModelList[i]]["ID"].asString();
-
-	//	NewGameModel->SetScaleFactor(Root["gameModels"][GameModelList[i]]["scaleFactor"].asFloat());
-
-	//	bool bHaveLODLevels = Root["gameModels"][GameModelList[i]]["LODs"]["haveLODlevels"].asBool();
-	//	NewGameModel->SetUsingLOD(bHaveLODLevels);
-	//	if (bHaveLODLevels)
-	//	{
-	//		NewGameModel->SetCullDistance(Root["gameModels"][GameModelList[i]]["LODs"]["cullDistance"].asFloat());
-	//		NewGameModel->SetBillboardZeroRotaion(Root["gameModels"][GameModelList[i]]["LODs"]["billboardZeroRotaion"].asFloat());
-
-	//		size_t LODCount = Root["gameModels"][GameModelList[i]]["LODs"]["LODCount"].asInt();
-	//		for (size_t j = 0; j < LODCount; j++)
-	//		{
-	//			NewGameModel->SetLODMesh(j, RESOURCE_MANAGER.GetMesh(MeshNameToID[Root["gameModels"][GameModelList[i]]["LODs"][std::to_string(j)]["mesh"].asString()]));
-	//			NewGameModel->SetLODMaxDrawDistance(j, Root["gameModels"][GameModelList[i]]["LODs"][std::to_string(j)]["maxDrawDistance"].asFloat());
-
-	//			bool bLODBillboard = Root["gameModels"][GameModelList[i]]["LODs"][std::to_string(j)]["isBillboard"].asBool();
-	//			NewGameModel->SetIsLODBillboard(j, bLODBillboard);
-	//			if (bLODBillboard)
-	//				NewGameModel->SetBillboardMaterial(RESOURCE_MANAGER.GetMaterial(MaterialNameToID[Root["gameModels"][GameModelList[i]]["LODs"][std::to_string(j)]["billboardMaterial"].asString()]));
-	//		}
-	//	}
-	//}
-
-	//// correction for loading Terrains
-	//std::unordered_map<std::string, std::string> TerrainNameToID;
-	//// loading Terrains
-	//std::vector<Json::String> TerrainList = Root["terrains"].getMemberNames();
-	//for (size_t i = 0; i < TerrainList.size(); i++)
-	//{
-	//	FETerrain* NewTerrain = RESOURCE_MANAGER.CreateTerrain(false, TerrainList[i], Root["terrains"][TerrainList[i]]["ID"].asString());
-	//	TerrainNameToID[NewTerrain->GetName()] = NewTerrain->GetObjectID();
-	//	NewTerrain->HeightMap = RESOURCE_MANAGER.LoadFEHeightmap((ProjectFolder + Root["terrains"][TerrainList[i]]["heightMap"]["fileName"].asCString()).c_str(), NewTerrain, Root["terrains"][TerrainList[i]]["heightMap"]["name"].asCString());
-
-	//	NewTerrain->SetHightScale(Root["terrains"][TerrainList[i]]["hightScale"].asFloat());
-	//	NewTerrain->SetDisplacementScale(Root["terrains"][TerrainList[i]]["displacementScale"].asFloat());
-	//	glm::vec2 TileMult;
-	//	TileMult.x = Root["terrains"][TerrainList[i]]["tileMult"]["X"].asFloat();
-	//	TileMult.y = Root["terrains"][TerrainList[i]]["tileMult"]["Y"].asFloat();
-	//	NewTerrain->SetTileMult(TileMult);
-	//	NewTerrain->SetLODLevel(Root["terrains"][TerrainList[i]]["LODlevel"].asFloat());
-	//	NewTerrain->SetChunkPerSide(Root["terrains"][TerrainList[i]]["chunkPerSide"].asFloat());
-	//	NewTerrain->SetHightScale(Root["terrains"][TerrainList[i]]["hightScale"].asFloat());
-	//	NewTerrain->SetHightScale(Root["terrains"][TerrainList[i]]["hightScale"].asFloat());
-	//	ReadTransformToJson(Root["terrains"][TerrainList[i]]["transformation"], &NewTerrain->Transform);
-
-	//	SCENE.AddTerrain(NewTerrain);
-	//}
-
-	//// loading Entities
-	//std::vector<Json::String> EntityList = Root["entities"].getMemberNames();
-	//std::string EntityID;
-	//for (size_t i = 0; i < EntityList.size(); i++)
-	//{
-	//	if (Root["entities"][EntityList[i]].isMember("type"))
-	//	{
-	//		if (Root["entities"][EntityList[i]]["type"] == "FE_ENTITY_INSTANCED")
-	//		{
-	//			EntityID = Root["entities"][EntityList[i]]["ID"].asString();
-	//			FEEntityInstanced* InstancedEntity = SCENE.AddEntityInstanced(RESOURCE_MANAGER.GetGameModel(GameModelNameToID[Root["entities"][EntityList[i]]["gameModel"].asCString()]), EntityList[i], EntityID);
-	//			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(EntityID)->Transform);
-
-	//			InstancedEntity->SpawnInfo.Seed = Root["entities"][EntityList[i]]["spawnInfo"]["seed"].asInt();
-	//			InstancedEntity->SpawnInfo.ObjectCount = Root["entities"][EntityList[i]]["spawnInfo"]["objectCount"].asInt();
-	//			InstancedEntity->SpawnInfo.Radius = Root["entities"][EntityList[i]]["spawnInfo"]["radius"].asFloat();
-	//			InstancedEntity->SpawnInfo.SetMinScale(Root["entities"][EntityList[i]]["spawnInfo"]["minScale"].asFloat());
-	//			InstancedEntity->SpawnInfo.SetMaxScale(Root["entities"][EntityList[i]]["spawnInfo"]["maxScale"].asFloat());
-	//			InstancedEntity->SpawnInfo.RotationDeviation.x = Root["entities"][EntityList[i]]["spawnInfo"]["rotationDeviation.x"].asFloat();
-	//			InstancedEntity->SpawnInfo.RotationDeviation.y = Root["entities"][EntityList[i]]["spawnInfo"]["rotationDeviation.y"].asFloat();
-	//			InstancedEntity->SpawnInfo.RotationDeviation.z = Root["entities"][EntityList[i]]["spawnInfo"]["rotationDeviation.z"].asFloat();
-
-	//			if (Root["entities"][EntityList[i]]["snappedToTerrain"].asString() != "none")
-	//			{
-	//				FETerrain* Terrain = SCENE.GetTerrain(TerrainNameToID[Root["entities"][EntityList[i]]["snappedToTerrain"].asString()]);
-	//				Terrain->SnapInstancedEntity(InstancedEntity);
-	//			}
-
-	//			InstancedEntity->Populate(InstancedEntity->SpawnInfo);
-
-	//			if (Root["entities"][EntityList[i]]["modificationsToSpawn"].asBool())
-	//			{
-	//				std::ifstream InfoFile;
-	//				InfoFile.open(ProjectFolder + InstancedEntity->GetObjectID() + ".txt");
-
-	//				std::string InfoFileData((std::istreambuf_iterator<char>(InfoFile)), std::istreambuf_iterator<char>());
-
-	//				Json::Value EntityFileRoot;
-	//				JSONCPP_STRING Err;
-	//				Json::CharReaderBuilder Builder;
-
-	//				const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
-	//				if (!Reader->parse(InfoFileData.c_str(), InfoFileData.c_str() + InfoFileData.size(), &EntityFileRoot, &Err))
-	//					return;
-
-	//				size_t Count = EntityFileRoot["modifications"].size();
-	//				for (int j = 0; j < Count; j++)
-	//				{
-	//					if (EntityFileRoot["modifications"][j]["type"].asInt() == FE_CHANGE_DELETED)
-	//					{
-	//						InstancedEntity->DeleteInstance(EntityFileRoot["modifications"][j]["index"].asInt());
-	//					}
-	//					else if (EntityFileRoot["modifications"][j]["type"].asInt() == FE_CHANGE_MODIFIED)
-	//					{
-	//						glm::mat4 ModifedMatrix;
-	//						for (int k = 0; k < 4; k++)
-	//						{
-	//							for (int p = 0; p < 4; p++)
-	//							{
-	//								ModifedMatrix[k][p] = EntityFileRoot["modifications"][j]["modification"][k][p].asFloat();
-	//							}
-	//						}
-
-	//						InstancedEntity->ModifyInstance(EntityFileRoot["modifications"][j]["index"].asInt(), ModifedMatrix);
-	//					}
-	//					else if (EntityFileRoot["modifications"][j]["type"].asInt() == FE_CHANGE_ADDED)
-	//					{
-	//						glm::mat4 ModifedMatrix;
-	//						for (int k = 0; k < 4; k++)
-	//						{
-	//							for (int p = 0; p < 4; p++)
-	//							{
-	//								ModifedMatrix[k][p] = EntityFileRoot["modifications"][j]["modification"][k][p].asFloat();
-	//							}
-	//						}
-
-	//						InstancedEntity->AddInstance(ModifedMatrix);
-	//					}
-	//				}
-	//			}
-	//		}
-	//		else
-	//		{
-	//			SCENE.AddEntity(RESOURCE_MANAGER.GetGameModel(GameModelNameToID[Root["entities"][EntityList[i]]["gameModel"].asCString()]), EntityList[i], Root["entities"][EntityList[i]]["ID"].asString());
-	//			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(Root["entities"][EntityList[i]]["ID"].asString())->Transform);
-	//		}
-	//	}
-	//	else
-	//	{
-	//		SCENE.AddEntity(RESOURCE_MANAGER.GetGameModel(GameModelNameToID[Root["entities"][EntityList[i]]["gameModel"].asCString()]), EntityList[i], Root["entities"][EntityList[i]]["ID"].asString());
-	//		ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(Root["entities"][EntityList[i]]["ID"].asString())->Transform);
-	//	}
-	//}
-
-	//// loading Lights
-	//std::vector<Json::String> LightList = Root["lights"].getMemberNames();
-	//for (size_t i = 0; i < LightList.size(); i++)
-	//{
-	//	FELight* LightTest = SCENE.AddLight(static_cast<FE_OBJECT_TYPE>(Root["lights"][LightList[i]]["type"].asInt() + 9), LightList[i]);
-	//	FELight* Light = SCENE.GetLight(LightTest->GetObjectID());
-
-	//	// general light information
-	//	Light->SetIntensity(Root["lights"][LightList[i]]["intensity"].asFloat());
-	//	ReadTransformToJson(Root["lights"][LightList[i]]["transformation"], &Light->Transform);
-	//	Light->SetCastShadows(Root["lights"][LightList[i]]["castShadows"].asBool());
-	//	Light->SetLightEnabled(Root["lights"][LightList[i]]["enabled"].asBool());
-	//	Light->SetColor(glm::vec3(Root["lights"][LightList[i]]["color"]["R"].asFloat(),
-	//		Root["lights"][LightList[i]]["color"]["G"].asFloat(),
-	//		Root["lights"][LightList[i]]["color"]["B"].asFloat()));
-	//	Light->SetIsStaticShadowBias(Root["lights"][LightList[i]]["staticShadowBias"].asBool());
-	//	Light->SetShadowBias(Root["lights"][LightList[i]]["shadowBias"].asFloat());
-	//	Light->SetShadowBiasVariableIntensity(Root["lights"][LightList[i]]["shadowBiasVariableIntensity"].asFloat());
-
-	//	if (Light->GetType() == FE_POINT_LIGHT)
-	//	{
-	//		reinterpret_cast<FEPointLight*>(Light)->SetRange(Root["lights"][LightList[i]]["range"].asFloat());
-	//	}
-	//	else if (Light->GetType() == FE_SPOT_LIGHT)
-	//	{
-	//		reinterpret_cast<FESpotLight*>(Light)->SetSpotAngle(Root["lights"][LightList[i]]["spotAngle"].asFloat());
-	//		reinterpret_cast<FESpotLight*>(Light)->SetSpotAngleOuter(Root["lights"][LightList[i]]["spotAngleOuter"].asFloat());
-
-	//		reinterpret_cast<FESpotLight*>(Light)->SetDirection(glm::vec3(Root["lights"][LightList[i]]["direction"]["X"].asFloat(),
-	//			Root["lights"][LightList[i]]["direction"]["Y"].asFloat(),
-	//			Root["lights"][LightList[i]]["direction"]["Z"].asFloat()));
-	//	}
-	//	else if (Light->GetType() == FE_DIRECTIONAL_LIGHT)
-	//	{
-	//		FEDirectionalLight* DirectionalLight = reinterpret_cast<FEDirectionalLight*>(Light);
-
-	//		DirectionalLight->SetDirection(glm::vec3(Root["lights"][LightList[i]]["direction"]["X"].asFloat(),
-	//			Root["lights"][LightList[i]]["direction"]["Y"].asFloat(),
-	//			Root["lights"][LightList[i]]["direction"]["Z"].asFloat()));
-
-	//		DirectionalLight->SetActiveCascades(Root["lights"][LightList[i]]["CSM"]["activeCascades"].asInt());
-	//		DirectionalLight->SetShadowCoverage(Root["lights"][LightList[i]]["CSM"]["shadowCoverage"].asFloat());
-	//		DirectionalLight->SetCSMZDepth(Root["lights"][LightList[i]]["CSM"]["CSMZDepth"].asFloat());
-	//		DirectionalLight->SetCSMXYDepth(Root["lights"][LightList[i]]["CSM"]["CSMXYDepth"].asFloat());
-	//	}
-	//}
-
-	//// loading Effects settings
-	//// *********** Gamma Correction & Exposure ***********
-	//ENGINE.GetCamera()->SetGamma(Root["effects"]["Gamma Correction & Exposure"]["Gamma"].asFloat());
-	//ENGINE.GetCamera()->SetExposure(Root["effects"]["Gamma Correction & Exposure"]["Exposure"].asFloat());
-	//// *********** Anti-Aliasing(FXAA) ***********
-	//RENDERER.SetFXAASpanMax(Root["effects"]["Anti-Aliasing(FXAA)"]["FXAASpanMax"].asFloat());
-	//RENDERER.SetFXAAReduceMin(Root["effects"]["Anti-Aliasing(FXAA)"]["FXAAReduceMin"].asFloat());
-	//RENDERER.SetFXAAReduceMul(Root["effects"]["Anti-Aliasing(FXAA)"]["FXAAReduceMul"].asFloat());
-	//// *********** Bloom ***********
-	////PPEffect = RENDERER.getPostProcessEffect("bloom");
-	//RENDERER.SetBloomThreshold(Root["effects"]["Bloom"]["thresholdBrightness"].asFloat());
-	//RENDERER.SetBloomSize(Root["effects"]["Bloom"]["BloomSize"].asFloat());
-	//// *********** Depth of Field ***********
-	//RENDERER.SetDOFNearDistance(Root["effects"]["Depth of Field"]["Near distance"].asFloat());
-	//RENDERER.SetDOFFarDistance(Root["effects"]["Depth of Field"]["Far distance"].asFloat());
-	//RENDERER.SetDOFStrength(Root["effects"]["Depth of Field"]["Strength"].asFloat());
-	//RENDERER.SetDOFDistanceDependentStrength(Root["effects"]["Depth of Field"]["Distance dependent strength"].asFloat());
-	//// *********** Distance fog ***********
-	//RENDERER.SetDistanceFogEnabled(Root["effects"]["Distance fog"]["Density"].asFloat() > -1.0f ? true : false);
-	//RENDERER.SetDistanceFogDensity(Root["effects"]["Distance fog"]["Density"].asFloat());
-	//RENDERER.SetDistanceFogGradient(Root["effects"]["Distance fog"]["Gradient"].asFloat());
-	//// *********** Chromatic Aberration ***********
-	//RENDERER.SetChromaticAberrationIntensity(Root["effects"]["Chromatic Aberration"]["Shift strength"].asFloat());
-	//// *********** Sky ***********
-	//RENDERER.SetSkyEnabled(Root["effects"]["Sky"]["Enabled"].asFloat() > 0.0f ? true : false);
-	//RENDERER.SetDistanceToSky(Root["effects"]["Sky"]["Sphere size"].asFloat());
-
-	//// loading Camera settings
-	//ENGINE.GetCamera()->SetPosition(glm::vec3(Root["camera"]["position"]["X"].asFloat(),
-	//	Root["camera"]["position"]["Y"].asFloat(),
-	//	Root["camera"]["position"]["Z"].asFloat()));
-
-	//ENGINE.GetCamera()->SetFov(Root["camera"]["fov"].asFloat());
-	//ENGINE.GetCamera()->SetNearPlane(Root["camera"]["nearPlane"].asFloat());
-	//ENGINE.GetCamera()->SetFarPlane(Root["camera"]["farPlane"].asFloat());
-
-	//ENGINE.GetCamera()->SetYaw(Root["camera"]["yaw"].asFloat());
-	//ENGINE.GetCamera()->SetPitch(Root["camera"]["pitch"].asFloat());
-	//ENGINE.GetCamera()->SetRoll(Root["camera"]["roll"].asFloat());
-
-	//ENGINE.GetCamera()->SetAspectRatio(Root["camera"]["aspectRatio"].asFloat());
-
-	//SceneFile.close();
-}
-
 bool FEProject::IsModified()
 {
 	return bModified;
@@ -1840,14 +1492,16 @@ bool FEProject::ShouldIncludeInSceneFile(const FETexture* Texture)
 	Json::Value TerrainData;
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		const FETerrain* Terrain = SCENE.GetTerrain(TerrainList[i]);
-		if (Terrain->HeightMap->GetObjectID() == Texture->GetObjectID())
+		FEEntity* Terrain = SCENE.GetNewStyleEntity(TerrainList[i]);
+		FETerrainComponent& TerrainComponent = Terrain->GetComponent<FETerrainComponent>();
+
+		if (TerrainComponent.HeightMap->GetObjectID() == Texture->GetObjectID())
 			return false;
 
-		if (Terrain->LayerMaps[0] != nullptr && Terrain->LayerMaps[0]->GetObjectID() == Texture->GetObjectID())
+		if (TerrainComponent.LayerMaps[0] != nullptr && TerrainComponent.LayerMaps[0]->GetObjectID() == Texture->GetObjectID())
 			return false;
 
-		if (Terrain->LayerMaps[1] != nullptr && Terrain->LayerMaps[1]->GetObjectID() == Texture->GetObjectID())
+		if (TerrainComponent.LayerMaps[1] != nullptr && TerrainComponent.LayerMaps[1]->GetObjectID() == Texture->GetObjectID())
 			return false;
 	}
 

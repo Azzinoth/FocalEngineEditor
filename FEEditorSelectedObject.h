@@ -18,21 +18,18 @@ public:
 	void ReInitializeResources();
 	void SetOnUpdateFunc(void(*Func)());
 
-	FENewEntity* GetSelected() const;
-
-	FEEntity* GetEntity() const;
-	FETerrain* GetTerrain() const;
+	FEEntity* GetSelected() const;
 	FELight* GetLight() const;
 
 	bool GetDirtyFlag() const;
 	void SetDirtyFlag(bool NewValue);
 
-	void SetSelected(FENewEntity* SelectedObject);
+	void SetSelected(FEEntity* SelectedObject);
 	void Clear();
 
 	glm::dvec3 MouseRay(double MouseX, double MouseY) const;
 	void DetermineEntityUnderMouse(double MouseX, double MouseY);
-	std::vector<FENewEntity*> SceneEntitiesUnderMouse;
+	std::vector<FEEntity*> SceneEntitiesUnderMouse;
 
 	bool CheckForSelectionisNeeded = false;
 	int GetIndexOfObjectUnderMouse(double MouseX, double MouseY);
@@ -40,15 +37,16 @@ public:
 	void OnCameraUpdate() const;
 
 	int DebugGetLastColorIndex() const;
-	std::unordered_map<FEEntityInstanced*, std::vector<int>> InstancedSubObjectsInfo;
+	std::unordered_map<FEEntity*, std::vector<int>> InstancedSubObjectsInfo;
 	int InstancedSubObjectIndexSelected = -1;
 	void SetSelectedByIndex(size_t Index);
 
 	FEShader* FEPixelAccurateInstancedSelection = nullptr; 
 	FEShader* FEPixelAccurateSelection = nullptr;
 private:
-	FENewEntity* Container = nullptr;
-	
+	FEEntity* Container = nullptr;
+	FEEntity* DummyEntity = nullptr;
+
 	bool bDirtyFlag = false;
 
 	void(*OnUpdateFunc)() = nullptr;

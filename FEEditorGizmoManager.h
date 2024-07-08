@@ -22,38 +22,38 @@ public:
 	int GizmosState = TRANSFORM_GIZMOS;
 
 	// Parent Gizmo Entity
-	FENewEntity* ParentGizmoEntity = nullptr;
+	FEEntity* ParentGizmoEntity = nullptr;
 	FENaiveSceneGraphNode* ParentGizmoGraphNode = nullptr;
 
-	FENewEntity* TransformationXGizmoEntity = nullptr;
-	FENewEntity* TransformationYGizmoEntity = nullptr;
-	FENewEntity* TransformationZGizmoEntity = nullptr;
+	FEEntity* TransformationXGizmoEntity = nullptr;
+	FEEntity* TransformationYGizmoEntity = nullptr;
+	FEEntity* TransformationZGizmoEntity = nullptr;
 
 	bool bTransformationXGizmoActive = false;
 	bool bTransformationYGizmoActive = false;
 	bool bTransformationZGizmoActive = false;
 
-	FENewEntity* TransformationXYGizmoEntity = nullptr;
-	FENewEntity* TransformationYZGizmoEntity = nullptr;
-	FENewEntity* TransformationXZGizmoEntity = nullptr;
+	FEEntity* TransformationXYGizmoEntity = nullptr;
+	FEEntity* TransformationYZGizmoEntity = nullptr;
+	FEEntity* TransformationXZGizmoEntity = nullptr;
 
 	bool bTransformationXYGizmoActive = false;
 	bool bTransformationYZGizmoActive = false;
 	bool bTransformationXZGizmoActive = false;
 
 	// Scale part.
-	FENewEntity* ScaleXGizmoEntity = nullptr;
-	FENewEntity* ScaleYGizmoEntity = nullptr;
-	FENewEntity* ScaleZGizmoEntity = nullptr;
+	FEEntity* ScaleXGizmoEntity = nullptr;
+	FEEntity* ScaleYGizmoEntity = nullptr;
+	FEEntity* ScaleZGizmoEntity = nullptr;
 
 	bool bScaleXGizmoActive = false;
 	bool bScaleYGizmoActive = false;
 	bool bScaleZGizmoActive = false;
 
 	// Rotate part.
-	FENewEntity* RotateXGizmoEntity = nullptr;
-	FENewEntity* RotateYGizmoEntity = nullptr;
-	FENewEntity* RotateZGizmoEntity = nullptr;
+	FEEntity* RotateXGizmoEntity = nullptr;
+	FEEntity* RotateYGizmoEntity = nullptr;
+	FEEntity* RotateZGizmoEntity = nullptr;
 
 	bool bRotateXGizmoActive = false;
 	bool bRotateYGizmoActive = false;
