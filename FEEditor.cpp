@@ -9,27 +9,14 @@ bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
 	{
 		FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Object->GetObjectID())->GetComponent(0)->GameModel;
 
-		FEEntity* NewNewEntity = SCENE.AddNewStyleEntity(Object->GetName());
-		NewNewEntity->GetComponent<FEGameModelComponent>().GameModel = GameModel;
-		NewNewEntity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-		SELECTED.SetSelected(NewNewEntity);
+		FEEntity* Entity = SCENE.AddEntity(Object->GetName());
+		Entity->GetComponent<FEGameModelComponent>().GameModel = GameModel;
+		Entity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+		SELECTED.SetSelected(Entity);
 		PROJECT_MANAGER.GetCurrent()->SetModified(true);
 
 		return true;
 	}
-
-	// FIX ME!
-	//if (Object->GetType() == FE_PREFAB)
-	//{
-	//	FEEntity* NewEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Object->GetObjectID()));
-	//	FEEntity* NewNewEntity = SCENE.GetNewStyleEntityByOldStyleID(NewEntity->GetObjectID());
-	//	NewNewEntity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-	//	//NewEntity->Transform.SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-	//	SELECTED.SetSelected(NewNewEntity);
-	//	PROJECT_MANAGER.GetCurrent()->SetModified(true);
-
-	//	return true;
-	//}
 
 	return false;
 }
@@ -181,7 +168,7 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 			}
 			else
 			{
-				SCENE.DeleteNewEntity(SELECTED.GetSelected());
+				SCENE.DeleteEntity(SELECTED.GetSelected());
 			}
 
 			SELECTED.Clear();
@@ -200,17 +187,16 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 		if (!EDITOR.GetSceneEntityIDInClipboard().empty())
 		{
 			// FIX ME!
-			// There should be proper FEScene::DuplicateNewStyleEntity that will duplicate the entity and all its components
+			// There should be proper FEScene::DuplicateEntity that will duplicate the entity and all its components
 			// Also place it in same scene graph node as the original entity ?
-			FEEntity* EntityToCopy = SCENE.GetNewStyleEntity(EDITOR.GetSceneEntityIDInClipboard());
-			FEEntity* NewNewEntity = SCENE.AddNewStyleEntity(EntityToCopy->GetName() + "_Copy");
-			NewNewEntity->GetComponent<FETransformComponent>() = EntityToCopy->GetComponent<FETransformComponent>();
-			NewNewEntity->GetComponent<FETransformComponent>().SetPosition(EntityToCopy->GetComponent<FETransformComponent>().GetPosition() * 1.1f);
+			FEEntity* EntityToCopy = SCENE.GetEntity(EDITOR.GetSceneEntityIDInClipboard());
+			FEEntity* Entity = SCENE.AddEntity(EntityToCopy->GetName() + "_Copy");
+			Entity->GetComponent<FETransformComponent>() = EntityToCopy->GetComponent<FETransformComponent>();
+			Entity->GetComponent<FETransformComponent>().SetPosition(EntityToCopy->GetComponent<FETransformComponent>().GetPosition() * 1.1f);
 			if (EntityToCopy->HasComponent<FEGameModelComponent>())
-				NewNewEntity->AddComponent<FEGameModelComponent>(EntityToCopy->GetComponent<FEGameModelComponent>().GameModel);
+				Entity->AddComponent<FEGameModelComponent>(EntityToCopy->GetComponent<FEGameModelComponent>().GameModel);
 			
-			
-			SELECTED.SetSelected(NewNewEntity);
+			SELECTED.SetSelected(Entity);
 		}
 	}
 

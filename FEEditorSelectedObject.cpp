@@ -39,7 +39,7 @@ void FEEditorSelectedObject::InitializeResources()
 	const FEShaderParam ColorParam(glm::vec3(0.0f, 0.0f, 0.0f), "baseColor");
 	PixelAccurateSelectionMaterial->AddParameter(ColorParam);
 
-	DummyEntity = SCENE.AddNewStyleEntity("Editor_Selection_Dummy_Entity");
+	DummyEntity = SCENE.AddEntity("Editor_Selection_Dummy_Entity");
 }
 
 void FEEditorSelectedObject::ReInitializeResources()
@@ -52,7 +52,7 @@ void FEEditorSelectedObject::ReInitializeResources()
 	PixelAccurateSelectionFB->SetColorAttachment(RESOURCE_MANAGER.CreateTexture(GL_RGB, GL_RGB, ENGINE.GetRenderTargetWidth(), ENGINE.GetRenderTargetHeight()));
 
 	if (SCENE.GetEntityByName("Editor_Selection_Dummy_Entity").empty())
-		DummyEntity = SCENE.AddNewStyleEntity("Editor_Selection_Dummy_Entity");
+		DummyEntity = SCENE.AddEntity("Editor_Selection_Dummy_Entity");
 }
 
 void FEEditorSelectedObject::SetOnUpdateFunc(void(*Func)())
@@ -127,65 +127,50 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 	SELECTED.InstancedSubObjectsInfo.clear();
 
 	const glm::vec3 MouseRayVector = MouseRay(MouseX, MouseY);
-	const std::vector<std::string> EntityList = SCENE.GetNewEntityList();
+	const std::vector<std::string> EntityList = SCENE.GetEntityIDList();
 	for (size_t i = 0; i < EntityList.size(); i++)
 	{
 		float Distance = 0;
 
-		FEEntity* NewStyleEntity = SCENE.GetNewStyleEntity(EntityList[i]);
-		if (NewStyleEntity != nullptr /*&& Entity->HasComponent<FEGameModelComponent>()*/)
+		FEEntity* CurrentEntity = SCENE.GetEntity(EntityList[i]);
+		if (CurrentEntity != nullptr)
 		{
-			//FEGameModelComponent& GameModelComponent = Entity->GetComponent<FEGameModelComponent>();
-
 			FEAABB Box;
-			if (NewStyleEntity->HasComponent<FEGameModelComponent>() && !NewStyleEntity->HasComponent<FEInstancedComponent>())
+			if (CurrentEntity->HasComponent<FEGameModelComponent>() && !CurrentEntity->HasComponent<FEInstancedComponent>())
 			{
-				Box = NewStyleEntity->GetComponent<FEGameModelComponent>().GameModel->GetMesh()->GetAABB().Transform(NewStyleEntity->GetComponent<FETransformComponent>().GetTransformMatrix());
+				Box = CurrentEntity->GetComponent<FEGameModelComponent>().GameModel->GetMesh()->GetAABB().Transform(CurrentEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
 			}
-			else if (NewStyleEntity->HasComponent<FEGameModelComponent>() && NewStyleEntity->HasComponent<FEInstancedComponent>())
+			else if (CurrentEntity->HasComponent<FEGameModelComponent>() && CurrentEntity->HasComponent<FEInstancedComponent>())
 			{
-				Box = INSTANCED_RENDERING_SYSTEM.GetAABB(NewStyleEntity);
+				Box = INSTANCED_RENDERING_SYSTEM.GetAABB(CurrentEntity);
 			}
-			else if (NewStyleEntity->HasComponent<FETerrainComponent>())
+			else if (CurrentEntity->HasComponent<FETerrainComponent>())
 			{
-				Box = TERRAIN_SYSTEM.GetAABB(NewStyleEntity);
+				Box = TERRAIN_SYSTEM.GetAABB(CurrentEntity);
 			}
 
 			if (Box.RayIntersect(ENGINE.GetCamera()->GetPosition(), MouseRayVector, Distance))
 			{
-				if (NewStyleEntity->HasComponent<FEInstancedComponent>())
+				if (CurrentEntity->HasComponent<FEInstancedComponent>())
 				{
-					FEInstancedComponent& InstancedComponent = NewStyleEntity->GetComponent<FEInstancedComponent>();
-					if (INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(NewStyleEntity))
+					FEInstancedComponent& InstancedComponent = CurrentEntity->GetComponent<FEInstancedComponent>();
+					if (INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(CurrentEntity))
 					{
-						// Check ME!
-						InstancedSubObjectsInfo[NewStyleEntity] = std::vector<int>();
+						InstancedSubObjectsInfo[CurrentEntity] = std::vector<int>();
 						for (size_t j = 0; j < InstancedComponent.IndividualInstancedAABB.size(); j++)
 						{
 							if (InstancedComponent.IndividualInstancedAABB[j].RayIntersect(ENGINE.GetCamera()->GetPosition(), MouseRayVector, Distance))
 							{
-								InstancedSubObjectsInfo[NewStyleEntity].push_back(static_cast<int>(j));
+								InstancedSubObjectsInfo[CurrentEntity].push_back(static_cast<int>(j));
 							}
 						}
 					}
 				}
 
-				SELECTED.SceneEntitiesUnderMouse.push_back(NewStyleEntity);
+				SELECTED.SceneEntitiesUnderMouse.push_back(CurrentEntity);
 			}
 		}
 	}
-
-	// FIX ME!
-	/*const std::vector<std::string> TerrainList = SCENE.GetTerrainList();
-	for (size_t i = 0; i < TerrainList.size(); i++)
-	{
-		float Distance = 0;
-		FEAABB Box = SCENE.GetTerrain(TerrainList[i])->GetAABB();
-		if (Box.RayIntersect(ENGINE.GetCamera()->GetPosition(), MouseRayVector, Distance))
-		{
-			SELECTED.SceneEntitiesUnderMouse.push_back(SCENE.GetTerrain(TerrainList[i]));
-		}
-	}*/
 }
 
 int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, const double MouseY)
@@ -279,7 +264,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			int g = ((LastColorShiftIndex + 1) >> 8) & 255;
 			int b = ((LastColorShiftIndex + 1) >> 16) & 255;
 
-			static FEEntity* DummyEntity = SCENE.AddNewStyleEntity("DummyEntity");
+			static FEEntity* DummyEntity = SCENE.AddEntity("DummyEntity");
 			if (!DummyEntity->HasComponent<FEGameModelComponent>())
 				DummyEntity->AddComponent<FEGameModelComponent>();
 			
@@ -506,17 +491,4 @@ void FEEditorSelectedObject::SetSelectedByIndex(const size_t Index)
 	Container = SceneEntitiesUnderMouse[Index];
 	if (OnUpdateFunc != nullptr)
 		OnUpdateFunc();
-}
-
-FELight* FEEditorSelectedObject::GetLight() const
-{
-	if (Container == nullptr)
-		return nullptr;
-
-	if (Container->GetType() == FE_DIRECTIONAL_LIGHT || Container->GetType() == FE_SPOT_LIGHT || Container->GetType() == FE_POINT_LIGHT)
-	{
-		return SCENE.GetLight(Container->GetObjectID());
-	}
-
-	return nullptr;
 }

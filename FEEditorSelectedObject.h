@@ -19,7 +19,6 @@ public:
 	void SetOnUpdateFunc(void(*Func)());
 
 	FEEntity* GetSelected() const;
-	FELight* GetLight() const;
 
 	bool GetDirtyFlag() const;
 	void SetDirtyFlag(bool NewValue);

@@ -19,7 +19,7 @@ void FEEditorPreviewManager::InitializeResources()
 	PreviewFB = RESOURCE_MANAGER.CreateFramebuffer(FE_COLOR_ATTACHMENT | FE_DEPTH_ATTACHMENT, 128, 128);
 	PreviewGameModel = new FEGameModel(nullptr, nullptr, "editorPreviewGameModel");
 	PreviewPrefab = new FEPrefab(PreviewGameModel, "editorPreviewPrefab");
-	PreviewEntity = SCENE.AddNewStyleEntity("editorPreviewEntity");
+	PreviewEntity = SCENE.AddEntity("editorPreviewEntity");
 	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel).SetVisibility(false);
 	MeshPreviewMaterial = RESOURCE_MANAGER.CreateMaterial("meshPreviewMaterial");
 	RESOURCE_MANAGER.MakeMaterialStandard(MeshPreviewMaterial);
@@ -32,12 +32,22 @@ void FEEditorPreviewManager::InitializeResources()
 																					   "607A53601357077F03770357"/*"FEMeshPreviewShader"*/);
 
 	RESOURCE_MANAGER.MakeShaderStandard(MeshPreviewMaterial->Shader);
+
+	//LocalLightEntity = SCENE.AddEntity("EditorPreview LightEntity");
+	//FELightComponent& LightComponent = LocalLightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
+	//LocalLightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
+	//LightComponent.SetIntensity(10.0f);
 }
 
 void FEEditorPreviewManager::ReInitializeEntities()
 {
-	PreviewEntity = SCENE.AddNewStyleEntity("editorPreviewEntity");
+	PreviewEntity = SCENE.AddEntity("editorPreviewEntity");
 	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel).SetVisibility(false);
+
+	/*LocalLightEntity = SCENE.AddEntity("EditorPreview LightEntity");
+	FELightComponent& LightComponent = LocalLightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
+	LocalLightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
+	LightComponent.SetIntensity(10.0f);*/
 }
 
 void FEEditorPreviewManager::UpdateAll()
@@ -96,6 +106,37 @@ void FEEditorPreviewManager::BeforePreviewActions()
 	ENGINE.GetCamera()->SetYaw(0.0f);
 
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+
+	FEEntity* CurrentLightEntity = nullptr;
+	std::vector< std::string> LightsIDList = SCENE.GetEntityIDListWith<FELightComponent>();
+	for (size_t i = 0; i < LightsIDList.size(); i++)
+	{
+		FEEntity* LightEntity = SCENE.GetEntity(LightsIDList[i]);
+		FETransformComponent& TransformComponent = LightEntity->GetComponent<FETransformComponent>();
+		FELightComponent& LightComponent = LightEntity->GetComponent<FELightComponent>();
+
+		if (LightComponent.GetType() == FE_DIRECTIONAL_LIGHT)
+		{
+			CurrentLightEntity = LightEntity;
+			break;
+		}
+	}
+	FETransformComponent& TransformComponent = CurrentLightEntity->GetComponent<FETransformComponent>();
+	FELightComponent& LightComponent = CurrentLightEntity->GetComponent<FELightComponent>();
+
+	RegularLightWorldMatrix = TransformComponent.GetWorldMatrix();
+
+	RegularLightRotation = TransformComponent.GetRotation();
+	TransformComponent.SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
+	TransformComponent.ForceSetWorldMatrix(TransformComponent.GetLocalMatrix());
+
+	RegularLightIntensity = LightComponent.GetIntensity();
+	LightComponent.SetIntensity(10.0f);
+
+	//LocalLightEntity->GetComponent<FELightComponent>().SetLightEnabled(true);
+
+	bIsRegularFogEnabled = RENDERER.IsDistanceFogEnabled();
+	RENDERER.SetDistanceFogEnabled(false);
 }
 
 void FEEditorPreviewManager::AfterPreviewActions()
@@ -114,6 +155,30 @@ void FEEditorPreviewManager::AfterPreviewActions()
 	ENGINE.SetClearColor(OriginalClearColor);
 
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	//LocalLightEntity->GetComponent<FELightComponent>().SetLightEnabled(false);
+
+	FEEntity* CurrentLightEntity = nullptr;
+	std::vector< std::string> LightsIDList = SCENE.GetEntityIDListWith<FELightComponent>();
+	for (size_t i = 0; i < LightsIDList.size(); i++)
+	{
+		FEEntity* LightEntity = SCENE.GetEntity(LightsIDList[i]);
+		FETransformComponent& TransformComponent = LightEntity->GetComponent<FETransformComponent>();
+		FELightComponent& LightComponent = LightEntity->GetComponent<FELightComponent>();
+
+		if (LightComponent.GetType() == FE_DIRECTIONAL_LIGHT)
+		{
+			CurrentLightEntity = LightEntity;
+			break;
+		}
+	}
+	FETransformComponent& TransformComponent = CurrentLightEntity->GetComponent<FETransformComponent>();
+	FELightComponent& LightComponent = CurrentLightEntity->GetComponent<FELightComponent>();
+
+	TransformComponent.SetRotation(RegularLightRotation);
+	TransformComponent.ForceSetWorldMatrix(RegularLightWorldMatrix);
+	LightComponent.SetIntensity(RegularLightIntensity);
+
+	RENDERER.SetDistanceFogEnabled(bIsRegularFogEnabled);
 }
 
 void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
@@ -127,9 +192,8 @@ void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 
 	BeforePreviewActions();
 
-	//FEAABB MeshAABB = PreviewEntity->GetAABB();
 	FEAABB MeshAABB = PreviewEntity->GetComponent<FEGameModelComponent>().GameModel->Mesh->GetAABB();
-	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetTransformMatrix());
+	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
 	const glm::vec3 Min = MeshAABB.GetMin();
 	const glm::vec3 Max = MeshAABB.GetMax();
 
@@ -137,31 +201,12 @@ void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 	const float YSize = sqrt((Max.y - Min.y) * (Max.y - Min.y));
 	const float ZSize = sqrt((Max.z - Min.z) * (Max.z - Min.z));
 
-	FEDirectionalLight* CurrentDirectionalLight = nullptr;
-	const std::vector<std::string> LightList = SCENE.GetLightsList();
-	for (size_t i = 0; i < LightList.size(); i++)
-	{
-		if (SCENE.GetLight(LightList[i])->GetType() == FE_DIRECTIONAL_LIGHT)
-		{
-			CurrentDirectionalLight = reinterpret_cast<FEDirectionalLight*>(SCENE.GetLight(LightList[i]));
-			break;
-		}
-	}
-	const glm::vec3 RegularLightRotation = CurrentDirectionalLight->Transform.GetRotation();
-	CurrentDirectionalLight->Transform.SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
-
-	const float RegularLightIntensity = CurrentDirectionalLight->GetIntensity();
-	CurrentDirectionalLight->SetIntensity(10.0f);
-
 	// invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(Max.x - XSize / 2.0f, Max.y - YSize / 2.0f, Max.z - ZSize / 2.0f));
 	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 
 	// Rendering mesh to texture.
 	RENDERER.RenderGameModelComponent(PreviewEntity->GetComponent<FEGameModelComponent>(), PreviewEntity->GetComponent<FETransformComponent>(), ENGINE.GetCamera());
-
-	CurrentDirectionalLight->Transform.SetRotation(RegularLightRotation);
-	CurrentDirectionalLight->SetIntensity(RegularLightIntensity);
 
 	AfterPreviewActions();
 
@@ -210,22 +255,6 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 	if (PreviewMaterial == nullptr)
 		return;
 
-	FEDirectionalLight* CurrentDirectionalLight = nullptr;
-	const std::vector<std::string> LightList = SCENE.GetLightsList();
-	for (size_t i = 0; i < LightList.size(); i++)
-	{
-		if (SCENE.GetLight(LightList[i])->GetType() == FE_DIRECTIONAL_LIGHT)
-		{
-			CurrentDirectionalLight = reinterpret_cast<FEDirectionalLight*>(SCENE.GetLight(LightList[i]));
-			break;
-		}
-	}
-	const glm::vec3 RegularLightRotation = CurrentDirectionalLight->Transform.GetRotation();
-	CurrentDirectionalLight->Transform.SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
-
-	const float RegularLightIntensity = CurrentDirectionalLight->GetIntensity();
-	CurrentDirectionalLight->SetIntensity(10.0f);
-
 	PreviewGameModel->Mesh = RESOURCE_MANAGER.GetMesh("7F251E3E0D08013E3579315F"/*"sphere"*/);
 	PreviewGameModel->Material = PreviewMaterial;
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
@@ -235,9 +264,6 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 
 	// Rendering material to texture
 	RENDERER.RenderGameModelComponentForward(PreviewEntity->GetComponent<FEGameModelComponent>(), PreviewEntity->GetComponent<FETransformComponent>(), ENGINE.GetCamera(), true);
-
-	CurrentDirectionalLight->Transform.SetRotation(RegularLightRotation);
-	CurrentDirectionalLight->SetIntensity(RegularLightIntensity);
 
 	AfterPreviewActions();
 
@@ -316,25 +342,6 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 	if (GameModel == nullptr)
 		return;
 
-	FEDirectionalLight* CurrentDirectionalLight = nullptr;
-	const std::vector<std::string> LightList = SCENE.GetLightsList();
-	for (size_t i = 0; i < LightList.size(); i++)
-	{
-		if (SCENE.GetLight(LightList[i])->GetType() == FE_DIRECTIONAL_LIGHT)
-		{
-			CurrentDirectionalLight = reinterpret_cast<FEDirectionalLight*>(SCENE.GetLight(LightList[i]));
-			break;
-		}
-	}
-	const glm::vec3 RegularLightRotation = CurrentDirectionalLight->Transform.GetRotation();
-	CurrentDirectionalLight->Transform.SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
-
-	const float RegularLightIntensity = CurrentDirectionalLight->GetIntensity();
-	CurrentDirectionalLight->SetIntensity(10.0f);
-
-	const bool RegularFog = RENDERER.IsDistanceFogEnabled();
-	RENDERER.SetDistanceFogEnabled(false);
-
 	PreviewGameModel->Mesh = GameModel->Mesh;
 	PreviewGameModel->Material = GameModel->Material;
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
@@ -342,7 +349,7 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 
 	//FEAABB MeshAABB = PreviewEntity->GetAABB();
 	FEAABB MeshAABB = PreviewEntity->GetComponent<FEGameModelComponent>().GameModel->Mesh->GetAABB();
-	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetTransformMatrix());
+	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
 	const glm::vec3 min = MeshAABB.GetMin();
 	const glm::vec3 max = MeshAABB.GetMax();
 
@@ -356,11 +363,6 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 
 	// rendering game model to texture
 	RENDERER.RenderGameModelComponentForward(PreviewEntity->GetComponent<FEGameModelComponent>(), PreviewEntity->GetComponent<FETransformComponent>(), ENGINE.GetCamera(), true);
-
-	CurrentDirectionalLight->Transform.SetRotation(RegularLightRotation);
-	CurrentDirectionalLight->SetIntensity(RegularLightIntensity);
-
-	RENDERER.SetDistanceFogEnabled(RegularFog);
 
 	AfterPreviewActions();
 
@@ -377,22 +379,6 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 	if (GameModel == nullptr)
 		return;
 
-	FEDirectionalLight* CurrentDirectionalLight = nullptr;
-	const std::vector<std::string> LightList = SCENE.GetLightsList();
-	for (size_t i = 0; i < LightList.size(); i++)
-	{
-		if (SCENE.GetLight(LightList[i])->GetType() == FE_DIRECTIONAL_LIGHT)
-		{
-			CurrentDirectionalLight = reinterpret_cast<FEDirectionalLight*>(SCENE.GetLight(LightList[i]));
-			break;
-		}
-	}
-	const glm::vec3 RegularLightRotation = CurrentDirectionalLight->Transform.GetRotation();
-	CurrentDirectionalLight->Transform.SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
-
-	const float RegularLightIntensity = CurrentDirectionalLight->GetIntensity();
-	CurrentDirectionalLight->SetIntensity(10.0f);
-
 	PreviewGameModel->Mesh = GameModel->Mesh;
 	PreviewGameModel->Material = GameModel->Material;
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
@@ -405,7 +391,7 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 
 	//FEAABB MeshAABB = PreviewEntity->GetAABB();
 	FEAABB MeshAABB = PreviewEntity->GetComponent<FEGameModelComponent>().GameModel->Mesh->GetAABB();
-	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetTransformMatrix());
+	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
 	const glm::vec3 min = MeshAABB.GetMin();
 	const glm::vec3 max = MeshAABB.GetMax();
 
@@ -419,9 +405,6 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 
 	// rendering game model to texture
 	RENDERER.RenderGameModelComponentForward(PreviewEntity->GetComponent<FEGameModelComponent>(), PreviewEntity->GetComponent<FETransformComponent>(), ENGINE.GetCamera(), true);
-
-	CurrentDirectionalLight->Transform.SetRotation(RegularLightRotation);
-	CurrentDirectionalLight->SetIntensity(RegularLightIntensity);
 
 	AfterPreviewActions();
 
@@ -481,25 +464,6 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 	if (GameModel == nullptr)
 		return;
 
-	FEDirectionalLight* CurrentDirectionalLight = nullptr;
-	const std::vector<std::string> LightList = SCENE.GetLightsList();
-	for (size_t i = 0; i < LightList.size(); i++)
-	{
-		if (SCENE.GetLight(LightList[i])->GetType() == FE_DIRECTIONAL_LIGHT)
-		{
-			CurrentDirectionalLight = reinterpret_cast<FEDirectionalLight*>(SCENE.GetLight(LightList[i]));
-			break;
-		}
-	}
-	const glm::vec3 RegularLightRotation = CurrentDirectionalLight->Transform.GetRotation();
-	CurrentDirectionalLight->Transform.SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
-
-	const float RegularLightIntensity = CurrentDirectionalLight->GetIntensity();
-	CurrentDirectionalLight->SetIntensity(10.0f);
-
-	const bool RegularFog = RENDERER.IsDistanceFogEnabled();
-	RENDERER.SetDistanceFogEnabled(false);
-
 	//Fix ME!
 	//PreviewEntity->Prefab = Prefab;
 	PreviewEntity->GetComponent<FEGameModelComponent>().GameModel = GameModel;
@@ -509,7 +473,7 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 	//PreviewEntity->SetDirtyFlag(true);
 	//FEAABB MeshAABB = PreviewEntity->GetAABB();
 	FEAABB MeshAABB = PreviewEntity->GetComponent<FEGameModelComponent>().GameModel->Mesh->GetAABB();
-	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetTransformMatrix());
+	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
 	const glm::vec3 min = MeshAABB.GetMin();
 	const glm::vec3 max = MeshAABB.GetMax();
 
@@ -526,11 +490,6 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 
 	//PreviewEntity->Prefab = PreviewPrefab;
 	PreviewEntity->GetComponent<FEGameModelComponent>().GameModel = PreviewGameModel;
-
-	CurrentDirectionalLight->Transform.SetRotation(RegularLightRotation);
-	CurrentDirectionalLight->SetIntensity(RegularLightIntensity);
-
-	RENDERER.SetDistanceFogEnabled(RegularFog);
 
 	AfterPreviewActions();
 
@@ -586,27 +545,27 @@ FETexture* FEEditorPreviewManager::GetPrefabPreview(const std::string PrefabID)
 
 void FEEditorPreviewManager::Clear()
 {
-	auto iterator = MeshPreviewTextures.begin();
-	while (iterator != MeshPreviewTextures.end())
+	auto MeshIterator = MeshPreviewTextures.begin();
+	while (MeshIterator != MeshPreviewTextures.end())
 	{
-		delete iterator->second;
-		iterator++;
+		delete MeshIterator->second;
+		MeshIterator++;
 	}
 	MeshPreviewTextures.clear();
 
-	iterator = MaterialPreviewTextures.begin();
-	while (iterator != MaterialPreviewTextures.end())
+	auto MaterialIterator = MaterialPreviewTextures.begin();
+	while (MaterialIterator != MaterialPreviewTextures.end())
 	{
-		delete iterator->second;
-		iterator++;
+		delete MaterialIterator->second;
+		MaterialIterator++;
 	}
 	MaterialPreviewTextures.clear();
 
-	iterator = GameModelPreviewTextures.begin();
-	while (iterator != GameModelPreviewTextures.end())
+	auto GameModelIterator = GameModelPreviewTextures.begin();
+	while (GameModelIterator != GameModelPreviewTextures.end())
 	{
-		delete iterator->second;
-		iterator++;
+		delete GameModelIterator->second;
+		GameModelIterator++;
 	}
 	GameModelPreviewTextures.clear();
 }

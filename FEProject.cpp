@@ -674,11 +674,11 @@ void FEProject::SaveScene(bool bFullSave)
 	//Root["entities"] = EntityData;
 
 	// Saving Terrains.
-	std::vector<std::string> TerrainList = SCENE.GetTerrainList();
+	std::vector<std::string> TerrainList = SCENE.GetEntityIDListWith<FETerrainComponent>();
 	Json::Value TerrainData;
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		FEEntity* Terrain = SCENE.GetNewStyleEntity(TerrainList[i]);
+		FEEntity* Terrain = SCENE.GetEntity(TerrainList[i]);
 		FETerrainComponent& TerrainComponent = Terrain->GetComponent<FETerrainComponent>();
 
 		TerrainData[Terrain->GetObjectID()]["ID"] = Terrain->GetObjectID();
@@ -730,60 +730,60 @@ void FEProject::SaveScene(bool bFullSave)
 	}
 	Root["terrains"] = TerrainData;
 
-	// Saving Lights.
-	std::vector<std::string> LightList = SCENE.GetLightsList();
-	Json::Value LightData;
-	for (size_t i = 0; i < LightList.size(); i++)
-	{
-		FELight* Light = SCENE.GetLight(LightList[i]);
+	//// Saving Lights.
+	//std::vector<std::string> LightList = SCENE.GetLightsList();
+	//Json::Value LightData;
+	//for (size_t i = 0; i < LightList.size(); i++)
+	//{
+	//	FELight* Light = SCENE.GetLight(LightList[i]);
 
-		// general light information
-		LightData[Light->GetObjectID()]["ID"] = Light->GetObjectID();
-		LightData[Light->GetObjectID()]["type"] = Light->GetType();
-		LightData[Light->GetObjectID()]["name"] = Light->GetName();
-		LightData[Light->GetObjectID()]["intensity"] = Light->GetIntensity();
-		WriteTransformToJson(LightData[Light->GetObjectID()]["transformation"], &Light->Transform);
-		LightData[Light->GetObjectID()]["castShadows"] = Light->IsCastShadows();
-		LightData[Light->GetObjectID()]["enabled"] = Light->IsLightEnabled();
-		LightData[Light->GetObjectID()]["color"]["R"] = Light->GetColor()[0];
-		LightData[Light->GetObjectID()]["color"]["G"] = Light->GetColor()[1];
-		LightData[Light->GetObjectID()]["color"]["B"] = Light->GetColor()[2];
-		LightData[Light->GetObjectID()]["staticShadowBias"] = Light->IsStaticShadowBias();
-		LightData[Light->GetObjectID()]["shadowBias"] = Light->GetShadowBias();
-		LightData[Light->GetObjectID()]["shadowBiasVariableIntensity"] = Light->GetShadowBiasVariableIntensity();
-		LightData[Light->GetObjectID()]["shadowBlurFactor"] = Light->GetShadowBlurFactor();
+	//	// general light information
+	//	LightData[Light->GetObjectID()]["ID"] = Light->GetObjectID();
+	//	LightData[Light->GetObjectID()]["type"] = Light->GetType();
+	//	LightData[Light->GetObjectID()]["name"] = Light->GetName();
+	//	LightData[Light->GetObjectID()]["intensity"] = Light->GetIntensity();
+	//	WriteTransformToJson(LightData[Light->GetObjectID()]["transformation"], &Light->Transform);
+	//	LightData[Light->GetObjectID()]["castShadows"] = Light->IsCastShadows();
+	//	LightData[Light->GetObjectID()]["enabled"] = Light->IsLightEnabled();
+	//	LightData[Light->GetObjectID()]["color"]["R"] = Light->GetColor()[0];
+	//	LightData[Light->GetObjectID()]["color"]["G"] = Light->GetColor()[1];
+	//	LightData[Light->GetObjectID()]["color"]["B"] = Light->GetColor()[2];
+	//	LightData[Light->GetObjectID()]["staticShadowBias"] = Light->IsStaticShadowBias();
+	//	LightData[Light->GetObjectID()]["shadowBias"] = Light->GetShadowBias();
+	//	LightData[Light->GetObjectID()]["shadowBiasVariableIntensity"] = Light->GetShadowBiasVariableIntensity();
+	//	LightData[Light->GetObjectID()]["shadowBlurFactor"] = Light->GetShadowBlurFactor();
 
-		// Type specific information.
-		if (Light->GetType() == FE_DIRECTIONAL_LIGHT)
-		{
-			FEDirectionalLight* DirectionalLight = reinterpret_cast<FEDirectionalLight*>(Light);
+	//	// Type specific information.
+	//	if (Light->GetType() == FE_DIRECTIONAL_LIGHT)
+	//	{
+	//		FEDirectionalLight* DirectionalLight = reinterpret_cast<FEDirectionalLight*>(Light);
 
-			LightData[DirectionalLight->GetObjectID()]["direction"]["X"] = DirectionalLight->GetDirection()[0];
-			LightData[DirectionalLight->GetObjectID()]["direction"]["Y"] = DirectionalLight->GetDirection()[1];
-			LightData[DirectionalLight->GetObjectID()]["direction"]["Z"] = DirectionalLight->GetDirection()[2];
-			LightData[DirectionalLight->GetObjectID()]["CSM"]["activeCascades"] = DirectionalLight->GetActiveCascades();
-			LightData[DirectionalLight->GetObjectID()]["CSM"]["shadowCoverage"] = DirectionalLight->GetShadowCoverage();
-			LightData[DirectionalLight->GetObjectID()]["CSM"]["CSMZDepth"] = DirectionalLight->GetCSMZDepth();
-			LightData[DirectionalLight->GetObjectID()]["CSM"]["CSMXYDepth"] = DirectionalLight->GetCSMXYDepth();
-		}
-		else if (Light->GetType() == FE_SPOT_LIGHT)
-		{
-			FESpotLight* SpotLight = reinterpret_cast<FESpotLight*>(Light);
+	//		LightData[DirectionalLight->GetObjectID()]["direction"]["X"] = DirectionalLight->GetDirection()[0];
+	//		LightData[DirectionalLight->GetObjectID()]["direction"]["Y"] = DirectionalLight->GetDirection()[1];
+	//		LightData[DirectionalLight->GetObjectID()]["direction"]["Z"] = DirectionalLight->GetDirection()[2];
+	//		LightData[DirectionalLight->GetObjectID()]["CSM"]["activeCascades"] = DirectionalLight->GetActiveCascades();
+	//		LightData[DirectionalLight->GetObjectID()]["CSM"]["shadowCoverage"] = DirectionalLight->GetShadowCoverage();
+	//		LightData[DirectionalLight->GetObjectID()]["CSM"]["CSMZDepth"] = DirectionalLight->GetCSMZDepth();
+	//		LightData[DirectionalLight->GetObjectID()]["CSM"]["CSMXYDepth"] = DirectionalLight->GetCSMXYDepth();
+	//	}
+	//	else if (Light->GetType() == FE_SPOT_LIGHT)
+	//	{
+	//		FESpotLight* SpotLight = reinterpret_cast<FESpotLight*>(Light);
 
-			LightData[SpotLight->GetObjectID()]["spotAngle"] = SpotLight->GetSpotAngle();
-			LightData[SpotLight->GetObjectID()]["spotAngleOuter"] = SpotLight->GetSpotAngleOuter();
-			LightData[SpotLight->GetObjectID()]["direction"]["X"] = SpotLight->GetDirection()[0];
-			LightData[SpotLight->GetObjectID()]["direction"]["Y"] = SpotLight->GetDirection()[1];
-			LightData[SpotLight->GetObjectID()]["direction"]["Z"] = SpotLight->GetDirection()[2];
-		}
-		else if (Light->GetType() == FE_POINT_LIGHT)
-		{
-			FEPointLight* PointLight = reinterpret_cast<FEPointLight*>(Light);
+	//		LightData[SpotLight->GetObjectID()]["spotAngle"] = SpotLight->GetSpotAngle();
+	//		LightData[SpotLight->GetObjectID()]["spotAngleOuter"] = SpotLight->GetSpotAngleOuter();
+	//		LightData[SpotLight->GetObjectID()]["direction"]["X"] = SpotLight->GetDirection()[0];
+	//		LightData[SpotLight->GetObjectID()]["direction"]["Y"] = SpotLight->GetDirection()[1];
+	//		LightData[SpotLight->GetObjectID()]["direction"]["Z"] = SpotLight->GetDirection()[2];
+	//	}
+	//	else if (Light->GetType() == FE_POINT_LIGHT)
+	//	{
+	//		FEPointLight* PointLight = reinterpret_cast<FEPointLight*>(Light);
 
-			LightData[PointLight->GetObjectID()]["range"] = PointLight->GetRange();
-		}
-	}
-	Root["lights"] = LightData;
+	//		LightData[PointLight->GetObjectID()]["range"] = PointLight->GetRange();
+	//	}
+	//}
+	//Root["lights"] = LightData;
 
 	// Saving Effects settings.
 	Json::Value EffectsData;
@@ -1046,10 +1046,10 @@ void FEProject::LoadScene()
 	std::vector<Json::String> TerrainList = Root["terrains"].getMemberNames();
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		FEEntity* NewEntity = SCENE.AddNewStyleEntity(Root["terrains"][TerrainList[i]]["name"].asString(), Root["terrains"][TerrainList[i]]["ID"].asString());
-		FETransformComponent& TransformComponent = NewEntity->GetComponent<FETransformComponent>();
-		FETerrainComponent& TerrainComponent = NewEntity->AddComponent<FETerrainComponent>();
-		TERRAIN_SYSTEM.LoadHeightMap((ProjectFolder + Root["terrains"][TerrainList[i]]["heightMap"]["fileName"].asCString()).c_str(), NewEntity);
+		FEEntity* Entity = SCENE.AddEntity(Root["terrains"][TerrainList[i]]["name"].asString(), Root["terrains"][TerrainList[i]]["ID"].asString());
+		FETransformComponent& TransformComponent = Entity->GetComponent<FETransformComponent>();
+		FETerrainComponent& TerrainComponent = Entity->AddComponent<FETerrainComponent>();
+		TERRAIN_SYSTEM.LoadHeightMap((ProjectFolder + Root["terrains"][TerrainList[i]]["heightMap"]["fileName"].asCString()).c_str(), Entity);
 
 		TerrainComponent.SetHightScale(Root["terrains"][TerrainList[i]]["hightScale"].asFloat());
 		TerrainComponent.SetDisplacementScale(Root["terrains"][TerrainList[i]]["displacementScale"].asFloat());
@@ -1078,7 +1078,7 @@ void FEProject::LoadScene()
 			{
 				if (Root["terrains"][TerrainList[i]]["layers"][j]["acive"].asBool())
 				{
-					TERRAIN_SYSTEM.ActivateVacantLayerSlot(NewEntity, RESOURCE_MANAGER.GetMaterial(Root["terrains"][TerrainList[i]]["layers"][j]["materialID"].asCString()));
+					TERRAIN_SYSTEM.ActivateVacantLayerSlot(Entity, RESOURCE_MANAGER.GetMaterial(Root["terrains"][TerrainList[i]]["layers"][j]["materialID"].asCString()));
 					TerrainComponent.GetLayerInSlot(j)->SetName(Root["terrains"][TerrainList[i]]["layers"][j]["name"].asCString());
 				}
 			}
@@ -1089,96 +1089,111 @@ void FEProject::LoadScene()
 	std::vector<Json::String> EntityList = Root["entities"].getMemberNames();
 	for (size_t i = 0; i < EntityList.size(); i++)
 	{
-		FEEntity* NewEntity = SCENE.AddNewStyleEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+		FEEntity* Entity = SCENE.AddEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
 
 		if (Root["entities"][EntityList[i]].isMember("type"))
 		{
 			if (Root["entities"][EntityList[i]]["type"] == "FE_ENTITY_INSTANCED")
 			{
-				FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString())->GetComponent(0)->GameModel;
-				FEGameModelComponent& GameModelComponent = NewEntity->AddComponent<FEGameModelComponent>(GameModel);
-				FEInstancedComponent& InstancedComponent = NewEntity->AddComponent<FEInstancedComponent>();
-
-				if (abs(ProjectVersion - 0.025f) <= FLT_EPSILON)
-					GameModelComponent.SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
-
-				ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &NewEntity->GetComponent<FETransformComponent>());
-
-				FESpawnInfo SpawnInfo;
-				SpawnInfo.Seed = Root["entities"][EntityList[i]]["spawnInfo"]["seed"].asInt();
-				SpawnInfo.ObjectCount = Root["entities"][EntityList[i]]["spawnInfo"]["objectCount"].asInt();
-				SpawnInfo.Radius = Root["entities"][EntityList[i]]["spawnInfo"]["radius"].asFloat();
-				SpawnInfo.SetMinScale(Root["entities"][EntityList[i]]["spawnInfo"]["minScale"].asFloat());
-				SpawnInfo.SetMaxScale(Root["entities"][EntityList[i]]["spawnInfo"]["maxScale"].asFloat());
-				SpawnInfo.RotationDeviation.x = Root["entities"][EntityList[i]]["spawnInfo"]["rotationDeviation.x"].asFloat();
-				SpawnInfo.RotationDeviation.y = Root["entities"][EntityList[i]]["spawnInfo"]["rotationDeviation.y"].asFloat();
-				SpawnInfo.RotationDeviation.z = Root["entities"][EntityList[i]]["spawnInfo"]["rotationDeviation.z"].asFloat();
-
-				if (Root["entities"][EntityList[i]]["snappedToTerrain"].asString() != "none")
+				// FIX ME! Converting Prefab to GameModels.
+				FEEntity* EntityWithFirstPrefab = Entity;
+				FEPrefab* OldPrefab = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString());
+				for (size_t c = 0; c < OldPrefab->ComponentsCount(); c++)
 				{
-					FEEntity* TerrainEntity = SCENE.GetNewStyleEntity(Root["entities"][EntityList[i]]["snappedToTerrain"].asString());
-					TERRAIN_SYSTEM.SnapInstancedEntity(TerrainEntity, NewEntity);
-
-					if (Root["entities"][EntityList[i]].isMember("terrainLayer"))
+					if (c > 0)
 					{
-						if (Root["entities"][EntityList[i]]["terrainLayer"].asInt() != -1)
-						{
-							TERRAIN_SYSTEM.ConnectInstancedEntityToLayer(TerrainEntity, NewEntity, Root["entities"][EntityList[i]]["terrainLayer"].asInt());
-						}
-
-						InstancedComponent.SetMinimalLayerIntensityToSpawn(Root["entities"][EntityList[i]]["minimalLayerIntensity"].asFloat());
+						Entity = SCENE.AddEntity(Root["entities"][EntityList[i]]["name"].asString() + "_Prefabs_" + std::to_string(c));
 					}
-				}
+					FEPrefabComponent* CurrentComponent = OldPrefab->GetComponent(static_cast<int>(c));
+					FEGameModel* GameModel = CurrentComponent->GameModel;
 
-				INSTANCED_RENDERING_SYSTEM.PopulateInstance(NewEntity, SpawnInfo);
+					//FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString())->GetComponent(0)->GameModel;
+					FEGameModelComponent& GameModelComponent = Entity->AddComponent<FEGameModelComponent>(GameModel);
+					FEInstancedComponent& InstancedComponent = Entity->AddComponent<FEInstancedComponent>();
 
-				if (Root["entities"][EntityList[i]]["modificationsToSpawn"].asBool())
-				{
-					std::ifstream InfoFile;
-					InfoFile.open(ProjectFolder + NewEntity->GetObjectID() + ".txt");
+					if (abs(ProjectVersion - 0.025f) <= FLT_EPSILON)
+						GameModelComponent.SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
 
-					std::string InfoFileData((std::istreambuf_iterator<char>(InfoFile)), std::istreambuf_iterator<char>());
+					ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &Entity->GetComponent<FETransformComponent>());
+					// FIX ME!
+					Entity->GetComponent<FETransformComponent>().Combine(CurrentComponent->Transform);
 
-					Json::Value EntityFileRoot;
-					JSONCPP_STRING Err;
-					Json::CharReaderBuilder Builder;
+					FESpawnInfo SpawnInfo;
+					SpawnInfo.Seed = Root["entities"][EntityList[i]]["spawnInfo"]["seed"].asInt();
+					SpawnInfo.ObjectCount = Root["entities"][EntityList[i]]["spawnInfo"]["objectCount"].asInt();
+					SpawnInfo.Radius = Root["entities"][EntityList[i]]["spawnInfo"]["radius"].asFloat();
+					SpawnInfo.SetMinScale(Root["entities"][EntityList[i]]["spawnInfo"]["minScale"].asFloat());
+					SpawnInfo.SetMaxScale(Root["entities"][EntityList[i]]["spawnInfo"]["maxScale"].asFloat());
+					SpawnInfo.RotationDeviation.x = Root["entities"][EntityList[i]]["spawnInfo"]["rotationDeviation.x"].asFloat();
+					SpawnInfo.RotationDeviation.y = Root["entities"][EntityList[i]]["spawnInfo"]["rotationDeviation.y"].asFloat();
+					SpawnInfo.RotationDeviation.z = Root["entities"][EntityList[i]]["spawnInfo"]["rotationDeviation.z"].asFloat();
 
-					const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
-					if (!Reader->parse(InfoFileData.c_str(), InfoFileData.c_str() + InfoFileData.size(), &EntityFileRoot, &Err))
-						return;
-
-					size_t Count = EntityFileRoot["modifications"].size();
-					for (int j = 0; j < Count; j++)
+					if (Root["entities"][EntityList[i]]["snappedToTerrain"].asString() != "none")
 					{
-						if (EntityFileRoot["modifications"][j]["type"].asInt() == FE_CHANGE_DELETED)
+						FEEntity* TerrainEntity = SCENE.GetEntity(Root["entities"][EntityList[i]]["snappedToTerrain"].asString());
+						TERRAIN_SYSTEM.SnapInstancedEntity(TerrainEntity, Entity);
+
+						if (Root["entities"][EntityList[i]].isMember("terrainLayer"))
 						{
-							INSTANCED_RENDERING_SYSTEM.DeleteIndividualInstance(NewEntity, EntityFileRoot["modifications"][j]["index"].asInt());
-						}
-						else if (EntityFileRoot["modifications"][j]["type"].asInt() == FE_CHANGE_MODIFIED)
-						{
-							glm::mat4 ModifedMatrix;
-							for (int k = 0; k < 4; k++)
+							if (Root["entities"][EntityList[i]]["terrainLayer"].asInt() != -1)
 							{
-								for (int p = 0; p < 4; p++)
-								{
-									ModifedMatrix[k][p] = EntityFileRoot["modifications"][j]["modification"][k][p].asFloat();
-								}
+								TERRAIN_SYSTEM.ConnectInstancedEntityToLayer(TerrainEntity, Entity, Root["entities"][EntityList[i]]["terrainLayer"].asInt());
 							}
 
-							INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(NewEntity, EntityFileRoot["modifications"][j]["index"].asInt(), ModifedMatrix);
+							InstancedComponent.SetMinimalLayerIntensityToSpawn(Root["entities"][EntityList[i]]["minimalLayerIntensity"].asFloat());
 						}
-						else if (EntityFileRoot["modifications"][j]["type"].asInt() == FE_CHANGE_ADDED)
-						{
-							glm::mat4 ModifedMatrix;
-							for (int k = 0; k < 4; k++)
-							{
-								for (int p = 0; p < 4; p++)
-								{
-									ModifedMatrix[k][p] = EntityFileRoot["modifications"][j]["modification"][k][p].asFloat();
-								}
-							}
+					}
 
-							INSTANCED_RENDERING_SYSTEM.AddIndividualInstance(NewEntity, ModifedMatrix);
+					INSTANCED_RENDERING_SYSTEM.PopulateInstance(Entity, SpawnInfo);
+
+					if (Root["entities"][EntityList[i]]["modificationsToSpawn"].asBool())
+					{
+						std::ifstream InfoFile;
+						InfoFile.open(ProjectFolder + EntityWithFirstPrefab->GetObjectID() + ".txt");
+
+						std::string InfoFileData((std::istreambuf_iterator<char>(InfoFile)), std::istreambuf_iterator<char>());
+
+						Json::Value EntityFileRoot;
+						JSONCPP_STRING Err;
+						Json::CharReaderBuilder Builder;
+
+						const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
+						if (!Reader->parse(InfoFileData.c_str(), InfoFileData.c_str() + InfoFileData.size(), &EntityFileRoot, &Err))
+							return;
+
+						size_t Count = EntityFileRoot["modifications"].size();
+						for (int j = 0; j < Count; j++)
+						{
+							if (EntityFileRoot["modifications"][j]["type"].asInt() == FE_CHANGE_DELETED)
+							{
+								INSTANCED_RENDERING_SYSTEM.DeleteIndividualInstance(Entity, EntityFileRoot["modifications"][j]["index"].asInt());
+							}
+							else if (EntityFileRoot["modifications"][j]["type"].asInt() == FE_CHANGE_MODIFIED)
+							{
+								glm::mat4 ModifedMatrix;
+								for (int k = 0; k < 4; k++)
+								{
+									for (int p = 0; p < 4; p++)
+									{
+										ModifedMatrix[k][p] = EntityFileRoot["modifications"][j]["modification"][k][p].asFloat();
+									}
+								}
+
+								INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(Entity, EntityFileRoot["modifications"][j]["index"].asInt(), ModifedMatrix);
+							}
+							else if (EntityFileRoot["modifications"][j]["type"].asInt() == FE_CHANGE_ADDED)
+							{
+								glm::mat4 ModifedMatrix;
+								for (int k = 0; k < 4; k++)
+								{
+									for (int p = 0; p < 4; p++)
+									{
+										ModifedMatrix[k][p] = EntityFileRoot["modifications"][j]["modification"][k][p].asFloat();
+									}
+								}
+
+								INSTANCED_RENDERING_SYSTEM.AddIndividualInstance(Entity, ModifedMatrix);
+							}
 						}
 					}
 				}
@@ -1192,7 +1207,7 @@ void FEProject::LoadScene()
 					//SCENE.AddEntity(TempPrefab, Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
 					
 					FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Root["entities"][EntityList[i]]["gameModel"].asCString());
-					NewEntity->AddComponent<FEGameModelComponent>(GameModel);
+					Entity->AddComponent<FEGameModelComponent>(GameModel);
 				}
 				else
 				{
@@ -1201,31 +1216,31 @@ void FEProject::LoadScene()
 															     Root["entities"][EntityList[i]]["ID"].asString());*/
 
 					FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString())->GetComponent(0)->GameModel;
-					NewEntity->AddComponent<FEGameModelComponent>(GameModel);
+					Entity->AddComponent<FEGameModelComponent>(GameModel);
 				}
 
 				if (abs(ProjectVersion - 0.025f) <= FLT_EPSILON)
 				{
 					//SCENE.GetEntity(EntityList[i])->SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
-					NewEntity->GetComponent<FEGameModelComponent>().SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
+					Entity->GetComponent<FEGameModelComponent>().SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
 				}
 					
-				ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &NewEntity->GetComponent<FETransformComponent>());
+				ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &Entity->GetComponent<FETransformComponent>());
 				/*ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(EntityList[i])->Transform);
-				FEEntity* NewEntity = SCENE.GetNewStyleEntityByOldStyleID(EntityList[i]);
-				if (NewEntity != nullptr)
+				FEEntity* Entity = SCENE.GetNewStyleEntityByOldStyleID(EntityList[i]);
+				if (Entity != nullptr)
 				{
-					NewEntity->GetComponent<FETransformComponent>() = SCENE.GetEntity(EntityList[i])->Transform;
+					Entity->GetComponent<FETransformComponent>() = SCENE.GetEntity(EntityList[i])->Transform;
 				}*/
 			}
 		}
 		// For compatibility with old projects.
 		else
 		{
-			//FEEntity* NewEntity = SCENE.AddNewStyleEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+			//FEEntity* Entity = SCENE.AddEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
 			FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString())->GetComponent(0)->GameModel;
-			NewEntity->AddComponent<FEGameModelComponent>(GameModel);
-			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &NewEntity->GetComponent<FETransformComponent>());
+			Entity->AddComponent<FEGameModelComponent>(GameModel);
+			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &Entity->GetComponent<FETransformComponent>());
 
 			/*SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
 							EntityList[i],
@@ -1236,58 +1251,63 @@ void FEProject::LoadScene()
 
 	if (abs(ProjectVersion - 0.025f) <= FLT_EPSILON)
 	{
-		int y = 0;
-		y++;
 		// Loading scene hierarchy.
 		SCENE.SceneGraph.FromJson(Root["sceneHierarchy"]);
 	}
 
-	// loading Lights
+	// Loading Lights.
 	std::vector<Json::String> LightList = Root["lights"].getMemberNames();
 	for (size_t i = 0; i < LightList.size(); i++)
 	{
-		SCENE.AddLight(static_cast<FE_OBJECT_TYPE>(Root["lights"][LightList[i]]["type"].asInt()), Root["lights"][LightList[i]]["name"].asCString(), Root["lights"][LightList[i]]["ID"].asCString());
-		FELight* Light = SCENE.GetLight(LightList[i]);
+		FEEntity* Entity = SCENE.AddEntity("Light Entity");
+		auto OldType = static_cast<FE_OBJECT_TYPE>(Root["lights"][LightList[i]]["type"].asInt());
+		FE_LIGHT_TYPE NewType = FE_DIRECTIONAL_LIGHT;
+		if (OldType == FE_POINT_LIGHT_DEPRECATED)
+		{
+			NewType = FE_POINT_LIGHT;
+		}
+		else if (OldType == FE_SPOT_LIGHT_DEPRECATED)
+		{
+			NewType = FE_SPOT_LIGHT;
+		}
+		FELightComponent& LightComponent = Entity->AddComponent<FELightComponent>(NewType);
 
-		// general light information
-		Light->SetIntensity(Root["lights"][LightList[i]]["intensity"].asFloat());
-		ReadTransformToJson(Root["lights"][LightList[i]]["transformation"], &Light->Transform);
-		Light->SetCastShadows(Root["lights"][LightList[i]]["castShadows"].asBool());
-		Light->SetLightEnabled(Root["lights"][LightList[i]]["enabled"].asBool());
-		Light->SetColor(glm::vec3(Root["lights"][LightList[i]]["color"]["R"].asFloat(),
-								  Root["lights"][LightList[i]]["color"]["G"].asFloat(),
-								  Root["lights"][LightList[i]]["color"]["B"].asFloat()));
-		Light->SetIsStaticShadowBias(Root["lights"][LightList[i]]["staticShadowBias"].asBool());
-		Light->SetShadowBias(Root["lights"][LightList[i]]["shadowBias"].asFloat());
-		Light->SetShadowBiasVariableIntensity(Root["lights"][LightList[i]]["shadowBiasVariableIntensity"].asFloat());
+		LightComponent.SetIntensity(Root["lights"][LightList[i]]["intensity"].asFloat());
+		ReadTransformToJson(Root["lights"][LightList[i]]["transformation"], &Entity->GetComponent<FETransformComponent>());
+		LightComponent.SetCastShadows(Root["lights"][LightList[i]]["castShadows"].asBool());
+		LightComponent.SetLightEnabled(Root["lights"][LightList[i]]["enabled"].asBool());
+		LightComponent.SetColor(glm::vec3(Root["lights"][LightList[i]]["color"]["R"].asFloat(),
+										  Root["lights"][LightList[i]]["color"]["G"].asFloat(),
+										  Root["lights"][LightList[i]]["color"]["B"].asFloat()));
+		LightComponent.SetIsStaticShadowBias(Root["lights"][LightList[i]]["staticShadowBias"].asBool());
+		LightComponent.SetShadowBias(Root["lights"][LightList[i]]["shadowBias"].asFloat());
+		LightComponent.SetShadowBiasVariableIntensity(Root["lights"][LightList[i]]["shadowBiasVariableIntensity"].asFloat());
 		if (ProjectVersion >= 0.02f && Root["lights"][LightList[i]].isMember("shadowBlurFactor"))
-			Light->SetShadowBlurFactor(Root["lights"][LightList[i]]["shadowBlurFactor"].asFloat());
+			LightComponent.SetShadowBlurFactor(Root["lights"][LightList[i]]["shadowBlurFactor"].asFloat());
 
-		if (Light->GetType() == FE_POINT_LIGHT)
+		if (LightComponent.GetType() == FE_POINT_LIGHT)
 		{
-			reinterpret_cast<FEPointLight*>(Light)->SetRange(Root["lights"][LightList[i]]["range"].asFloat());
+			LightComponent.SetRange(Root["lights"][LightList[i]]["range"].asFloat());
 		}
-		else if (Light->GetType() == FE_SPOT_LIGHT)
+		else if (LightComponent.GetType() == FE_SPOT_LIGHT)
 		{
-			reinterpret_cast<FESpotLight*>(Light)->SetSpotAngle(Root["lights"][LightList[i]]["spotAngle"].asFloat());
-			reinterpret_cast<FESpotLight*>(Light)->SetSpotAngleOuter(Root["lights"][LightList[i]]["spotAngleOuter"].asFloat());
+			LightComponent.SetSpotAngle(Root["lights"][LightList[i]]["spotAngle"].asFloat());
+			LightComponent.SetSpotAngleOuter(Root["lights"][LightList[i]]["spotAngleOuter"].asFloat());
 
-			reinterpret_cast<FESpotLight*>(Light)->SetDirection(glm::vec3(Root["lights"][LightList[i]]["direction"]["X"].asFloat(),
-				Root["lights"][LightList[i]]["direction"]["Y"].asFloat(),
-				Root["lights"][LightList[i]]["direction"]["Z"].asFloat()));
+			LightComponent.SetSpotAngle(Root["lights"][LightList[i]]["spotAngle"].asFloat());
+			LightComponent.SetSpotAngleOuter(Root["lights"][LightList[i]]["spotAngleOuter"].asFloat());
 		}
-		else if (Light->GetType() == FE_DIRECTIONAL_LIGHT)
+		else if (LightComponent.GetType() == FE_DIRECTIONAL_LIGHT)
 		{
-			FEDirectionalLight* DirectionalLight = reinterpret_cast<FEDirectionalLight*>(Light);
+			LightComponent.SetActiveCascades(Root["lights"][LightList[i]]["CSM"]["activeCascades"].asInt());
+			LightComponent.SetShadowCoverage(Root["lights"][LightList[i]]["CSM"]["shadowCoverage"].asFloat());
+			LightComponent.SetCSMZDepth(Root["lights"][LightList[i]]["CSM"]["CSMZDepth"].asFloat());
+			LightComponent.SetCSMXYDepth(Root["lights"][LightList[i]]["CSM"]["CSMXYDepth"].asFloat());
 
-			DirectionalLight->SetDirection(glm::vec3(Root["lights"][LightList[i]]["direction"]["X"].asFloat(),
-				Root["lights"][LightList[i]]["direction"]["Y"].asFloat(),
-				Root["lights"][LightList[i]]["direction"]["Z"].asFloat()));
-
-			DirectionalLight->SetActiveCascades(Root["lights"][LightList[i]]["CSM"]["activeCascades"].asInt());
-			DirectionalLight->SetShadowCoverage(Root["lights"][LightList[i]]["CSM"]["shadowCoverage"].asFloat());
-			DirectionalLight->SetCSMZDepth(Root["lights"][LightList[i]]["CSM"]["CSMZDepth"].asFloat());
-			DirectionalLight->SetCSMXYDepth(Root["lights"][LightList[i]]["CSM"]["CSMXYDepth"].asFloat());
+			LightComponent.SetActiveCascades(Root["lights"][LightList[i]]["CSM"]["activeCascades"].asInt());
+			LightComponent.SetShadowCoverage(Root["lights"][LightList[i]]["CSM"]["shadowCoverage"].asFloat());
+			LightComponent.SetCSMZDepth(Root["lights"][LightList[i]]["CSM"]["CSMZDepth"].asFloat());
+			LightComponent.SetCSMXYDepth(Root["lights"][LightList[i]]["CSM"]["CSMXYDepth"].asFloat());
 		}
 	}
 
@@ -1325,7 +1345,7 @@ void FEProject::LoadScene()
 	//SKY_DOME_SYSTEM.SetEnabled(Root["effects"]["Sky"]["Enabled"].asFloat() > 0.0f ? true : false);
 	//SKY_DOME_SYSTEM.SetDistanceToSky(Root["effects"]["Sky"]["Sphere size"].asFloat());
 	//Fix Me!
-	FEEntity* SkyDome = SCENE.AddNewStyleEntity("SkyDome");
+	FEEntity* SkyDome = SCENE.AddEntity("SkyDome");
 	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
 	SKY_DOME_SYSTEM.AddToEntity(SkyDome);
 
@@ -1488,11 +1508,11 @@ void FEProject::AddUnSavedObject(FEObject* Object)
 bool FEProject::ShouldIncludeInSceneFile(const FETexture* Texture)
 {
 	// Terrain should manage it's textures in a different way.
-	const std::vector<std::string> TerrainList = SCENE.GetTerrainList();
+	const std::vector<std::string> TerrainList = SCENE.GetEntityIDListWith<FETerrainComponent>();
 	Json::Value TerrainData;
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		FEEntity* Terrain = SCENE.GetNewStyleEntity(TerrainList[i]);
+		FEEntity* Terrain = SCENE.GetEntity(TerrainList[i]);
 		FETerrainComponent& TerrainComponent = Terrain->GetComponent<FETerrainComponent>();
 
 		if (TerrainComponent.HeightMap->GetObjectID() == Texture->GetObjectID())

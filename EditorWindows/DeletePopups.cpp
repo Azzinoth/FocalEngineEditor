@@ -81,10 +81,10 @@ std::vector<FEMaterial*> DeleteTexturePopup::MaterialsThatUsesTexture(const FETe
 		}
 	}
 
-	const std::vector<std::string> TerrainList = SCENE.GetTerrainList();
+	const std::vector<std::string> TerrainList = SCENE.GetEntityIDListWith<FETerrainComponent>();
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		/*FEEntity* CurrentTerrain = SCENE.GetNewStyleEntity(TerrainList[i]);
+		/*FEEntity* CurrentTerrain = SCENE.GetEntity(TerrainList[i]);
 		FETerrainComponent& TerrainComponent = CurrentTerrain->GetComponent<FETerrainComponent>();
 		if (TerrainComponent.HeightMap != nullptr && TerrainComponent.HeightMap->GetObjectID() == Texture->GetObjectID())
 		{

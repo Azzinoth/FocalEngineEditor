@@ -16,70 +16,71 @@ bool PrefabEditorWindow::AddGameModelTargetCallBack(FEObject* Object, void** Ent
 
 void PrefabEditorWindow::ShowTransformConfiguration(FETransformComponent* Transform, const int Index)
 {
-	// ********************* POSITION *********************
-	glm::vec3 position = Transform->GetPosition();
-	ImGui::Text("Position : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##X pos : ") + std::to_string(Index)).c_str(), &position[0], 0.1f);
-	ShowToolTip("X position");
+	// FIX ME!
+	//// ********************* POSITION *********************
+	//glm::vec3 position = Transform->GetPosition();
+	//ImGui::Text("Position : ");
+	//ImGui::SameLine();
+	//ImGui::SetNextItemWidth(50);
+	//ImGui::DragFloat((std::string("##X pos : ") + std::to_string(Index)).c_str(), &position[0], 0.1f);
+	//ShowToolTip("X position");
 
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Y pos : ") + std::to_string(Index)).c_str(), &position[1], 0.1f);
-	ShowToolTip("Y position");
+	//ImGui::SameLine();
+	//ImGui::SetNextItemWidth(50);
+	//ImGui::DragFloat((std::string("##Y pos : ") + std::to_string(Index)).c_str(), &position[1], 0.1f);
+	//ShowToolTip("Y position");
 
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Z pos : ") + std::to_string(Index)).c_str(), &position[2], 0.1f);
-	ShowToolTip("Z position");
-	Transform->SetPosition(position);
+	//ImGui::SameLine();
+	//ImGui::SetNextItemWidth(50);
+	//ImGui::DragFloat((std::string("##Z pos : ") + std::to_string(Index)).c_str(), &position[2], 0.1f);
+	//ShowToolTip("Z position");
+	//Transform->SetPosition(position);
 
-	// ********************* ROTATION *********************
-	glm::vec3 rotation = Transform->GetRotation();
-	ImGui::Text("Rotation : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##X rot : ") + std::to_string(Index)).c_str(), &rotation[0], 0.1f, -360.0f, 360.0f);
-	ShowToolTip("X rotation");
+	//// ********************* ROTATION *********************
+	//glm::vec3 rotation = Transform->GetRotation();
+	//ImGui::Text("Rotation : ");
+	//ImGui::SameLine();
+	//ImGui::SetNextItemWidth(50);
+	//ImGui::DragFloat((std::string("##X rot : ") + std::to_string(Index)).c_str(), &rotation[0], 0.1f, -360.0f, 360.0f);
+	//ShowToolTip("X rotation");
 
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Y rot : ") + std::to_string(Index)).c_str(), &rotation[1], 0.1f, -360.0f, 360.0f);
-	ShowToolTip("Y rotation");
+	//ImGui::SameLine();
+	//ImGui::SetNextItemWidth(50);
+	//ImGui::DragFloat((std::string("##Y rot : ") + std::to_string(Index)).c_str(), &rotation[1], 0.1f, -360.0f, 360.0f);
+	//ShowToolTip("Y rotation");
 
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Z rot : ") + std::to_string(Index)).c_str(), &rotation[2], 0.1f, -360.0f, 360.0f);
-	ShowToolTip("Z rotation");
-	Transform->SetRotation(rotation);
+	//ImGui::SameLine();
+	//ImGui::SetNextItemWidth(50);
+	//ImGui::DragFloat((std::string("##Z rot : ") + std::to_string(Index)).c_str(), &rotation[2], 0.1f, -360.0f, 360.0f);
+	//ShowToolTip("Z rotation");
+	//Transform->SetRotation(rotation);
 
-	// ********************* SCALE *********************
-	bool bUniformScaling = Transform->IsUniformScalingSet();
-	ImGui::Checkbox("Uniform scaling", &bUniformScaling);
-	Transform->SetUniformScaling(bUniformScaling);
+	//// ********************* SCALE *********************
+	//bool bUniformScaling = Transform->IsUniformScalingSet();
+	//ImGui::Checkbox("Uniform scaling", &bUniformScaling);
+	//Transform->SetUniformScaling(bUniformScaling);
 
-	glm::vec3 scale = Transform->GetScale();
-	ImGui::Text("Scale : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##X scale : ") + std::to_string(Index)).c_str(), &scale[0], 0.01f, 0.01f, 1000.0f);
-	ShowToolTip("X scale");
+	//glm::vec3 scale = Transform->GetScale();
+	//ImGui::Text("Scale : ");
+	//ImGui::SameLine();
+	//ImGui::SetNextItemWidth(50);
+	//ImGui::DragFloat((std::string("##X scale : ") + std::to_string(Index)).c_str(), &scale[0], 0.01f, 0.01f, 1000.0f);
+	//ShowToolTip("X scale");
 
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Y scale : ") + std::to_string(Index)).c_str(), &scale[1], 0.01f, 0.01f, 1000.0f);
-	ShowToolTip("Y scale");
+	//ImGui::SameLine();
+	//ImGui::SetNextItemWidth(50);
+	//ImGui::DragFloat((std::string("##Y scale : ") + std::to_string(Index)).c_str(), &scale[1], 0.01f, 0.01f, 1000.0f);
+	//ShowToolTip("Y scale");
 
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Z scale : ") + std::to_string(Index)).c_str(), &scale[2], 0.01f, 0.01f, 1000.0f);
-	ShowToolTip("Z scale");
+	//ImGui::SameLine();
+	//ImGui::SetNextItemWidth(50);
+	//ImGui::DragFloat((std::string("##Z scale : ") + std::to_string(Index)).c_str(), &scale[2], 0.01f, 0.01f, 1000.0f);
+	//ShowToolTip("Z scale");
 
-	glm::vec3 OldScale = Transform->GetScale();
-	Transform->ChangeXScaleBy(scale[0] - OldScale[0]);
-	Transform->ChangeYScaleBy(scale[1] - OldScale[1]);
-	Transform->ChangeZScaleBy(scale[2] - OldScale[2]);
+	//glm::vec3 OldScale = Transform->GetScale();
+	//Transform->ChangeXScaleBy(scale[0] - OldScale[0]);
+	//Transform->ChangeYScaleBy(scale[1] - OldScale[1]);
+	//Transform->ChangeZScaleBy(scale[2] - OldScale[2]);
 }
 
 void PrefabEditorWindow::AddNewGameModelCallBack(const std::vector<FEObject*> SelectionsResult)

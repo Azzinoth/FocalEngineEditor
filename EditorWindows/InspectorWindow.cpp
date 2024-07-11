@@ -54,125 +54,7 @@ void FEEditorInspectorWindow::Clear()
 
 void FEEditorInspectorWindow::ShowTransformConfiguration(FEObject* Object, FETransformComponent* Transform) const
 {
-	// ********************* POSITION *********************
-	glm::vec3 TemporaryPosition = Transform->GetPosition();
-	bool bModified = false;
-
-	ImGui::Text("Position : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	if (ImGui::DragFloat((std::string("##X pos : ") + Object->GetName()).c_str(), &TemporaryPosition[0], 0.1f))
-		bModified = true;
-	ShowToolTip("X position");
-
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	if (ImGui::DragFloat((std::string("##Y pos : ") + Object->GetName()).c_str(), &TemporaryPosition[1], 0.1f))
-		bModified = true;
-	ShowToolTip("Y position");
-
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	if (ImGui::DragFloat((std::string("##Z pos : ") + Object->GetName()).c_str(), &TemporaryPosition[2], 0.1f))
-		bModified = true;
-	ShowToolTip("Z position");
-
-	if (bModified)
-		Transform->SetPosition(TemporaryPosition);
-
-	// ********************* ROTATION *********************
-	glm::vec3 TemporaryRotation = Transform->GetRotation();
-	bModified = false;
-
-	ImGui::Text("Rotation : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	if (ImGui::DragFloat((std::string("##X rot : ") + Object->GetName()).c_str(), &TemporaryRotation[0], 0.1f, -360.0f, 360.0f))
-		bModified = true;
-	ShowToolTip("X rotation");
-
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	if (ImGui::DragFloat((std::string("##Y rot : ") + Object->GetName()).c_str(), &TemporaryRotation[1], 0.1f, -360.0f, 360.0f))
-		bModified = true;
-	ShowToolTip("Y rotation");
-
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	if (ImGui::DragFloat((std::string("##Z rot : ") + Object->GetName()).c_str(), &TemporaryRotation[2], 0.1f, -360.0f, 360.0f))
-		bModified = true;
-	ShowToolTip("Z rotation");
-
-	if (bModified)
-		Transform->SetRotation(TemporaryRotation);
-
-	// ********************* SCALE *********************
-	bool bUniformScaling = Transform->IsUniformScalingSet();
-	bModified = false;
-
-	if (ImGui::Checkbox("Uniform scaling", &bUniformScaling))
-		Transform->SetUniformScaling(bUniformScaling);
-
-	glm::vec3 TemporaryScale = Transform->GetScale();
-	ImGui::Text("Scale : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	if (ImGui::DragFloat((std::string("##X scale : ") + Object->GetName()).c_str(), &TemporaryScale[0], 0.01f, 0.01f, 1000.0f))
-		bModified = true;
-	ShowToolTip("X scale");
-
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	if (ImGui::DragFloat((std::string("##Y scale : ") + Object->GetName()).c_str(), &TemporaryScale[1], 0.01f, 0.01f, 1000.0f))
-		bModified = true;
-	ShowToolTip("Y scale");
-
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	if (ImGui::DragFloat((std::string("##Z scale : ") + Object->GetName()).c_str(), &TemporaryScale[2], 0.01f, 0.01f, 1000.0f))
-		bModified = true;
-	ShowToolTip("Z scale");
-
-	if (bModified)
-	{
-		glm::vec3 OldScale = Transform->GetScale();
-		Transform->ChangeXScaleBy(TemporaryScale[0] - OldScale[0]);
-		Transform->ChangeYScaleBy(TemporaryScale[1] - OldScale[1]);
-		Transform->ChangeZScaleBy(TemporaryScale[2] - OldScale[2]);
-	}
-
-	// ********************* REAL WORLD COMPARISON SCALE *********************
-	if (Object->GetType() == FE_ENTITY || Object->GetType() == FE_ENTITY_INSTANCED)
-	{
-		FEEntity* Entity = SCENE.GetNewStyleEntity(Object->GetObjectID());
-		if (Entity == nullptr)
-			return;
-
-		if (Entity->HasComponent<FEGameModelComponent>() == false)
-			return;
-
-		FEAABB RealAABB = Entity->GetComponent<FEGameModelComponent>().GameModel->GetMesh()->GetAABB().Transform(Entity->GetComponent<FETransformComponent>().GetTransformMatrix());
-		const glm::vec3 Min = RealAABB.GetMin();
-		const glm::vec3 Max = RealAABB.GetMax();
-
-		const float XSize = sqrt((Max.x - Min.x) * (Max.x - Min.x));
-		const float YSize = sqrt((Max.y - Min.y) * (Max.y - Min.y));
-		const float ZSize = sqrt((Max.z - Min.z) * (Max.z - Min.z));
-
-		std::string SizeInM = "Approximate object size: ";
-		SizeInM += std::to_string(std::max(XSize, std::max(YSize, ZSize)));
-		SizeInM += " m";
-
-		/*std::string dementionsInM = "Xlength: ";
-		dementionsInM += std::to_string(xSize);
-		dementionsInM += " m Ylength: ";
-		dementionsInM += std::to_string(ySize);
-		dementionsInM += " m Zlength: ";
-		dementionsInM += std::to_string(zSize);
-		dementionsInM += " m";*/
-
-		ImGui::Text(SizeInM.c_str());
-	}
+	ShowTransformConfiguration(Object->GetName(), Transform);
 }
 
 bool FEEditorInspectorWindow::EntityChangePrefabTargetCallBack(FEObject* Object, void** EntityPointer)
@@ -206,185 +88,329 @@ bool FEEditorInspectorWindow::TerrainChangeMaterialTargetCallBack(FEObject* Obje
 
 void FEEditorInspectorWindow::ShowTransformConfiguration(const std::string Name, FETransformComponent* Transform) const
 {
+	static float EditWidth = 70.0f;
+	bool bModified = false;
 	// ********************* POSITION *********************
-	glm::vec3 position = Transform->GetPosition();
+	glm::vec3 Position = Transform->GetPosition();
 	ImGui::Text("Position : ");
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##X pos : ") + Name).c_str(), &position[0], 0.1f);
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##X pos : ") + Name).c_str(), &Position[0], 0.1f))
+		bModified = true;
 	ShowToolTip("X position");
 
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Y pos : ") + Name).c_str(), &position[1], 0.1f);
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##Y pos : ") + Name).c_str(), &Position[1], 0.1f))
+		bModified = true;
 	ShowToolTip("Y position");
 
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Z pos : ") + Name).c_str(), &position[2], 0.1f);
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##Z pos : ") + Name).c_str(), &Position[2], 0.1f))
+		bModified = true;
 	ShowToolTip("Z position");
-	Transform->SetPosition(position);
+	
+	if (bModified)
+		Transform->SetPosition(Position);
+
+	bModified = false;
+
+	// ********************* WORLD POSITION *********************
+	glm::vec3 WorldPosition = Transform->GetPosition(false);
+	ImGui::Text("World Position : ");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##World X pos : ") + Name).c_str(), &WorldPosition[0], 0.1f))
+		bModified = true;
+	ShowToolTip("X position");
+
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##World Y pos : ") + Name).c_str(), &WorldPosition[1], 0.1f))
+		bModified = true;
+	ShowToolTip("Y position");
+
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##World Z pos : ") + Name).c_str(), &WorldPosition[2], 0.1f))
+		bModified = true;
+	ShowToolTip("Z position");
+
+	if (bModified)
+		Transform->SetPosition(WorldPosition, false);
+
+	bModified = false;
 
 	// ********************* ROTATION *********************
-	glm::vec3 rotation = Transform->GetRotation();
+	glm::vec3 Rotation = Transform->GetRotation();
 	ImGui::Text("Rotation : ");
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##X rot : ") + Name).c_str(), &rotation[0], 0.1f, -360.0f, 360.0f);
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##X rot : ") + Name).c_str(), &Rotation[0], 0.1f, -360.0f, 360.0f))
+		bModified = true;
 	ShowToolTip("X rotation");
 
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Y rot : ") + Name).c_str(), &rotation[1], 0.1f, -360.0f, 360.0f);
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##Y rot : ") + Name).c_str(), &Rotation[1], 0.1f, -360.0f, 360.0f))
+		bModified = true;
 	ShowToolTip("Y rotation");
 
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Z rot : ") + Name).c_str(), &rotation[2], 0.1f, -360.0f, 360.0f);
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##Z rot : ") + Name).c_str(), &Rotation[2], 0.1f, -360.0f, 360.0f))
+		bModified = true;
 	ShowToolTip("Z rotation");
-	Transform->SetRotation(rotation);
+
+	if (bModified)
+		Transform->SetRotation(Rotation);
+
+	bModified = false;
+
+	// ********************* WORLD ROTATION *********************
+	glm::vec3 WorldRotation = Transform->GetRotation(false);
+	ImGui::Text("World Rotation : ");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##World X rot : ") + Name).c_str(), &WorldRotation[0], 0.1f, -360.0f, 360.0f))
+		bModified = true;
+	ShowToolTip("X rotation");
+
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##World Y rot : ") + Name).c_str(), &WorldRotation[1], 0.1f, -360.0f, 360.0f))
+		bModified = true;
+	ShowToolTip("Y rotation");
+
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##World Z rot : ") + Name).c_str(), &WorldRotation[2], 0.1f, -360.0f, 360.0f))
+		bModified = true;
+	ShowToolTip("Z rotation");
+
+	if (bModified)
+		Transform->SetRotation(WorldRotation, false);
+
+	bModified = false;
 
 	// ********************* SCALE *********************
 	bool bUniformScaling = Transform->IsUniformScalingSet();
 	ImGui::Checkbox("Uniform scaling", &bUniformScaling);
 	Transform->SetUniformScaling(bUniformScaling);
 
-	glm::vec3 scale = Transform->GetScale();
+	glm::vec3 Scale = Transform->GetScale();
+	float ScaleChangeSpeed = Scale.x * 0.01f;
 	ImGui::Text("Scale : ");
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##X scale : ") + Name).c_str(), &scale[0], 0.01f, 0.01f, 1000.0f);
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##X scale : ") + Name).c_str(), &Scale[0], ScaleChangeSpeed, 0.001f, 1000.0f))
+	{
+		bModified = true;
+		if (bUniformScaling)
+		{
+			Scale[1] = Scale[0];
+			Scale[2] = Scale[0];
+		}
+	}
 	ShowToolTip("X scale");
 
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Y scale : ") + Name).c_str(), &scale[1], 0.01f, 0.01f, 1000.0f);
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##Y scale : ") + Name).c_str(), &Scale[1], ScaleChangeSpeed, 0.001f, 1000.0f))
+	{
+		bModified = true;
+		if (bUniformScaling)
+		{
+			Scale[0] = Scale[1];
+			Scale[2] = Scale[1];
+		}
+	}
 	ShowToolTip("Y scale");
 
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(50);
-	ImGui::DragFloat((std::string("##Z scale : ") + Name).c_str(), &scale[2], 0.01f, 0.01f, 1000.0f);
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##Z scale : ") + Name).c_str(), &Scale[2], ScaleChangeSpeed, 0.001f, 1000.0f))
+	{
+		bModified = true;
+		if (bUniformScaling)
+		{
+			Scale[0] = Scale[2];
+			Scale[1] = Scale[2];
+		}
+	}
 	ShowToolTip("Z scale");
 
-	glm::vec3 OldScale = Transform->GetScale();
-	Transform->ChangeXScaleBy(scale[0] - OldScale[0]);
-	Transform->ChangeYScaleBy(scale[1] - OldScale[1]);
-	Transform->ChangeZScaleBy(scale[2] - OldScale[2]);
+	if (bModified)
+		Transform->SetScale(Scale);
+
+	bModified = false;
+
+	// ********************* WORLD SCALE *********************
+	glm::vec3 WorldScale = Transform->GetScale(false);
+	ScaleChangeSpeed = WorldScale.x * 0.01f;
+	ImGui::Text("World Scale : ");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##World X scale : ") + Name).c_str(), &WorldScale[0], ScaleChangeSpeed, 0.001f, 1000.0f))
+	{
+		bModified = true;
+		if (bUniformScaling)
+		{
+			WorldScale[1] = WorldScale[0];
+			WorldScale[2] = WorldScale[0];
+		}
+	}
+	ShowToolTip("X scale");
+
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##World Y scale : ") + Name).c_str(), &WorldScale[1], ScaleChangeSpeed, 0.001f, 1000.0f))
+	{
+		bModified = true;
+		if (bUniformScaling)
+		{
+			WorldScale[0] = WorldScale[1];
+			WorldScale[2] = WorldScale[1];
+		}
+	}
+	ShowToolTip("Y scale");
+
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(EditWidth);
+	if (ImGui::DragFloat((std::string("##World Z scale : ") + Name).c_str(), &WorldScale[2], ScaleChangeSpeed, 0.001f, 1000.0f))
+	{
+		bModified = true;
+		if (bUniformScaling)
+		{
+			WorldScale[0] = WorldScale[2];
+			WorldScale[1] = WorldScale[2];
+		}
+	}
+	ShowToolTip("Z scale");
+
+	if (bModified)
+		Transform->SetScale(WorldScale, false);
 }
 
-void FEEditorInspectorWindow::DisplayLightProperties(FELight* Light) const
+void FEEditorInspectorWindow::DisplayLightProperties(FEEntity* LightEntity) const
 {
-	ShowTransformConfiguration(Light, &Light->Transform);
+	FELightComponent& LightComponent = LightEntity->GetComponent<FELightComponent>();
 
-	if (Light->GetType() == FE_DIRECTIONAL_LIGHT)
+	if (LightComponent.GetType() == FE_DIRECTIONAL_LIGHT)
 	{
-		FEDirectionalLight* DirectionalLight = reinterpret_cast<FEDirectionalLight*>(Light);
 		ImGui::Separator();
 		ImGui::Text("-------------Shadow settings--------------");
 
 		ImGui::Text("Cast shadows:");
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(200);
-		bool bCastShadows = DirectionalLight->IsCastShadows();
+		bool bCastShadows = LightComponent.IsCastShadows();
 		ImGui::Checkbox("##Cast shadows", &bCastShadows);
-		DirectionalLight->SetCastShadows(bCastShadows);
+		LightComponent.SetCastShadows(bCastShadows);
 		ShowToolTip("Will this light cast shadows.");
 
-		if (!DirectionalLight->IsCastShadows())
+		if (!LightComponent.IsCastShadows())
 			ImGui::BeginDisabled();
 
 		ImGui::Text("Number of cascades :");
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(200);
-		int cascades = DirectionalLight->GetActiveCascades();
-		ImGui::SliderInt("##cascades", &cascades, 1, 4);
-		DirectionalLight->SetActiveCascades(cascades);
+		int CascadesCount = LightComponent.GetActiveCascades();
+		ImGui::SliderInt("##cascades", &CascadesCount, 1, 4);
+		LightComponent.SetActiveCascades(CascadesCount);
 		ShowToolTip("How much steps of shadow quality will be used.");
 
 		ImGui::Text("Shadow coverage in M :");
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(200);
-		float FirstCascadeSize = DirectionalLight->GetShadowCoverage();
+		float FirstCascadeSize = LightComponent.GetShadowCoverage();
 		ImGui::DragFloat("##shadowCoverage", &FirstCascadeSize, 0.1f, 0.1f, 500.0f);
-		DirectionalLight->SetShadowCoverage(FirstCascadeSize);
+		LightComponent.SetShadowCoverage(FirstCascadeSize);
 		ShowToolTip("Distance from camera at which shadows would be present.");
 
 		ImGui::Text("Z depth of shadow map :");
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(200);
-		float CSMZDepth = DirectionalLight->GetCSMZDepth();
+		float CSMZDepth = LightComponent.GetCSMZDepth();
 		ImGui::DragFloat("##CSMZDepth", &CSMZDepth, 0.01f, 0.1f, 100.0f);
-		DirectionalLight->SetCSMZDepth(CSMZDepth);
+		LightComponent.SetCSMZDepth(CSMZDepth);
 		ShowToolTip("If you have problems with shadow disapearing when camera is at close distance to shadow reciver, tweaking this parameter could help. Otherwise this parameter should be as small as possible.");
 
 		ImGui::Text("XY depth of shadow map :");
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(200);
-		float CSMXYDepth = DirectionalLight->GetCSMXYDepth();
+		float CSMXYDepth = LightComponent.GetCSMXYDepth();
 		ImGui::DragFloat("##CSMXYDepth", &CSMXYDepth, 0.01f, 0.0f, 100.0f);
-		DirectionalLight->SetCSMXYDepth(CSMXYDepth);
+		LightComponent.SetCSMXYDepth(CSMXYDepth);
 		ShowToolTip("If you have problems with shadow on edges of screen, tweaking this parameter could help. Otherwise this parameter should be as small as possible.");
 
 		ImGui::Text("Shadows blur factor:");
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(200.0f);
-		float ShadowsBlurFactor = DirectionalLight->GetShadowBlurFactor();
+		float ShadowsBlurFactor = LightComponent.GetShadowBlurFactor();
 		ImGui::DragFloat("##Shadows blur factor", &ShadowsBlurFactor, 0.001f, 0.0f, 10.0f);
-		DirectionalLight->SetShadowBlurFactor(ShadowsBlurFactor);
+		LightComponent.SetShadowBlurFactor(ShadowsBlurFactor);
 
-		bool bStaticShadowBias = DirectionalLight->IsStaticShadowBias();
+		bool bStaticShadowBias = LightComponent.IsStaticShadowBias();
 		ImGui::Checkbox("Static shadow bias :", &bStaticShadowBias);
-		DirectionalLight->SetIsStaticShadowBias(bStaticShadowBias);
+		LightComponent.SetIsStaticShadowBias(bStaticShadowBias);
 
-		if (DirectionalLight->IsStaticShadowBias())
+		if (LightComponent.IsStaticShadowBias())
 		{
 			ImGui::Text("Static shadow bias value :");
 			ImGui::SameLine();
 			ImGui::SetNextItemWidth(200);
-			float ShadowBias = DirectionalLight->GetShadowBias();
+			float ShadowBias = LightComponent.GetShadowBias();
 			ImGui::DragFloat("##shadowBias", &ShadowBias, 0.0001f, 0.00001f, 0.1f);
-			DirectionalLight->SetShadowBias(ShadowBias);
+			LightComponent.SetShadowBias(ShadowBias);
 		}
 		else
 		{
 			ImGui::Text("Intensity of variable shadow bias :");
 			ImGui::SameLine();
 			ImGui::SetNextItemWidth(200);
-			float ShadowBiasIntensity = DirectionalLight->GetShadowBiasVariableIntensity();
+			float ShadowBiasIntensity = LightComponent.GetShadowBiasVariableIntensity();
 			ImGui::DragFloat("##shadowBiasIntensity", &ShadowBiasIntensity, 0.01f, 0.01f, 10.0f);
-			DirectionalLight->SetShadowBiasVariableIntensity(ShadowBiasIntensity);
+			LightComponent.SetShadowBiasVariableIntensity(ShadowBiasIntensity);
 		}
 
-		if (!DirectionalLight->IsCastShadows())
+		if (!LightComponent.IsCastShadows())
 			ImGui::EndDisabled();
 	}
-	else if (Light->GetType() == FE_POINT_LIGHT)
+	else if (LightComponent.GetType() == FE_POINT_LIGHT)
 	{
+		ImGui::Text("Light range :");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(200);
+		float LightRange = LightComponent.GetRange();
+		ImGui::DragFloat("##LightRadius", &LightRange, 0.1f, 0.1f, 100.0f);
+		LightComponent.SetRange(LightRange);
+	
 	}
-	else if (Light->GetType() == FE_SPOT_LIGHT)
+	else if (LightComponent.GetType() == FE_SPOT_LIGHT)
 	{
-		FESpotLight* SpotLight = reinterpret_cast<FESpotLight*>(Light);
-		glm::vec3 direction = SpotLight->GetDirection();
-		ImGui::DragFloat("##x", &direction[0], 0.01f, 0.0f, 1.0f);
-		ImGui::DragFloat("##y", &direction[1], 0.01f, 0.0f, 1.0f);
-		ImGui::DragFloat("##z", &direction[2], 0.01f, 0.0f, 1.0f);
+		glm::vec3 Direction = LIGHT_SYSTEM.GetDirection(LightEntity);
+		ImGui::DragFloat("##x", &Direction[0], 0.01f, 0.0f, 1.0f);
+		ImGui::DragFloat("##y", &Direction[1], 0.01f, 0.0f, 1.0f);
+		ImGui::DragFloat("##z", &Direction[2], 0.01f, 0.0f, 1.0f);
 
-		float SpotAngle = SpotLight->GetSpotAngle();
-		ImGui::SliderFloat((std::string("Inner angle##") + SpotLight->GetName()).c_str(), &SpotAngle, 0.0f, 90.0f);
-		SpotLight->SetSpotAngle(SpotAngle);
+		float SpotAngle = LightComponent.GetSpotAngle();
+		ImGui::SliderFloat((std::string("Inner angle##") + LightEntity->GetName()).c_str(), &SpotAngle, 0.0f, 90.0f);
+		LightComponent.SetSpotAngle(SpotAngle);
 
-		float SpotAngleOuter = SpotLight->GetSpotAngleOuter();
-		ImGui::SliderFloat((std::string("Outer angle ##") + SpotLight->GetName()).c_str(), &SpotAngleOuter, 0.0f, 90.0f);
-		SpotLight->SetSpotAngleOuter(SpotAngleOuter);
+		float SpotAngleOuter = LightComponent.GetSpotAngleOuter();
+		ImGui::SliderFloat((std::string("Outer angle ##") + LightEntity->GetName()).c_str(), &SpotAngleOuter, 0.0f, 90.0f);
+		LightComponent.SetSpotAngleOuter(SpotAngleOuter);
 	}
 
-	glm::vec3 color = Light->GetColor();
-	ImGui::ColorEdit3((std::string("Color##") + Light->GetName()).c_str(), &color.x);
-	Light->SetColor(color);
+	glm::vec3 Color = LightComponent.GetColor();
+	ImGui::ColorEdit3((std::string("Color##") + LightEntity->GetName()).c_str(), &Color.x);
+	LightComponent.SetColor(Color);
 
-	float intensity = Light->GetIntensity();
-	ImGui::SliderFloat((std::string("Intensity##") + Light->GetName()).c_str(), &intensity, 0.0f, 100.0f);
-	Light->SetIntensity(intensity);
+	float Intensity = LightComponent.GetIntensity();
+	ImGui::SliderFloat((std::string("Intensity##") + LightEntity->GetName()).c_str(), &Intensity, 0.0f, 100.0f);
+	LightComponent.SetIntensity(Intensity);
 }
 
 // FIX ME!
@@ -401,20 +427,6 @@ void FEEditorInspectorWindow::ChangePrefabOfEntityCallBack(const std::vector<FEO
 
 		EntityToModify->Prefab = SelectedPrefab;
 	}*/
-}
-
-void FEEditorInspectorWindow::DisplayLightsProperties() const
-{
-	const std::vector<std::string> LightList = SCENE.GetLightsList();
-
-	for (size_t i = 0; i < LightList.size(); i++)
-	{
-		if (ImGui::TreeNode(LightList[i].c_str()))
-		{
-			DisplayLightProperties(SCENE.GetLight(LightList[i]));
-			ImGui::TreePop();
-		}
-	}
 }
 
 void FEEditorInspectorWindow::Render()
@@ -434,72 +446,99 @@ void FEEditorInspectorWindow::Render()
 
 	FEEntity* EntitySelected = SELECTED.GetSelected();
 
+	//auto testlist = GetAllComponentTypeInfos();
+
 	if (EntitySelected->HasComponent<FETagComponent>())
 	{
-		FETagComponent& Tag = EntitySelected->GetComponent<FETagComponent>();
-		char Buffer[256];
-		memset(Buffer, 0, 256);
-		strcpy_s(Buffer, Tag.Tag.c_str());
-		if (ImGui::InputText("Tag", Buffer, 256))
+		float headerHeight = ImGui::GetFrameHeight();
+		float headerWidth = ImGui::GetContentRegionAvail().x;
+
+		float ButtonSize = ImGui::GetFrameHeight() * 0.7f;
+		float cursorPosX = ImGui::GetCursorPosX();
+		ImVec2 PreviosCursorPos = ImGui::GetCursorPos();
+		
+	
+		ImGui::SetCursorPos(ImVec2(headerWidth - ButtonSize / 8.0f - 4.0f/*- ButtonSize*/, PreviosCursorPos.y + 4.0f/*(headerHeight - ButtonSize) * 0.5f*/));
+		if (ImGui::Button("x", ImVec2(ButtonSize, ButtonSize)))
 		{
-			Tag.Tag = std::string(Buffer);
+			int y = 0;
+			y++;
+		}
+
+		ImGui::SetCursorPos(PreviosCursorPos);
+
+		if (ImGui::CollapsingHeader("Tag", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Text("Test");
+			FETagComponent& Tag = EntitySelected->GetComponent<FETagComponent>();
+			char Buffer[256];
+			memset(Buffer, 0, 256);
+			strcpy_s(Buffer, Tag.Tag.c_str());
+			if (ImGui::InputText("##Tag Edit", Buffer, 256))
+			{
+				Tag.Tag = std::string(Buffer);
+			}
 		}
 	}
 
 	if (EntitySelected->HasComponent<FETransformComponent>())
 	{
-		FETransformComponent& Transform = EntitySelected->GetComponent<FETransformComponent>();
-		ShowTransformConfiguration(EntitySelected->GetName(), &Transform);
+		if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen /*| ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding*/))
+		{
+			FETransformComponent& Transform = EntitySelected->GetComponent<FETransformComponent>();
+			ShowTransformConfiguration(EntitySelected->GetName(), &Transform);
+		}
 	}
 
 	if (EntitySelected->HasComponent<FEGameModelComponent>())
 	{
-		ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.5f, 0.5f, 0.5f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.95f, 0.90f, 0.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.1f, 1.0f, 0.1f, 1.0f));
-
-		FEGameModelComponent& GameModelComponent = EntitySelected->GetComponent<FEGameModelComponent>();
-		bool bActive = GameModelComponent.IsWireframeMode();
-		ImGui::Checkbox("WireframeMode", &bActive);
-		GameModelComponent.SetWireframeMode(bActive);
-
-		ImGui::Text("Game Model : ");
-		FETexture* PreviewTexture = PREVIEW_MANAGER.GetGameModelPreview(GameModelComponent.GameModel->GetObjectID());
-
-		if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+		if (ImGui::CollapsingHeader("Game Model", ImGuiTreeNodeFlags_DefaultOpen /*| ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding*/))
 		{
-			//EntityToModify = EntitySelected;
-			//SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, ChangePrefabOfEntityCallBack, Entity->Prefab);
-		}
-		//EntityChangePrefabTarget->StickToItem();
+			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.5f, 0.5f, 0.5f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.95f, 0.90f, 0.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.1f, 1.0f, 0.1f, 1.0f));
 
-		bool bOpenContextMenu = false;
-		if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
-			bOpenContextMenu = true;
+			FEGameModelComponent& GameModelComponent = EntitySelected->GetComponent<FEGameModelComponent>();
+			bool bActive = GameModelComponent.IsWireframeMode();
+			ImGui::Checkbox("WireframeMode", &bActive);
+			GameModelComponent.SetWireframeMode(bActive);
 
-		if (bOpenContextMenu)
-			ImGui::OpenPopup("##Inspector_context_menu");
+			ImGui::Text("Game Model : ");
+			FETexture* PreviewTexture = PREVIEW_MANAGER.GetGameModelPreview(GameModelComponent.GameModel->GetObjectID());
 
-		CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = false;
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-		if (ImGui::BeginPopup("##Inspector_context_menu"))
-		{
-			CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = true;
-
-			if (ImGui::MenuItem("Show in folder"))
+			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
-				CONTENT_BROWSER_WINDOW.OpenItemParentFolder(GameModelComponent.GameModel);
+				//EntityToModify = EntitySelected;
+				//SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, ChangePrefabOfEntityCallBack, Entity->Prefab);
 			}
+			//EntityChangePrefabTarget->StickToItem();
 
-			ImGui::EndPopup();
+			bool bOpenContextMenu = false;
+			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
+				bOpenContextMenu = true;
+
+			if (bOpenContextMenu)
+				ImGui::OpenPopup("##Inspector_context_menu");
+
+			CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = false;
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
+			if (ImGui::BeginPopup("##Inspector_context_menu"))
+			{
+				CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = true;
+
+				if (ImGui::MenuItem("Show in folder"))
+				{
+					CONTENT_BROWSER_WINDOW.OpenItemParentFolder(GameModelComponent.GameModel);
+				}
+
+				ImGui::EndPopup();
+			}
+			ImGui::PopStyleVar();
+
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
 		}
-		ImGui::PopStyleVar();
-
-		ImGui::Separator();
-
-		ImGui::PopStyleColor();
-		ImGui::PopStyleColor();
-		ImGui::PopStyleColor();
 	}
 
 	if (EntitySelected->HasComponent<FEInstancedComponent>())
@@ -517,8 +556,8 @@ void FEEditorInspectorWindow::Render()
 			FETransformComponent TempTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(SELECTED.InstancedSubObjectIndexSelected));
 			ShowTransformConfiguration("selected instance", &TempTransform);
 
-			INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(EntitySelected, SELECTED.InstancedSubObjectIndexSelected, TempTransform.GetTransformMatrix());
-			//InstancedEntity->ModifyInstance(SELECTED.InstancedSubObjectIndexSelected, TempTransform.GetTransformMatrix());
+			INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(EntitySelected, SELECTED.InstancedSubObjectIndexSelected, TempTransform.GetWorldMatrix());
+			//InstancedEntity->ModifyInstance(SELECTED.InstancedSubObjectIndexSelected, TempTransform.GetWorldMatrix());
 
 			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.55f, 0.55f, 0.95f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
@@ -540,7 +579,7 @@ void FEEditorInspectorWindow::Render()
 			ImGui::Text("Snapped to: ");
 			ImGui::SameLine();
 
-			const std::vector<std::string> TerrainList = SCENE.GetTerrainList();
+			const std::vector<std::string> TerrainList = SCENE.GetEntityIDListWith<FETerrainComponent>();
 			static std::string CurrentTerrain = "none";
 
 			if (InstancedComponent.GetSnappedToTerrain() == nullptr)
@@ -570,9 +609,9 @@ void FEEditorInspectorWindow::Render()
 				for (size_t i = 0; i < TerrainList.size(); i++)
 				{
 					const bool bIsSelected = (CurrentTerrain == TerrainList[i]);
-					if (ImGui::Selectable(SCENE.GetNewStyleEntity(TerrainList[i])->GetName().c_str(), bIsSelected))
+					if (ImGui::Selectable(SCENE.GetEntity(TerrainList[i])->GetName().c_str(), bIsSelected))
 					{
-						TERRAIN_SYSTEM.SnapInstancedEntity(SCENE.GetNewStyleEntity(TerrainList[i]), EntitySelected);
+						TERRAIN_SYSTEM.SnapInstancedEntity(SCENE.GetEntity(TerrainList[i]), EntitySelected);
 					}
 
 					if (bIsSelected)
@@ -795,11 +834,12 @@ void FEEditorInspectorWindow::Render()
 		}
 	}
 
+	if (EntitySelected->HasComponent<FELightComponent>())
+	{
+		DisplayLightProperties(SELECTED.GetSelected());
+	}
 
-	//else if (SELECTED.GetLight() != nullptr)
-	//{
-	//	DisplayLightProperties(SELECTED.GetLight());
-	//}
+
 	//else if (SELECTED.GetSelected()->GetType() == FE_CAMERA)
 	//{
 	//	FEBasicCamera* Camera = ENGINE.GetCamera();
@@ -811,38 +851,38 @@ void FEEditorInspectorWindow::Render()
 	//	ImGui::SameLine();
 	//	ImGui::SetNextItemWidth(90);
 	//	ImGui::DragFloat("##X pos", &CameraPosition[0], 0.1f);
-	//	ShowToolTip("X position");
+	//	ShowToolTip("X Position");
 
 	//	ImGui::SameLine();
 	//	ImGui::SetNextItemWidth(90);
 	//	ImGui::DragFloat("##Y pos", &CameraPosition[1], 0.1f);
-	//	ShowToolTip("Y position");
+	//	ShowToolTip("Y Position");
 
 	//	ImGui::SameLine();
 	//	ImGui::SetNextItemWidth(90);
 	//	ImGui::DragFloat("##Z pos", &CameraPosition[2], 0.1f);
-	//	ShowToolTip("Z position");
+	//	ShowToolTip("Z Position");
 
 	//	Camera->SetPosition(CameraPosition);
 
 	//	// ********* ROTATION *********
 	//	glm::vec3 CameraRotation = glm::vec3(Camera->GetYaw(), Camera->GetPitch(), Camera->GetRoll());
 
-	//	ImGui::Text("Rotation : ");
+	//	ImGui::Text("WorldRotation : ");
 	//	ImGui::SameLine();
 	//	ImGui::SetNextItemWidth(90);
 	//	ImGui::DragFloat("##X rot", &CameraRotation[0], 0.1f);
-	//	ShowToolTip("X rotation");
+	//	ShowToolTip("X WorldRotation");
 
 	//	ImGui::SameLine();
 	//	ImGui::SetNextItemWidth(90);
 	//	ImGui::DragFloat("##Y rot", &CameraRotation[1], 0.1f);
-	//	ShowToolTip("Y rotation");
+	//	ShowToolTip("Y WorldRotation");
 
 	//	ImGui::SameLine();
 	//	ImGui::SetNextItemWidth(90);
 	//	ImGui::DragFloat("##Z rot", &CameraRotation[2], 0.1f);
-	//	ShowToolTip("Z rotation");
+	//	ShowToolTip("Z WorldRotation");
 
 	//	Camera->SetYaw(CameraRotation[0]);
 	//	Camera->SetPitch(CameraRotation[1]);

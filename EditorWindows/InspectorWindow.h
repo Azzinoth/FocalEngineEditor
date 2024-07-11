@@ -12,8 +12,7 @@ class FEEditorInspectorWindow
     static FEEntity* EntityToModify;
 
     // Light properties
-    void DisplayLightProperties(FELight* Light) const;
-    void DisplayLightsProperties() const;
+    void DisplayLightProperties(FEEntity* LightEntity) const;
 
     // Terrain settings
     static FEEntity* TerrainToWorkWith;
