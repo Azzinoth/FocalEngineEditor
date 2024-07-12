@@ -58,6 +58,13 @@ class FEEditorInspectorWindow
     void Clear();
     void InitializeResources();
 
+    std::vector<std::string> GetAvailableComponentsToAdd(FEEntity* Entity) const;
+
+    bool AddComponent(FEEntity* Entity, std::string ComponentName);
+    std::unordered_map<std::type_index, std::function<void(FEEntity*)>> AddComponentHandlers;
+
+    static void AddLightComponent(FEEntity* Entity);
+
 public:
     SINGLETON_PUBLIC_PART(FEEditorInspectorWindow)
 };

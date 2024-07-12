@@ -6,7 +6,10 @@ FEEntity* FEEditorInspectorWindow::TerrainToWorkWith = nullptr;
 
 FEEditorInspectorWindow::FEEditorInspectorWindow()
 {
-	
+	auto RegisteredComponentList = COMPONENTS_TOOL.GetComponentInfoList();
+
+
+	AddComponentHandlers[typeid(FELightComponent)] = &FEEditorInspectorWindow::AddLightComponent;
 }
 
 void FEEditorInspectorWindow::InitializeResources()
@@ -299,9 +302,6 @@ void FEEditorInspectorWindow::DisplayLightProperties(FEEntity* LightEntity) cons
 
 	if (LightComponent.GetType() == FE_DIRECTIONAL_LIGHT)
 	{
-		ImGui::Separator();
-		ImGui::Text("-------------Shadow settings--------------");
-
 		ImGui::Text("Cast shadows:");
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(200);
@@ -429,6 +429,56 @@ void FEEditorInspectorWindow::ChangePrefabOfEntityCallBack(const std::vector<FEO
 	}*/
 }
 
+void FEEditorInspectorWindow::AddLightComponent(FEEntity* Entity)
+{
+	Entity->AddComponent<FELightComponent>(FE_POINT_LIGHT);
+}
+
+std::vector<std::string> FEEditorInspectorWindow::GetAvailableComponentsToAdd(FEEntity* Entity) const
+{
+	std::vector<std::string> Result;
+	if (Entity == nullptr)
+		return Result;
+
+	auto RegisteredComponentList = COMPONENTS_TOOL.GetComponentInfoList();
+	auto EntityComponents = Entity->GetComponentsInfoList();
+
+	for (size_t i = 0; i < RegisteredComponentList.size(); i++)
+	{
+		if (RegisteredComponentList[i].IsCompatible(EntityComponents))
+			Result.push_back(RegisteredComponentList[i].Name);
+	}
+
+	return Result;
+}
+
+bool FEEditorInspectorWindow::AddComponent(FEEntity* Entity, std::string ComponentName)
+{
+	auto RegisteredComponentList = COMPONENTS_TOOL.GetComponentInfoList();
+
+	for (size_t j = 0; j < RegisteredComponentList.size(); j++)
+	{
+		if (RegisteredComponentList[j].Name == ComponentName)
+		{
+			auto ComponentHashCode = RegisteredComponentList[j].Type->hash_code();
+
+			auto ComponentIterator = AddComponentHandlers.begin();
+			while (ComponentIterator != AddComponentHandlers.end())
+			{
+				if (ComponentIterator->first.hash_code() == ComponentHashCode)
+				{
+					ComponentIterator->second(Entity);
+					return true;
+				}
+
+				ComponentIterator++;
+			}
+		}
+	}
+
+	return false;
+}
+
 void FEEditorInspectorWindow::Render()
 {
 	if (!bVisible)
@@ -445,6 +495,10 @@ void FEEditorInspectorWindow::Render()
 	}
 
 	FEEntity* EntitySelected = SELECTED.GetSelected();
+
+	ImGui::Text("ID : %s", EntitySelected->GetObjectID().c_str());
+	ImGui::Text("Name : %s", EntitySelected->GetName().c_str());
+
 
 	//auto testlist = GetAllComponentTypeInfos();
 
@@ -469,7 +523,6 @@ void FEEditorInspectorWindow::Render()
 
 		if (ImGui::CollapsingHeader("Tag", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			ImGui::Text("Test");
 			FETagComponent& Tag = EntitySelected->GetComponent<FETagComponent>();
 			char Buffer[256];
 			memset(Buffer, 0, 256);
@@ -543,124 +596,77 @@ void FEEditorInspectorWindow::Render()
 
 	if (EntitySelected->HasComponent<FEInstancedComponent>())
 	{
-		FEInstancedComponent& InstancedComponent = EntitySelected->GetComponent<FEInstancedComponent>();
-
-		if (SELECTED.InstancedSubObjectIndexSelected != -1)
+		if (ImGui::CollapsingHeader("Instanced", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			std::string InstancedSubObjectInfo = "index: ";
+			FEInstancedComponent& InstancedComponent = EntitySelected->GetComponent<FEInstancedComponent>();
 
-			ImGui::Text("Selected instance info:");
-			InstancedSubObjectInfo = "index: " + std::to_string(SELECTED.InstancedSubObjectIndexSelected);
-			ImGui::Text(InstancedSubObjectInfo.c_str());
-
-			FETransformComponent TempTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(SELECTED.InstancedSubObjectIndexSelected));
-			ShowTransformConfiguration("selected instance", &TempTransform);
-
-			INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(EntitySelected, SELECTED.InstancedSubObjectIndexSelected, TempTransform.GetWorldMatrix());
-			//InstancedEntity->ModifyInstance(SELECTED.InstancedSubObjectIndexSelected, TempTransform.GetWorldMatrix());
-
-			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.55f, 0.55f, 0.95f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
-
-			if (ImGui::ImageButton((void*)(intptr_t)ArrowToGroundIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+			if (SELECTED.InstancedSubObjectIndexSelected != -1)
 			{
-				INSTANCED_RENDERING_SYSTEM.TryToSnapIndividualInstance(EntitySelected, SELECTED.InstancedSubObjectIndexSelected);
-				//InstancedEntity->TryToSnapInstance(SELECTED.InstancedSubObjectIndexSelected);
-			}
-			ShowToolTip("Selected instance will attempt to snap to the terrain.");
+				std::string InstancedSubObjectInfo = "index: ";
 
-			ImGui::PopStyleColor();
-			ImGui::PopStyleColor();
-			ImGui::PopStyleColor();
-		}
-		else
-		{
-			ImGui::Text("Snapped to: ");
-			ImGui::SameLine();
+				ImGui::Text("Selected instance info:");
+				InstancedSubObjectInfo = "index: " + std::to_string(SELECTED.InstancedSubObjectIndexSelected);
+				ImGui::Text(InstancedSubObjectInfo.c_str());
 
-			const std::vector<std::string> TerrainList = SCENE.GetEntityIDListWith<FETerrainComponent>();
-			static std::string CurrentTerrain = "none";
+				FETransformComponent TempTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(SELECTED.InstancedSubObjectIndexSelected));
+				TempTransform.SetSceneIndependent(true);
+				ShowTransformConfiguration("Selected instance", &TempTransform);
 
-			if (InstancedComponent.GetSnappedToTerrain() == nullptr)
-			{
-				CurrentTerrain = "none";
+				INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(EntitySelected, SELECTED.InstancedSubObjectIndexSelected, TempTransform.GetWorldMatrix());
+
+				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.55f, 0.55f, 0.95f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
+
+				if (ImGui::ImageButton((void*)(intptr_t)ArrowToGroundIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+				{
+					INSTANCED_RENDERING_SYSTEM.TryToSnapIndividualInstance(EntitySelected, SELECTED.InstancedSubObjectIndexSelected);
+				}
+				ShowToolTip("Selected instance will attempt to snap to the terrain.");
+
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
 			}
 			else
 			{
-				CurrentTerrain = InstancedComponent.GetSnappedToTerrain()->GetName();
-			}
-
-			ImGui::SetNextItemWidth(220);
-			if (ImGui::BeginCombo("##Terrain", CurrentTerrain.c_str(), ImGuiWindowFlags_None))
-			{
-				const bool bIsSelected = (CurrentTerrain == "none");
-				if (ImGui::Selectable("none", bIsSelected))
-				{
-					if (InstancedComponent.GetSnappedToTerrain() != nullptr)
-					{
-						TERRAIN_SYSTEM.UnSnapInstancedEntity(InstancedComponent.GetSnappedToTerrain(), EntitySelected);
-					}
-				}
-
-				if (bIsSelected)
-					ImGui::SetItemDefaultFocus();
-
-				for (size_t i = 0; i < TerrainList.size(); i++)
-				{
-					const bool bIsSelected = (CurrentTerrain == TerrainList[i]);
-					if (ImGui::Selectable(SCENE.GetEntity(TerrainList[i])->GetName().c_str(), bIsSelected))
-					{
-						TERRAIN_SYSTEM.SnapInstancedEntity(SCENE.GetEntity(TerrainList[i]), EntitySelected);
-					}
-
-					if (bIsSelected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-
-			if (InstancedComponent.GetSnappedToTerrain() != nullptr)
-			{
-				ImGui::Text("Terrain layer: ");
+				ImGui::Text("Snapped to: ");
 				ImGui::SameLine();
 
-				const int CurrentLayer = InstancedComponent.GetTerrainLayer();
-				FEEntity* TerrainEntity = InstancedComponent.GetSnappedToTerrain();
-				FETerrainComponent& TerrainComponent = TerrainEntity->GetComponent<FETerrainComponent>();
+				const std::vector<std::string> TerrainList = SCENE.GetEntityIDListWith<FETerrainComponent>();
+				static std::string CurrentTerrain = "none";
 
-				std::string Caption = "none";
-				FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(CurrentLayer);
-				if (Layer != nullptr)
-					Caption = Layer->GetName();
+				if (InstancedComponent.GetSnappedToTerrain() == nullptr)
+				{
+					CurrentTerrain = "none";
+				}
+				else
+				{
+					CurrentTerrain = InstancedComponent.GetSnappedToTerrain()->GetName();
+				}
 
 				ImGui::SetNextItemWidth(220);
-				if (ImGui::BeginCombo("##TerrainLayers", Caption.c_str(), ImGuiWindowFlags_None))
+				if (ImGui::BeginCombo("##Terrain", CurrentTerrain.c_str(), ImGuiWindowFlags_None))
 				{
-					const bool bIsSelected = (CurrentLayer == -1);
-					ImGui::PushID("none_TerrainLayers_entity");
+					const bool bIsSelected = (CurrentTerrain == "none");
 					if (ImGui::Selectable("none", bIsSelected))
 					{
-						TERRAIN_SYSTEM.UnConnectInstancedEntityFromLayer(EntitySelected);
+						if (InstancedComponent.GetSnappedToTerrain() != nullptr)
+						{
+							TERRAIN_SYSTEM.UnSnapInstancedEntity(InstancedComponent.GetSnappedToTerrain(), EntitySelected);
+						}
 					}
-					ImGui::PopID();
 
 					if (bIsSelected)
 						ImGui::SetItemDefaultFocus();
 
-					for (size_t i = 0; i < FE_TERRAIN_MAX_LAYERS; i++)
+					for (size_t i = 0; i < TerrainList.size(); i++)
 					{
-						FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(i);
-						if (Layer == nullptr)
-							break;
-
-						const bool bIsSelected = (CurrentLayer == i);
-						ImGui::PushID(/*Layer->GetObjectID().c_str()*/static_cast<int>(i));
-						if (ImGui::Selectable(Layer->GetName().c_str(), bIsSelected))
+						const bool bIsSelected = (CurrentTerrain == TerrainList[i]);
+						if (ImGui::Selectable(SCENE.GetEntity(TerrainList[i])->GetName().c_str(), bIsSelected))
 						{
-							TERRAIN_SYSTEM.ConnectInstancedEntityToLayer(TerrainEntity, EntitySelected, static_cast<int>(i));
+							TERRAIN_SYSTEM.SnapInstancedEntity(SCENE.GetEntity(TerrainList[i]), EntitySelected);
 						}
-						ImGui::PopID();
 
 						if (bIsSelected)
 							ImGui::SetItemDefaultFocus();
@@ -668,175 +674,250 @@ void FEEditorInspectorWindow::Render()
 					ImGui::EndCombo();
 				}
 
-				if (CurrentLayer != -1)
+				if (InstancedComponent.GetSnappedToTerrain() != nullptr)
 				{
-					ImGui::Text("Minimal layer intensity to spawn:");
-					float MinLevel = InstancedComponent.GetMinimalLayerIntensityToSpawn();
+					ImGui::Text("Terrain layer: ");
 					ImGui::SameLine();
-					ImGui::SetNextItemWidth(80);
-					ImGui::DragFloat("##minLevel", &MinLevel);
-					InstancedComponent.SetMinimalLayerIntensityToSpawn(MinLevel);
+
+					const int CurrentLayer = InstancedComponent.GetTerrainLayer();
+					FEEntity* TerrainEntity = InstancedComponent.GetSnappedToTerrain();
+					FETerrainComponent& TerrainComponent = TerrainEntity->GetComponent<FETerrainComponent>();
+
+					std::string Caption = "none";
+					FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(CurrentLayer);
+					if (Layer != nullptr)
+						Caption = Layer->GetName();
+
+					ImGui::SetNextItemWidth(220);
+					if (ImGui::BeginCombo("##TerrainLayers", Caption.c_str(), ImGuiWindowFlags_None))
+					{
+						const bool bIsSelected = (CurrentLayer == -1);
+						ImGui::PushID("none_TerrainLayers_entity");
+						if (ImGui::Selectable("none", bIsSelected))
+						{
+							TERRAIN_SYSTEM.UnConnectInstancedEntityFromLayer(EntitySelected);
+						}
+						ImGui::PopID();
+
+						if (bIsSelected)
+							ImGui::SetItemDefaultFocus();
+
+						for (size_t i = 0; i < FE_TERRAIN_MAX_LAYERS; i++)
+						{
+							FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(i);
+							if (Layer == nullptr)
+								break;
+
+							const bool bIsSelected = (CurrentLayer == i);
+							ImGui::PushID(/*Layer->GetObjectID().c_str()*/static_cast<int>(i));
+							if (ImGui::Selectable(Layer->GetName().c_str(), bIsSelected))
+							{
+								TERRAIN_SYSTEM.ConnectInstancedEntityToLayer(TerrainEntity, EntitySelected, static_cast<int>(i));
+							}
+							ImGui::PopID();
+
+							if (bIsSelected)
+								ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+					}
+
+					if (CurrentLayer != -1)
+					{
+						ImGui::Text("Minimal layer intensity to spawn:");
+						float MinLevel = InstancedComponent.GetMinimalLayerIntensityToSpawn();
+						ImGui::SameLine();
+						ImGui::SetNextItemWidth(80);
+						ImGui::DragFloat("##minLevel", &MinLevel);
+						InstancedComponent.SetMinimalLayerIntensityToSpawn(MinLevel);
+					}
 				}
-			}
 
-			ImGui::Separator();
+				ImGui::Separator();
 
-			ImGui::Text("Seed:");
-			int seed = InstancedComponent.SpawnInfo.Seed;
-			ImGui::SameLine();
-			ImGui::SetNextItemWidth(200);
-			ImGui::DragInt("##Seed", &seed);
-			InstancedComponent.SpawnInfo.Seed = seed;
+				ImGui::Text("Seed:");
+				int seed = InstancedComponent.SpawnInfo.Seed;
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(200);
+				ImGui::DragInt("##Seed", &seed);
+				InstancedComponent.SpawnInfo.Seed = seed;
 
-			ImGui::Text("Object count:");
-			int ObjectCount = InstancedComponent.SpawnInfo.ObjectCount;
-			ImGui::SameLine();
-			ImGui::SetNextItemWidth(200);
-			ImGui::DragInt("##Object count", &ObjectCount);
-			if (ObjectCount <= 0)
-				ObjectCount = 1;
-			InstancedComponent.SpawnInfo.ObjectCount = ObjectCount;
+				ImGui::Text("Object count:");
+				int ObjectCount = InstancedComponent.SpawnInfo.ObjectCount;
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(200);
+				ImGui::DragInt("##Object count", &ObjectCount);
+				if (ObjectCount <= 0)
+					ObjectCount = 1;
+				InstancedComponent.SpawnInfo.ObjectCount = ObjectCount;
 
-			ImGui::Text("Radius:");
-			float radius = InstancedComponent.SpawnInfo.Radius;
-			ImGui::SameLine();
-			ImGui::SetNextItemWidth(200);
-			ImGui::DragFloat("##Radius", &radius);
-			if (radius < 0.0f)
-				radius = 0.1f;
-			InstancedComponent.SpawnInfo.Radius = radius;
+				ImGui::Text("Radius:");
+				float radius = InstancedComponent.SpawnInfo.Radius;
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(200);
+				ImGui::DragFloat("##Radius", &radius);
+				if (radius < 0.0f)
+					radius = 0.1f;
+				InstancedComponent.SpawnInfo.Radius = radius;
 
-			// Scale deviation.
-			ImGui::Text("Scale: ");
+				// Scale deviation.
+				ImGui::Text("Scale: ");
 
-			ImGui::SameLine();
-			ImGui::Text("min ");
+				ImGui::SameLine();
+				ImGui::Text("min ");
 
-			ImGui::SameLine();
-			ImGui::SetNextItemWidth(100);
-			float MinScale = InstancedComponent.SpawnInfo.GetMinScale();
-			ImGui::DragFloat("##minScale", &MinScale, 0.01f);
-			InstancedComponent.SpawnInfo.SetMinScale(MinScale);
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(100);
+				float MinScale = InstancedComponent.SpawnInfo.GetMinScale();
+				ImGui::DragFloat("##minScale", &MinScale, 0.01f);
+				InstancedComponent.SpawnInfo.SetMinScale(MinScale);
 
-			ImGui::SameLine();
-			ImGui::Text("max ");
+				ImGui::SameLine();
+				ImGui::Text("max ");
 
-			ImGui::SameLine();
-			float MaxScale = InstancedComponent.SpawnInfo.GetMaxScale();
-			ImGui::SetNextItemWidth(100);
-			ImGui::DragFloat("##maxScale", &MaxScale, 0.01f);
-			InstancedComponent.SpawnInfo.SetMaxScale(MaxScale);
+				ImGui::SameLine();
+				float MaxScale = InstancedComponent.SpawnInfo.GetMaxScale();
+				ImGui::SetNextItemWidth(100);
+				ImGui::DragFloat("##maxScale", &MaxScale, 0.01f);
+				InstancedComponent.SpawnInfo.SetMaxScale(MaxScale);
 
-			ImGui::Text("Rotation deviation:");
-			float RotationDeviationX = InstancedComponent.SpawnInfo.RotationDeviation.x;
-			ImGui::Text("X:");
-			ImGui::SameLine();
-			ImGui::DragFloat("##Rotation deviation X", &RotationDeviationX, 0.01f);
-			if (RotationDeviationX < 0.01f)
-				RotationDeviationX = 0.01f;
-			if (RotationDeviationX > 1.0f)
-				RotationDeviationX = 1.0f;
-			InstancedComponent.SpawnInfo.RotationDeviation.x = RotationDeviationX;
+				ImGui::Text("Rotation deviation:");
+				float RotationDeviationX = InstancedComponent.SpawnInfo.RotationDeviation.x;
+				ImGui::Text("X:");
+				ImGui::SameLine();
+				ImGui::DragFloat("##Rotation deviation X", &RotationDeviationX, 0.01f);
+				if (RotationDeviationX < 0.01f)
+					RotationDeviationX = 0.01f;
+				if (RotationDeviationX > 1.0f)
+					RotationDeviationX = 1.0f;
+				InstancedComponent.SpawnInfo.RotationDeviation.x = RotationDeviationX;
 
-			float RotationDeviationY = InstancedComponent.SpawnInfo.RotationDeviation.y;
-			ImGui::Text("Y:");
-			ImGui::SameLine();
-			ImGui::DragFloat("##Rotation deviation Y", &RotationDeviationY, 0.01f);
-			if (RotationDeviationY < 0.01f)
-				RotationDeviationY = 0.01f;
-			if (RotationDeviationY > 1.0f)
-				RotationDeviationY = 1.0f;
-			InstancedComponent.SpawnInfo.RotationDeviation.y = RotationDeviationY;
+				float RotationDeviationY = InstancedComponent.SpawnInfo.RotationDeviation.y;
+				ImGui::Text("Y:");
+				ImGui::SameLine();
+				ImGui::DragFloat("##Rotation deviation Y", &RotationDeviationY, 0.01f);
+				if (RotationDeviationY < 0.01f)
+					RotationDeviationY = 0.01f;
+				if (RotationDeviationY > 1.0f)
+					RotationDeviationY = 1.0f;
+				InstancedComponent.SpawnInfo.RotationDeviation.y = RotationDeviationY;
 
-			float RotationDeviationZ = InstancedComponent.SpawnInfo.RotationDeviation.z;
-			ImGui::Text("Z:");
-			ImGui::SameLine();
-			ImGui::DragFloat("##Rotation deviation z", &RotationDeviationZ, 0.01f);
-			if (RotationDeviationZ < 0.01f)
-				RotationDeviationZ = 0.01f;
-			if (RotationDeviationZ > 1.0f)
-				RotationDeviationZ = 1.0f;
-			InstancedComponent.SpawnInfo.RotationDeviation.z = RotationDeviationZ;
+				float RotationDeviationZ = InstancedComponent.SpawnInfo.RotationDeviation.z;
+				ImGui::Text("Z:");
+				ImGui::SameLine();
+				ImGui::DragFloat("##Rotation deviation z", &RotationDeviationZ, 0.01f);
+				if (RotationDeviationZ < 0.01f)
+					RotationDeviationZ = 0.01f;
+				if (RotationDeviationZ > 1.0f)
+					RotationDeviationZ = 1.0f;
+				InstancedComponent.SpawnInfo.RotationDeviation.z = RotationDeviationZ;
 
-			if (ImGui::Button("Spawn/Re-Spawn"))
-			{
-				INSTANCED_RENDERING_SYSTEM.ClearInstance(EntitySelected);
-				INSTANCED_RENDERING_SYSTEM.PopulateInstance(EntitySelected, InstancedComponent.SpawnInfo);
-			}
-
-			if (ImGui::Button("Add instance"))
-			{
-				glm::mat4 NewInstanceMatrix = glm::identity<glm::mat4>();
-				NewInstanceMatrix = glm::translate(NewInstanceMatrix, ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-				INSTANCED_RENDERING_SYSTEM.AddIndividualInstance(EntitySelected, NewInstanceMatrix);
-
-				PROJECT_MANAGER.GetCurrent()->SetModified(true);
-			}
-
-			if (INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected))
-			{
-				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.0f, 0.75f, 0.0f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.0f, 1.0f, 0.0f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.0f, 1.0f, 0.0f));
-			}
-			else
-			{
-				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.55f, 0.55f, 0.95f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
-			}
-
-			ImGui::Separator();
-			if (ImGui::ImageButton((void*)(intptr_t)MouseCursorIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
-			{
-				INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(EntitySelected, !INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected));
-				if (!INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected))
+				if (ImGui::Button("Spawn/Re-Spawn"))
 				{
-					SELECTED.Clear();
-					SELECTED.SetSelected(EntitySelected);
+					INSTANCED_RENDERING_SYSTEM.ClearInstance(EntitySelected);
+					INSTANCED_RENDERING_SYSTEM.PopulateInstance(EntitySelected, InstancedComponent.SpawnInfo);
 				}
-			}
-			ShowToolTip("Individual selection mode - Used to select individual instances.");
 
-			ImGui::PopStyleColor();
-			ImGui::PopStyleColor();
-			ImGui::PopStyleColor();
+				if (ImGui::Button("Add instance"))
+				{
+					glm::mat4 NewInstanceMatrix = glm::identity<glm::mat4>();
+					NewInstanceMatrix = glm::translate(NewInstanceMatrix, ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+					INSTANCED_RENDERING_SYSTEM.AddIndividualInstance(EntitySelected, NewInstanceMatrix);
+
+					PROJECT_MANAGER.GetCurrent()->SetModified(true);
+				}
+
+				if (INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected))
+				{
+					ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.0f, 0.75f, 0.0f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.0f, 1.0f, 0.0f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.0f, 1.0f, 0.0f));
+				}
+				else
+				{
+					ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.55f, 0.55f, 0.95f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
+				}
+
+				ImGui::Separator();
+				if (ImGui::ImageButton((void*)(intptr_t)MouseCursorIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+				{
+					INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(EntitySelected, !INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected));
+					if (!INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected))
+					{
+						SELECTED.Clear();
+						SELECTED.SetSelected(EntitySelected);
+					}
+				}
+				ShowToolTip("Individual selection mode - Used to select individual instances.");
+
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+			}
 		}
 	}
 
 	if (EntitySelected->HasComponent<FETerrainComponent>())
 	{
-		FETerrainComponent& TerrainComponent = EntitySelected->GetComponent<FETerrainComponent>();
-		DisplayTerrainSettings(EntitySelected);
-
-		if (TERRAIN_SYSTEM.GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
+		if (ImGui::CollapsingHeader("Terrain", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			// To hide gizmos.
-			SELECTED.SetSelected(EntitySelected);
+			FETerrainComponent& TerrainComponent = EntitySelected->GetComponent<FETerrainComponent>();
+			DisplayTerrainSettings(EntitySelected);
 
-			TERRAIN_SYSTEM.SetBrushActive(EntitySelected, bLeftMousePressed);
-
-			if (bShiftPressed)
+			if (TERRAIN_SYSTEM.GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
 			{
-				if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW)
-					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED);
+				// To hide gizmos.
+				SELECTED.SetSelected(EntitySelected);
+
+				TERRAIN_SYSTEM.SetBrushActive(EntitySelected, bLeftMousePressed);
+
+				if (bShiftPressed)
+				{
+					if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW)
+						TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED);
+				}
+				else
+				{
+					if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED)
+						TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW);
+				}
 			}
 			else
 			{
-				if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED)
-					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW);
+				// To show gizmos.
+				SELECTED.SetSelected(EntitySelected);
 			}
-		}
-		else
-		{
-			// To show gizmos.
-			SELECTED.SetSelected(EntitySelected);
 		}
 	}
 
 	if (EntitySelected->HasComponent<FELightComponent>())
 	{
-		DisplayLightProperties(SELECTED.GetSelected());
+		if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			DisplayLightProperties(SELECTED.GetSelected());
+		}
+	}
+
+	std::vector<std::string> AvailableComponentTypes = GetAvailableComponentsToAdd(EntitySelected);
+
+	ImGui::SetNextItemWidth(220.0f);
+	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6.0f);
+
+	float RegionWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::SetCursorPosX(RegionWidth * 0.5f - 220.0f / 2.0f + 20.0f);
+
+	if (ImGui::BeginCombo("##Add Component", "   Add Component", ImGuiComboFlags_NoArrowButton))
+	{
+		for (size_t i = 0; i < AvailableComponentTypes.size(); i++)
+		{
+			if (ImGui::Selectable(AvailableComponentTypes[i].c_str(), false))
+			{
+				AddComponent(EntitySelected, AvailableComponentTypes[i]);
+			}
+		}
+		ImGui::EndCombo();
 	}
 
 

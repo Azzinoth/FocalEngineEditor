@@ -1048,7 +1048,8 @@ void FEProject::LoadScene()
 	{
 		FEEntity* Entity = SCENE.AddEntity(Root["terrains"][TerrainList[i]]["name"].asString(), Root["terrains"][TerrainList[i]]["ID"].asString());
 		FETransformComponent& TransformComponent = Entity->GetComponent<FETransformComponent>();
-		FETerrainComponent& TerrainComponent = Entity->AddComponent<FETerrainComponent>();
+		Entity->AddComponent<FETerrainComponent>();
+		FETerrainComponent& TerrainComponent = Entity->GetComponent<FETerrainComponent>();
 		TERRAIN_SYSTEM.LoadHeightMap((ProjectFolder + Root["terrains"][TerrainList[i]]["heightMap"]["fileName"].asCString()).c_str(), Entity);
 
 		TerrainComponent.SetHightScale(Root["terrains"][TerrainList[i]]["hightScale"].asFloat());
@@ -1107,9 +1108,10 @@ void FEProject::LoadScene()
 					FEPrefabComponent* CurrentComponent = OldPrefab->GetComponent(static_cast<int>(c));
 					FEGameModel* GameModel = CurrentComponent->GameModel;
 
-					//FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString())->GetComponent(0)->GameModel;
-					FEGameModelComponent& GameModelComponent = Entity->AddComponent<FEGameModelComponent>(GameModel);
-					FEInstancedComponent& InstancedComponent = Entity->AddComponent<FEInstancedComponent>();
+					Entity->AddComponent<FEGameModelComponent>(GameModel);
+					FEGameModelComponent& GameModelComponent = Entity->GetComponent<FEGameModelComponent>();
+					Entity->AddComponent<FEInstancedComponent>();
+					FEInstancedComponent& InstancedComponent = Entity->GetComponent<FEInstancedComponent>();
 
 					if (abs(ProjectVersion - 0.025f) <= FLT_EPSILON)
 						GameModelComponent.SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
@@ -1144,6 +1146,8 @@ void FEProject::LoadScene()
 						}
 					}
 
+					// FIX ME! That should be done after all entities are loaded.
+					// And scene was updated.
 					INSTANCED_RENDERING_SYSTEM.PopulateInstance(Entity, SpawnInfo);
 
 					if (Root["entities"][EntityList[i]]["modificationsToSpawn"].asBool())
@@ -1270,7 +1274,8 @@ void FEProject::LoadScene()
 		{
 			NewType = FE_SPOT_LIGHT;
 		}
-		FELightComponent& LightComponent = Entity->AddComponent<FELightComponent>(NewType);
+		Entity->AddComponent<FELightComponent>(NewType);
+		FELightComponent& LightComponent = Entity->GetComponent<FELightComponent>();
 
 		LightComponent.SetIntensity(Root["lights"][LightList[i]]["intensity"].asFloat());
 		ReadTransformToJson(Root["lights"][LightList[i]]["transformation"], &Entity->GetComponent<FETransformComponent>());
@@ -1366,6 +1371,11 @@ void FEProject::LoadScene()
 
 	if (ProjectVersion >= 0.02f && Root["camera"].isMember("movementSpeed"))
 		ENGINE.GetCamera()->SetMovementSpeed(Root["camera"]["movementSpeed"].asFloat());
+
+	// After all scene objects are loaded, we need to update all objects.
+	SCENE.Update();
+
+	// FIX ME! Only after that all systems should be updated and triggered.
 
 	// VFS
 	if (FILE_SYSTEM.CheckFile((ProjectFolder + "VFS.txt").c_str()))

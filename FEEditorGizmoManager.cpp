@@ -32,7 +32,7 @@ void GizmoManager::InitializeResources()
 	TransformationXGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
 	TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// TransformationYGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationYGizmoMaterial");
@@ -59,7 +59,7 @@ void GizmoManager::InitializeResources()
 	TransformationYGizmoEntity->Transform.SetRotation(glm::vec3(0.0f));
 	TransformationYGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// TransformationZGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationZGizmoMaterial");
@@ -86,7 +86,7 @@ void GizmoManager::InitializeResources()
 	TransformationZGizmoEntity->Transform.SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
 	TransformationZGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// Plane gizmos
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationXYGizmoMaterial");
@@ -115,7 +115,7 @@ void GizmoManager::InitializeResources()
 	//TransformationXYGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
 	//TransformationXYGizmoEntity->SetIsPostprocessApplied(false);
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationYZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
@@ -143,7 +143,7 @@ void GizmoManager::InitializeResources()
 	//TransformationYZGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 	//TransformationYZGizmoEntity->SetIsPostprocessApplied(false);
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationYZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationYZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationXZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
@@ -171,7 +171,7 @@ void GizmoManager::InitializeResources()
 	//TransformationXZGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 	//TransformationXZGizmoEntity->SetIsPostprocessApplied(false);
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// Scale gizmos.
 	FEMesh* ScaleGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "637C784B2E5E5C6548190E1B.model").c_str(), "scaleGizmoMesh");
@@ -202,7 +202,7 @@ void GizmoManager::InitializeResources()
 	ScaleXGizmoEntity->Transform.SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
 	ScaleXGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// ScaleYGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("scaleYGizmoMaterial");
@@ -229,7 +229,7 @@ void GizmoManager::InitializeResources()
 	ScaleYGizmoEntity->Transform.SetRotation(glm::vec3(0.0f));
 	ScaleYGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// ScaleZGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("scaleZGizmoMaterial");
@@ -256,7 +256,7 @@ void GizmoManager::InitializeResources()
 	ScaleZGizmoEntity->Transform.SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
 	ScaleZGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// RotateAroundAxis gizmos
 	FEMesh* RotateGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "19622421516E5B317E1B5360.model").c_str(), "rotateGizmoMesh");
@@ -287,7 +287,7 @@ void GizmoManager::InitializeResources()
 	RotateXGizmoEntity->Transform.SetRotation(RotateXStandardRotation);
 	RotateXGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// RotateYGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("rotateYGizmoMaterial");
@@ -314,7 +314,7 @@ void GizmoManager::InitializeResources()
 	RotateYGizmoEntity->Transform.SetRotation(RotateYStandardRotation);
 	RotateYGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// RotateZGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("rotateZGizmoMaterial");
@@ -341,7 +341,7 @@ void GizmoManager::InitializeResources()
 	RotateZGizmoEntity->Transform.SetRotation(RotateZStandardRotation);
 	RotateZGizmoEntity->SetIsPostprocessApplied(false);*/
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	TransformationGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "456A31026A1C3152181A6064.texture").c_str(), "transformationGizmoIcon");
 	RESOURCE_MANAGER.MakeTextureStandard(TransformationGizmoIcon);
@@ -714,25 +714,6 @@ glm::vec3 GizmoManager::GetMousePositionDifferenceOnPlane(glm::vec3 PlaneNormal,
 	return PointOnPlane;
 }
 
-void GizmoManager::MoveSelectedEntityAlongAxis(const glm::vec3& AxisOfMovement, FETransformComponent& ObjectTransform)
-{
-	glm::vec3 NewPosition = ObjectTransform.GetPosition();
-	glm::vec3 LocalAlternativeAxis = AxisOfMovement;
-
-	FENaiveSceneGraphNode* SceneGraphParentEntity = SCENE.SceneGraph.GetNodeByEntityID(SELECTED.GetSelected()->GetObjectID());
-	if (SceneGraphParentEntity != nullptr)
-	{
-		if (SceneGraphParentEntity->GetParent() != SCENE.SceneGraph.GetRoot())
-		{
-			FETransformComponent& ParentTransform = SceneGraphParentEntity->GetParent()->GetEntity()->GetComponent<FETransformComponent>();
-			LocalAlternativeAxis = glm::inverse(ParentTransform.GetWorldMatrix()) * glm::vec4(AxisOfMovement, 0.0f);
-		}
-
-		NewPosition += LocalAlternativeAxis;
-		ObjectTransform.SetPosition(NewPosition);
-	}
-}
-
 void GizmoManager::MouseMoveTransformationGizmos()
 {
 	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject();
@@ -760,16 +741,8 @@ void GizmoManager::MouseMoveTransformationGizmos()
 		const float Difference = GizmoRayParametricIntersection - LastFrameGizmoRayParametricIntersection;
 		if (abs(Difference) > FLT_EPSILON)
 		{
-			//float OldY = ObjTransform.GetPosition(false)[1];
 			bAppliedSomeChanges = true;
-
-
-
-			//ObjTransform.SetPosition(ObjTransform.GetPosition(false) + glm::vec3(Difference, 0.0f, 0.0f), false);
-
 			ObjTransform.SetPosition(ObjTransform.GetPosition(false) + glm::vec3(Difference, 0.0f, 0.0f), false);
-
-			//MoveAlongAxis(glm::vec3(Difference, 0.0f, 0.0f), ObjTransform);
 		}
 	}
 
@@ -789,7 +762,7 @@ void GizmoManager::MouseMoveTransformationGizmos()
 		if (abs(Difference) > FLT_EPSILON)
 		{
 			bAppliedSomeChanges = true;
-			MoveSelectedEntityAlongAxis(glm::vec3(0.0f, Difference, 0.0f), ObjTransform);
+			ObjTransform.SetPosition(ObjTransform.GetPosition(false) + glm::vec3(0.0f, Difference, 0.0f), false);
 		}
 	}
 
@@ -809,7 +782,7 @@ void GizmoManager::MouseMoveTransformationGizmos()
 		if (abs(Difference) > FLT_EPSILON)
 		{
 			bAppliedSomeChanges = true;
-			MoveSelectedEntityAlongAxis(glm::vec3(0.0f, 0.0f, Difference), ObjTransform);
+			ObjTransform.SetPosition(ObjTransform.GetPosition(false) + glm::vec3(0.0f, 0.0f, Difference), false);
 		}
 	}
 
@@ -819,7 +792,7 @@ void GizmoManager::MouseMoveTransformationGizmos()
 		if (!GEOMETRY.IsEpsilonEqual(Difference, glm::vec3(0.0f)))
 		{
 			bAppliedSomeChanges = true;
-			MoveSelectedEntityAlongAxis(Difference, ObjTransform);
+			ObjTransform.SetPosition(ObjTransform.GetPosition(false) + Difference, false);
 		}
 	}
 
@@ -829,7 +802,7 @@ void GizmoManager::MouseMoveTransformationGizmos()
 		if (!GEOMETRY.IsEpsilonEqual(Difference, glm::vec3(0.0f)))
 		{
 			bAppliedSomeChanges = true;
-			MoveSelectedEntityAlongAxis(Difference, ObjTransform);
+			ObjTransform.SetPosition(ObjTransform.GetPosition(false) + Difference, false);
 		}
 	}
 
@@ -839,7 +812,7 @@ void GizmoManager::MouseMoveTransformationGizmos()
 		if (!GEOMETRY.IsEpsilonEqual(Difference, glm::vec3(0.0f)))
 		{
 			bAppliedSomeChanges = true;
-			MoveSelectedEntityAlongAxis(Difference, ObjTransform);
+			ObjTransform.SetPosition(ObjTransform.GetPosition(false) + Difference, false);
 		}
 	}
 
@@ -996,38 +969,14 @@ FETransformComponent GizmoManager::GetTransformComponentOfSelectedObject()
 	if (SELECTED.InstancedSubObjectIndexSelected != -1 && SELECTED.GetSelected()->HasComponent<FEInstancedComponent>())
 	{
 		FEInstancedComponent& InstancedComponent = SELECTED.GetSelected()->GetComponent<FEInstancedComponent>();
-		return InstancedComponent.GetTransformedInstancedMatrix(SELECTED.InstancedSubObjectIndexSelected);
+		FETransformComponent& DummyTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(SELECTED.InstancedSubObjectIndexSelected));
+		DummyTransform.SetSceneIndependent(true);
+		return DummyTransform;
 	}
 	else
 	{
 		return SELECTED.GetSelected()->GetComponent<FETransformComponent>();
 	}
-
-	/*if (SELECTED.GetSelected()->GetType() == FE_ENTITY)
-	{
-		return SELECTED.GetEntity()->Transform;
-	}
-	else if (SELECTED.GetSelected()->GetType() == FE_ENTITY_INSTANCED)
-	{
-		if (SELECTED.InstancedSubObjectIndexSelected != -1)
-		{
-			return reinterpret_cast<FEEntityInstanced*>(SELECTED.GetEntity())->GetTransformedInstancedMatrix(SELECTED.InstancedSubObjectIndexSelected);
-		}
-		else
-		{
-			return SELECTED.GetEntity()->Transform;
-		}
-	}
-	else if (SELECTED.GetSelected()->GetType() == FE_TERRAIN)
-	{
-		return SELECTED.GetTerrain()->Transform;
-	}
-	else if (SELECTED.GetSelected()->GetType() == FE_DIRECTIONAL_LIGHT || SELECTED.GetSelected()->GetType() == FE_SPOT_LIGHT || SELECTED.GetSelected()->GetType() == FE_POINT_LIGHT)
-	{
-		return SELECTED.GetLight()->Transform;
-	}
-
-	return FETransformComponent();*/
 }
 
 void GizmoManager::ApplyChangesToSelectedObject(FETransformComponent Changes)
@@ -1043,30 +992,6 @@ void GizmoManager::ApplyChangesToSelectedObject(FETransformComponent Changes)
 	{
 		SELECTED.GetSelected()->GetComponent<FETransformComponent>() = Changes;
 	}
-
-	/*if (SELECTED.GetSelected()->GetType() == FE_ENTITY)
-	{
-		SELECTED.GetEntity()->Transform = Changes;
-	}
-	else if (SELECTED.GetSelected()->GetType() == FE_ENTITY_INSTANCED)
-	{
-		if (SELECTED.InstancedSubObjectIndexSelected != -1)
-		{
-			reinterpret_cast<FEEntityInstanced*>(SELECTED.GetEntity())->ModifyInstance(SELECTED.InstancedSubObjectIndexSelected, Changes.GetWorldMatrix());
-		}
-		else
-		{
-			SELECTED.GetEntity()->Transform = Changes;
-		}
-	}
-	else if (SELECTED.GetSelected()->GetType() == FE_TERRAIN)
-	{
-		SELECTED.GetTerrain()->Transform = Changes;
-	}
-	else if (SELECTED.GetSelected()->GetType() == FE_DIRECTIONAL_LIGHT || SELECTED.GetSelected()->GetType() == FE_SPOT_LIGHT || SELECTED.GetSelected()->GetType() == FE_POINT_LIGHT)
-	{
-		SELECTED.GetLight()->Transform = Changes;
-	}*/
 }
 
 void GizmoManager::ReInitializeEntities()
@@ -1084,7 +1009,7 @@ void GizmoManager::ReInitializeEntities()
 	TransformationXGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	TransformationXGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// TransformationYGizmo
 	TransformationYGizmoEntity = SCENE.AddEntity("TransformationYGizmoEntity");
@@ -1096,7 +1021,7 @@ void GizmoManager::ReInitializeEntities()
 	TransformationYGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	TransformationYGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f));
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// TransformationZGizmo
 	TransformationZGizmoEntity = SCENE.AddEntity("TransformationZGizmoEntity");
@@ -1107,7 +1032,7 @@ void GizmoManager::ReInitializeEntities()
 	TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetIsPostprocessApplied(false);
 	TransformationZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	TransformationZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// Plane gizmos
 	TransformationXYGizmoEntity = SCENE.AddEntity("TransformationXYGizmoEntity");
@@ -1120,7 +1045,7 @@ void GizmoManager::ReInitializeEntities()
 	TransformationXYGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale, GizmosScale, GizmosScale * 0.02f));
 	TransformationXYGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	TransformationYZGizmoEntity = SCENE.AddEntity("TransformationYZGizmoEntity");
 	TransformationYZGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationYZGizmoGM")[0]);
@@ -1132,7 +1057,7 @@ void GizmoManager::ReInitializeEntities()
 	TransformationYZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale * 0.02f, GizmosScale, GizmosScale));
 	TransformationYZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationYZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationYZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	TransformationXZGizmoEntity = SCENE.AddEntity("TransformationXZGizmoEntity");
 	TransformationXZGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationXZGizmoGM")[0]);
@@ -1144,7 +1069,7 @@ void GizmoManager::ReInitializeEntities()
 	TransformationXZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale, GizmosScale * 0.02f, GizmosScale));
 	TransformationXZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(TransformationXZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// ScaleXGizmo
 	ScaleXGizmoEntity = SCENE.AddEntity("ScaleXGizmoEntity");
@@ -1156,7 +1081,7 @@ void GizmoManager::ReInitializeEntities()
 	ScaleXGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	ScaleXGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f, 0.0f, -90.0f));
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// ScaleYGizmo
 	ScaleYGizmoEntity = SCENE.AddEntity("ScaleYGizmoEntity");
@@ -1168,7 +1093,7 @@ void GizmoManager::ReInitializeEntities()
 	ScaleYGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	ScaleYGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(0.0f));
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// ScaleZGizmo
 	ScaleZGizmoEntity = SCENE.AddEntity("ScaleZGizmoEntity");
@@ -1180,7 +1105,7 @@ void GizmoManager::ReInitializeEntities()
 	ScaleZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale));
 	ScaleZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(90.0f, 0.0f, 90.0f));
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(ScaleZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// RotateXGizmo
 	RotateXGizmoEntity = SCENE.AddEntity("RotateXGizmoEntity");
@@ -1192,7 +1117,7 @@ void GizmoManager::ReInitializeEntities()
 	RotateXGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateXGizmoEntity->GetComponent<FETransformComponent>().SetRotation(RotateXStandardRotation);
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateXGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// RotateYGizmo
 	RotateYGizmoEntity = SCENE.AddEntity("RotateYGizmoEntity");
@@ -1204,7 +1129,7 @@ void GizmoManager::ReInitializeEntities()
 	RotateYGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateYGizmoEntity->GetComponent<FETransformComponent>().SetRotation(RotateYStandardRotation);
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateYGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 
 	// RotateZGizmo
 	RotateZGizmoEntity = SCENE.AddEntity("RotateZGizmoEntity");
@@ -1216,5 +1141,5 @@ void GizmoManager::ReInitializeEntities()
 	RotateZGizmoEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(GizmosScale * 2.0f));
 	RotateZGizmoEntity->GetComponent<FETransformComponent>().SetRotation(RotateZStandardRotation);
 	// Temporary overly complicated solution, because of new and old entity system.
-	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID());
+	SCENE.SceneGraph.MoveNode(SCENE.SceneGraph.GetNodeByEntityID(RotateZGizmoEntity->GetObjectID())->GetObjectID(), ParentGizmoGraphNode->GetObjectID(), false);
 }

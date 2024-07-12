@@ -220,7 +220,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			else if (PotentiallySelectedEntity->HasComponent<FEInstancedComponent>())
 			{
 				// Render instanced object only if it is not in individual select mode
-				if (/*InstancedSubObjectsInfo.find(PotentiallySelectedEntity) == InstancedSubObjectsInfo.end()*/!INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(PotentiallySelectedEntity))
+				if (!INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(PotentiallySelectedEntity))
 				{
 					PixelAccurateSelectionMaterial->Shader = FEPixelAccurateInstancedSelection;
 					FEMaterial* RegularBillboardMaterials = GameModelComponent.GameModel->GetBillboardMaterial();
@@ -275,7 +275,8 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			DummyGameModelComponent.SetVisibility(true);
 
 			FEInstancedComponent& InstancedComponent = it->first->GetComponent<FEInstancedComponent>();
-			DummyEntity->GetComponent<FETransformComponent>() = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(it->second[j]));
+			FETransformComponent& DummyTransformComponent = DummyEntity->GetComponent<FETransformComponent>();
+			DummyTransformComponent = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(it->second[j]));
 
 			FEMaterial* RegularMaterial = OriginalGameModelComponent.GameModel->Material;
 			DummyGameModelComponent.GameModel->Material = PixelAccurateSelectionMaterial;
@@ -284,10 +285,9 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
 			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
 
-			RENDERER.RenderGameModelComponent(DummyGameModelComponent, DummyEntity->GetComponent<FETransformComponent>(), ENGINE.GetCamera(), false);
-			
+			RENDERER.RenderGameModelComponent(DummyGameModelComponent, DummyTransformComponent, ENGINE.GetCamera(), false);
+
 			OriginalGameModelComponent.GameModel->Material = RegularMaterial;
-			
 			DummyGameModelComponent.SetVisibility(false);
 		}
 		it++;
@@ -399,36 +399,28 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 		}
 		else if (Container->HasComponent<FEInstancedComponent>())
 		{
-			//FEEntityInstanced* SelectedInstancedEntity = reinterpret_cast<FEEntityInstanced*>(SelectedEntity);
 			if (InstancedSubObjectIndexSelected != -1)
 			{
-				// FIX ME!
-				//static FEEntity* DummyEntity = SCENE.AddEntity(SelectedInstancedEntity->Prefab, "dummyEntity");
 				if (!DummyEntity->HasComponent<FEGameModelComponent>())
 					DummyEntity->AddComponent<FEGameModelComponent>();
+
 				FEGameModelComponent& DummyGameModelComponent = DummyEntity->GetComponent<FEGameModelComponent>();
 				DummyGameModelComponent.GameModel = GameModelComponent.GameModel;
 				DummyGameModelComponent.SetVisibility(true);
 
-				//DummyEntity->Prefab = SelectedInstancedEntity->Prefab;
 				FEInstancedComponent& InstancedComponent = Container->GetComponent<FEInstancedComponent>();
 				DummyEntity->GetComponent<FETransformComponent>() = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(InstancedSubObjectIndexSelected));
-				//FETransformComponent(SelectedInstancedEntity->GetTransformedInstancedMatrix(InstancedSubObjectIndexSelected));
 
 				FEMaterial* RegularMaterial = GameModelComponent.GameModel->Material;
-
 				DummyGameModelComponent.GameModel->Material = HALO_SELECTION_EFFECT.HaloMaterial;
 
 				HALO_SELECTION_EFFECT.HaloMaterial->SetBaseColor(glm::vec3(0.61f, 0.86f, 1.0f));
 				HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
 				HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
 
-				//RENDERER.RenderEntity(DummyEntity, ENGINE.GetCamera(), false, i);
 				RENDERER.RenderGameModelComponent(DummyGameModelComponent, DummyEntity->GetComponent<FETransformComponent>(), ENGINE.GetCamera(), false);
 
-				//SelectedInstancedEntity->Prefab->GetComponent(i)->GameModel->Material = RegularMaterial;
 				GameModelComponent.GameModel->Material = RegularMaterial;
-
 				DummyGameModelComponent.SetVisibility(false);
 			}
 			else

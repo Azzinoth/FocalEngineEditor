@@ -398,45 +398,52 @@ void FEEditorSceneGraphWindow::Render()
 		{
 			if (ImGui::BeginMenu("Add"))
 			{
-				if (ImGui::MenuItem("Entity"))
+				if (ImGui::MenuItem("Empty entity"))
 				{
-					SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, CreateEntityCallBack);
+					SCENE.AddEntity("Unnamed entity");
 				}
 
-				if (ImGui::MenuItem("Instanced entity"))
-				{
-					SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, CreateInstancedEntityCallBack);
-				}
+				// FIX ME!
+				//if (ImGui::MenuItem("Entity"))
+				//{
+				//	SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, CreateEntityCallBack);
+				//}
 
-				if (ImGui::MenuItem("Terrain"))
-				{
-					FEEntity* Entity = SCENE.AddEntity("Unnamed terrain");
-					FETransformComponent& TransformComponent = Entity->GetComponent<FETransformComponent>();
-					FETerrainComponent& TerrainComponent = Entity->AddComponent<FETerrainComponent>();
-					TerrainComponent.HeightMap = RESOURCE_MANAGER.CreateBlankHightMapTexture();
+				//if (ImGui::MenuItem("Instanced entity"))
+				//{
+				//	SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, CreateInstancedEntityCallBack);
+				//}
 
-					PROJECT_MANAGER.GetCurrent()->SetModified(true);
-				}
+				//if (ImGui::MenuItem("Terrain"))
+				//{
+				//	FEEntity* Entity = SCENE.AddEntity("Unnamed terrain");
+				//	FETransformComponent& TransformComponent = Entity->GetComponent<FETransformComponent>();
+				//	Entity->AddComponent<FETerrainComponent>();
+				//	FETerrainComponent& TerrainComponent = Entity->GetComponent<FETerrainComponent>();
+				//	TerrainComponent.HeightMap = RESOURCE_MANAGER.CreateBlankHightMapTexture();
 
-				if (ImGui::BeginMenu("Light"))
-				{
-					/*if (ImGui::MenuItem("Directional"))
-					{
-						SCENE.AddLight(FE_DIRECTIONAL_LIGHT, "");
-					}
+				//	PROJECT_MANAGER.GetCurrent()->SetModified(true);
+				//}
 
-					if (ImGui::MenuItem("Spot"))
-					{
-						SCENE.AddLight(FE_SPOT_LIGHT, "");
-					}
+				//if (ImGui::BeginMenu("Light"))
+				//{
+				//	/*if (ImGui::MenuItem("Directional"))
+				//	{
+				//		SCENE.AddLight(FE_DIRECTIONAL_LIGHT, "");
+				//	}
 
-					if (ImGui::MenuItem("Point"))
-					{
-						SCENE.AddLight(FE_POINT_LIGHT, "");
-					}*/
+				//	if (ImGui::MenuItem("Spot"))
+				//	{
+				//		SCENE.AddLight(FE_SPOT_LIGHT, "");
+				//	}
 
-					ImGui::EndMenu();
-				}
+				//	if (ImGui::MenuItem("Point"))
+				//	{
+				//		SCENE.AddLight(FE_POINT_LIGHT, "");
+				//	}*/
+
+				//	ImGui::EndMenu();
+				//}
 
 				ImGui::EndMenu();
 			}

@@ -20,7 +20,8 @@ void FEEditorPreviewManager::InitializeResources()
 	PreviewGameModel = new FEGameModel(nullptr, nullptr, "editorPreviewGameModel");
 	PreviewPrefab = new FEPrefab(PreviewGameModel, "editorPreviewPrefab");
 	PreviewEntity = SCENE.AddEntity("editorPreviewEntity");
-	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel).SetVisibility(false);
+	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
+	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 	MeshPreviewMaterial = RESOURCE_MANAGER.CreateMaterial("meshPreviewMaterial");
 	RESOURCE_MANAGER.MakeMaterialStandard(MeshPreviewMaterial);
 	MeshPreviewMaterial->Shader = RESOURCE_MANAGER.CreateShader("FEMeshPreviewShader", RESOURCE_MANAGER.LoadGLSL("Resources//Materials//FE_MeshPreview_VS.glsl").c_str(),
@@ -42,7 +43,8 @@ void FEEditorPreviewManager::InitializeResources()
 void FEEditorPreviewManager::ReInitializeEntities()
 {
 	PreviewEntity = SCENE.AddEntity("editorPreviewEntity");
-	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel).SetVisibility(false);
+	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
+	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 
 	/*LocalLightEntity = SCENE.AddEntity("EditorPreview LightEntity");
 	FELightComponent& LightComponent = LocalLightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
