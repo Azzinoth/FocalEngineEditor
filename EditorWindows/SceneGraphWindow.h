@@ -48,7 +48,7 @@ class FEEditorSceneGraphWindow
     bool bSceneNodeTargetsDirty = true;
     static bool SceneNodeDragAndDropCallback(FEObject* Object, void** SceneNodeTarget)
     {
-        if (Object == nullptr || SceneNodeTarget == nullptr ||  Object->GetType() != FE_SCENE_ENTITY)
+        if (Object == nullptr || SceneNodeTarget == nullptr ||  Object->GetType() != FE_SCENE_GRAPH_NODE)
 			return false;
 		
         FENaiveSceneGraphNode* NodeTarget = reinterpret_cast<FENaiveSceneGraphNode*>(SceneNodeTarget);
