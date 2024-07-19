@@ -29,6 +29,16 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	RESOURCE_MANAGER.MakeTextureStandard(CameraIcon);
 }
 
+void FEEditorSceneGraphWindow::SetScene(FEScene* Scene)
+{
+	CurrentScene = Scene;
+}
+
+FEScene* FEEditorSceneGraphWindow::GetScene()
+{
+	return CurrentScene;
+}
+
 void FEEditorSceneGraphWindow::Clear()
 {
 	strcpy_s(FilterForEntities, "");
@@ -82,7 +92,7 @@ static void CreateInstancedEntityCallBack(const std::vector<FEObject*> Selection
 		if (SelectedPrefab == nullptr)
 			return;
 
-		FEEntity* Entity = SCENE.AddEntity();
+		FEEntity* Entity = SCENE_GRAPH_WINDOW.GetScene()->AddEntity();
 		Entity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
 		Entity->AddComponent<FEGameModelComponent>(SelectedPrefab->GetComponent(0)->GameModel);
 		Entity->AddComponent<FEInstancedComponent>();
@@ -100,7 +110,7 @@ static void CreateEntityCallBack(const std::vector<FEObject*> SelectionsResult)
 		if (SelectedPrefab == nullptr)
 			return;
 
-		FEEntity* Entity = SCENE.AddEntity();
+		FEEntity* Entity = SCENE_GRAPH_WINDOW.GetScene()->AddEntity();
 		Entity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
 		SELECTED.SetSelected(Entity);
 
@@ -267,7 +277,7 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 
 void FEEditorSceneGraphWindow::RenderNewSceneGraph()
 {
-	FENaiveSceneGraphNode* Root = SCENE.SceneGraph.GetRoot();
+	FENaiveSceneGraphNode* Root = SCENE_GRAPH_WINDOW.GetScene()->SceneGraph.GetRoot();
 
 	if (bSceneNodeTargetsDirty)
 		SceneNodeDragAndDropTargets.clear();
@@ -282,6 +292,9 @@ void FEEditorSceneGraphWindow::RenderNewSceneGraph()
 void FEEditorSceneGraphWindow::Render()
 {
 	if (!bVisible)
+		return;
+
+	if (CurrentScene == nullptr)
 		return;
 
 	static int SceneObjectHoveredIndex = -1;
@@ -314,7 +327,7 @@ void FEEditorSceneGraphWindow::Render()
 	//	SceneObjectsList.push_back(EntityList[i]);
 	//}
 
-	const std::vector<std::string> TerrainList = SCENE.GetEntityIDListWith<FETerrainComponent>();
+	const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWith<FETerrainComponent>();
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
 		SceneObjectsList.push_back(TerrainList[i]);
@@ -400,7 +413,7 @@ void FEEditorSceneGraphWindow::Render()
 			{
 				if (ImGui::MenuItem("Empty entity"))
 				{
-					SCENE.AddEntity("Unnamed entity");
+					CurrentScene->AddEntity("Unnamed entity");
 				}
 
 				// FIX ME!
@@ -452,21 +465,21 @@ void FEEditorSceneGraphWindow::Render()
 		{
 			if (ImGui::MenuItem("Rename"))
 			{
-				if (SCENE.GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
+				if (CurrentScene->GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
 				{
-					RenamePopUp::getInstance().Show(SCENE.GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]));
+					RenamePopUp::getInstance().Show(CurrentScene->GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]));
 				}
 			}
 
 			if (ImGui::MenuItem("Delete"))
 			{
-				FEEntity* Entity = SCENE.GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
+				FEEntity* Entity = CurrentScene->GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
 				if (Entity != nullptr)
 				{
 					if (SELECTED.GetSelected() == Entity)
 						SELECTED.Clear();
 
-					SCENE.DeleteEntity(Entity);
+					CurrentScene->DeleteEntity(Entity);
 				}
 
 				// FIX ME!

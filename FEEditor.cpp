@@ -9,13 +9,19 @@ bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
 	{
 		FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Object->GetObjectID())->GetComponent(0)->GameModel;
 
-		FEEntity* Entity = SCENE.AddEntity(Object->GetName());
-		Entity->GetComponent<FEGameModelComponent>().GameModel = GameModel;
-		Entity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-		SELECTED.SetSelected(Entity);
-		PROJECT_MANAGER.GetCurrent()->SetModified(true);
+		// FIX ME! Temporary solution, only supports one scene
+		std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+		if (!ActiveScenes.empty())
+		{
+			FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+			FEEntity* Entity = CurrentScene->AddEntity(Object->GetName());
+			Entity->GetComponent<FEGameModelComponent>().GameModel = GameModel;
+			Entity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+			SELECTED.SetSelected(Entity);
+			PROJECT_MANAGER.GetCurrent()->SetModified(true);
 
-		return true;
+			return true;
+		}
 	}
 
 	return false;
@@ -168,7 +174,13 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 			}
 			else
 			{
-				SCENE.DeleteEntity(SELECTED.GetSelected());
+				// FIX ME! Temporary solution, only supports one scene
+				std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+				if (!ActiveScenes.empty())
+				{
+					FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+					CurrentScene->DeleteEntity(SELECTED.GetSelected());
+				}
 			}
 
 			SELECTED.Clear();
@@ -186,17 +198,21 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 	{
 		if (!EDITOR.GetSceneEntityIDInClipboard().empty())
 		{
-			// FIX ME!
-			// There should be proper FEScene::DuplicateEntity that will duplicate the entity and all its components
-			// Also place it in same scene graph node as the original entity ?
-			FEEntity* EntityToCopy = SCENE.GetEntity(EDITOR.GetSceneEntityIDInClipboard());
-			FEEntity* Entity = SCENE.AddEntity(EntityToCopy->GetName() + "_Copy");
-			Entity->GetComponent<FETransformComponent>() = EntityToCopy->GetComponent<FETransformComponent>();
-			Entity->GetComponent<FETransformComponent>().SetPosition(EntityToCopy->GetComponent<FETransformComponent>().GetPosition() * 1.1f);
-			if (EntityToCopy->HasComponent<FEGameModelComponent>())
-				Entity->AddComponent<FEGameModelComponent>(EntityToCopy->GetComponent<FEGameModelComponent>().GameModel);
-			
-			SELECTED.SetSelected(Entity);
+			// FIX ME! Temporary solution, only supports one scene
+			std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+			if (!ActiveScenes.empty())
+			{
+				FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+
+				FEEntity* EntityToDuplicate = CurrentScene->GetEntity(EDITOR.GetSceneEntityIDInClipboard());
+				FENaiveSceneGraphNode* NodeToDuplicate = CurrentScene->SceneGraph.GetNodeByEntityID(EntityToDuplicate->GetObjectID());
+				FENaiveSceneGraphNode* DuplicatedNode = CurrentScene->SceneGraph.DuplicateNode(NodeToDuplicate->GetObjectID(), NodeToDuplicate->GetParent()->GetObjectID());
+				if (DuplicatedNode != nullptr)
+				{
+					FEEntity* DuplicatedEntity = DuplicatedNode->GetEntity();
+					SELECTED.SetSelected(DuplicatedEntity);
+				}
+			}
 		}
 	}
 
@@ -236,39 +252,42 @@ void FEEditor::InitializeResources()
 	// **************************** Gizmos ****************************
 	GIZMO_MANAGER.InitializeResources();
 
-	// hide all resources for gizmos from content browser
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("45191B6F172E3B531978692E"/*"transformationGizmoMesh"*/));
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("637C784B2E5E5C6548190E1B"/*"scaleGizmoMesh"*/));
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("19622421516E5B317E1B5360"/*"rotateGizmoMesh"*/));
+	if (!SCENE_MANAGER.GetActiveScenes().empty())
+	{
+		// hide all resources for gizmos from content browser
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("45191B6F172E3B531978692E"/*"transformationGizmoMesh"*/));
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("637C784B2E5E5C6548190E1B"/*"scaleGizmoMesh"*/));
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("19622421516E5B317E1B5360"/*"rotateGizmoMesh"*/));
 
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoEntity);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoEntity);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoEntity);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoEntity);
 
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoEntity);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoEntity);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoEntity);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoEntity);
 
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity);
 
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(PREVIEW_MANAGER.PreviewEntity);
+		EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(PREVIEW_MANAGER.PreviewEntity);
+	}
 
 	SCENE_GRAPH_WINDOW.InitializeResources();
 	CONTENT_BROWSER_WINDOW.InitializeResources();
@@ -557,20 +576,26 @@ void FEEditor::DropCallback(const int Count, const char** Paths)
 
 		if (PROJECT_MANAGER.GetCurrent() != nullptr)
 		{
-			std::vector<FEObject*> LoadedObjects = SCENE.ImportAsset(Paths[i]);
-			for (size_t j = 0; j < LoadedObjects.size(); j++)
+			// FIX ME! Temporary solution, only supports one scene
+			std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+			if (!ActiveScenes.empty())
 			{
-				if (LoadedObjects[j] != nullptr)
+				FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+				std::vector<FEObject*> LoadedObjects = CurrentScene->ImportAsset(Paths[i]);
+				for (size_t j = 0; j < LoadedObjects.size(); j++)
 				{
-					if (LoadedObjects[j]->GetType() == FE_ENTITY)
+					if (LoadedObjects[j] != nullptr)
 					{
-						//SCENE.AddEntity(reinterpret_cast<FEEntity*>(LoadedObjects[j]));
-					}
-					else
-					{
-						VIRTUAL_FILE_SYSTEM.CreateFile(LoadedObjects[j], VIRTUAL_FILE_SYSTEM.GetCurrentPath());
-						PROJECT_MANAGER.GetCurrent()->SetModified(true);
-						PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(LoadedObjects[j]);
+						if (LoadedObjects[j]->GetType() == FE_ENTITY)
+						{
+							//SCENE.AddEntity(reinterpret_cast<FEEntity*>(LoadedObjects[j]));
+						}
+						else
+						{
+							VIRTUAL_FILE_SYSTEM.CreateFile(LoadedObjects[j], VIRTUAL_FILE_SYSTEM.GetCurrentPath());
+							PROJECT_MANAGER.GetCurrent()->SetModified(true);
+							PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(LoadedObjects[j]);
+						}
 					}
 				}
 			}

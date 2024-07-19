@@ -81,15 +81,21 @@ std::vector<FEMaterial*> DeleteTexturePopup::MaterialsThatUsesTexture(const FETe
 		}
 	}
 
-	const std::vector<std::string> TerrainList = SCENE.GetEntityIDListWith<FETerrainComponent>();
-	for (size_t i = 0; i < TerrainList.size(); i++)
+	// FIX ME! Temporary solution, only supports one scene
+	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+	if (!ActiveScenes.empty())
 	{
-		/*FEEntity* CurrentTerrain = SCENE.GetEntity(TerrainList[i]);
-		FETerrainComponent& TerrainComponent = CurrentTerrain->GetComponent<FETerrainComponent>();
-		if (TerrainComponent.HeightMap != nullptr && TerrainComponent.HeightMap->GetObjectID() == Texture->GetObjectID())
+		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+		const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWith<FETerrainComponent>();
+		for (size_t i = 0; i < TerrainList.size(); i++)
 		{
-			Result.push_back(nullptr);
-		}*/
+			/*FEEntity* CurrentTerrain = SCENE.GetEntity(TerrainList[i]);
+			FETerrainComponent& TerrainComponent = CurrentTerrain->GetComponent<FETerrainComponent>();
+			if (TerrainComponent.HeightMap != nullptr && TerrainComponent.HeightMap->GetObjectID() == Texture->GetObjectID())
+			{
+				Result.push_back(nullptr);
+			}*/
+		}
 	}
 
 	return Result;
@@ -321,8 +327,13 @@ void DeleteGameModelPopup::DeleteGameModel(FEGameModel* GameModel)
 {
 	VIRTUAL_FILE_SYSTEM.LocateAndDeleteFile(GameModel);
 
-	std::string name = GameModel->GetName();
-	SCENE.PrepareForGameModelDeletion(GameModel);
+	// FIX ME! Temporary solution, only supports one scene
+	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+	if (!ActiveScenes.empty())
+	{
+		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+		CurrentScene->PrepareForGameModelDeletion(GameModel);
+	}
 	RESOURCE_MANAGER.DeleteGameModel(GameModel);
 	PROJECT_MANAGER.GetCurrent()->SetModified(true);
 }
@@ -411,8 +422,13 @@ void DeletePrefabPopup::DeletePrefab(FEPrefab* Prefab)
 {
 	VIRTUAL_FILE_SYSTEM.LocateAndDeleteFile(Prefab);
 
-	std::string name = Prefab->GetName();
-	SCENE.PrepareForPrefabDeletion(Prefab);
+	// FIX ME! Temporary solution, only supports one scene
+	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+	if (!ActiveScenes.empty())
+	{
+		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+		CurrentScene->PrepareForPrefabDeletion(Prefab);
+	}
 	RESOURCE_MANAGER.DeletePrefab(Prefab);
 	PROJECT_MANAGER.GetCurrent()->SetModified(true);
 }

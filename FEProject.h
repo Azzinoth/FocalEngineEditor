@@ -10,6 +10,7 @@
 
 class FEProject
 {
+	friend class FEProjectManager;
 public:
 	FEProject(std::string Name, std::string ProjectFolder);
 	~FEProject();
@@ -32,6 +33,7 @@ public:
 
 	void AddUnSavedObject(FEObject* Object);
 private:
+	FEScene* ProjectScene = nullptr;
 	std::string Name;
 	std::string ProjectFolder;
 	bool bModified = false;

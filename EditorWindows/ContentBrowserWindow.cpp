@@ -132,14 +132,20 @@ void FEEditorContentBrowserWindow::Render()
 				FILE_SYSTEM.ShowFileOpenDialog(FilePath, ALL_IMPORT_LOAD_FILTER, 3);
 				if (!FilePath.empty())
 				{
-					const std::vector<FEObject*> LoadedObjects = SCENE.ImportAsset(FilePath.c_str());
-					for (size_t i = 0; i < LoadedObjects.size(); i++)
+					// FIX ME! Temporary solution, only supports one scene
+					std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+					if (!ActiveScenes.empty())
 					{
-						if (LoadedObjects[i] != nullptr)
+						FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+						const std::vector<FEObject*> LoadedObjects = CurrentScene->ImportAsset(FilePath.c_str());
+						for (size_t i = 0; i < LoadedObjects.size(); i++)
 						{
-							VIRTUAL_FILE_SYSTEM.CreateFile(LoadedObjects[i], VIRTUAL_FILE_SYSTEM.GetCurrentPath());
-							PROJECT_MANAGER.GetCurrent()->SetModified(true);
-							PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(LoadedObjects[i]);
+							if (LoadedObjects[i] != nullptr)
+							{
+								VIRTUAL_FILE_SYSTEM.CreateFile(LoadedObjects[i], VIRTUAL_FILE_SYSTEM.GetCurrentPath());
+								PROJECT_MANAGER.GetCurrent()->SetModified(true);
+								PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(LoadedObjects[i]);
+							}
 						}
 					}
 				}

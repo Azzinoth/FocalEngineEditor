@@ -19,9 +19,7 @@ void FEEditorPreviewManager::InitializeResources()
 	PreviewFB = RESOURCE_MANAGER.CreateFramebuffer(FE_COLOR_ATTACHMENT | FE_DEPTH_ATTACHMENT, 128, 128);
 	PreviewGameModel = new FEGameModel(nullptr, nullptr, "editorPreviewGameModel");
 	PreviewPrefab = new FEPrefab(PreviewGameModel, "editorPreviewPrefab");
-	PreviewEntity = SCENE.AddEntity("editorPreviewEntity");
-	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
-	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+
 	MeshPreviewMaterial = RESOURCE_MANAGER.CreateMaterial("meshPreviewMaterial");
 	RESOURCE_MANAGER.MakeMaterialStandard(MeshPreviewMaterial);
 	MeshPreviewMaterial->Shader = RESOURCE_MANAGER.CreateShader("FEMeshPreviewShader", RESOURCE_MANAGER.LoadGLSL("Resources//Materials//FE_MeshPreview_VS.glsl").c_str(),
@@ -34,22 +32,38 @@ void FEEditorPreviewManager::InitializeResources()
 
 	RESOURCE_MANAGER.MakeShaderStandard(MeshPreviewMaterial->Shader);
 
-	//LocalLightEntity = SCENE.AddEntity("EditorPreview LightEntity");
-	//FELightComponent& LightComponent = LocalLightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
-	//LocalLightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
-	//LightComponent.SetIntensity(10.0f);
+	// FIX ME! Temporary solution, only supports one scene
+	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+	if (!ActiveScenes.empty())
+	{
+		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+		PreviewEntity = CurrentScene->AddEntity("editorPreviewEntity");
+		PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
+		PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+
+		//LocalLightEntity = SCENE.AddEntity("EditorPreview LightEntity");
+		//FELightComponent& LightComponent = LocalLightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
+		//LocalLightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
+		//LightComponent.SetIntensity(10.0f);
+	}
 }
 
 void FEEditorPreviewManager::ReInitializeEntities()
 {
-	PreviewEntity = SCENE.AddEntity("editorPreviewEntity");
-	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
-	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	// FIX ME! Temporary solution, only supports one scene
+	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+	if (!ActiveScenes.empty())
+	{
+		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+		PreviewEntity = CurrentScene->AddEntity("editorPreviewEntity");
+		PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
+		PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 
-	/*LocalLightEntity = SCENE.AddEntity("EditorPreview LightEntity");
-	FELightComponent& LightComponent = LocalLightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
-	LocalLightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
-	LightComponent.SetIntensity(10.0f);*/
+		/*LocalLightEntity = SCENE.AddEntity("EditorPreview LightEntity");
+		FELightComponent& LightComponent = LocalLightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
+		LocalLightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
+		LightComponent.SetIntensity(10.0f);*/
+	}
 }
 
 void FEEditorPreviewManager::UpdateAll()
@@ -77,6 +91,13 @@ void FEEditorPreviewManager::UpdateAll()
 
 void FEEditorPreviewManager::BeforePreviewActions()
 {
+	// FIX ME! Temporary solution, only supports one scene
+	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+	if (ActiveScenes.empty())
+		return;
+
+	FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+
 	PreviewFB->Bind();
 	// We use these values even with the deferred renderer because the final image will not undergo gamma correction. Therefore, values exceeding 1.0f will not function correctly.
 	OriginalClearColor = ENGINE.GetClearColor();
@@ -110,10 +131,10 @@ void FEEditorPreviewManager::BeforePreviewActions()
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
 
 	FEEntity* CurrentLightEntity = nullptr;
-	std::vector< std::string> LightsIDList = SCENE.GetEntityIDListWith<FELightComponent>();
+	std::vector< std::string> LightsIDList = CurrentScene->GetEntityIDListWith<FELightComponent>();
 	for (size_t i = 0; i < LightsIDList.size(); i++)
 	{
-		FEEntity* LightEntity = SCENE.GetEntity(LightsIDList[i]);
+		FEEntity* LightEntity = CurrentScene->GetEntity(LightsIDList[i]);
 		FETransformComponent& TransformComponent = LightEntity->GetComponent<FETransformComponent>();
 		FELightComponent& LightComponent = LightEntity->GetComponent<FELightComponent>();
 
@@ -143,6 +164,13 @@ void FEEditorPreviewManager::BeforePreviewActions()
 
 void FEEditorPreviewManager::AfterPreviewActions()
 {
+	// FIX ME! Temporary solution, only supports one scene
+	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+	if (ActiveScenes.empty())
+		return;
+
+	FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+
 	// We are reversing all of our previously applied transformations.
 	PreviewEntity->GetComponent<FETransformComponent>() = OriginalTransform;
 
@@ -160,10 +188,10 @@ void FEEditorPreviewManager::AfterPreviewActions()
 	//LocalLightEntity->GetComponent<FELightComponent>().SetLightEnabled(false);
 
 	FEEntity* CurrentLightEntity = nullptr;
-	std::vector< std::string> LightsIDList = SCENE.GetEntityIDListWith<FELightComponent>();
+	std::vector< std::string> LightsIDList = CurrentScene->GetEntityIDListWith<FELightComponent>();
 	for (size_t i = 0; i < LightsIDList.size(); i++)
 	{
-		FEEntity* LightEntity = SCENE.GetEntity(LightsIDList[i]);
+		FEEntity* LightEntity = CurrentScene->GetEntity(LightsIDList[i]);
 		FETransformComponent& TransformComponent = LightEntity->GetComponent<FETransformComponent>();
 		FELightComponent& LightComponent = LightEntity->GetComponent<FELightComponent>();
 
@@ -208,7 +236,7 @@ void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 
 	// Rendering mesh to texture.
-	RENDERER.RenderGameModelComponent(PreviewEntity->GetComponent<FEGameModelComponent>(), PreviewEntity->GetComponent<FETransformComponent>(), ENGINE.GetCamera());
+	RENDERER.RenderGameModelComponent(PreviewEntity, ENGINE.GetCamera());
 
 	AfterPreviewActions();
 
@@ -265,7 +293,7 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, 70.0f));
 
 	// Rendering material to texture
-	RENDERER.RenderGameModelComponentForward(PreviewEntity->GetComponent<FEGameModelComponent>(), PreviewEntity->GetComponent<FETransformComponent>(), ENGINE.GetCamera(), true);
+	RENDERER.RenderGameModelComponentForward(PreviewEntity, ENGINE.GetCamera(), true);
 
 	AfterPreviewActions();
 
@@ -364,7 +392,7 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 
 	// rendering game model to texture
-	RENDERER.RenderGameModelComponentForward(PreviewEntity->GetComponent<FEGameModelComponent>(), PreviewEntity->GetComponent<FETransformComponent>(), ENGINE.GetCamera(), true);
+	RENDERER.RenderGameModelComponentForward(PreviewEntity, ENGINE.GetCamera(), true);
 
 	AfterPreviewActions();
 
@@ -406,7 +434,7 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 
 	// rendering game model to texture
-	RENDERER.RenderGameModelComponentForward(PreviewEntity->GetComponent<FEGameModelComponent>(), PreviewEntity->GetComponent<FETransformComponent>(), ENGINE.GetCamera(), true);
+	RENDERER.RenderGameModelComponentForward(PreviewEntity, ENGINE.GetCamera(), true);
 
 	AfterPreviewActions();
 
@@ -488,7 +516,7 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 
 	// rendering game model to texture
-	RENDERER.RenderGameModelComponentForward(PreviewEntity->GetComponent<FEGameModelComponent>(), PreviewEntity->GetComponent<FETransformComponent>(), ENGINE.GetCamera(), true);
+	RENDERER.RenderGameModelComponentForward(PreviewEntity, ENGINE.GetCamera(), true);
 
 	//PreviewEntity->Prefab = PreviewPrefab;
 	PreviewEntity->GetComponent<FEGameModelComponent>().GameModel = PreviewGameModel;

@@ -109,8 +109,17 @@ PrefabEditorWindow::~PrefabEditorWindow()
 	delete CloseButton;
 }
 
+// FIX ME! Temporary.
+#include "SceneGraphWindow.h"
 void PrefabEditorWindow::Show(FEPrefab* Prefab)
 {
+	// FIX ME! test
+	if (Prefab->Scene != nullptr)
+	{
+		SCENE_MANAGER.TestScene = Prefab->Scene;
+		SCENE_GRAPH_WINDOW.SetScene(SCENE_MANAGER.TestScene);
+	}
+		
 	Size = ImVec2(800, 800);
 	Position = ImVec2(FEngine::getInstance().GetWindowWidth() / 2 - Size.x / 2, FEngine::getInstance().GetWindowHeight() / 2 - Size.y / 2);
 

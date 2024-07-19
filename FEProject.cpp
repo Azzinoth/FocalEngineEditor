@@ -46,29 +46,33 @@ void FEProjectManager::CloseCurrentProject()
 	WindowsManager::getInstance().CloseAllPopups();
 
 	SELECTED.Clear();
+	PREVIEW_MANAGER.Clear();
+	SCENE_MANAGER.DeleteScene(PROJECT_MANAGER.GetCurrent()->ProjectScene);
 	for (size_t i = 0; i < List.size(); i++)
 	{
 		delete List[i];
 	}
 	List.clear();
 	PROJECT_MANAGER.SetCurrent(nullptr);
-	PREVIEW_MANAGER.Clear();
-
 	LoadProjectList();
 
 	VIRTUAL_FILE_SYSTEM.SetCurrentPath("/");
 }
 
+// FIX ME! Temporary.
+#include "EditorWindows/SceneGraphWindow.h"
 void FEProjectManager::OpenProject(const int ProjectIndex)
 {
-	SCENE.Clear();
-
 	PROJECT_MANAGER.SetCurrent(List[ProjectIndex]);
+	PROJECT_MANAGER.GetCurrent()->ProjectScene = SCENE_MANAGER.AddScene();
 	PROJECT_MANAGER.GetCurrent()->LoadScene();
+	// FIX ME! Temporary.
+	SCENE_GRAPH_WINDOW.SetScene(PROJECT_MANAGER.GetCurrent()->ProjectScene);
 	IndexChosen = -1;
 
 	GIZMO_MANAGER.ReInitializeEntities();
 
+	// FIX ME! Entities should just have special tag, not be in the list.
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity);
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity);
@@ -93,7 +97,7 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 	while (it != EDITOR_INTERNAL_RESOURCES.InternalEditorObjects.end())
 	{
 		if (it->second->GetType() == FE_ENTITY)
-			SCENE.AddEntity(reinterpret_cast<FEEntity*>(it->second));
+			ProjectScene->AddEntity(reinterpret_cast<FEEntity*>(it->second));
 		
 		it++;
 	}*/
@@ -103,10 +107,10 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 	SELECTED.Clear();
 
 	// Cleaning dirty flag of entities.
-	//const std::vector<std::string> EntityList = SCENE.GetEntityList();
+	//const std::vector<std::string> EntityList = ProjectScene->GetEntityList();
 	//for (size_t i = 0; i < EntityList.size(); i++)
 	//{
-	//	FEEntity* Entity = SCENE.GetEntity(EntityList[i]);
+	//	FEEntity* Entity = ProjectScene->GetEntity(EntityList[i]);
 	//	// But before that update AABB.
 	//	Entity->GetAABB();
 	//	Entity->Transform.SetDirtyFlag(false);
@@ -275,9 +279,9 @@ void FEProjectManager::DisplayProjectSelection()
 					FILE_SYSTEM.CreateDirectory((std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/").c_str());
 					List.push_back(new FEProject(ProjectName, std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/"));
 					List.back()->CreateDummyScreenshot();
-					//SCENE.addLight(FE_DIRECTIONAL_LIGHT, "sun");
+					//ProjectScene->addLight(FE_DIRECTIONAL_LIGHT, "sun");
 					std::fstream File;
-					File.open((std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/" + "scene.txt").c_str(), std::ios::out);
+					File.open((std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/" + "ProjectScene->txt").c_str(), std::ios::out);
 					File.write(BASIC_SCENE, strlen(BASIC_SCENE));
 					File.close();
 
@@ -356,7 +360,7 @@ FEProject::~FEProject()
 		delete SceneScreenshot;
 
 	EDITOR_INTERNAL_RESOURCES.ClearListByType(FE_ENTITY);
-	SCENE.Clear();
+	//ProjectScene->Clear();
 	RESOURCE_MANAGER.Clear();
 	ENGINE.ResetCamera();
 	VIRTUAL_FILE_SYSTEM.Clear();
@@ -399,7 +403,7 @@ void FEProject::SaveScene(bool bFullSave)
 	Root["version"] = PROJECTS_FILE_VER;
 
 	// Saving scene hierarchy.
-	Json::Value SceneHierarchy = SCENE.SceneGraph.ToJson();
+	Json::Value SceneHierarchy = ProjectScene->SceneGraph.ToJson();
 
 	std::vector<std::string> KeysToDelete;
 	Json::Value& SceneNodes = SceneHierarchy["Nodes"];
@@ -579,11 +583,11 @@ void FEProject::SaveScene(bool bFullSave)
 	Root["prefabs"] = PrefabData;
 
 	// Saving Entities.
-	//std::vector<std::string> EntityList = SCENE.GetEntityList();
+	//std::vector<std::string> EntityList = ProjectScene->GetEntityList();
 	//Json::Value EntityData;
 	//for (size_t i = 0; i < EntityList.size(); i++)
 	//{
-	//	FEEntity* Entity = SCENE.GetEntity(EntityList[i]);
+	//	FEEntity* Entity = ProjectScene->GetEntity(EntityList[i]);
 	//	if (EDITOR_INTERNAL_RESOURCES.IsInInternalEditorList(Entity))
 	//		continue;
 
@@ -674,11 +678,11 @@ void FEProject::SaveScene(bool bFullSave)
 	//Root["entities"] = EntityData;
 
 	// Saving Terrains.
-	std::vector<std::string> TerrainList = SCENE.GetEntityIDListWith<FETerrainComponent>();
+	std::vector<std::string> TerrainList = ProjectScene->GetEntityIDListWith<FETerrainComponent>();
 	Json::Value TerrainData;
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		FEEntity* Terrain = SCENE.GetEntity(TerrainList[i]);
+		FEEntity* Terrain = ProjectScene->GetEntity(TerrainList[i]);
 		FETerrainComponent& TerrainComponent = Terrain->GetComponent<FETerrainComponent>();
 
 		TerrainData[Terrain->GetObjectID()]["ID"] = Terrain->GetObjectID();
@@ -731,11 +735,11 @@ void FEProject::SaveScene(bool bFullSave)
 	Root["terrains"] = TerrainData;
 
 	//// Saving Lights.
-	//std::vector<std::string> LightList = SCENE.GetLightsList();
+	//std::vector<std::string> LightList = ProjectScene->GetLightsList();
 	//Json::Value LightData;
 	//for (size_t i = 0; i < LightList.size(); i++)
 	//{
-	//	FELight* Light = SCENE.GetLight(LightList[i]);
+	//	FELight* Light = ProjectScene->GetLight(LightList[i]);
 
 	//	// general light information
 	//	LightData[Light->GetObjectID()]["ID"] = Light->GetObjectID();
@@ -839,7 +843,7 @@ void FEProject::SaveScene(bool bFullSave)
 	Json::StreamWriterBuilder Builder;
 	const std::string JsonFile = Json::writeString(Builder, Root);
 
-	SceneFile.open(ProjectFolder + "scene.txt");
+	SceneFile.open(ProjectFolder + "ProjectScene->txt");
 	SceneFile << JsonFile;
 	SceneFile.close();
 
@@ -874,7 +878,7 @@ void FEProject::ReadTransformToJson(Json::Value& Root, FETransformComponent* Tra
 void FEProject::LoadScene()
 {
 	std::ifstream SceneFile;
-	SceneFile.open(ProjectFolder + "scene.txt");
+	SceneFile.open(ProjectFolder + "Scene.txt");
 
 	std::string FileData((std::istreambuf_iterator<char>(SceneFile)), std::istreambuf_iterator<char>());
 	SceneFile.close();
@@ -1046,7 +1050,7 @@ void FEProject::LoadScene()
 	std::vector<Json::String> TerrainList = Root["terrains"].getMemberNames();
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		FEEntity* Entity = SCENE.AddEntity(Root["terrains"][TerrainList[i]]["name"].asString(), Root["terrains"][TerrainList[i]]["ID"].asString());
+		FEEntity* Entity = ProjectScene->AddEntity(Root["terrains"][TerrainList[i]]["name"].asString(), Root["terrains"][TerrainList[i]]["ID"].asString());
 		FETransformComponent& TransformComponent = Entity->GetComponent<FETransformComponent>();
 		Entity->AddComponent<FETerrainComponent>();
 		FETerrainComponent& TerrainComponent = Entity->GetComponent<FETerrainComponent>();
@@ -1090,7 +1094,7 @@ void FEProject::LoadScene()
 	std::vector<Json::String> EntityList = Root["entities"].getMemberNames();
 	for (size_t i = 0; i < EntityList.size(); i++)
 	{
-		FEEntity* Entity = SCENE.AddEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+		FEEntity* Entity = ProjectScene->AddEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
 
 		if (Root["entities"][EntityList[i]].isMember("type"))
 		{
@@ -1099,11 +1103,19 @@ void FEProject::LoadScene()
 				// FIX ME! Converting Prefab to GameModels.
 				FEEntity* EntityWithFirstPrefab = Entity;
 				FEPrefab* OldPrefab = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString());
+
+				if (OldPrefab->ComponentsCount() > 1)
+				{
+					OldPrefab->Scene = SCENE_MANAGER.AddScene(false, OldPrefab->GetName());
+					//OldPrefab->Scene->ImportEntity(Entity);
+				}
+
 				for (size_t c = 0; c < OldPrefab->ComponentsCount(); c++)
 				{
 					if (c > 0)
 					{
-						Entity = SCENE.AddEntity(Root["entities"][EntityList[i]]["name"].asString() + "_Prefabs_" + std::to_string(c));
+						Entity = ProjectScene->AddEntity(Root["entities"][EntityList[i]]["name"].asString() + "_Prefabs_" + std::to_string(c));
+						//OldPrefab->Scene->ImportEntity(Entity);
 					}
 					FEPrefabComponent* CurrentComponent = OldPrefab->GetComponent(static_cast<int>(c));
 					FEGameModel* GameModel = CurrentComponent->GameModel;
@@ -1132,7 +1144,7 @@ void FEProject::LoadScene()
 
 					if (Root["entities"][EntityList[i]]["snappedToTerrain"].asString() != "none")
 					{
-						FEEntity* TerrainEntity = SCENE.GetEntity(Root["entities"][EntityList[i]]["snappedToTerrain"].asString());
+						FEEntity* TerrainEntity = ProjectScene->GetEntity(Root["entities"][EntityList[i]]["snappedToTerrain"].asString());
 						TERRAIN_SYSTEM.SnapInstancedEntity(TerrainEntity, Entity);
 
 						if (Root["entities"][EntityList[i]].isMember("terrainLayer"))
@@ -1200,6 +1212,11 @@ void FEProject::LoadScene()
 							}
 						}
 					}
+
+					if (OldPrefab->ComponentsCount() > 1)
+					{
+						OldPrefab->Scene->ImportEntity(Entity);
+					}
 				}
 			}
 			else
@@ -1208,14 +1225,14 @@ void FEProject::LoadScene()
 				if (Root["entities"][EntityList[i]].isMember("gameModel"))
 				{
 					//FEPrefab* TempPrefab = RESOURCE_MANAGER.CreatePrefab(RESOURCE_MANAGER.GetGameModel(Root["entities"][EntityList[i]]["gameModel"].asCString()));
-					//SCENE.AddEntity(TempPrefab, Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+					//ProjectScene->AddEntity(TempPrefab, Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
 					
 					FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Root["entities"][EntityList[i]]["gameModel"].asCString());
 					Entity->AddComponent<FEGameModelComponent>(GameModel);
 				}
 				else
 				{
-					/*SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
+					/*ProjectScene->AddEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
 															     Root["entities"][EntityList[i]]["name"].asString(),
 															     Root["entities"][EntityList[i]]["ID"].asString());*/
 
@@ -1225,45 +1242,45 @@ void FEProject::LoadScene()
 
 				if (abs(ProjectVersion - 0.025f) <= FLT_EPSILON)
 				{
-					//SCENE.GetEntity(EntityList[i])->SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
+					//ProjectScene->GetEntity(EntityList[i])->SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
 					Entity->GetComponent<FEGameModelComponent>().SetVisibility(Root["entities"][EntityList[i]]["visible"].asBool());
 				}
 					
 				ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &Entity->GetComponent<FETransformComponent>());
-				/*ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(EntityList[i])->Transform);
-				FEEntity* Entity = SCENE.GetNewStyleEntityByOldStyleID(EntityList[i]);
+				/*ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &ProjectScene->GetEntity(EntityList[i])->Transform);
+				FEEntity* Entity = ProjectScene->GetNewStyleEntityByOldStyleID(EntityList[i]);
 				if (Entity != nullptr)
 				{
-					Entity->GetComponent<FETransformComponent>() = SCENE.GetEntity(EntityList[i])->Transform;
+					Entity->GetComponent<FETransformComponent>() = ProjectScene->GetEntity(EntityList[i])->Transform;
 				}*/
 			}
 		}
 		// For compatibility with old projects.
 		else
 		{
-			//FEEntity* Entity = SCENE.AddEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+			//FEEntity* Entity = ProjectScene->AddEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
 			FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString())->GetComponent(0)->GameModel;
 			Entity->AddComponent<FEGameModelComponent>(GameModel);
 			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &Entity->GetComponent<FETransformComponent>());
 
-			/*SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
+			/*ProjectScene->AddEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
 							EntityList[i],
 							Root["entities"][EntityList[i]]["ID"].asString());
-			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &SCENE.GetEntity(EntityList[i])->Transform);*/
+			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &ProjectScene->GetEntity(EntityList[i])->Transform);*/
 		}
 	}
 
 	if (abs(ProjectVersion - 0.025f) <= FLT_EPSILON)
 	{
 		// Loading scene hierarchy.
-		SCENE.SceneGraph.FromJson(Root["sceneHierarchy"]);
+		ProjectScene->SceneGraph.FromJson(Root["sceneHierarchy"]);
 	}
 
 	// Loading Lights.
 	std::vector<Json::String> LightList = Root["lights"].getMemberNames();
 	for (size_t i = 0; i < LightList.size(); i++)
 	{
-		FEEntity* Entity = SCENE.AddEntity("Light Entity");
+		FEEntity* Entity = ProjectScene->AddEntity("Light Entity");
 		auto OldType = static_cast<FE_OBJECT_TYPE>(Root["lights"][LightList[i]]["type"].asInt());
 		FE_LIGHT_TYPE NewType = FE_DIRECTIONAL_LIGHT;
 		if (OldType == FE_POINT_LIGHT_DEPRECATED)
@@ -1350,7 +1367,7 @@ void FEProject::LoadScene()
 	//SKY_DOME_SYSTEM.SetEnabled(Root["effects"]["Sky"]["Enabled"].asFloat() > 0.0f ? true : false);
 	//SKY_DOME_SYSTEM.SetDistanceToSky(Root["effects"]["Sky"]["Sphere size"].asFloat());
 	//Fix Me!
-	FEEntity* SkyDome = SCENE.AddEntity("SkyDome");
+	FEEntity* SkyDome = ProjectScene->AddEntity("SkyDome");
 	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
 	SKY_DOME_SYSTEM.AddToEntity(SkyDome);
 
@@ -1373,7 +1390,7 @@ void FEProject::LoadScene()
 		ENGINE.GetCamera()->SetMovementSpeed(Root["camera"]["movementSpeed"].asFloat());
 
 	// After all scene objects are loaded, we need to update all objects.
-	SCENE.Update();
+	ProjectScene->Update();
 
 	// FIX ME! Only after that all systems should be updated and triggered.
 
@@ -1443,10 +1460,10 @@ void FEProject::LoadScene()
 			//if (textureToAdd->getInternalFormat() == GL_R16)
 			//{
 			//	// Potentially it could be texture hight map.
-			//	std::vector<std::string> terrainList = SCENE.getTerrainList();
+			//	std::vector<std::string> terrainList = ProjectScene->getTerrainList();
 			//	for (size_t j = 0; j < terrainList.size(); j++)
 			//	{
-			//		if (SCENE.getTerrain(terrainList[j])->heightMap == textureToAdd)
+			//		if (ProjectScene->getTerrain(terrainList[j])->heightMap == textureToAdd)
 			//		{
 			//			shouldAdd = false;
 			//			break;
@@ -1518,11 +1535,11 @@ void FEProject::AddUnSavedObject(FEObject* Object)
 bool FEProject::ShouldIncludeInSceneFile(const FETexture* Texture)
 {
 	// Terrain should manage it's textures in a different way.
-	const std::vector<std::string> TerrainList = SCENE.GetEntityIDListWith<FETerrainComponent>();
+	const std::vector<std::string> TerrainList = ProjectScene->GetEntityIDListWith<FETerrainComponent>();
 	Json::Value TerrainData;
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		FEEntity* Terrain = SCENE.GetEntity(TerrainList[i]);
+		FEEntity* Terrain = ProjectScene->GetEntity(TerrainList[i]);
 		FETerrainComponent& TerrainComponent = Terrain->GetComponent<FETerrainComponent>();
 
 		if (TerrainComponent.HeightMap->GetObjectID() == Texture->GetObjectID())

@@ -466,14 +466,20 @@ void ShaderEditorWindow::ReplaceShader(FEShader* OldShader, FEShader* NewShader)
 		}
 	}
 
-	const std::vector<std::string> TerrainList = SCENE.GetEntityIDListWith<FETerrainComponent>();
-	for (size_t i = 0; i < TerrainList.size(); i++)
+	// FIX ME! Temporary solution, only supports one scene
+	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+	if (!ActiveScenes.empty())
 	{
-		FEEntity* TempTerrain = SCENE.GetEntity(TerrainList[i]);
-		FETerrainComponent& TerrainComponent = TempTerrain->GetComponent<FETerrainComponent>();
-		if (TerrainComponent.Shader->GetNameHash() == OldShader->GetNameHash())
+		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+		const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWith<FETerrainComponent>();
+		for (size_t i = 0; i < TerrainList.size(); i++)
 		{
-			TerrainComponent.Shader = NewShader;
+			FEEntity* TempTerrain = CurrentScene->GetEntity(TerrainList[i]);
+			FETerrainComponent& TerrainComponent = TempTerrain->GetComponent<FETerrainComponent>();
+			if (TerrainComponent.Shader->GetNameHash() == OldShader->GetNameHash())
+			{
+				TerrainComponent.Shader = NewShader;
+			}
 		}
 	}
 }

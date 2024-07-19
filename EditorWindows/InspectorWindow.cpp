@@ -441,11 +441,9 @@ std::vector<std::string> FEEditorInspectorWindow::GetAvailableComponentsToAdd(FE
 		return Result;
 
 	auto RegisteredComponentList = COMPONENTS_TOOL.GetComponentInfoList();
-	auto EntityComponents = Entity->GetComponentsInfoList();
-
 	for (size_t i = 0; i < RegisteredComponentList.size(); i++)
 	{
-		if (RegisteredComponentList[i].IsCompatible(EntityComponents))
+		if (RegisteredComponentList[i].IsCompatible(Entity))
 			Result.push_back(RegisteredComponentList[i].Name);
 	}
 
@@ -495,6 +493,7 @@ void FEEditorInspectorWindow::Render()
 	}
 
 	FEEntity* EntitySelected = SELECTED.GetSelected();
+	FEScene* CurrentScene = EntitySelected->GetParentScene();
 
 	ImGui::Text("ID : %s", EntitySelected->GetObjectID().c_str());
 	ImGui::Text("Name : %s", EntitySelected->GetName().c_str());
@@ -633,7 +632,7 @@ void FEEditorInspectorWindow::Render()
 				ImGui::Text("Snapped to: ");
 				ImGui::SameLine();
 
-				const std::vector<std::string> TerrainList = SCENE.GetEntityIDListWith<FETerrainComponent>();
+				const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWith<FETerrainComponent>();
 				static std::string CurrentTerrain = "none";
 
 				if (InstancedComponent.GetSnappedToTerrain() == nullptr)
@@ -663,9 +662,9 @@ void FEEditorInspectorWindow::Render()
 					for (size_t i = 0; i < TerrainList.size(); i++)
 					{
 						const bool bIsSelected = (CurrentTerrain == TerrainList[i]);
-						if (ImGui::Selectable(SCENE.GetEntity(TerrainList[i])->GetName().c_str(), bIsSelected))
+						if (ImGui::Selectable(CurrentScene->GetEntity(TerrainList[i])->GetName().c_str(), bIsSelected))
 						{
-							TERRAIN_SYSTEM.SnapInstancedEntity(SCENE.GetEntity(TerrainList[i]), EntitySelected);
+							TERRAIN_SYSTEM.SnapInstancedEntity(CurrentScene->GetEntity(TerrainList[i]), EntitySelected);
 						}
 
 						if (bIsSelected)
@@ -871,17 +870,17 @@ void FEEditorInspectorWindow::Render()
 				// To hide gizmos.
 				SELECTED.SetSelected(EntitySelected);
 
-				TERRAIN_SYSTEM.SetBrushActive(EntitySelected, bLeftMousePressed);
+				TERRAIN_SYSTEM.SetBrushActive(bLeftMousePressed);
 
 				if (bShiftPressed)
 				{
 					if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW)
-						TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED);
+						TERRAIN_SYSTEM.SetBrushMode(EntitySelected, FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED);
 				}
 				else
 				{
 					if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED)
-						TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW);
+						TERRAIN_SYSTEM.SetBrushMode(EntitySelected, FE_TERRAIN_BRUSH_SCULPT_DRAW);
 				}
 			}
 			else
@@ -1077,8 +1076,6 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 			ImGui::Text(SizeInM.c_str());
 			// ********************* REAL WORLD COMPARISON SCALE END *********************
 
-			//ShowTransformConfiguration(Terrain, &TerrainComponent.Transform);
-
 			ImGui::EndTabItem();
 		}
 		if (ImGui::BeginTabItem("Sculpt"))
@@ -1144,11 +1141,11 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 				if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW ||
 					TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED)
 				{
-					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_NONE);
+					TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_NONE);
 				}
 				else
 				{
-					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_DRAW);
+					TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_SCULPT_DRAW);
 				}
 			}
 
@@ -1164,11 +1161,11 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 			{
 				if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_LEVEL)
 				{
-					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_NONE);
+					TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_NONE);
 				}
 				else
 				{
-					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_LEVEL);
+					TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_SCULPT_LEVEL);
 				}
 			}
 
@@ -1184,11 +1181,11 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 			{
 				if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_SMOOTH)
 				{
-					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_NONE);
+					TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_NONE);
 				}
 				else
 				{
-					TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_SCULPT_SMOOTH);
+					TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_SCULPT_SMOOTH);
 				}
 			}
 
@@ -1224,11 +1221,11 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 				{
 					if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_LAYER_DRAW)
 					{
-						TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_NONE);
+						TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_NONE);
 					}
 					else
 					{
-						TERRAIN_SYSTEM.SetBrushMode(FE_TERRAIN_BRUSH_LAYER_DRAW);
+						TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_LAYER_DRAW);
 					}
 				}
 
