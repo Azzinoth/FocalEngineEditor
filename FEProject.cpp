@@ -64,7 +64,7 @@ void FEProjectManager::CloseCurrentProject()
 void FEProjectManager::OpenProject(const int ProjectIndex)
 {
 	PROJECT_MANAGER.SetCurrent(List[ProjectIndex]);
-	PROJECT_MANAGER.GetCurrent()->ProjectScene = SCENE_MANAGER.AddScene();
+	PROJECT_MANAGER.GetCurrent()->ProjectScene = SCENE_MANAGER.CreateScene();
 	PROJECT_MANAGER.GetCurrent()->LoadScene();
 	// FIX ME! Temporary.
 	SCENE_GRAPH_WINDOW.SetScene(PROJECT_MANAGER.GetCurrent()->ProjectScene);
@@ -97,7 +97,7 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 	while (it != EDITOR_INTERNAL_RESOURCES.InternalEditorObjects.end())
 	{
 		if (it->second->GetType() == FE_ENTITY)
-			ProjectScene->AddEntity(reinterpret_cast<FEEntity*>(it->second));
+			ProjectScene->CreateEntity(reinterpret_cast<FEEntity*>(it->second));
 		
 		it++;
 	}*/
@@ -1050,7 +1050,7 @@ void FEProject::LoadScene()
 	std::vector<Json::String> TerrainList = Root["terrains"].getMemberNames();
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
-		FEEntity* Entity = ProjectScene->AddEntity(Root["terrains"][TerrainList[i]]["name"].asString(), Root["terrains"][TerrainList[i]]["ID"].asString());
+		FEEntity* Entity = ProjectScene->CreateEntity(Root["terrains"][TerrainList[i]]["name"].asString(), Root["terrains"][TerrainList[i]]["ID"].asString());
 		FETransformComponent& TransformComponent = Entity->GetComponent<FETransformComponent>();
 		Entity->AddComponent<FETerrainComponent>();
 		FETerrainComponent& TerrainComponent = Entity->GetComponent<FETerrainComponent>();
@@ -1094,7 +1094,7 @@ void FEProject::LoadScene()
 	std::vector<Json::String> EntityList = Root["entities"].getMemberNames();
 	for (size_t i = 0; i < EntityList.size(); i++)
 	{
-		FEEntity* Entity = ProjectScene->AddEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+		FEEntity* Entity = ProjectScene->CreateEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
 
 		if (Root["entities"][EntityList[i]].isMember("type"))
 		{
@@ -1106,7 +1106,7 @@ void FEProject::LoadScene()
 
 				if (OldPrefab->ComponentsCount() > 1)
 				{
-					OldPrefab->Scene = SCENE_MANAGER.AddScene(false, OldPrefab->GetName());
+					OldPrefab->Scene = SCENE_MANAGER.CreateScene(false, OldPrefab->GetName());
 					//OldPrefab->Scene->ImportEntity(Entity);
 				}
 
@@ -1114,7 +1114,7 @@ void FEProject::LoadScene()
 				{
 					if (c > 0)
 					{
-						Entity = ProjectScene->AddEntity(Root["entities"][EntityList[i]]["name"].asString() + "_Prefabs_" + std::to_string(c));
+						Entity = ProjectScene->CreateEntity(Root["entities"][EntityList[i]]["name"].asString() + "_Prefabs_" + std::to_string(c));
 						//OldPrefab->Scene->ImportEntity(Entity);
 					}
 					FEPrefabComponent* CurrentComponent = OldPrefab->GetComponent(static_cast<int>(c));
@@ -1225,14 +1225,14 @@ void FEProject::LoadScene()
 				if (Root["entities"][EntityList[i]].isMember("gameModel"))
 				{
 					//FEPrefab* TempPrefab = RESOURCE_MANAGER.CreatePrefab(RESOURCE_MANAGER.GetGameModel(Root["entities"][EntityList[i]]["gameModel"].asCString()));
-					//ProjectScene->AddEntity(TempPrefab, Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+					//ProjectScene->CreateEntity(TempPrefab, Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
 					
 					FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Root["entities"][EntityList[i]]["gameModel"].asCString());
 					Entity->AddComponent<FEGameModelComponent>(GameModel);
 				}
 				else
 				{
-					/*ProjectScene->AddEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
+					/*ProjectScene->CreateEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
 															     Root["entities"][EntityList[i]]["name"].asString(),
 															     Root["entities"][EntityList[i]]["ID"].asString());*/
 
@@ -1258,12 +1258,12 @@ void FEProject::LoadScene()
 		// For compatibility with old projects.
 		else
 		{
-			//FEEntity* Entity = ProjectScene->AddEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
+			//FEEntity* Entity = ProjectScene->CreateEntity(Root["entities"][EntityList[i]]["name"].asString(), Root["entities"][EntityList[i]]["ID"].asString());
 			FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString())->GetComponent(0)->GameModel;
 			Entity->AddComponent<FEGameModelComponent>(GameModel);
 			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &Entity->GetComponent<FETransformComponent>());
 
-			/*ProjectScene->AddEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
+			/*ProjectScene->CreateEntity(RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString()),
 							EntityList[i],
 							Root["entities"][EntityList[i]]["ID"].asString());
 			ReadTransformToJson(Root["entities"][EntityList[i]]["transformation"], &ProjectScene->GetEntity(EntityList[i])->Transform);*/
@@ -1280,7 +1280,7 @@ void FEProject::LoadScene()
 	std::vector<Json::String> LightList = Root["lights"].getMemberNames();
 	for (size_t i = 0; i < LightList.size(); i++)
 	{
-		FEEntity* Entity = ProjectScene->AddEntity("Light Entity");
+		FEEntity* Entity = ProjectScene->CreateEntity("Light Entity");
 		auto OldType = static_cast<FE_OBJECT_TYPE>(Root["lights"][LightList[i]]["type"].asInt());
 		FE_LIGHT_TYPE NewType = FE_DIRECTIONAL_LIGHT;
 		if (OldType == FE_POINT_LIGHT_DEPRECATED)
@@ -1367,7 +1367,7 @@ void FEProject::LoadScene()
 	//SKY_DOME_SYSTEM.SetEnabled(Root["effects"]["Sky"]["Enabled"].asFloat() > 0.0f ? true : false);
 	//SKY_DOME_SYSTEM.SetDistanceToSky(Root["effects"]["Sky"]["Sphere size"].asFloat());
 	//Fix Me!
-	FEEntity* SkyDome = ProjectScene->AddEntity("SkyDome");
+	FEEntity* SkyDome = ProjectScene->CreateEntity("SkyDome");
 	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
 	SKY_DOME_SYSTEM.AddToEntity(SkyDome);
 

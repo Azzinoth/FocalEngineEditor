@@ -44,7 +44,7 @@ void FEEditorSelectedObject::InitializeResources()
 	if (!ActiveScenes.empty())
 	{
 		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-		DummyEntity = CurrentScene->AddEntity("Editor_Selection_Dummy_Entity");
+		DummyEntity = CurrentScene->CreateEntity("Editor_Selection_Dummy_Entity");
 	}
 }
 
@@ -63,7 +63,7 @@ void FEEditorSelectedObject::ReInitializeResources()
 	{
 		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
 		if (CurrentScene->GetEntityByName("Editor_Selection_Dummy_Entity").empty())
-			DummyEntity = CurrentScene->AddEntity("Editor_Selection_Dummy_Entity");
+			DummyEntity = CurrentScene->CreateEntity("Editor_Selection_Dummy_Entity");
 	}
 }
 
@@ -284,7 +284,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			int g = ((LastColorShiftIndex + 1) >> 8) & 255;
 			int b = ((LastColorShiftIndex + 1) >> 16) & 255;
 
-			static FEEntity* DummyEntity = CurrentScene->AddEntity("DummyEntity");
+			static FEEntity* DummyEntity = CurrentScene->CreateEntity("DummyEntity");
 			if (!DummyEntity->HasComponent<FEGameModelComponent>())
 				DummyEntity->AddComponent<FEGameModelComponent>();
 			

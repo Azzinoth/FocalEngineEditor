@@ -14,7 +14,7 @@ bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
 		if (!ActiveScenes.empty())
 		{
 			FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-			FEEntity* Entity = CurrentScene->AddEntity(Object->GetName());
+			FEEntity* Entity = CurrentScene->CreateEntity(Object->GetName());
 			Entity->GetComponent<FEGameModelComponent>().GameModel = GameModel;
 			Entity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
 			SELECTED.SetSelected(Entity);
@@ -588,7 +588,7 @@ void FEEditor::DropCallback(const int Count, const char** Paths)
 					{
 						if (LoadedObjects[j]->GetType() == FE_ENTITY)
 						{
-							//SCENE.AddEntity(reinterpret_cast<FEEntity*>(LoadedObjects[j]));
+							//SCENE.CreateEntity(reinterpret_cast<FEEntity*>(LoadedObjects[j]));
 						}
 						else
 						{

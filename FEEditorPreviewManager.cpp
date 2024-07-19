@@ -16,6 +16,8 @@ float FEEditorPreviewManager::OriginalExposure = 0.0f;
 
 void FEEditorPreviewManager::InitializeResources()
 {
+	//PreviewScene = SCENE_MANAGER.CreateScene("EditorPreviewScene");
+
 	PreviewFB = RESOURCE_MANAGER.CreateFramebuffer(FE_COLOR_ATTACHMENT | FE_DEPTH_ATTACHMENT, 128, 128);
 	PreviewGameModel = new FEGameModel(nullptr, nullptr, "editorPreviewGameModel");
 	PreviewPrefab = new FEPrefab(PreviewGameModel, "editorPreviewPrefab");
@@ -32,19 +34,31 @@ void FEEditorPreviewManager::InitializeResources()
 
 	RESOURCE_MANAGER.MakeShaderStandard(MeshPreviewMaterial->Shader);
 
+
+	/*PreviewEntity = PreviewScene->CreateEntity("editorPreviewEntity");
+	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
+	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+
+	LocalSunEntity = PreviewScene->CreateEntity("EditorPreview LightEntity");
+	LocalSunEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
+	FELightComponent& LightComponent = LocalSunEntity->GetComponent<FELightComponent>();
+	LocalSunEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
+	LightComponent.SetIntensity(10.0f);*/
+
 	// FIX ME! Temporary solution, only supports one scene
 	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
 	if (!ActiveScenes.empty())
 	{
 		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-		PreviewEntity = CurrentScene->AddEntity("editorPreviewEntity");
+		PreviewEntity = PreviewScene->CreateEntity("editorPreviewEntity");
 		PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
 		PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 
-		//LocalLightEntity = SCENE.AddEntity("EditorPreview LightEntity");
-		//FELightComponent& LightComponent = LocalLightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
-		//LocalLightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
-		//LightComponent.SetIntensity(10.0f);
+		/*LocalSunEntity = PreviewScene->CreateEntity("EditorPreview LightEntity");
+		LocalSunEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
+		FELightComponent& LightComponent = LocalSunEntity->GetComponent<FELightComponent>();
+		LocalSunEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
+		LightComponent.SetIntensity(10.0f);*/
 	}
 }
 
@@ -55,11 +69,11 @@ void FEEditorPreviewManager::ReInitializeEntities()
 	if (!ActiveScenes.empty())
 	{
 		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-		PreviewEntity = CurrentScene->AddEntity("editorPreviewEntity");
+		PreviewEntity = CurrentScene->CreateEntity("editorPreviewEntity");
 		PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
 		PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 
-		/*LocalLightEntity = SCENE.AddEntity("EditorPreview LightEntity");
+		/*LocalLightEntity = SCENE.CreateEntity("EditorPreview LightEntity");
 		FELightComponent& LightComponent = LocalLightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
 		LocalLightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
 		LightComponent.SetIntensity(10.0f);*/
@@ -105,6 +119,7 @@ void FEEditorPreviewManager::BeforePreviewActions()
 
 	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
+	// FIX ME! Camera should be part of scene.
 	// Saving currently used variables.
 	OriginalCameraPosition = ENGINE.GetCamera()->GetPosition();
 	OriginalAspectRation = ENGINE.GetCamera()->GetAspectRatio();
@@ -156,7 +171,7 @@ void FEEditorPreviewManager::BeforePreviewActions()
 	RegularLightIntensity = LightComponent.GetIntensity();
 	LightComponent.SetIntensity(10.0f);
 
-	//LocalLightEntity->GetComponent<FELightComponent>().SetLightEnabled(true);
+	//LocalSunEntity->GetComponent<FELightComponent>().SetLightEnabled(true);
 
 	bIsRegularFogEnabled = RENDERER.IsDistanceFogEnabled();
 	RENDERER.SetDistanceFogEnabled(false);
@@ -185,7 +200,7 @@ void FEEditorPreviewManager::AfterPreviewActions()
 	ENGINE.SetClearColor(OriginalClearColor);
 
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-	//LocalLightEntity->GetComponent<FELightComponent>().SetLightEnabled(false);
+	//LocalSunEntity->GetComponent<FELightComponent>().SetLightEnabled(false);
 
 	FEEntity* CurrentLightEntity = nullptr;
 	std::vector< std::string> LightsIDList = CurrentScene->GetEntityIDListWith<FELightComponent>();

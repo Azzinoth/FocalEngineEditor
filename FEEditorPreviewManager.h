@@ -29,6 +29,8 @@ private:
 	void ReInitializeEntities();
 	void UpdateAll();
 
+	FEScene* PreviewScene = nullptr;
+
 	FEFramebuffer* PreviewFB;
 	FEEntity* PreviewEntity;
 	FEPrefab* PreviewPrefab;
@@ -37,7 +39,7 @@ private:
 
 	// FIX ME! Make it work.
 	// Local directional entity
-	//FEEntity* LocalLightEntity;
+	FEEntity* LocalSunEntity;
 
 	// Saved scene settings
 	glm::vec3 RegularLightRotation = glm::vec3(0.0f, 0.0f, 0.0f);

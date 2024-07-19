@@ -92,7 +92,7 @@ static void CreateInstancedEntityCallBack(const std::vector<FEObject*> Selection
 		if (SelectedPrefab == nullptr)
 			return;
 
-		FEEntity* Entity = SCENE_GRAPH_WINDOW.GetScene()->AddEntity();
+		FEEntity* Entity = SCENE_GRAPH_WINDOW.GetScene()->CreateEntity();
 		Entity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
 		Entity->AddComponent<FEGameModelComponent>(SelectedPrefab->GetComponent(0)->GameModel);
 		Entity->AddComponent<FEInstancedComponent>();
@@ -110,7 +110,7 @@ static void CreateEntityCallBack(const std::vector<FEObject*> SelectionsResult)
 		if (SelectedPrefab == nullptr)
 			return;
 
-		FEEntity* Entity = SCENE_GRAPH_WINDOW.GetScene()->AddEntity();
+		FEEntity* Entity = SCENE_GRAPH_WINDOW.GetScene()->CreateEntity();
 		Entity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
 		SELECTED.SetSelected(Entity);
 
@@ -413,7 +413,7 @@ void FEEditorSceneGraphWindow::Render()
 			{
 				if (ImGui::MenuItem("Empty entity"))
 				{
-					CurrentScene->AddEntity("Unnamed entity");
+					CurrentScene->CreateEntity("Unnamed entity");
 				}
 
 				// FIX ME!
@@ -429,7 +429,7 @@ void FEEditorSceneGraphWindow::Render()
 
 				//if (ImGui::MenuItem("Terrain"))
 				//{
-				//	FEEntity* Entity = SCENE.AddEntity("Unnamed terrain");
+				//	FEEntity* Entity = SCENE.CreateEntity("Unnamed terrain");
 				//	FETransformComponent& TransformComponent = Entity->GetComponent<FETransformComponent>();
 				//	Entity->AddComponent<FETerrainComponent>();
 				//	FETerrainComponent& TerrainComponent = Entity->GetComponent<FETerrainComponent>();
