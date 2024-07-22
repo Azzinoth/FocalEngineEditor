@@ -1,5 +1,6 @@
 #include "FEEditorGizmoManager.h"
 using namespace FocalEngine;
+#include "FEEditor.h"
 //using namespace GizmoManager;
 
 GizmoManager* GizmoManager::Instance = nullptr;
@@ -254,14 +255,11 @@ void GizmoManager::DeactivateAllGizmo()
 
 void GizmoManager::Render()
 {
-	// FIX ME! Temporary solution, only supports one scene
-	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
-	if (ActiveScenes.empty())
+	if (EDITOR.GetCurrentEditorScene() == nullptr)
 		return;
-	
-	FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+
 	// If we cleared the scene, we should not render gizmos.
-	if (CurrentScene->GetEntityByName("TransformationXGizmoEntity").empty() || CurrentScene->GetEntityByName("TransformationXGizmoEntity")[0] == nullptr)
+	if (EDITOR.GetCurrentEditorScene()->GetEntityByName("TransformationXGizmoEntity").empty() || EDITOR.GetCurrentEditorScene()->GetEntityByName("TransformationXGizmoEntity")[0] == nullptr)
 		return;
 
 	if (SELECTED.GetSelected() == nullptr || SELECTED.GetSelected()->GetType() == FE_CAMERA)
@@ -270,20 +268,15 @@ void GizmoManager::Render()
 		return;
 	}
 
+	FETransformComponent& CameraTransformComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FETransformComponent>();
 	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject();
 	const glm::vec3 ObjectSpaceOriginInWorldSpace = glm::vec3(ObjTransform.GetWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-	glm::vec3 ToObject = ObjectSpaceOriginInWorldSpace - ENGINE.GetCamera()->GetPosition();
+	glm::vec3 ToObject = ObjectSpaceOriginInWorldSpace - CameraTransformComponent.GetPosition(FE_WORLD_SPACE);
 	ToObject = glm::normalize(ToObject);
 
-	// This will center gizmos in AABB center, but it will produce bug while moving object under some circumstances.
-	/*if (SELECTED.getEntity() != nullptr && SELECTED.getEntity()->getType() == FE_ENTITY_INSTANCED && SELECTED.instancedSubObjectIndexSelected == -1)
-	{
-		FEAABB AABB = SELECTED.getEntity()->getAABB();
-		glm::vec3 center = AABB.getMin() + ((AABB.getMax() - AABB.getMin()) / 2.0f);
-		toObject = glm::normalize(center - ENGINE.getCamera()->getPosition());
-	}*/
-
-	ParentGizmoEntity->GetComponent<FETransformComponent>().SetPosition((ENGINE.GetCamera()->GetPosition() + ToObject * 0.15f));
+	ParentGizmoEntity->GetComponent<FETransformComponent>().SetPosition((CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + ToObject * 0.15f));
+	//ParentGizmoEntity->GetComponent<FETransformComponent>().Update();
+	//ParentGizmoEntity->GetComponent<FETransformComponent>().ForceSetWorldMatrix(ParentGizmoEntity->GetComponent<FETransformComponent>().GetLocalMatrix());
 	if (GIZMO_MANAGER.GizmosState == TRANSFORM_GIZMOS)
 	{
 		// X Gizmos
@@ -460,13 +453,14 @@ bool GizmoManager::WasSelected(int Index)
 
 glm::vec3 GizmoManager::GetMousePositionDifferenceOnPlane(glm::vec3 PlaneNormal)
 {
+	FETransformComponent& CameraTransformComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FETransformComponent>();
 	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject();
 	const glm::vec3 EntitySpaceOriginInWorldSpace = glm::vec3(ObjTransform.GetWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	const glm::vec3 LastMouseRayVector = SELECTED.MouseRay(LastMouseX, LastMouseY);
 
 	const glm::vec3 MouseRayVector = SELECTED.MouseRay(MouseX, MouseY);
-	const glm::vec3 CameraPosition = ENGINE.GetCamera()->GetPosition();
+	const glm::vec3 CameraPosition = CameraTransformComponent.GetPosition(FE_WORLD_SPACE);
 
 	const float SignedDistanceToOrigin = glm::dot(PlaneNormal, EntitySpaceOriginInWorldSpace);
 
@@ -488,13 +482,14 @@ glm::vec3 GizmoManager::GetMousePositionDifferenceOnPlane(glm::vec3 PlaneNormal)
 
 glm::vec3 GizmoManager::GetMousePositionDifferenceOnPlane(glm::vec3 PlaneNormal, glm::vec3& LastMousePointOnPlane)
 {
+	FETransformComponent& CameraTransformComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FETransformComponent>();
 	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject();
 	const glm::vec3 EntitySpaceOriginInWorldSpace = glm::vec3(ObjTransform.GetWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	const glm::vec3 LastMouseRayVector = SELECTED.MouseRay(LastMouseX, LastMouseY);
 
 	const glm::vec3 MouseRayVector = SELECTED.MouseRay(MouseX, MouseY);
-	const glm::vec3 CameraPosition = ENGINE.GetCamera()->GetPosition();
+	const glm::vec3 CameraPosition = CameraTransformComponent.GetPosition(FE_WORLD_SPACE);
 
 	const float SignedDistanceToOrigin = glm::dot(PlaneNormal, EntitySpaceOriginInWorldSpace);
 
@@ -517,6 +512,7 @@ glm::vec3 GizmoManager::GetMousePositionDifferenceOnPlane(glm::vec3 PlaneNormal,
 
 void GizmoManager::MouseMoveTransformationGizmos()
 {
+	FETransformComponent& CameraTransformComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FETransformComponent>();
 	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject();
 
 	float MouseRayParametricIntersection = 0.0f;
@@ -530,12 +526,12 @@ void GizmoManager::MouseMoveTransformationGizmos()
 	if (GIZMO_MANAGER.bTransformationXGizmoActive)
 	{
 		const glm::vec3 LastMouseRayVector = SELECTED.MouseRay(LastMouseX, LastMouseY);
-		GEOMETRY.RaysIntersection(ENGINE.GetCamera()->GetPosition(), LastMouseRayVector,
+		GEOMETRY.RaysIntersection(CameraTransformComponent.GetPosition(FE_WORLD_SPACE), LastMouseRayVector,
 								  glm::vec3(ObjTransform.GetWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(1.0f, 0.0f, 0.0f),
 								  LastFrameMouseRayParametricIntersection, LastFrameGizmoRayParametricIntersection);
 
 		const glm::vec3 MouseRayVector = SELECTED.MouseRay(MouseX, MouseY);
-		GEOMETRY.RaysIntersection(ENGINE.GetCamera()->GetPosition(), MouseRayVector,
+		GEOMETRY.RaysIntersection(CameraTransformComponent.GetPosition(FE_WORLD_SPACE), MouseRayVector,
 								  glm::vec3(ObjTransform.GetWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(1.0f, 0.0f, 0.0f),
 								  MouseRayParametricIntersection, GizmoRayParametricIntersection);
 
@@ -543,19 +539,19 @@ void GizmoManager::MouseMoveTransformationGizmos()
 		if (abs(Difference) > FLT_EPSILON)
 		{
 			bAppliedSomeChanges = true;
-			ObjTransform.SetPosition(ObjTransform.GetPosition(false) + glm::vec3(Difference, 0.0f, 0.0f), false);
+			ObjTransform.SetPosition(ObjTransform.GetPosition(FE_WORLD_SPACE) + glm::vec3(Difference, 0.0f, 0.0f), FE_WORLD_SPACE);
 		}
 	}
 
 	if (GIZMO_MANAGER.bTransformationYGizmoActive)
 	{
 		const glm::vec3 LastMouseRayVector = SELECTED.MouseRay(LastMouseX, LastMouseY);
-		GEOMETRY.RaysIntersection(ENGINE.GetCamera()->GetPosition(), LastMouseRayVector,
+		GEOMETRY.RaysIntersection(CameraTransformComponent.GetPosition(FE_WORLD_SPACE), LastMouseRayVector,
 								  glm::vec3(ObjTransform.GetWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(0.0f, 1.0f, 0.0f),
 								  LastFrameMouseRayParametricIntersection, LastFrameGizmoRayParametricIntersection);
 
 		const glm::vec3 MouseRayVector = SELECTED.MouseRay(MouseX, MouseY);
-		GEOMETRY.RaysIntersection(ENGINE.GetCamera()->GetPosition(), MouseRayVector,
+		GEOMETRY.RaysIntersection(CameraTransformComponent.GetPosition(FE_WORLD_SPACE), MouseRayVector,
 								  glm::vec3(ObjTransform.GetWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(0.0f, 1.0f, 0.0f),
 								  MouseRayParametricIntersection, GizmoRayParametricIntersection);
 
@@ -563,19 +559,19 @@ void GizmoManager::MouseMoveTransformationGizmos()
 		if (abs(Difference) > FLT_EPSILON)
 		{
 			bAppliedSomeChanges = true;
-			ObjTransform.SetPosition(ObjTransform.GetPosition(false) + glm::vec3(0.0f, Difference, 0.0f), false);
+			ObjTransform.SetPosition(ObjTransform.GetPosition(FE_WORLD_SPACE) + glm::vec3(0.0f, Difference, 0.0f), FE_WORLD_SPACE);
 		}
 	}
 
 	if (GIZMO_MANAGER.bTransformationZGizmoActive)
 	{
 		const glm::vec3 LastMouseRayVector = SELECTED.MouseRay(LastMouseX, LastMouseY);
-		GEOMETRY.RaysIntersection(ENGINE.GetCamera()->GetPosition(), LastMouseRayVector,
+		GEOMETRY.RaysIntersection(CameraTransformComponent.GetPosition(FE_WORLD_SPACE), LastMouseRayVector,
 								  glm::vec3(ObjTransform.GetWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(0.0f, 0.0f, 1.0f),
 								  LastFrameMouseRayParametricIntersection, LastFrameGizmoRayParametricIntersection);
 
 		const glm::vec3 MouseRayVector = SELECTED.MouseRay(MouseX, MouseY);
-		GEOMETRY.RaysIntersection(ENGINE.GetCamera()->GetPosition(), MouseRayVector,
+		GEOMETRY.RaysIntersection(CameraTransformComponent.GetPosition(FE_WORLD_SPACE), MouseRayVector,
 								  glm::vec3(ObjTransform.GetWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), glm::vec3(0.0f, 0.0f, 1.0f),
 								  MouseRayParametricIntersection, GizmoRayParametricIntersection);
 
@@ -583,7 +579,7 @@ void GizmoManager::MouseMoveTransformationGizmos()
 		if (abs(Difference) > FLT_EPSILON)
 		{
 			bAppliedSomeChanges = true;
-			ObjTransform.SetPosition(ObjTransform.GetPosition(false) + glm::vec3(0.0f, 0.0f, Difference), false);
+			ObjTransform.SetPosition(ObjTransform.GetPosition(FE_WORLD_SPACE) + glm::vec3(0.0f, 0.0f, Difference), FE_WORLD_SPACE);
 		}
 	}
 
@@ -593,7 +589,7 @@ void GizmoManager::MouseMoveTransformationGizmos()
 		if (!GEOMETRY.IsEpsilonEqual(Difference, glm::vec3(0.0f)))
 		{
 			bAppliedSomeChanges = true;
-			ObjTransform.SetPosition(ObjTransform.GetPosition(false) + Difference, false);
+			ObjTransform.SetPosition(ObjTransform.GetPosition(FE_WORLD_SPACE) + Difference, FE_WORLD_SPACE);
 		}
 	}
 
@@ -603,7 +599,7 @@ void GizmoManager::MouseMoveTransformationGizmos()
 		if (!GEOMETRY.IsEpsilonEqual(Difference, glm::vec3(0.0f)))
 		{
 			bAppliedSomeChanges = true;
-			ObjTransform.SetPosition(ObjTransform.GetPosition(false) + Difference, false);
+			ObjTransform.SetPosition(ObjTransform.GetPosition(FE_WORLD_SPACE) + Difference, FE_WORLD_SPACE);
 		}
 	}
 
@@ -613,7 +609,7 @@ void GizmoManager::MouseMoveTransformationGizmos()
 		if (!GEOMETRY.IsEpsilonEqual(Difference, glm::vec3(0.0f)))
 		{
 			bAppliedSomeChanges = true;
-			ObjTransform.SetPosition(ObjTransform.GetPosition(false) + Difference, false);
+			ObjTransform.SetPosition(ObjTransform.GetPosition(FE_WORLD_SPACE) + Difference, FE_WORLD_SPACE);
 		}
 	}
 
@@ -623,11 +619,12 @@ void GizmoManager::MouseMoveTransformationGizmos()
 
 void GizmoManager::MouseMoveScaleGizmos()
 {
+	FECameraComponent& CameraComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FECameraComponent>();
 	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject();
 
 	if (GIZMO_MANAGER.bScaleXGizmoActive && GIZMO_MANAGER.bScaleYGizmoActive && GIZMO_MANAGER.bScaleZGizmoActive)
 	{
-		const glm::vec3 Difference = GetMousePositionDifferenceOnPlane(-ENGINE.GetCamera()->GetForward());
+		const glm::vec3 Difference = GetMousePositionDifferenceOnPlane(-CameraComponent.GetForward());
 		float Magnitude = Difference.x + Difference.y + Difference.z;
 		
 		glm::vec3 EntityScale = ObjTransform.GetScale();
@@ -696,7 +693,7 @@ void GizmoManager::MouseMoveRotateGizmos()
 	if (GIZMO_MANAGER.bRotateZGizmoActive)
 		AxisOfRotation = glm::vec3(0.0f, 0.0f, 1.0f);
 
-	ObjTransform.RotateAroundAxis(AxisOfRotation, Difference, false);
+	ObjTransform.RotateAroundAxis(AxisOfRotation, Difference, FE_WORLD_SPACE);
 	ApplyChangesToSelectedObject(ObjTransform);
 }
 

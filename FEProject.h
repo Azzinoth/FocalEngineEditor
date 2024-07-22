@@ -11,6 +11,7 @@
 class FEProject
 {
 	friend class FEProjectManager;
+	friend class FEEditor;
 public:
 	FEProject(std::string Name, std::string ProjectFolder);
 	~FEProject();
@@ -32,6 +33,8 @@ public:
 	void SetModified(bool NewValue);
 
 	void AddUnSavedObject(FEObject* Object);
+
+	FEScene* GetScene();
 private:
 	FEScene* ProjectScene = nullptr;
 	std::string Name;

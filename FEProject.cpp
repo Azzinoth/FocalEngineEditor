@@ -408,7 +408,8 @@ void FEProject::SaveScene(bool bFullSave)
 	std::vector<std::string> KeysToDelete;
 	Json::Value& SceneNodes = SceneHierarchy["Nodes"];
 
-	std::vector<std::string> ListOfOmitedObjects = { "gizmo", "Gizmo", "editorPreviewEntity" };
+	// FIX ME! Temporary.
+	std::vector<std::string> ListOfOmitedObjects = { "gizmo", "Gizmo", "EditorPreviewEntity" };
 	// Parsing scene hierarchy to delete all internal editor objects.
 	for (auto it = SceneNodes.begin(); it != SceneNodes.end(); it++)
 	{
@@ -619,7 +620,7 @@ void FEProject::SaveScene(bool bFullSave)
 	//	}
 	//	//WriteTransformToJson(EntityData[Entity->GetObjectID()]["transformation"], &Entity->Transform);
 
-	//	//if (Entity->GetType() == FE_ENTITY_INSTANCED)
+	//	//if (Entity->GetType() == FE_ENTITY_INSTANCED_DEPRECATED)
 	//	//{
 	//	//	FEEntityInstanced* InstancedEntity = reinterpret_cast<FEEntityInstanced*>(Entity);
 	//	//	EntityData[Entity->GetObjectID()]["modificationsToSpawn"] = InstancedEntity->GetSpawnModificationCount() == 0 ? false : true;
@@ -1371,20 +1372,45 @@ void FEProject::LoadScene()
 	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
 	SKY_DOME_SYSTEM.AddToEntity(SkyDome);
 
-	// loading Camera settings
-	ENGINE.GetCamera()->SetPosition(glm::vec3(Root["camera"]["position"]["X"].asFloat(),
+	// Loading Camera.
+	FEEntity* Entity = ProjectScene->CreateEntity("Camera Entity");
+	Entity->AddComponent<FECameraComponent>();
+	FECameraComponent& CameraComponent = Entity->GetComponent<FECameraComponent>();
+	// Will work in future.
+	//ReadTransformToJson(Root["camera"]["transformation"], &Entity->GetComponent<FETransformComponent>());
+
+	glm::vec3 CameraPosition = glm::vec3(Root["camera"]["position"]["X"].asFloat(),
 		Root["camera"]["position"]["Y"].asFloat(),
-		Root["camera"]["position"]["Z"].asFloat()));
+		Root["camera"]["position"]["Z"].asFloat());
+
+	Entity->GetComponent<FETransformComponent>().SetPosition(CameraPosition);
+
+	ENGINE.GetCamera()->SetPosition(CameraPosition);
 
 	ENGINE.GetCamera()->SetFov(Root["camera"]["fov"].asFloat());
+	CameraComponent.SetFOV(50.680f);
 	ENGINE.GetCamera()->SetNearPlane(Root["camera"]["nearPlane"].asFloat());
+	CameraComponent.SetNearPlane(Root["camera"]["nearPlane"].asFloat());
 	ENGINE.GetCamera()->SetFarPlane(Root["camera"]["farPlane"].asFloat());
+	CameraComponent.SetFarPlane(Root["camera"]["farPlane"].asFloat());
 
-	ENGINE.GetCamera()->SetYaw(Root["camera"]["yaw"].asFloat());
-	ENGINE.GetCamera()->SetPitch(Root["camera"]["pitch"].asFloat());
-	ENGINE.GetCamera()->SetRoll(Root["camera"]["roll"].asFloat());
+	glm::vec3 CameraRotation = glm::vec3(Root["camera"]["yaw"].asFloat(),
+		Root["camera"]["pitch"].asFloat(),
+		Root["camera"]["roll"].asFloat());
+
+	Entity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-CameraRotation.y, -CameraRotation.x, CameraRotation.z));
+	// FIX ME! This is temporary solution.
+	CameraComponent.CurrentMouseXAngle = -CameraRotation.x;
+	CameraComponent.CurrentMouseYAngle = -CameraRotation.y;
+
+	ENGINE.GetCamera()->SetYaw(CameraRotation.x);
+	ENGINE.GetCamera()->SetPitch(CameraRotation.y);
+	ENGINE.GetCamera()->SetRoll(CameraRotation.z);
 
 	ENGINE.GetCamera()->SetAspectRatio(Root["camera"]["aspectRatio"].asFloat());
+	CameraComponent.SetAspectRatio(Root["camera"]["aspectRatio"].asFloat());
+
+	CAMERA_SYSTEM.SetMainCamera(Entity);
 
 	if (ProjectVersion >= 0.02f && Root["camera"].isMember("movementSpeed"))
 		ENGINE.GetCamera()->SetMovementSpeed(Root["camera"]["movementSpeed"].asFloat());
@@ -1571,4 +1597,9 @@ void FEProject::SaveSceneTo(const std::string NewPath)
 	SetProjectFolder(NewPath);
 	ENGINE.TakeScreenshot((GetProjectFolder() + "projectScreenShot.texture").c_str());
 	SaveScene(true);
+}
+
+FEScene* FEProject::GetScene()
+{
+	return ProjectScene;
 }

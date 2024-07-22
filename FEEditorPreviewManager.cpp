@@ -7,16 +7,10 @@ FEEditorPreviewManager::~FEEditorPreviewManager() {}
 
 glm::vec4 FEEditorPreviewManager::OriginalClearColor = glm::vec4();
 FETransformComponent FEEditorPreviewManager::OriginalTransform = FETransformComponent();
-glm::vec3 FEEditorPreviewManager::OriginalCameraPosition = glm::vec3();
-float FEEditorPreviewManager::OriginalAspectRation = 0.0f;
-float FEEditorPreviewManager::OriginalCameraPitch = 0.0f;
-float FEEditorPreviewManager::OriginalCameraRoll = 0.0f;
-float FEEditorPreviewManager::OriginalCameraYaw = 0.0f;
-float FEEditorPreviewManager::OriginalExposure = 0.0f;
 
 void FEEditorPreviewManager::InitializeResources()
 {
-	//PreviewScene = SCENE_MANAGER.CreateScene("EditorPreviewScene");
+	PreviewScene = SCENE_MANAGER.CreateScene("EditorPreviewScene", "", false);
 
 	PreviewFB = RESOURCE_MANAGER.CreateFramebuffer(FE_COLOR_ATTACHMENT | FE_DEPTH_ATTACHMENT, 128, 128);
 	PreviewGameModel = new FEGameModel(nullptr, nullptr, "editorPreviewGameModel");
@@ -35,11 +29,17 @@ void FEEditorPreviewManager::InitializeResources()
 	RESOURCE_MANAGER.MakeShaderStandard(MeshPreviewMaterial->Shader);
 
 
-	/*PreviewEntity = PreviewScene->CreateEntity("editorPreviewEntity");
+	PreviewEntity = PreviewScene->CreateEntity("EditorPreviewEntity");
 	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 
-	LocalSunEntity = PreviewScene->CreateEntity("EditorPreview LightEntity");
+	LocalCameraEntity = PreviewScene->CreateEntity("EditorPreview CameraEntity");
+	LocalCameraEntity->AddComponent<FECameraComponent>();
+	FECameraComponent& CameraComponent = LocalCameraEntity->GetComponent<FECameraComponent>();
+	CameraComponent.SetIsUsingDefaultRenderTargetSize(false);
+	CameraComponent.SetRenderTargetSize(128, 128);
+
+	/*LocalSunEntity = PreviewScene->CreateEntity("EditorPreview LightEntity");
 	LocalSunEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
 	FELightComponent& LightComponent = LocalSunEntity->GetComponent<FELightComponent>();
 	LocalSunEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
@@ -50,7 +50,7 @@ void FEEditorPreviewManager::InitializeResources()
 	if (!ActiveScenes.empty())
 	{
 		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-		PreviewEntity = PreviewScene->CreateEntity("editorPreviewEntity");
+		PreviewEntity = PreviewScene->CreateEntity("EditorPreviewEntity");
 		PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
 		PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 
@@ -69,7 +69,7 @@ void FEEditorPreviewManager::ReInitializeEntities()
 	if (!ActiveScenes.empty())
 	{
 		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-		PreviewEntity = CurrentScene->CreateEntity("editorPreviewEntity");
+		PreviewEntity = CurrentScene->CreateEntity("EditorPreviewEntity");
 		PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
 		PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 
@@ -119,16 +119,6 @@ void FEEditorPreviewManager::BeforePreviewActions()
 
 	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-	// FIX ME! Camera should be part of scene.
-	// Saving currently used variables.
-	OriginalCameraPosition = ENGINE.GetCamera()->GetPosition();
-	OriginalAspectRation = ENGINE.GetCamera()->GetAspectRatio();
-	OriginalCameraPitch = ENGINE.GetCamera()->GetPitch();
-	OriginalCameraRoll = ENGINE.GetCamera()->GetRoll();
-	OriginalCameraYaw = ENGINE.GetCamera()->GetYaw();
-	OriginalExposure = ENGINE.GetCamera()->GetExposure();
-	ENGINE.GetCamera()->SetExposure(1.0f);
-
 	OriginalTransform = PreviewEntity->GetComponent<FETransformComponent>();
 
 	// The transform impacts the AABB. Therefore, the necessary values must be set prior to any calculations.
@@ -136,12 +126,8 @@ void FEEditorPreviewManager::BeforePreviewActions()
 	PreviewEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(1.0, 1.0, 1.0));
 	PreviewEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(15.0, -15.0, 0.0));
 
-	ENGINE.GetCamera()->SetAspectRatio(1.0f);
+	//CameraComponent.SetAspectRatio(1.0f);
 	FE_GL_ERROR(glViewport(0, 0, 128, 128));
-
-	ENGINE.GetCamera()->SetPitch(0.0f);
-	ENGINE.GetCamera()->SetRoll(0.0f);
-	ENGINE.GetCamera()->SetYaw(0.0f);
 
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
 
@@ -188,12 +174,6 @@ void FEEditorPreviewManager::AfterPreviewActions()
 
 	// We are reversing all of our previously applied transformations.
 	PreviewEntity->GetComponent<FETransformComponent>() = OriginalTransform;
-
-	ENGINE.GetCamera()->SetPosition(OriginalCameraPosition);
-	ENGINE.GetCamera()->SetAspectRatio(OriginalAspectRation);
-	ENGINE.GetCamera()->SetPitch(OriginalCameraPitch);
-	ENGINE.GetCamera()->SetRoll(OriginalCameraRoll);
-	ENGINE.GetCamera()->SetYaw(OriginalCameraYaw);
 
 	PreviewFB->UnBind();
 
@@ -248,10 +228,14 @@ void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 
 	// invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(Max.x - XSize / 2.0f, Max.y - YSize / 2.0f, Max.z - ZSize / 2.0f));
-	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
+	// FIX ME! Temporary solution
+	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
+	LocalCameraEntity->GetComponent<FETransformComponent>().Update();
+	LocalCameraEntity->GetComponent<FETransformComponent>().ForceSetWorldMatrix(LocalCameraEntity->GetComponent<FETransformComponent>().GetLocalMatrix());
+	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
 
 	// Rendering mesh to texture.
-	RENDERER.RenderGameModelComponent(PreviewEntity, ENGINE.GetCamera());
+	RENDERER.RenderGameModelComponent(PreviewEntity, LocalCameraEntity);
 
 	AfterPreviewActions();
 
@@ -305,10 +289,14 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	BeforePreviewActions();
 
-	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, 70.0f));
+	// FIX ME! Temporary solution
+	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, 70.0f));
+	LocalCameraEntity->GetComponent<FETransformComponent>().Update();
+	LocalCameraEntity->GetComponent<FETransformComponent>().ForceSetWorldMatrix(LocalCameraEntity->GetComponent<FETransformComponent>().GetLocalMatrix());
+	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
 
 	// Rendering material to texture
-	RENDERER.RenderGameModelComponentForward(PreviewEntity, ENGINE.GetCamera(), true);
+	RENDERER.RenderGameModelComponentForward(PreviewEntity, LocalCameraEntity, true);
 
 	AfterPreviewActions();
 
@@ -404,10 +392,14 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 
 	// invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
-	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
+	// FIX ME! Temporary solution
+	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
+	LocalCameraEntity->GetComponent<FETransformComponent>().Update();
+	LocalCameraEntity->GetComponent<FETransformComponent>().ForceSetWorldMatrix(LocalCameraEntity->GetComponent<FETransformComponent>().GetLocalMatrix());
+	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
 
 	// rendering game model to texture
-	RENDERER.RenderGameModelComponentForward(PreviewEntity, ENGINE.GetCamera(), true);
+	RENDERER.RenderGameModelComponentForward(PreviewEntity, LocalCameraEntity, true);
 
 	AfterPreviewActions();
 
@@ -446,10 +438,14 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 
 	// invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
-	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
+	// FIX ME! Temporary solution
+	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
+	LocalCameraEntity->GetComponent<FETransformComponent>().Update();
+	LocalCameraEntity->GetComponent<FETransformComponent>().ForceSetWorldMatrix(LocalCameraEntity->GetComponent<FETransformComponent>().GetLocalMatrix());
+	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
 
 	// rendering game model to texture
-	RENDERER.RenderGameModelComponentForward(PreviewEntity, ENGINE.GetCamera(), true);
+	RENDERER.RenderGameModelComponentForward(PreviewEntity, LocalCameraEntity, true);
 
 	AfterPreviewActions();
 
@@ -528,10 +524,14 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 
 	// invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
-	ENGINE.GetCamera()->SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
+	// FIX ME! Temporary solution
+	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
+	LocalCameraEntity->GetComponent<FETransformComponent>().Update();
+	LocalCameraEntity->GetComponent<FETransformComponent>().ForceSetWorldMatrix(LocalCameraEntity->GetComponent<FETransformComponent>().GetLocalMatrix());
+	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
 
 	// rendering game model to texture
-	RENDERER.RenderGameModelComponentForward(PreviewEntity, ENGINE.GetCamera(), true);
+	RENDERER.RenderGameModelComponentForward(PreviewEntity, LocalCameraEntity, true);
 
 	//PreviewEntity->Prefab = PreviewPrefab;
 	PreviewEntity->GetComponent<FEGameModelComponent>().GameModel = PreviewGameModel;

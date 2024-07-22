@@ -9,19 +9,17 @@ bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
 	{
 		FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Object->GetObjectID())->GetComponent(0)->GameModel;
 
-		// FIX ME! Temporary solution, only supports one scene
-		std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
-		if (!ActiveScenes.empty())
-		{
-			FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-			FEEntity* Entity = CurrentScene->CreateEntity(Object->GetName());
-			Entity->GetComponent<FEGameModelComponent>().GameModel = GameModel;
-			Entity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-			SELECTED.SetSelected(Entity);
-			PROJECT_MANAGER.GetCurrent()->SetModified(true);
+		FETransformComponent& CameraTransformComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FETransformComponent>();
+		FECameraComponent& CameraComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FECameraComponent>();
 
-			return true;
-		}
+		FEEntity* Entity = EDITOR.GetCurrentEditorScene()->CreateEntity(Object->GetName());
+		Entity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
+		Entity->AddComponent<FEGameModelComponent>(GameModel);
+
+		SELECTED.SetSelected(Entity);
+		PROJECT_MANAGER.GetCurrent()->SetModified(true);
+
+		return true;
 	}
 
 	return false;
@@ -110,6 +108,11 @@ void FEEditor::MouseButtonCallback(const int Button, const int Action, int Mods)
 	{
 		EDITOR.bIsCameraInputActive = false;
 		ENGINE.GetCamera()->SetIsInputActive(false);
+		if (PROJECT_MANAGER.GetCurrent() != nullptr && PROJECT_MANAGER.GetCurrent()->ProjectScene != nullptr)
+		{
+			FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCameraEntity(PROJECT_MANAGER.GetCurrent()->ProjectScene);
+			CAMERA_SYSTEM.SetIsIndividualInputActive(MainCamera, false);
+		}
 
 		return;
 	}
@@ -139,12 +142,22 @@ void FEEditor::MouseButtonCallback(const int Button, const int Action, int Mods)
 	if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_PRESS)
 	{
 		EDITOR.bIsCameraInputActive = true;
-		ENGINE.GetCamera()->SetIsInputActive(true);
+		//ENGINE.GetCamera()->SetIsInputActive(true);
+		if (PROJECT_MANAGER.GetCurrent() != nullptr && PROJECT_MANAGER.GetCurrent()->ProjectScene != nullptr)
+		{
+			FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCameraEntity(PROJECT_MANAGER.GetCurrent()->ProjectScene);
+			CAMERA_SYSTEM.SetIsIndividualInputActive(MainCamera, true);
+		}
 	}
 	else if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_RELEASE)
 	{
 		EDITOR.bIsCameraInputActive = false;
 		ENGINE.GetCamera()->SetIsInputActive(false);
+		if (PROJECT_MANAGER.GetCurrent() != nullptr && PROJECT_MANAGER.GetCurrent()->ProjectScene != nullptr)
+		{
+			FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCameraEntity(PROJECT_MANAGER.GetCurrent()->ProjectScene);
+			CAMERA_SYSTEM.SetIsIndividualInputActive(MainCamera, false);
+		}
 	}
 }
 
@@ -244,6 +257,11 @@ void FEEditor::InitializeResources()
 	
 	SELECTED.InitializeResources();
 	ENGINE.GetCamera()->SetIsInputActive(bIsCameraInputActive);
+	if (PROJECT_MANAGER.GetCurrent() != nullptr && PROJECT_MANAGER.GetCurrent()->ProjectScene != nullptr)
+	{
+		FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCameraEntity(PROJECT_MANAGER.GetCurrent()->ProjectScene);
+		CAMERA_SYSTEM.SetIsIndividualInputActive(MainCamera, bIsCameraInputActive);
+	}
 	PROJECT_MANAGER.InitializeResources();
 	PREVIEW_MANAGER.InitializeResources();
 	DRAG_AND_DROP_MANAGER.InitializeResources();
@@ -293,7 +311,7 @@ void FEEditor::InitializeResources()
 	CONTENT_BROWSER_WINDOW.InitializeResources();
 	INSPECTOR_WINDOW.InitializeResources();
 	
-	ENGINE.GetCamera()->SetOnUpdate(OnCameraUpdate);
+	ENGINE.AddOnAfterUpdateCallback(AfterEngineUpdate);
 	ENGINE.AddWindowCloseCallback(CloseWindowCallBack);
 
 	SetUpImgui();
@@ -321,7 +339,7 @@ void FEEditor::MouseMoveCallback(double Xpos, double Ypos)
 	}
 }
 
-void FEEditor::OnCameraUpdate(FEBasicCamera* Camera)
+void FEEditor::AfterEngineUpdate()
 {
 	SELECTED.OnCameraUpdate();
 	GIZMO_MANAGER.Render();
@@ -329,6 +347,19 @@ void FEEditor::OnCameraUpdate(FEBasicCamera* Camera)
 
 void FEEditor::Render()
 {
+	// FIX ME! Temporary solution, only supports one scene
+	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
+	if (ActiveScenes.empty())
+	{
+		CurrentEditorScene = nullptr;
+		CurrentEditorCameraEntity = nullptr;
+	}
+	else
+	{
+		CurrentEditorScene = SCENE_MANAGER.GetActiveScenes()[0];
+		CurrentEditorCameraEntity = CAMERA_SYSTEM.GetMainCameraEntity(CurrentEditorScene);
+	}
+
 	DRAG_AND_DROP_MANAGER.Render();
 
 	if (PROJECT_MANAGER.GetCurrent())
@@ -367,9 +398,7 @@ void FEEditor::Render()
 					}
 					else
 					{
-						PROJECT_MANAGER.CloseCurrentProject();
-						CONTENT_BROWSER_WINDOW.Clear();
-						SCENE_GRAPH_WINDOW.Clear();
+						OnProjectClose();
 
 						ImGui::PopStyleVar();
 						ImGui::EndMenu();
@@ -388,7 +417,7 @@ void FEEditor::Render()
 					}
 					else
 					{
-						PROJECT_MANAGER.CloseCurrentProject();
+						OnProjectClose();
 						ENGINE.Terminate();
 						return;
 					}
@@ -549,7 +578,7 @@ void FEEditor::CloseWindowCallBack()
 	}
 	else
 	{
-		PROJECT_MANAGER.CloseCurrentProject();
+		EDITOR.OnProjectClose();
 		ENGINE.Terminate();
 		return;
 	}
@@ -643,39 +672,6 @@ void FEEditor::DisplayEffectsWindow() const
 	{
 		ResetButton->SetSize(ImVec2(ButtonWidth, 28.0f));
 		bFirstCall = false;
-	}
-
-	if (ImGui::CollapsingHeader("Gamma Correction & Exposure", 0))
-	{
-		ImGui::Text("Gamma Correction:");
-		float Gamma = ENGINE.GetCamera()->GetGamma();
-		ImGui::SetNextItemWidth(FieldWidth);
-		ImGui::DragFloat("##Gamma Correction", &Gamma, 0.01f, 0.001f, 10.0f);
-		ENGINE.GetCamera()->SetGamma(Gamma);
-
-		ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
-		{
-			ENGINE.GetCamera()->SetGamma(2.2f);
-		}
-		ImGui::PopID();
-
-		ImGui::Text("Exposure:");
-		float Exposure = ENGINE.GetCamera()->GetExposure();
-		ImGui::SetNextItemWidth(FieldWidth);
-		ImGui::DragFloat("##Exposure", &Exposure, 0.01f, 0.001f, 100.0f);
-		ENGINE.GetCamera()->SetExposure(Exposure);
-
-		ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
-		{
-			ENGINE.GetCamera()->SetExposure(1.0f);
-		}
-		ImGui::PopID();
 	}
 
 	if (ImGui::CollapsingHeader("Anti-Aliasing(FXAA)", 0))
@@ -1210,4 +1206,24 @@ void FEEditor::SetUpImgui()
 	ImGui::StyleColorsDark();
 
 	SetImguiStyle();
+}
+
+FEScene* FEEditor::GetCurrentEditorScene() const
+{
+	return CurrentEditorScene;
+}
+
+FEEntity* FEEditor::GetCurrentEditorCameraEntity() const
+{
+	return CurrentEditorCameraEntity;
+}
+
+void FEEditor::OnProjectClose()
+{
+	CurrentEditorScene = nullptr;
+	CurrentEditorCameraEntity = nullptr;
+
+	PROJECT_MANAGER.CloseCurrentProject();
+	CONTENT_BROWSER_WINDOW.Clear();
+	SCENE_GRAPH_WINDOW.Clear();
 }

@@ -1,4 +1,5 @@
 #include "FEEditorSelectedObject.h"
+#include "FEProject.h"
 using namespace FocalEngine;
 
 FEEditorSelectedObject* FEEditorSelectedObject::Instance = nullptr;
@@ -121,15 +122,18 @@ void FEEditorSelectedObject::Clear()
 
 glm::dvec3 FEEditorSelectedObject::MouseRay(const double MouseX, const double MouseY) const
 {
+	FEEntity* MainCameraEntity = CAMERA_SYSTEM.GetMainCameraEntity(PROJECT_MANAGER.GetCurrent()->GetScene());
+	FECameraComponent& CameraComponent = MainCameraEntity->GetComponent<FECameraComponent>();
+
 	glm::dvec2 NormalizedMouseCoords;
 	NormalizedMouseCoords.x = (2.0f * MouseX) / ENGINE.GetRenderTargetWidth() - 1;
 	NormalizedMouseCoords.y = 1.0f - (2.0f * (MouseY)) / ENGINE.GetRenderTargetHeight();
 
 	const glm::dvec4 ClipCoords = glm::dvec4(NormalizedMouseCoords.x, NormalizedMouseCoords.y, -1.0, 1.0);
-	glm::dvec4 EyeCoords = glm::inverse(ENGINE.GetCamera()->GetProjectionMatrix()) * ClipCoords;
+	glm::dvec4 EyeCoords = glm::inverse(CameraComponent.GetProjectionMatrix()) * ClipCoords;
 	EyeCoords.z = -1.0f;
 	EyeCoords.w = 0.0f;
-	glm::dvec3 WorldRay = glm::inverse(ENGINE.GetCamera()->GetViewMatrix()) * EyeCoords;
+	glm::dvec3 WorldRay = glm::inverse(CameraComponent.GetViewMatrix()) * EyeCoords;
 	WorldRay = glm::normalize(WorldRay);
 
 	return WorldRay;
@@ -142,6 +146,11 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 
 	// FIX ME! Temporary solution, only supports one scene
 	FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+
+	// FIX ME! Temporary solution
+	FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCameraEntity(CurrentScene);
+	FETransformComponent& CameraTransformComponent = MainCamera->GetComponent<FETransformComponent>();
+	FECameraComponent& CameraComponent = MainCamera->GetComponent<FECameraComponent>();
 
 	const glm::vec3 MouseRayVector = MouseRay(MouseX, MouseY);
 	const std::vector<std::string> EntityList = CurrentScene->GetEntityIDList();
@@ -166,7 +175,7 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 				Box = TERRAIN_SYSTEM.GetAABB(CurrentEntity);
 			}
 
-			if (Box.RayIntersect(ENGINE.GetCamera()->GetPosition(), MouseRayVector, Distance))
+			if (Box.RayIntersect(CameraTransformComponent.GetPosition(FE_WORLD_SPACE), MouseRayVector, Distance))
 			{
 				if (CurrentEntity->HasComponent<FEInstancedComponent>())
 				{
@@ -176,7 +185,7 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 						InstancedSubObjectsInfo[CurrentEntity] = std::vector<int>();
 						for (size_t j = 0; j < InstancedComponent.IndividualInstancedAABB.size(); j++)
 						{
-							if (InstancedComponent.IndividualInstancedAABB[j].RayIntersect(ENGINE.GetCamera()->GetPosition(), MouseRayVector, Distance))
+							if (InstancedComponent.IndividualInstancedAABB[j].RayIntersect(CameraTransformComponent.GetPosition(FE_WORLD_SPACE), MouseRayVector, Distance))
 							{
 								InstancedSubObjectsInfo[CurrentEntity].push_back(static_cast<int>(j));
 							}
@@ -232,7 +241,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 
 			if (!PotentiallySelectedEntity->HasComponent<FEInstancedComponent>())
 			{
-				RENDERER.RenderGameModelComponent(PotentiallySelectedEntity, ENGINE.GetCamera(), false);
+				RENDERER.RenderGameModelComponent(PotentiallySelectedEntity);
 			}
 			else if (PotentiallySelectedEntity->HasComponent<FEInstancedComponent>())
 			{
@@ -244,7 +253,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 					GameModelComponent.GameModel->SetBillboardMaterial(PixelAccurateSelectionMaterial);
 
 					FEInstancedComponent& InstancedComponent = PotentiallySelectedEntity->GetComponent<FEInstancedComponent>();
-					RENDERER.RenderGameModelComponentWithInstanced(PotentiallySelectedEntity, ENGINE.GetCamera(), nullptr, false, false);
+					RENDERER.RenderGameModelComponentWithInstanced(PotentiallySelectedEntity, nullptr);
 
 					PixelAccurateSelectionMaterial->Shader = FEPixelAccurateSelection;
 					GameModelComponent.GameModel->SetBillboardMaterial(RegularBillboardMaterials);
@@ -263,7 +272,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 
 			TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
 			TerrainComponent.Shader->UpdateParameterData("baseColor", glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
-			RENDERER.RenderTerrainComponent(PotentiallySelectedEntity, ENGINE.GetCamera());
+			RENDERER.RenderTerrainComponent(PotentiallySelectedEntity);
 			TerrainComponent.Shader->UpdateParameterData("baseColor", glm::vec3(1.0f));
 			TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("5A3E4F5C13115856401F1D1C"/*"FETerrainShader"*/);
 		}
@@ -305,7 +314,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
 			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
 
-			RENDERER.RenderGameModelComponent(DummyEntity/*DummyGameModelComponent, DummyTransformComponent*/, ENGINE.GetCamera(), false);
+			RENDERER.RenderGameModelComponent(DummyEntity);
 
 			OriginalGameModelComponent.GameModel->Material = RegularMaterial;
 			DummyGameModelComponent.SetVisibility(false);
@@ -391,10 +400,9 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 	FE_GL_ERROR(glViewport(0, 0, RENDERER.SceneToTextureFB->GetWidth(), RENDERER.SceneToTextureFB->GetHeight()));
 	glm::vec4 OriginalClearColor = ENGINE.GetClearColor();
 	ENGINE.SetClearColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
-	//FE_GL_ERROR(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT));
 
-	if (Container == nullptr /*|| !Container->HasComponent<FEGameModelComponent>()*/)
+	if (Container == nullptr)
 	{
 		HALO_SELECTION_EFFECT.HaloObjectsFb->UnBind();
 		ENGINE.SetClearColor(OriginalClearColor);
@@ -405,7 +413,6 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 
 	if (Container->HasComponent<FEGameModelComponent>())
 	{
-
 		FEGameModelComponent& GameModelComponent = Container->GetComponent<FEGameModelComponent>();
 		FEMaterial* RegularMaterial = GameModelComponent.GameModel->Material;
 
@@ -415,7 +422,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 
 		if (!Container->HasComponent<FEInstancedComponent>())
 		{
-			RENDERER.RenderGameModelComponent(Container, ENGINE.GetCamera(), false);
+			RENDERER.RenderGameModelComponent(Container);
 		}
 		else if (Container->HasComponent<FEInstancedComponent>())
 		{
@@ -438,7 +445,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 				HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
 				HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
 
-				RENDERER.RenderGameModelComponent(DummyEntity, ENGINE.GetCamera(), false);
+				RENDERER.RenderGameModelComponent(DummyEntity);
 
 				GameModelComponent.GameModel->Material = RegularMaterial;
 				DummyGameModelComponent.SetVisibility(false);
@@ -449,7 +456,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 				FEMaterial* RegularBillboardMaterial = GameModelComponent.GameModel->GetBillboardMaterial();
 				GameModelComponent.GameModel->SetBillboardMaterial(HALO_SELECTION_EFFECT.HaloMaterial);
 
-				RENDERER.RenderGameModelComponentWithInstanced(Container, ENGINE.GetCamera(), nullptr, false, false);
+				RENDERER.RenderGameModelComponentWithInstanced(Container, nullptr);
 
 				HALO_SELECTION_EFFECT.HaloMaterial->Shader = HALO_SELECTION_EFFECT.HaloDrawObjectShader;
 				GameModelComponent.GameModel->SetBillboardMaterial(RegularBillboardMaterial);
@@ -466,7 +473,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 		const float RegularLODLevel = TerrainComponent.GetLODLevel();
 		TerrainComponent.SetLODLevel(0.0f);
 
-		RENDERER.RenderTerrainComponent(Container, ENGINE.GetCamera());
+		RENDERER.RenderTerrainComponent(Container);
 
 		TerrainComponent.SetLODLevel(RegularLODLevel);
 		TerrainComponent.Shader->UpdateParameterData("baseColor", glm::vec3(1.0f));

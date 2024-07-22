@@ -26,6 +26,9 @@ public:
     // Clipboard
     std::string GetSceneEntityIDInClipboard();
     void SetSceneEntityIDInClipboard(std::string NewValue);
+
+    FEScene* GetCurrentEditorScene() const;
+    FEEntity* GetCurrentEditorCameraEntity() const;
 private:
     SINGLETON_PRIVATE_PART(FEEditor)
 
@@ -34,6 +37,9 @@ private:
     double MouseX, MouseY;
     bool bSceneWindowHovered;
     bool bIsCameraInputActive = false;
+
+    FEScene* CurrentEditorScene = nullptr;
+    FEEntity* CurrentEditorCameraEntity = nullptr;
 
     // Clipboard
     std::string SceneEntityIDInClipboard;
@@ -45,7 +51,7 @@ private:
     DragAndDropTarget* SceneWindowTarget = nullptr;
 
     // Callbacks
-    static void OnCameraUpdate(FEBasicCamera* Camera);
+    static void AfterEngineUpdate();
     static void MouseButtonCallback(int Button, int Action, int Mods);
     static void MouseMoveCallback(double Xpos, double Ypos);
     static void KeyButtonCallback(int Key, int Scancode, int Action, int Mods);
@@ -80,6 +86,8 @@ private:
     // ImGui setup
     void SetUpImgui();
     void SetImguiStyle();
+
+    void OnProjectClose();
 };
 
 #define EDITOR FEEditor::getInstance()

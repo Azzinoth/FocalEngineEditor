@@ -1,4 +1,6 @@
 #include "InspectorWindow.h"
+#include "../FEEditor.h"
+
 
 FEEditorInspectorWindow* FEEditorInspectorWindow::Instance = nullptr;
 FEEntity* FEEditorInspectorWindow::EntityToModify = nullptr;
@@ -6,10 +8,9 @@ FEEntity* FEEditorInspectorWindow::TerrainToWorkWith = nullptr;
 
 FEEditorInspectorWindow::FEEditorInspectorWindow()
 {
-	auto RegisteredComponentList = COMPONENTS_TOOL.GetComponentInfoList();
-
-
+	std::vector<FEComponentTypeInfo> RegisteredComponentList = COMPONENTS_TOOL.GetComponentInfoList();
 	AddComponentHandlers[typeid(FELightComponent)] = &FEEditorInspectorWindow::AddLightComponent;
+	AddComponentHandlers[typeid(FECameraComponent)] = &FEEditorInspectorWindow::AddCameraComponent;
 }
 
 void FEEditorInspectorWindow::InitializeResources()
@@ -120,7 +121,7 @@ void FEEditorInspectorWindow::ShowTransformConfiguration(const std::string Name,
 	bModified = false;
 
 	// ********************* WORLD POSITION *********************
-	glm::vec3 WorldPosition = Transform->GetPosition(false);
+	glm::vec3 WorldPosition = Transform->GetPosition(FE_WORLD_SPACE);
 	ImGui::Text("World Position : ");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(EditWidth);
@@ -141,7 +142,7 @@ void FEEditorInspectorWindow::ShowTransformConfiguration(const std::string Name,
 	ShowToolTip("Z position");
 
 	if (bModified)
-		Transform->SetPosition(WorldPosition, false);
+		Transform->SetPosition(WorldPosition, FE_WORLD_SPACE);
 
 	bModified = false;
 
@@ -172,7 +173,7 @@ void FEEditorInspectorWindow::ShowTransformConfiguration(const std::string Name,
 	bModified = false;
 
 	// ********************* WORLD ROTATION *********************
-	glm::vec3 WorldRotation = Transform->GetRotation(false);
+	glm::vec3 WorldRotation = Transform->GetRotation(FE_WORLD_SPACE);
 	ImGui::Text("World Rotation : ");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(EditWidth);
@@ -193,7 +194,7 @@ void FEEditorInspectorWindow::ShowTransformConfiguration(const std::string Name,
 	ShowToolTip("Z rotation");
 
 	if (bModified)
-		Transform->SetRotation(WorldRotation, false);
+		Transform->SetRotation(WorldRotation, FE_WORLD_SPACE);
 
 	bModified = false;
 
@@ -250,7 +251,7 @@ void FEEditorInspectorWindow::ShowTransformConfiguration(const std::string Name,
 	bModified = false;
 
 	// ********************* WORLD SCALE *********************
-	glm::vec3 WorldScale = Transform->GetScale(false);
+	glm::vec3 WorldScale = Transform->GetScale(FE_WORLD_SPACE);
 	ScaleChangeSpeed = WorldScale.x * 0.01f;
 	ImGui::Text("World Scale : ");
 	ImGui::SameLine();
@@ -293,7 +294,7 @@ void FEEditorInspectorWindow::ShowTransformConfiguration(const std::string Name,
 	ShowToolTip("Z scale");
 
 	if (bModified)
-		Transform->SetScale(WorldScale, false);
+		Transform->SetScale(WorldScale, FE_WORLD_SPACE);
 }
 
 void FEEditorInspectorWindow::DisplayLightProperties(FEEntity* LightEntity) const
@@ -413,6 +414,57 @@ void FEEditorInspectorWindow::DisplayLightProperties(FEEntity* LightEntity) cons
 	LightComponent.SetIntensity(Intensity);
 }
 
+void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) const
+{
+	FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
+
+	bool bIsMainCamera = CameraComponent.IsMainCamera();
+	ImGui::Checkbox("Main camera", &bIsMainCamera);
+	CAMERA_SYSTEM.SetMainCamera(CameraEntity);
+	
+	float CameraSpeed = CameraComponent.GetMovementSpeed();
+	ImGui::Text("Camera speed in m/s : ");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(70);
+	ImGui::DragFloat("##Camera_speed", &CameraSpeed, 0.01f, 0.01f, 100.0f);
+	CameraComponent.SetMovementSpeed(CameraSpeed);
+
+	float FOV = CameraComponent.GetFOV();
+	ImGui::Text("Field of view : ");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(70);
+	ImGui::DragFloat("##FOV", &FOV, 0.1f, 1.0f, 179.0f);
+	CameraComponent.SetFOV(FOV);
+
+	float NearPlane = CameraComponent.GetNearPlane();
+	ImGui::Text("Near plane : ");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(70);
+	ImGui::DragFloat("##NearPlane", &NearPlane, 0.1f, 0.01f, 1000.0f);
+	CameraComponent.SetNearPlane(NearPlane);
+
+	float FarPlane = CameraComponent.GetFarPlane();
+	ImGui::Text("Far plane : ");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(70);
+	ImGui::DragFloat("##FarPlane", &FarPlane, 0.1f, 0.01f, 10000.0f);
+	CameraComponent.SetFarPlane(FarPlane);
+
+	float Gamma = CameraComponent.GetGamma();
+	ImGui::Text("Gamma : ");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(70);
+	ImGui::DragFloat("##Gamma", &Gamma, 0.1f, 0.1f, 10.0f);
+	CameraComponent.SetGamma(Gamma);
+
+	float Exposure = CameraComponent.GetExposure();
+	ImGui::Text("Exposure : ");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(70);
+	ImGui::DragFloat("##Exposure", &Exposure, 0.1f, 0.1f, 10.0f);
+	CameraComponent.SetExposure(Exposure);
+}
+
 // FIX ME!
 void FEEditorInspectorWindow::ChangePrefabOfEntityCallBack(const std::vector<FEObject*> SelectionsResult)
 {
@@ -432,6 +484,11 @@ void FEEditorInspectorWindow::ChangePrefabOfEntityCallBack(const std::vector<FEO
 void FEEditorInspectorWindow::AddLightComponent(FEEntity* Entity)
 {
 	Entity->AddComponent<FELightComponent>(FE_POINT_LIGHT);
+}
+
+void FEEditorInspectorWindow::AddCameraComponent(FEEntity* Entity)
+{
+	Entity->AddComponent<FECameraComponent>();
 }
 
 std::vector<std::string> FEEditorInspectorWindow::GetAvailableComponentsToAdd(FEEntity* Entity) const
@@ -454,11 +511,11 @@ bool FEEditorInspectorWindow::AddComponent(FEEntity* Entity, std::string Compone
 {
 	auto RegisteredComponentList = COMPONENTS_TOOL.GetComponentInfoList();
 
-	for (size_t j = 0; j < RegisteredComponentList.size(); j++)
+	for (size_t i = 0; i < RegisteredComponentList.size(); i++)
 	{
-		if (RegisteredComponentList[j].Name == ComponentName)
+		if (RegisteredComponentList[i].Name == ComponentName)
 		{
-			auto ComponentHashCode = RegisteredComponentList[j].Type->hash_code();
+			auto ComponentHashCode = RegisteredComponentList[i].Type->hash_code();
 
 			auto ComponentIterator = AddComponentHandlers.begin();
 			while (ComponentIterator != AddComponentHandlers.end())
@@ -497,9 +554,6 @@ void FEEditorInspectorWindow::Render()
 
 	ImGui::Text("ID : %s", EntitySelected->GetObjectID().c_str());
 	ImGui::Text("Name : %s", EntitySelected->GetName().c_str());
-
-
-	//auto testlist = GetAllComponentTypeInfos();
 
 	if (EntitySelected->HasComponent<FETagComponent>())
 	{
@@ -820,7 +874,9 @@ void FEEditorInspectorWindow::Render()
 				if (ImGui::Button("Add instance"))
 				{
 					glm::mat4 NewInstanceMatrix = glm::identity<glm::mat4>();
-					NewInstanceMatrix = glm::translate(NewInstanceMatrix, ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+					FETransformComponent& CameraTransformComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FETransformComponent>();
+					FECameraComponent& CameraComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FECameraComponent>();
+					NewInstanceMatrix = glm::translate(NewInstanceMatrix, CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
 					INSTANCED_RENDERING_SYSTEM.AddIndividualInstance(EntitySelected, NewInstanceMatrix);
 
 					PROJECT_MANAGER.GetCurrent()->SetModified(true);
@@ -899,6 +955,14 @@ void FEEditorInspectorWindow::Render()
 		}
 	}
 
+	if (EntitySelected->HasComponent<FECameraComponent>())
+	{
+		if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			DisplayCameraProperties(SELECTED.GetSelected());
+		}
+	}
+
 	std::vector<std::string> AvailableComponentTypes = GetAvailableComponentsToAdd(EntitySelected);
 
 	ImGui::SetNextItemWidth(220.0f);
@@ -918,63 +982,6 @@ void FEEditorInspectorWindow::Render()
 		}
 		ImGui::EndCombo();
 	}
-
-
-	//else if (SELECTED.GetSelected()->GetType() == FE_CAMERA)
-	//{
-	//	FEBasicCamera* Camera = ENGINE.GetCamera();
-
-	//	// ********* POSITION *********
-	//	glm::vec3 CameraPosition = Camera->GetPosition();
-
-	//	ImGui::Text("Position : ");
-	//	ImGui::SameLine();
-	//	ImGui::SetNextItemWidth(90);
-	//	ImGui::DragFloat("##X pos", &CameraPosition[0], 0.1f);
-	//	ShowToolTip("X Position");
-
-	//	ImGui::SameLine();
-	//	ImGui::SetNextItemWidth(90);
-	//	ImGui::DragFloat("##Y pos", &CameraPosition[1], 0.1f);
-	//	ShowToolTip("Y Position");
-
-	//	ImGui::SameLine();
-	//	ImGui::SetNextItemWidth(90);
-	//	ImGui::DragFloat("##Z pos", &CameraPosition[2], 0.1f);
-	//	ShowToolTip("Z Position");
-
-	//	Camera->SetPosition(CameraPosition);
-
-	//	// ********* ROTATION *********
-	//	glm::vec3 CameraRotation = glm::vec3(Camera->GetYaw(), Camera->GetPitch(), Camera->GetRoll());
-
-	//	ImGui::Text("WorldRotation : ");
-	//	ImGui::SameLine();
-	//	ImGui::SetNextItemWidth(90);
-	//	ImGui::DragFloat("##X rot", &CameraRotation[0], 0.1f);
-	//	ShowToolTip("X WorldRotation");
-
-	//	ImGui::SameLine();
-	//	ImGui::SetNextItemWidth(90);
-	//	ImGui::DragFloat("##Y rot", &CameraRotation[1], 0.1f);
-	//	ShowToolTip("Y WorldRotation");
-
-	//	ImGui::SameLine();
-	//	ImGui::SetNextItemWidth(90);
-	//	ImGui::DragFloat("##Z rot", &CameraRotation[2], 0.1f);
-	//	ShowToolTip("Z WorldRotation");
-
-	//	Camera->SetYaw(CameraRotation[0]);
-	//	Camera->SetPitch(CameraRotation[1]);
-	//	Camera->SetRoll(CameraRotation[2]);
-
-	//	float CameraSpeed = Camera->GetMovementSpeed();
-	//	ImGui::Text("Camera speed in m/s : ");
-	//	ImGui::SameLine();
-	//	ImGui::SetNextItemWidth(70);
-	//	ImGui::DragFloat("##Camera_speed", &CameraSpeed, 0.01f, 0.01f, 100.0f);
-	//	Camera->SetMovementSpeed(CameraSpeed);
-	//}
 
 	ImGui::PopStyleVar();
 	ImGui::End();

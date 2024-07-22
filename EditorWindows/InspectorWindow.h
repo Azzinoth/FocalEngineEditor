@@ -4,6 +4,7 @@
 
 class FEEditorInspectorWindow
 {
+    friend class FEEditorSceneGraphWindow;
     friend class FEEditor;
     SINGLETON_PRIVATE_PART(FEEditorInspectorWindow)
 
@@ -11,8 +12,8 @@ class FEEditorInspectorWindow
     bool bVisible = true;
     static FEEntity* EntityToModify;
 
-    // Light properties
     void DisplayLightProperties(FEEntity* LightEntity) const;
+    void DisplayCameraProperties(FEEntity* CameraEntity) const;
 
     // Terrain settings
     static FEEntity* TerrainToWorkWith;
@@ -64,7 +65,7 @@ class FEEditorInspectorWindow
     std::unordered_map<std::type_index, std::function<void(FEEntity*)>> AddComponentHandlers;
 
     static void AddLightComponent(FEEntity* Entity);
-
+    static void AddCameraComponent(FEEntity* Entity);
 public:
     SINGLETON_PUBLIC_PART(FEEditorInspectorWindow)
 };

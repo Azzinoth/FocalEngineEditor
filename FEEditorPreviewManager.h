@@ -40,6 +40,7 @@ private:
 	// FIX ME! Make it work.
 	// Local directional entity
 	FEEntity* LocalSunEntity;
+	FEEntity* LocalCameraEntity;
 
 	// Saved scene settings
 	glm::vec3 RegularLightRotation = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -54,12 +55,6 @@ private:
 
 	static glm::vec4 OriginalClearColor;
 	static FETransformComponent OriginalTransform;
-	static glm::vec3 OriginalCameraPosition;
-	static float OriginalAspectRation;
-	static float OriginalCameraPitch;
-	static float OriginalCameraRoll;
-	static float OriginalCameraYaw;
-	static float OriginalExposure;
 
 	void BeforePreviewActions();
 	void AfterPreviewActions();

@@ -1,4 +1,5 @@
 #include "SceneGraphWindow.h"
+#include "../FEEditor.h"
 
 FEEditorSceneGraphWindow* FEEditorSceneGraphWindow::Instance = nullptr;
 FEEntity* FEEditorSceneGraphWindow::EntityToModify = nullptr;
@@ -56,7 +57,7 @@ void FEEditorSceneGraphWindow::SetCorrectItemColor(FEObject* SceneObject) const
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, CameraItemColor);
 	}
-	else if (SceneObject->GetType() == FE_TERRAIN)
+	else if (SceneObject->GetType() == FE_TERRAIN_DEPRECATED)
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, TerrainItemColor);
 	}
@@ -64,7 +65,7 @@ void FEEditorSceneGraphWindow::SetCorrectItemColor(FEObject* SceneObject) const
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, EntityItemColor);
 	}
-	else if (SceneObject->GetType() == FE_ENTITY_INSTANCED)
+	else if (SceneObject->GetType() == FE_ENTITY_INSTANCED_DEPRECATED)
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, InstancedEntityItemColor);
 	}
@@ -76,9 +77,9 @@ void FEEditorSceneGraphWindow::PopCorrectItemColor(FEObject* SceneObject)
 		SceneObject->GetType() == FE_SPOT_LIGHT ||
 		SceneObject->GetType() == FE_POINT_LIGHT ||
 		SceneObject->GetType() == FE_CAMERA ||
-		SceneObject->GetType() == FE_TERRAIN ||
+		SceneObject->GetType() == FE_TERRAIN_DEPRECATED ||
 		SceneObject->GetType() == FE_ENTITY ||
-		SceneObject->GetType() == FE_ENTITY_INSTANCED)
+		SceneObject->GetType() == FE_ENTITY_INSTANCED_DEPRECATED)
 	{
 		ImGui::PopStyleColor();
 	}
@@ -92,8 +93,10 @@ static void CreateInstancedEntityCallBack(const std::vector<FEObject*> Selection
 		if (SelectedPrefab == nullptr)
 			return;
 
+		FETransformComponent& CameraTransformComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FETransformComponent>();
+		FECameraComponent& CameraComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FECameraComponent>();
 		FEEntity* Entity = SCENE_GRAPH_WINDOW.GetScene()->CreateEntity();
-		Entity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+		Entity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
 		Entity->AddComponent<FEGameModelComponent>(SelectedPrefab->GetComponent(0)->GameModel);
 		Entity->AddComponent<FEInstancedComponent>();
 		SELECTED.SetSelected(Entity);
@@ -110,8 +113,10 @@ static void CreateEntityCallBack(const std::vector<FEObject*> SelectionsResult)
 		if (SelectedPrefab == nullptr)
 			return;
 
+		FETransformComponent& CameraTransformComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FETransformComponent>();
+		FECameraComponent& CameraComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FECameraComponent>();
 		FEEntity* Entity = SCENE_GRAPH_WINDOW.GetScene()->CreateEntity();
-		Entity->GetComponent<FETransformComponent>().SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
+		Entity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
 		SELECTED.SetSelected(Entity);
 
 		PROJECT_MANAGER.GetCurrent()->SetModified(true);
@@ -139,14 +144,14 @@ void FEEditorSceneGraphWindow::DrawCorrectIcon(const FEObject* SceneObject) cons
 	ImGui::SetCursorPosX(20);
 
 	// FIX ME!
-	/*if (SceneObject->GetType() == FE_ENTITY || SceneObject->GetType() == FE_ENTITY_INSTANCED)
+	/*if (SceneObject->GetType() == FE_ENTITY || SceneObject->GetType() == FE_ENTITY_INSTANCED_DEPRECATED)
 	{
 		const FEEntity* entity = SCENE.GetEntity(SceneObject->GetObjectID());
 
 		if (EDITOR_INTERNAL_RESOURCES.IsInInternalEditorList(entity))
 			return;
 
-		if (entity->GetType() == FE_ENTITY_INSTANCED)
+		if (entity->GetType() == FE_ENTITY_INSTANCED_DEPRECATED)
 		{
 
 			ImGui::Image((void*)(intptr_t)InstancedEntityIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
@@ -175,7 +180,7 @@ void FEEditorSceneGraphWindow::DrawCorrectIcon(const FEObject* SceneObject) cons
 
 	}
 
-	if (SceneObject->GetType() == FE_TERRAIN)
+	if (SceneObject->GetType() == FE_TERRAIN_DEPRECATED)
 	{
 		ImGui::Image((void*)(intptr_t)TerrainIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 	}
@@ -289,6 +294,8 @@ void FEEditorSceneGraphWindow::RenderNewSceneGraph()
 		bSceneNodeTargetsDirty = false;
 }
 
+//FIX ME! 
+#include "InspectorWindow.h"
 void FEEditorSceneGraphWindow::Render()
 {
 	if (!bVisible)
@@ -333,7 +340,7 @@ void FEEditorSceneGraphWindow::Render()
 		SceneObjectsList.push_back(TerrainList[i]);
 	}
 
-	SceneObjectsList.push_back(ENGINE.GetCamera()->GetObjectID());
+	//SceneObjectsList.push_back(ENGINE.GetCamera()->GetObjectID());
 
 	// Filtering.
 	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5.0f);
@@ -527,7 +534,10 @@ void FEEditorSceneGraphWindow::Render()
 		ImGui::EndPopup();
 	}
 
-	// It should not be here.
+	//FEBasicCamera* Camera = ENGINE.GetCamera();
+	//INSPECTOR_WINDOW.ShowTransformConfiguration("Camera", & Camera->TestTransform);
+
+	// FIX ME! It should not be here.
 	static bool bDisplayGrid = true;
 	ImGui::Checkbox("Display grid", &bDisplayGrid);
 
