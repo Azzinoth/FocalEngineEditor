@@ -55,8 +55,9 @@ static void CreateNewPrefabCallBack(const std::vector<FEObject*> SelectionsResul
 		{
 			for (int i = 1; i < SelectionsResult.size(); i++)
 			{
-				if (SelectionsResult[i]->GetType() == FE_GAMEMODEL)
-					NewPrefab->AddComponent(reinterpret_cast<FEGameModel*>(SelectionsResult[i]));
+				// FIX ME! It should be here
+				//if (SelectionsResult[i]->GetType() == FE_GAMEMODEL)
+				//	NewPrefab->AddComponent(reinterpret_cast<FEGameModel*>(SelectionsResult[i]));
 			}
 		}
 		

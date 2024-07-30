@@ -10,7 +10,8 @@ bool PrefabEditorWindow::AddGameModelTargetCallBack(FEObject* Object, void** Ent
 		return false;
 
 	FEGameModel* NewGameModel = reinterpret_cast<FEGameModel*>(Object);
-	ObjToWorkWith->AddComponent(NewGameModel);
+	// FIX ME! It should be here
+	//ObjToWorkWith->AddComponent(NewGameModel);
 
 	return true;
 }
@@ -23,8 +24,9 @@ void PrefabEditorWindow::AddNewGameModelCallBack(const std::vector<FEObject*> Se
 {
 	for (int i = 0; i < SelectionsResult.size(); i++)
 	{
-		if (SelectionsResult[i]->GetType() == FE_GAMEMODEL)
-			ObjToWorkWith->AddComponent(reinterpret_cast<FEGameModel*>(SelectionsResult[i]));
+		// FIX ME! It should be here
+		//if (SelectionsResult[i]->GetType() == FE_GAMEMODEL)
+		//	ObjToWorkWith->AddComponent(reinterpret_cast<FEGameModel*>(SelectionsResult[i]));
 	}
 }
 
@@ -49,8 +51,6 @@ void PrefabEditorWindow::Show(FEPrefab* Prefab)
 {
 	if (Prefab->Scene != nullptr)
 	{
-		if (CurrentPrefabScene != nullptr)
-			SCENE_MANAGER.DeleteScene(CurrentPrefabScene);
 		CurrentPrefabScene = SCENE_MANAGER.DuplicateScene(Prefab->Scene, "Scene: " + Prefab->GetName());
 
 		FEEntity* Camera = CurrentPrefabScene->CreateEntity("Prefab scene camera");

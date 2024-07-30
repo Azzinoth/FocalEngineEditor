@@ -193,7 +193,15 @@ void FEEditorSceneGraphWindow::DrawCorrectIcon(const FEObject* SceneObject) cons
 DragAndDropTarget* FEEditorSceneGraphWindow::GetSceneNodeDragAndDropTarget(FENaiveSceneGraphNode* NodeToFind)
 {
 	int64_t UniqueID = 0;
-	UniqueID = static_cast<intptr_t>(std::hash<std::string>{}(NodeToFind->GetEntity()->GetObjectID().c_str()));
+	// If node is root.
+	if (NodeToFind->GetEntity() == nullptr)
+	{
+		UniqueID = -1;
+	}
+	else
+	{
+		UniqueID = static_cast<intptr_t>(std::hash<std::string>{}(NodeToFind->GetEntity()->GetObjectID().c_str()));
+	}
 
 	if (SceneNodeDragAndDropTargets.find(UniqueID) == SceneNodeDragAndDropTargets.end())
 	{
@@ -221,7 +229,15 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 		}
 	}
 
-	UniqueID = static_cast<intptr_t>(std::hash<std::string>{}(SubTreeRoot->GetEntity()->GetObjectID().c_str()));
+	// If node is root.
+	if (SubTreeRoot->GetEntity() == nullptr)
+	{
+		UniqueID = -1;
+	}
+	else
+	{
+		UniqueID = static_cast<intptr_t>(std::hash<std::string>{}(SubTreeRoot->GetEntity()->GetObjectID().c_str()));
+	}
 
 	bool bOpened = ImGui::TreeNodeEx((void*)UniqueID, NodeFlags, Name.c_str(), 0);
 	GetSceneNodeDragAndDropTarget(SubTreeRoot)->StickToItem();
@@ -231,7 +247,6 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 		if (SubTreeRoot->GetParent() != nullptr)
 		{
 			SELECTED.SetSelected(SubTreeRoot->GetEntity());
-			//SELECTED.SetDirtyFlag(false);
 		}
 	}
 

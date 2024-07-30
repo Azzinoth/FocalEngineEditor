@@ -208,7 +208,8 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 
 		if (!ImGui::GetIO().WantCaptureKeyboard && (Key == GLFW_KEY_RIGHT_SHIFT || Key == GLFW_KEY_LEFT_SHIFT) && Action == GLFW_RELEASE)
 		{
-			int NewState = GIZMO_MANAGER.GizmosState + 1;
+			FEGizmoSceneData* GizmoSceneData = GIZMO_MANAGER.GetSceneData(EDITOR.EditorScenes[i].Scene->GetObjectID());
+			int NewState = GizmoSceneData->GizmosState + 1;
 			if (NewState > 2)
 				NewState = 0;
 			GIZMO_MANAGER.UpdateGizmoState(NewState, EDITOR.EditorScenes[i].Scene);
@@ -491,11 +492,20 @@ void FEEditor::Render()
 		for (size_t i = 0; i < EditorScenes.size(); i++)
 		{
 			std::string WindowName = EditorScenes[i].Scene->GetName();
+			// Window name must be unique.
+			WindowName += "##" + EditorScenes[i].Scene->GetObjectID();
 			if (EditorScenes[i].bMain)
 				WindowName = "Main Scene";
 
 			if (ImGui::Begin(WindowName.c_str(), nullptr, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollbar))
 			{
+				if (EditorScenes[i].bJustAdded)
+				{
+					ImGui::SetWindowFocus();
+					ImGui::SetWindowSize(ImVec2(256, 256));
+					EditorScenes[i].bJustAdded = false;
+				}
+
 				EditorScenes[i].SceneWindow = ImGui::GetCurrentWindow();
 				if (EditorScenes[i].bMain)
 				{
@@ -826,7 +836,6 @@ void FEEditor::AddEditorScene(FEScene* Scene, bool bMain)
 	FEEditorSceneData EditorSceneData;
 	EditorSceneData.bMain = bMain;
 	EditorSceneData.Scene = Scene;
-	EditorSceneData.CameraEntity = CAMERA_SYSTEM.GetMainCameraEntity(Scene);
 	EditorScenes.push_back(EditorSceneData);
 }
 

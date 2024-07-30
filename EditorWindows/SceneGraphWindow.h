@@ -55,7 +55,7 @@ class FEEditorSceneGraphWindow
         FENaiveSceneGraphNode* NodeTarget = reinterpret_cast<FENaiveSceneGraphNode*>(SceneNodeTarget);
 		FENaiveSceneGraphNode* SceneEntity = reinterpret_cast<FENaiveSceneGraphNode*>(Object);
 
-        FEScene* CurrentScene = NodeTarget->GetEntity()->GetParentScene();
+        FEScene* CurrentScene = SceneEntity->GetEntity()->GetParentScene();
         return CurrentScene->SceneGraph.MoveNode(SceneEntity->GetObjectID(), NodeTarget->GetObjectID());
     }
 
@@ -70,9 +70,6 @@ class FEEditorSceneGraphWindow
 
 public:
     SINGLETON_PUBLIC_PART(FEEditorSceneGraphWindow)
-
-    /*void SetScene(FEScene* Scene);
-    FEScene* GetScene();*/
 };
 
 #define SCENE_GRAPH_WINDOW FEEditorSceneGraphWindow::getInstance()

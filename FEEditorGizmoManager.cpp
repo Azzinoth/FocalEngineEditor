@@ -286,7 +286,6 @@ void GizmoManager::Update()
 		}
 		
 		FEScene* Scene = SCENE_MANAGER.GetScene(GizmoSceneData->SceneID);
-
 		if (SELECTED.GetSelected(Scene) == nullptr || SELECTED.GetSelected(Scene)->GetType() == FE_CAMERA_DEPRECATED)
 		{
 			HideAllGizmo(Scene);
@@ -295,14 +294,12 @@ void GizmoManager::Update()
 		}
 
 		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(Scene)->GetComponent<FETransformComponent>();
-		FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject(Scene);
+		FETransformComponent& ObjTransform = GetTransformComponentOfSelectedObject(Scene);
 		const glm::vec3 ObjectSpaceOriginInWorldSpace = glm::vec3(ObjTransform.GetWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		glm::vec3 ToObject = ObjectSpaceOriginInWorldSpace - CameraTransformComponent.GetPosition(FE_WORLD_SPACE);
 		ToObject = glm::normalize(ToObject);
 
 		GizmoSceneData->ParentGizmoEntity->GetComponent<FETransformComponent>().SetPosition((CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + ToObject * 0.15f));
-		//ParentGizmoEntity->GetComponent<FETransformComponent>().Update();
-		//ParentGizmoEntity->GetComponent<FETransformComponent>().ForceSetWorldMatrix(ParentGizmoEntity->GetComponent<FETransformComponent>().GetLocalMatrix());
 		if (GizmoSceneData->GizmosState == TRANSFORM_GIZMOS)
 		{
 			// X Gizmos
@@ -503,7 +500,7 @@ glm::vec3 GizmoManager::GetMousePositionDifferenceOnPlane(glm::vec3 PlaneNormal,
 	glm::ivec2 ViewportPosition = glm::ivec2(CurrentViewport->GetX(), CurrentViewport->GetY());
 	glm::ivec2 ViewportSize = glm::ivec2(CurrentViewport->GetWidth(), CurrentViewport->GetHeight());
 
-	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject(Scene);
+	FETransformComponent& ObjTransform = GetTransformComponentOfSelectedObject(Scene);
 	const glm::vec3 EntitySpaceOriginInWorldSpace = glm::vec3(ObjTransform.GetWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	const glm::vec3 LastFrameMouseRay = GEOMETRY.CreateMouseRayToWorld(LastMouseX, LastMouseY,
@@ -548,7 +545,7 @@ glm::vec3 GizmoManager::GetMousePositionDifferenceOnPlane(glm::vec3 PlaneNormal,
 	glm::ivec2 ViewportPosition = glm::ivec2(CurrentViewport->GetX(), CurrentViewport->GetY());
 	glm::ivec2 ViewportSize = glm::ivec2(CurrentViewport->GetWidth(), CurrentViewport->GetHeight());
 
-	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject(Scene);
+	FETransformComponent& ObjTransform = GetTransformComponentOfSelectedObject(Scene);
 	const glm::vec3 EntitySpaceOriginInWorldSpace = glm::vec3(ObjTransform.GetWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	const glm::vec3 LastFrameMouseRay = GEOMETRY.CreateMouseRayToWorld(LastMouseX, LastMouseY,
@@ -594,7 +591,7 @@ void GizmoManager::MouseMoveTransformationGizmos(FEScene* Scene)
 	glm::ivec2 ViewportPosition = glm::ivec2(CurrentViewport->GetX(), CurrentViewport->GetY());
 	glm::ivec2 ViewportSize = glm::ivec2(CurrentViewport->GetWidth(), CurrentViewport->GetHeight());
 
-	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject(Scene);
+	FETransformComponent& ObjTransform = GetTransformComponentOfSelectedObject(Scene);
 
 	const glm::vec3 LastFrameMouseRay = GEOMETRY.CreateMouseRayToWorld(LastMouseX, LastMouseY,
 																	   CameraComponent.GetViewMatrix(), CameraComponent.GetProjectionMatrix(),
@@ -709,7 +706,7 @@ void GizmoManager::MouseMoveScaleGizmos(FEScene* Scene)
 		return;
 
 	FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(Scene)->GetComponent<FECameraComponent>();
-	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject(Scene);
+	FETransformComponent& ObjTransform = GetTransformComponentOfSelectedObject(Scene);
 
 	if (GizmoSceneData->bScaleXGizmoActive && GizmoSceneData->bScaleYGizmoActive && GizmoSceneData->bScaleZGizmoActive)
 	{
@@ -771,7 +768,7 @@ void GizmoManager::MouseMoveRotateGizmos(FEScene* Scene)
 		!GizmoSceneData->bRotateZGizmoActive)
 		return;
 
-	FETransformComponent ObjTransform = GetTransformComponentOfSelectedObject(Scene);
+	FETransformComponent& ObjTransform = GetTransformComponentOfSelectedObject(Scene);
 
 	const float DifferenceX = static_cast<float>(MouseX - LastMouseX);
 	const float DifferenceY = static_cast<float>(MouseY - LastMouseY);
@@ -869,21 +866,29 @@ void GizmoManager::OnSelectedObjectUpdate(FEScene* Scene)
 	}
 }
 
-FETransformComponent GizmoManager::GetTransformComponentOfSelectedObject(FEScene* Scene)
+FETransformComponent& GizmoManager::GetTransformComponentOfSelectedObject(FEScene* Scene)
 {
 	if (Scene == nullptr)
-		return FETransformComponent();
+		return DummyTransformComponent;
 
 	if (SELECTED.GetSelected(Scene) == nullptr)
-		return FETransformComponent();
+		return DummyTransformComponent;
 
 	FESelectionData* CurrentSelectionData = SELECTED.GetSceneData(Scene->GetObjectID());
 	if (CurrentSelectionData->InstancedSubObjectIndexSelected != -1 && SELECTED.GetSelected(Scene)->HasComponent<FEInstancedComponent>())
 	{
 		FEInstancedComponent& InstancedComponent = SELECTED.GetSelected(Scene)->GetComponent<FEInstancedComponent>();
-		FETransformComponent& DummyTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(CurrentSelectionData->InstancedSubObjectIndexSelected));
-		DummyTransform.SetSceneIndependent(true);
-		return DummyTransform;
+
+		glm::dvec3 Position, Scale;
+		glm::dquat Rotation;
+		GEOMETRY.DecomposeMatrixToTranslationRotationScale(InstancedComponent.GetTransformedInstancedMatrix(CurrentSelectionData->InstancedSubObjectIndexSelected), Position, Rotation, Scale);
+
+		DummyTransformComponent.SetPosition(Position);
+		DummyTransformComponent.SetQuaternion(Rotation);
+		DummyTransformComponent.SetScale(Scale);
+
+		DummyTransformComponent.SetSceneIndependent(true);
+		return DummyTransformComponent;
 	}
 	else
 	{
@@ -891,7 +896,7 @@ FETransformComponent GizmoManager::GetTransformComponentOfSelectedObject(FEScene
 	}
 }
 
-void GizmoManager::ApplyChangesToSelectedObject(FETransformComponent Changes, FEScene* Scene)
+void GizmoManager::ApplyChangesToSelectedObject(FETransformComponent& Changes, FEScene* Scene)
 {
 	if (Scene == nullptr)
 		return;
@@ -903,10 +908,6 @@ void GizmoManager::ApplyChangesToSelectedObject(FETransformComponent Changes, FE
 	if (CurrentSelectionData->InstancedSubObjectIndexSelected != -1)
 	{
 		INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(SELECTED.GetSelected(Scene), CurrentSelectionData->InstancedSubObjectIndexSelected, Changes.GetWorldMatrix());
-	}
-	else
-	{
-		SELECTED.GetSelected(Scene)->GetComponent<FETransformComponent>() = Changes;
 	}
 }
 

@@ -76,7 +76,6 @@ public:
 	SINGLETON_PUBLIC_PART(GizmoManager)
 
 	float GizmosScale = 0.00175f;
-	int GizmosState = TRANSFORM_GIZMOS;
 
 	glm::vec3 RotateXStandardRotation = glm::vec3(0.0f, 0.0f, -90.0f);
 	glm::vec3 RotateYStandardRotation = glm::vec3(0.0f);
@@ -125,14 +124,16 @@ private:
 
 	static void OnSelectedObjectUpdate(FEScene* Scene);
 
-	FETransformComponent GetTransformComponentOfSelectedObject(FEScene* Scene);
-	void ApplyChangesToSelectedObject(FETransformComponent Changes, FEScene* Scene);
+	FETransformComponent& GetTransformComponentOfSelectedObject(FEScene* Scene);
+	void ApplyChangesToSelectedObject(FETransformComponent& Changes, FEScene* Scene);
 
 	std::unordered_map<std::string, FEGizmoSceneData*> PerSceneData;
 	void ClearAllSceneData();
 	void ClearSceneData(const std::string& SceneID);
 	void AddSceneData(const std::string& SceneID);
 	FEGizmoSceneData* GetSceneData(const std::string& SceneID);
+
+	FETransformComponent DummyTransformComponent;
 };
 
 #define GIZMO_MANAGER GizmoManager::getInstance()

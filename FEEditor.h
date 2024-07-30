@@ -5,12 +5,11 @@
 
 struct FEEditorSceneData
 {
-    bool bMain = false;
-
     FEScene* Scene = nullptr;
-    FEEntity* CameraEntity = nullptr;
-
     ImGuiWindow* SceneWindow = nullptr;
+ 
+    bool bJustAdded = true;
+    bool bMain = false;
     bool bWindowHovered = false;
 };
 

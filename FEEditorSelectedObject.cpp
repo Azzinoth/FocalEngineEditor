@@ -311,7 +311,14 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 
 			FEInstancedComponent& InstancedComponent = InstancedSubObjectIterator->first->GetComponent<FEInstancedComponent>();
 			FETransformComponent& DummyTransformComponent = DummyEntity->GetComponent<FETransformComponent>();
-			DummyTransformComponent = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(InstancedSubObjectIterator->second[j]));
+
+			glm::dvec3 Position, Scale;
+			glm::dquat Rotation;
+			GEOMETRY.DecomposeMatrixToTranslationRotationScale(InstancedComponent.GetTransformedInstancedMatrix(InstancedSubObjectIterator->second[j]), Position, Rotation, Scale);
+
+			DummyTransformComponent.SetPosition(Position);
+			DummyTransformComponent.SetQuaternion(Rotation);
+			DummyTransformComponent.SetScale(Scale);
 
 			FEMaterial* RegularMaterial = OriginalGameModelComponent.GameModel->Material;
 			DummyGameModelComponent.GameModel->Material = PixelAccurateSelectionMaterial;
@@ -469,7 +476,15 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 					DummyGameModelComponent.SetVisibility(true);
 
 					FEInstancedComponent& InstancedComponent = CurrentSelectionData->Container->GetComponent<FEInstancedComponent>();
-					CurrentSelectionData->DummyEntity->GetComponent<FETransformComponent>() = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(CurrentSelectionData->InstancedSubObjectIndexSelected));
+					FETransformComponent& DummyTransformComponent = CurrentSelectionData->DummyEntity->GetComponent<FETransformComponent>();
+
+					glm::dvec3 Position, Scale;
+					glm::dquat Rotation;
+					GEOMETRY.DecomposeMatrixToTranslationRotationScale(InstancedComponent.GetTransformedInstancedMatrix(CurrentSelectionData->InstancedSubObjectIndexSelected), Position, Rotation, Scale);
+
+					DummyTransformComponent.SetPosition(Position);
+					DummyTransformComponent.SetQuaternion(Rotation);
+					DummyTransformComponent.SetScale(Scale);
 
 					FEMaterial* RegularMaterial = GameModelComponent.GameModel->Material;
 					DummyGameModelComponent.GameModel->Material = HALO_SELECTION_EFFECT.HaloMaterial;
