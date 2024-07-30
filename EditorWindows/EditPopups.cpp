@@ -145,7 +145,7 @@ void EditGameModelPopup::Show(FEGameModel* GameModel)
 		TempCaption += " " + ObjToWorkWith->GetName();
 		strcpy_s(Caption, TempCaption.size() + 1, TempCaption.c_str());
 
-		Position = ImVec2(FEngine::getInstance().GetWindowWidth() / 2 - Size.x / 2, FEngine::getInstance().GetWindowHeight() / 2 - Size.y / 2);
+		Position = ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2 - Size.x / 2, APPLICATION.GetMainWindow()->GetHeight() / 2 - Size.y / 2);
 		FEImGuiWindow::Show();
 
 		PREVIEW_MANAGER.CreateGameModelPreview(TempModel, &TempPreview);
@@ -761,7 +761,7 @@ void EditMaterialPopup::Show(FEMaterial* Material)
 #else
 		size = ImVec2(1500.0f, 700.0f);
 #endif // USE_NODES
-		Position = ImVec2(FEngine::getInstance().GetWindowWidth() / 2 - Size.x / 2, FEngine::getInstance().GetWindowHeight() / 2 - Size.y / 2);
+		Position = ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2 - Size.x / 2, APPLICATION.GetMainWindow()->GetHeight() / 2 - Size.y / 2);
 		FEImGuiWindow::Show();
 
 		IconButton = new ImGuiImageButton(nullptr);

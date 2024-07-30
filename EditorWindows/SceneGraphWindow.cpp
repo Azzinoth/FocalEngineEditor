@@ -30,16 +30,6 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	RESOURCE_MANAGER.MakeTextureStandard(CameraIcon);
 }
 
-void FEEditorSceneGraphWindow::SetScene(FEScene* Scene)
-{
-	CurrentScene = Scene;
-}
-
-FEScene* FEEditorSceneGraphWindow::GetScene()
-{
-	return CurrentScene;
-}
-
 void FEEditorSceneGraphWindow::Clear()
 {
 	strcpy_s(FilterForEntities, "");
@@ -53,7 +43,7 @@ void FEEditorSceneGraphWindow::SetCorrectItemColor(FEObject* SceneObject) const
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, LightItemColor);
 	}
-	else if (SceneObject->GetType() == FE_CAMERA)
+	else if (SceneObject->GetType() == FE_CAMERA_DEPRECATED)
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, CameraItemColor);
 	}
@@ -76,7 +66,7 @@ void FEEditorSceneGraphWindow::PopCorrectItemColor(FEObject* SceneObject)
 	if (SceneObject->GetType() == FE_DIRECTIONAL_LIGHT ||
 		SceneObject->GetType() == FE_SPOT_LIGHT ||
 		SceneObject->GetType() == FE_POINT_LIGHT ||
-		SceneObject->GetType() == FE_CAMERA ||
+		SceneObject->GetType() == FE_CAMERA_DEPRECATED ||
 		SceneObject->GetType() == FE_TERRAIN_DEPRECATED ||
 		SceneObject->GetType() == FE_ENTITY ||
 		SceneObject->GetType() == FE_ENTITY_INSTANCED_DEPRECATED)
@@ -87,15 +77,18 @@ void FEEditorSceneGraphWindow::PopCorrectItemColor(FEObject* SceneObject)
 
 static void CreateInstancedEntityCallBack(const std::vector<FEObject*> SelectionsResult)
 {
+	if (EDITOR.GetFocusedScene() == nullptr)
+		return;
+
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_PREFAB)
 	{
 		FEPrefab* SelectedPrefab = RESOURCE_MANAGER.GetPrefab(SelectionsResult[0]->GetObjectID());
 		if (SelectedPrefab == nullptr)
 			return;
 
-		FETransformComponent& CameraTransformComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FETransformComponent>();
-		FECameraComponent& CameraComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FECameraComponent>();
-		FEEntity* Entity = SCENE_GRAPH_WINDOW.GetScene()->CreateEntity();
+		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
+		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
+		FEEntity* Entity = EDITOR.GetFocusedScene()->CreateEntity();
 		Entity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
 		Entity->AddComponent<FEGameModelComponent>(SelectedPrefab->GetComponent(0)->GameModel);
 		Entity->AddComponent<FEInstancedComponent>();
@@ -107,15 +100,18 @@ static void CreateInstancedEntityCallBack(const std::vector<FEObject*> Selection
 
 static void CreateEntityCallBack(const std::vector<FEObject*> SelectionsResult)
 {
+	if (EDITOR.GetFocusedScene() == nullptr)
+		return;
+
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_PREFAB)
 	{
 		FEPrefab* SelectedPrefab = RESOURCE_MANAGER.GetPrefab(SelectionsResult[0]->GetObjectID());
 		if (SelectedPrefab == nullptr)
 			return;
 
-		FETransformComponent& CameraTransformComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FETransformComponent>();
-		FECameraComponent& CameraComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FECameraComponent>();
-		FEEntity* Entity = SCENE_GRAPH_WINDOW.GetScene()->CreateEntity();
+		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
+		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
+		FEEntity* Entity = EDITOR.GetFocusedScene()->CreateEntity();
 		Entity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
 		SELECTED.SetSelected(Entity);
 
@@ -185,7 +181,7 @@ void FEEditorSceneGraphWindow::DrawCorrectIcon(const FEObject* SceneObject) cons
 		ImGui::Image((void*)(intptr_t)TerrainIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 	}
 
-	if (SceneObject->GetType() == FE_CAMERA)
+	if (SceneObject->GetType() == FE_CAMERA_DEPRECATED)
 	{
 		ImGui::Image((void*)(intptr_t)CameraIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 	}
@@ -217,9 +213,9 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 	ImGuiTreeNodeFlags NodeFlags = bIsLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : ImGuiTreeNodeFlags_OpenOnArrow;
 	std::string Name = SubTreeRoot->GetParent() == nullptr ? PROJECT_MANAGER.GetCurrent()->GetName() : SubTreeRoot->GetName();
 
-	if (SELECTED.GetSelected() != nullptr && SubTreeRoot->GetEntity() != nullptr)
+	if (SELECTED.GetSelected(EDITOR.GetFocusedScene()) != nullptr && SubTreeRoot->GetEntity() != nullptr)
 	{
-		if (SELECTED.GetSelected()->GetObjectID() == SubTreeRoot->GetEntity()->GetObjectID())
+		if (SELECTED.GetSelected(EDITOR.GetFocusedScene())->GetObjectID() == SubTreeRoot->GetEntity()->GetObjectID())
 		{
 			NodeFlags |= ImGuiTreeNodeFlags_Selected;
 		}
@@ -235,7 +231,7 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 		if (SubTreeRoot->GetParent() != nullptr)
 		{
 			SELECTED.SetSelected(SubTreeRoot->GetEntity());
-			SELECTED.SetDirtyFlag(false);
+			//SELECTED.SetDirtyFlag(false);
 		}
 	}
 
@@ -282,7 +278,10 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 
 void FEEditorSceneGraphWindow::RenderNewSceneGraph()
 {
-	FENaiveSceneGraphNode* Root = SCENE_GRAPH_WINDOW.GetScene()->SceneGraph.GetRoot();
+	if (EDITOR.GetFocusedScene() == nullptr)
+		return;
+
+	FENaiveSceneGraphNode* Root = EDITOR.GetFocusedScene()->SceneGraph.GetRoot();
 
 	if (bSceneNodeTargetsDirty)
 		SceneNodeDragAndDropTargets.clear();
@@ -294,13 +293,12 @@ void FEEditorSceneGraphWindow::RenderNewSceneGraph()
 		bSceneNodeTargetsDirty = false;
 }
 
-//FIX ME! 
-#include "InspectorWindow.h"
 void FEEditorSceneGraphWindow::Render()
 {
 	if (!bVisible)
 		return;
 
+	FEScene* CurrentScene = EDITOR.GetFocusedScene();
 	if (CurrentScene == nullptr)
 		return;
 
@@ -375,9 +373,9 @@ void FEEditorSceneGraphWindow::Render()
 		DrawCorrectIcon(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
 
 		ImGuiTreeNodeFlags NodeFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-		if (SELECTED.GetSelected() != nullptr)
+		if (SELECTED.GetSelected(CurrentScene) != nullptr)
 		{
-			if (SELECTED.GetSelected()->GetObjectID() == FilteredSceneObjectsList[i])
+			if (SELECTED.GetSelected(CurrentScene)->GetObjectID() == FilteredSceneObjectsList[i])
 			{
 				NodeFlags |= ImGuiTreeNodeFlags_Selected;
 			}
@@ -392,7 +390,7 @@ void FEEditorSceneGraphWindow::Render()
 			// FIX ME!
 			/*FEEntity* Entity = SCENE.GetEntity(FilteredSceneObjectsList[i]);
 			SELECTED.SetSelected(Entity);*/
-			SELECTED.SetDirtyFlag(false);
+			//SELECTED.SetDirtyFlag(false);
 		}
 
 		if (ImGui::IsItemHovered())
@@ -483,8 +481,8 @@ void FEEditorSceneGraphWindow::Render()
 				FEEntity* Entity = CurrentScene->GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
 				if (Entity != nullptr)
 				{
-					if (SELECTED.GetSelected() == Entity)
-						SELECTED.Clear();
+					if (SELECTED.GetSelected(CurrentScene) == Entity)
+						SELECTED.Clear(CurrentScene);
 
 					CurrentScene->DeleteEntity(Entity);
 				}
@@ -607,25 +605,25 @@ void FEEditorSceneGraphWindow::Render()
 	ImGui::Checkbox("Display AABB of selected object", &bDisplaySelectedObjAABB);
 
 	// Draw AABB
-	if (SELECTED.GetSelected() != nullptr &&
-		(SELECTED.GetSelected()->HasComponent<FEGameModelComponent>() || SELECTED.GetSelected()->HasComponent<FETerrainComponent>()) &&
+	if (SELECTED.GetSelected(CurrentScene) != nullptr &&
+		(SELECTED.GetSelected(CurrentScene)->HasComponent<FEGameModelComponent>() || SELECTED.GetSelected(CurrentScene)->HasComponent<FETerrainComponent>()) &&
 		bDisplaySelectedObjAABB)
 	{
-		if (SELECTED.GetSelected()->HasComponent<FEGameModelComponent>())
+		if (SELECTED.GetSelected(CurrentScene)->HasComponent<FEGameModelComponent>())
 		{
-			FEGameModel* GameModel = SELECTED.GetSelected()->GetComponent<FEGameModelComponent>().GameModel;
-			FEAABB SelectedAABB = GameModel->GetMesh()->GetAABB().Transform(SELECTED.GetSelected()->GetComponent<FETransformComponent>().GetWorldMatrix());
+			FEGameModel* GameModel = SELECTED.GetSelected(CurrentScene)->GetComponent<FEGameModelComponent>().GameModel;
+			FEAABB SelectedAABB = GameModel->GetMesh()->GetAABB().Transform(SELECTED.GetSelected(CurrentScene)->GetComponent<FETransformComponent>().GetWorldMatrix());
 
 			RENDERER.DrawAABB(SelectedAABB);
 
-			if (SELECTED.GetSelected()->HasComponent<FEInstancedComponent>())
+			if (SELECTED.GetSelected(CurrentScene)->HasComponent<FEInstancedComponent>())
 			{
 				static bool bDisplaySubObjAABB = false;
 				ImGui::Checkbox("Display AABB of instanced entity subobjects", &bDisplaySubObjAABB);
 
 				if (bDisplaySubObjAABB)
 				{
-					FEInstancedComponent& InstancedComponent = SELECTED.GetSelected()->GetComponent<FEInstancedComponent>();
+					FEInstancedComponent& InstancedComponent = SELECTED.GetSelected(CurrentScene)->GetComponent<FEInstancedComponent>();
 					const int MaxIterations = InstancedComponent.IndividualInstancedAABB.size() * 8 >= FE_MAX_LINES ? FE_MAX_LINES : int(InstancedComponent.IndividualInstancedAABB.size());
 					
 					for (size_t j = 0; j < MaxIterations; j++)

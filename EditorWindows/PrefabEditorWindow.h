@@ -19,6 +19,9 @@ class PrefabEditorWindow : public FEImGuiWindow
 
 	void ShowTransformConfiguration(FETransformComponent* Transform, int Index);
 	static void AddNewGameModelCallBack(std::vector<FEObject*> SelectionsResult);
+
+	FEScene* CurrentPrefabScene = nullptr;
+	FEEntity* CurrentCameraEntity = nullptr;
 public:
 	SINGLETON_PUBLIC_PART(PrefabEditorWindow)
 

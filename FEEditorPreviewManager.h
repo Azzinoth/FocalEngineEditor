@@ -31,21 +31,14 @@ private:
 
 	FEScene* PreviewScene = nullptr;
 
-	FEFramebuffer* PreviewFB;
 	FEEntity* PreviewEntity;
-	FEPrefab* PreviewPrefab;
 	FEGameModel* PreviewGameModel;
 	FEMaterial* MeshPreviewMaterial;
 
-	// FIX ME! Make it work.
-	// Local directional entity
 	FEEntity* LocalSunEntity;
 	FEEntity* LocalCameraEntity;
 
 	// Saved scene settings
-	glm::vec3 RegularLightRotation = glm::vec3(0.0f, 0.0f, 0.0f);
-	float RegularLightIntensity = 0.0f;
-	glm::mat4 RegularLightWorldMatrix = glm::identity<glm::mat4>();
 	bool bIsRegularFogEnabled = false;
 
 	std::unordered_map<std::string, FETexture*> MeshPreviewTextures;

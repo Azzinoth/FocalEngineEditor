@@ -2,12 +2,11 @@
 
 #include "ProjectWasModifiedPopUp.h"
 
+
 class FEEditorSceneGraphWindow
 {
     friend class FEEditor;
     SINGLETON_PRIVATE_PART(FEEditorSceneGraphWindow)
-
-    FEScene* CurrentScene = nullptr;
 
     // Visibility
     bool bVisible = true;
@@ -56,18 +55,11 @@ class FEEditorSceneGraphWindow
         FENaiveSceneGraphNode* NodeTarget = reinterpret_cast<FENaiveSceneGraphNode*>(SceneNodeTarget);
 		FENaiveSceneGraphNode* SceneEntity = reinterpret_cast<FENaiveSceneGraphNode*>(Object);
 
-        // FIX ME! Temporary solution, only supports one scene
-        std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
-        if (!ActiveScenes.empty())
-        {
-            FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-            return CurrentScene->SceneGraph.MoveNode(SceneEntity->GetObjectID(), NodeTarget->GetObjectID());
-        }
-
-        return false;
+        FEScene* CurrentScene = NodeTarget->GetEntity()->GetParentScene();
+        return CurrentScene->SceneGraph.MoveNode(SceneEntity->GetObjectID(), NodeTarget->GetObjectID());
     }
 
-    void UpdateSceneNodeDragAndDropTargets();
+    //void UpdateSceneNodeDragAndDropTargets();
 
     // Rendering and initialization
     void Render();
@@ -79,8 +71,8 @@ class FEEditorSceneGraphWindow
 public:
     SINGLETON_PUBLIC_PART(FEEditorSceneGraphWindow)
 
-    void SetScene(FEScene* Scene);
-    FEScene* GetScene();
+    /*void SetScene(FEScene* Scene);
+    FEScene* GetScene();*/
 };
 
 #define SCENE_GRAPH_WINDOW FEEditorSceneGraphWindow::getInstance()

@@ -8,7 +8,7 @@ DebugTextureViewWindow::DebugTextureViewWindow(std::function<FETexture* ()> Func
 	strcpy_s(Caption, tempCaption.size() + 1, tempCaption.c_str());
 
 	Size = ImVec2(800, 800);
-	Position = ImVec2(FEngine::getInstance().GetWindowWidth() / 2 - Size.x / 2, FEngine::getInstance().GetWindowHeight() / 2 - Size.y / 2);
+	Position = ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2 - Size.x / 2, APPLICATION.GetMainWindow()->GetHeight() / 2 - Size.y / 2);
 
 	Flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse;
 

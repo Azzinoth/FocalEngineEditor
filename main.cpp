@@ -25,13 +25,31 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ENGINE.Render();
 
 #ifdef EDITOR_SELECTION_DEBUG_MODE
-		std::string objectsUnderMouse = "SceneEntitiesUnderMouse: " + std::to_string(SELECTED.SceneEntitiesUnderMouse.size());
-		ImGui::Text(objectsUnderMouse.c_str());
+		if (EDITOR.GetFocusedScene() != nullptr)
+		{
+			FESelectionData* SelectedData = SELECTED.GetSceneData(EDITOR.GetFocusedScene()->GetObjectID());
+			if (SelectedData != nullptr)
+			{
+				std::string ObjectsUnderMouse = "Count of considered entities: " + std::to_string(SelectedData->SceneEntitiesUnderMouse.size());
+				ImGui::Text(ObjectsUnderMouse.c_str());
 
-		std::string colorIndex = "colorIndex: " + std::to_string(SELECTED.ColorIndex);
-		ImGui::Text(colorIndex.c_str());
+				std::string ColorIndex = "ColorIndex: " + std::to_string(SelectedData->ColorIndex);
+				ImGui::Text(ColorIndex.c_str());
 
-		ImGui::Image((void*)(intptr_t)SELECTED.PixelAccurateSelectionFB->GetColorAttachment()->GetTextureID(), ImVec2(256 * 4, 256 * 4), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+				std::string EntityUnderMouse = "Entity under mouse: ";
+				if (SelectedData->ColorIndex != -1 && SelectedData->ColorIndex < SelectedData->SceneEntitiesUnderMouse.size())
+				{
+					EntityUnderMouse += SelectedData->SceneEntitiesUnderMouse[SelectedData->ColorIndex]->GetName();
+				}
+				else
+				{
+					EntityUnderMouse += "None";
+				}
+				ImGui::Text(EntityUnderMouse.c_str());
+
+				ImGui::Image((void*)(intptr_t)SelectedData->PixelAccurateSelectionFB->GetColorAttachment()->GetTextureID(), ImVec2(256 * 4, 256 * 4), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+			}
+		}
 #endif
 
 		if (ImGui::Button("Put This Frame To Timeline"))

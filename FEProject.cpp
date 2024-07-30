@@ -1,4 +1,5 @@
 #include "FEProject.h"
+#include "FEEditor.h"
 
 FEProjectManager* FEProjectManager::Instance = nullptr;
 FEProjectManager::FEProjectManager() {}
@@ -45,7 +46,7 @@ void FEProjectManager::CloseCurrentProject()
 	WindowsManager::getInstance().CloseAllWindows();
 	WindowsManager::getInstance().CloseAllPopups();
 
-	SELECTED.Clear();
+	SELECTED.ClearAll();
 	PREVIEW_MANAGER.Clear();
 	SCENE_MANAGER.DeleteScene(PROJECT_MANAGER.GetCurrent()->ProjectScene);
 	for (size_t i = 0; i < List.size(); i++)
@@ -67,61 +68,23 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 	PROJECT_MANAGER.GetCurrent()->ProjectScene = SCENE_MANAGER.CreateScene();
 	PROJECT_MANAGER.GetCurrent()->LoadScene();
 	// FIX ME! Temporary.
-	SCENE_GRAPH_WINDOW.SetScene(PROJECT_MANAGER.GetCurrent()->ProjectScene);
+	EDITOR.AddEditorScene(PROJECT_MANAGER.GetCurrent()->ProjectScene, true);
+	EDITOR.FocusedEditorSceneID = PROJECT_MANAGER.GetCurrent()->ProjectScene->GetObjectID();
 	IndexChosen = -1;
-
-	GIZMO_MANAGER.ReInitializeEntities();
-
-	// FIX ME! Entities should just have special tag, not be in the list.
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoEntity);
-
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoEntity);
-
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity);
 
 	PREVIEW_MANAGER.ReInitializeEntities();
 	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(PREVIEW_MANAGER.PreviewEntity);
 
-	// all parts of Gizmos are standard resources except entities, so we need to register them again.
-	// if it is first start and those entities are already registered these calls just returns false.
-	/*auto it = EDITOR_INTERNAL_RESOURCES.InternalEditorObjects.begin();
-	while (it != EDITOR_INTERNAL_RESOURCES.InternalEditorObjects.end())
-	{
-		if (it->second->GetType() == FE_ENTITY)
-			ProjectScene->CreateEntity(reinterpret_cast<FEEntity*>(it->second));
-		
-		it++;
-	}*/
-
 	// after loading project we should update our previews
 	PREVIEW_MANAGER.UpdateAll();
-	SELECTED.Clear();
-
-	// Cleaning dirty flag of entities.
-	//const std::vector<std::string> EntityList = ProjectScene->GetEntityList();
-	//for (size_t i = 0; i < EntityList.size(); i++)
-	//{
-	//	FEEntity* Entity = ProjectScene->GetEntity(EntityList[i]);
-	//	// But before that update AABB.
-	//	Entity->GetAABB();
-	//	Entity->Transform.SetDirtyFlag(false);
-	//}
+	SELECTED.ClearAll();
 }
 
 void FEProjectManager::DisplayProjectSelection()
 {
 	static float LowerPanelHight = 90.0f;
-	const float MainWindowW = static_cast<float>(ENGINE.GetWindowWidth());
-	const float MainWindowH = static_cast<float>(ENGINE.GetWindowHeight());
+	const float MainWindowW = static_cast<float>(APPLICATION.GetMainWindow()->GetWidth());
+	const float MainWindowH = static_cast<float>(APPLICATION.GetMainWindow()->GetHeight());
 
 	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
 	ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
@@ -254,7 +217,7 @@ void FEProjectManager::DisplayProjectSelection()
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 		if (ImGui::BeginPopupModal("New Project", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 		{
-			ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+			ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 			ImGui::Text("Insert name of new project :");
 			static char ProjectName[512] = "";
 
@@ -360,9 +323,7 @@ FEProject::~FEProject()
 		delete SceneScreenshot;
 
 	EDITOR_INTERNAL_RESOURCES.ClearListByType(FE_ENTITY);
-	//ProjectScene->Clear();
 	RESOURCE_MANAGER.Clear();
-	ENGINE.ResetCamera();
 	VIRTUAL_FILE_SYSTEM.Clear();
 }
 
@@ -793,26 +754,26 @@ void FEProject::SaveScene(bool bFullSave)
 	// Saving Effects settings.
 	Json::Value EffectsData;
 	// *********** Gamma Correction & Exposure ***********
-	EffectsData["Gamma Correction & Exposure"]["Gamma"] = ENGINE.GetCamera()->GetGamma();
-	EffectsData["Gamma Correction & Exposure"]["Exposure"] = ENGINE.GetCamera()->GetExposure();
+	//EffectsData["Gamma Correction & Exposure"]["Gamma"] = ENGINE.GetCamera()->GetGamma();
+	//EffectsData["Gamma Correction & Exposure"]["Exposure"] = ENGINE.GetCamera()->GetExposure();
 	// *********** Anti-Aliasing(FXAA) ***********
-	EffectsData["Anti-Aliasing(FXAA)"]["FXAASpanMax"] = RENDERER.GetFXAASpanMax();
-	EffectsData["Anti-Aliasing(FXAA)"]["FXAAReduceMin"] = RENDERER.GetFXAAReduceMin();
-	EffectsData["Anti-Aliasing(FXAA)"]["FXAAReduceMul"] = RENDERER.GetFXAAReduceMul();
+	//EffectsData["Anti-Aliasing(FXAA)"]["FXAASpanMax"] = RENDERER.GetFXAASpanMax();
+	//EffectsData["Anti-Aliasing(FXAA)"]["FXAAReduceMin"] = RENDERER.GetFXAAReduceMin();
+	//EffectsData["Anti-Aliasing(FXAA)"]["FXAAReduceMul"] = RENDERER.GetFXAAReduceMul();
 	// *********** Bloom ***********
-	EffectsData["Bloom"]["thresholdBrightness"] = RENDERER.GetBloomThreshold();
-	EffectsData["Bloom"]["BloomSize"] = RENDERER.GetBloomSize();
+	//EffectsData["Bloom"]["thresholdBrightness"] = RENDERER.GetBloomThreshold();
+	//EffectsData["Bloom"]["BloomSize"] = RENDERER.GetBloomSize();
 	// *********** Depth of Field ***********
-	EffectsData["Depth of Field"]["Near distance"] = RENDERER.GetDOFNearDistance();
+	/*EffectsData["Depth of Field"]["Near distance"] = RENDERER.GetDOFNearDistance();
 	EffectsData["Depth of Field"]["Far distance"] = RENDERER.GetDOFFarDistance();
 	EffectsData["Depth of Field"]["Strength"] = RENDERER.GetDOFStrength();
-	EffectsData["Depth of Field"]["Distance dependent strength"] = RENDERER.GetDOFDistanceDependentStrength();
+	EffectsData["Depth of Field"]["Distance dependent strength"] = RENDERER.GetDOFDistanceDependentStrength();*/
 	// *********** Distance fog ***********
-	EffectsData["Distance fog"]["isDistanceFogEnabled"] = RENDERER.IsDistanceFogEnabled();
-	EffectsData["Distance fog"]["Density"] = RENDERER.GetDistanceFogDensity();
-	EffectsData["Distance fog"]["Gradient"] = RENDERER.GetDistanceFogGradient();
+	//EffectsData["Distance fog"]["isDistanceFogEnabled"] = RENDERER.IsDistanceFogEnabled();
+	//EffectsData["Distance fog"]["Density"] = RENDERER.GetDistanceFogDensity();
+	//EffectsData["Distance fog"]["Gradient"] = RENDERER.GetDistanceFogGradient();
 	// *********** Chromatic Aberration ***********
-	EffectsData["Chromatic Aberration"]["Shift strength"] = RENDERER.GetChromaticAberrationIntensity();
+	//EffectsData["Chromatic Aberration"]["Shift strength"] = RENDERER.GetChromaticAberrationIntensity();
 	// *********** Sky ***********
 	//EffectsData["Sky"]["Enabled"] = RENDERER.IsSkyEnabled() ? 1.0f : 0.0f;
 	//EffectsData["Sky"]["Sphere size"] = RENDERER.GetDistanceToSky();
@@ -822,7 +783,7 @@ void FEProject::SaveScene(bool bFullSave)
 	// Saving Camera settings.
 	Json::Value CameraData;
 
-	CameraData["position"]["X"] = ENGINE.GetCamera()->GetPosition()[0];
+	/*CameraData["position"]["X"] = ENGINE.GetCamera()->GetPosition()[0];
 	CameraData["position"]["Y"] = ENGINE.GetCamera()->GetPosition()[1];
 	CameraData["position"]["Z"] = ENGINE.GetCamera()->GetPosition()[2];
 
@@ -836,7 +797,7 @@ void FEProject::SaveScene(bool bFullSave)
 
 	CameraData["aspectRatio"] = ENGINE.GetCamera()->GetAspectRatio();
 
-	CameraData["movementSpeed"] = ENGINE.GetCamera()->GetMovementSpeed();
+	CameraData["movementSpeed"] = ENGINE.GetCamera()->GetMovementSpeed();*/
 
 	Root["camera"] = CameraData;
 
@@ -1107,7 +1068,7 @@ void FEProject::LoadScene()
 
 				if (OldPrefab->ComponentsCount() > 1)
 				{
-					OldPrefab->Scene = SCENE_MANAGER.CreateScene(false, OldPrefab->GetName());
+					OldPrefab->Scene = SCENE_MANAGER.CreateScene(OldPrefab->GetName(), "", false);
 					//OldPrefab->Scene->ImportEntity(Entity);
 				}
 
@@ -1216,12 +1177,21 @@ void FEProject::LoadScene()
 
 					if (OldPrefab->ComponentsCount() > 1)
 					{
-						OldPrefab->Scene->ImportEntity(Entity);
+						FEEntity* ImportedEntity = OldPrefab->Scene->ImportEntity(Entity);
+
+						if (ImportedEntity->HasComponent<FEInstancedComponent>())
+						{
+							ImportedEntity->RemoveComponent<FEInstancedComponent>();
+						}
 					}
 				}
 			}
 			else
 			{
+				// FIX ME! Delete
+				FEPrefab* OldPrefab = RESOURCE_MANAGER.GetPrefab(Root["entities"][EntityList[i]]["prefab"].asCString());
+				OldPrefab->Scene = SCENE_MANAGER.CreateScene(OldPrefab->GetName(), "", false);
+
 				// For compatibility with old projects.
 				if (Root["entities"][EntityList[i]].isMember("gameModel"))
 				{
@@ -1254,6 +1224,8 @@ void FEProject::LoadScene()
 				{
 					Entity->GetComponent<FETransformComponent>() = ProjectScene->GetEntity(EntityList[i])->Transform;
 				}*/
+
+				OldPrefab->Scene->ImportEntity(Entity);
 			}
 		}
 		// For compatibility with old projects.
@@ -1336,23 +1308,23 @@ void FEProject::LoadScene()
 
 	// loading Effects settings
 	// *********** Gamma Correction & Exposure ***********
-	ENGINE.GetCamera()->SetGamma(Root["effects"]["Gamma Correction & Exposure"]["Gamma"].asFloat());
-	ENGINE.GetCamera()->SetExposure(Root["effects"]["Gamma Correction & Exposure"]["Exposure"].asFloat());
+	//ENGINE.GetCamera()->SetGamma(Root["effects"]["Gamma Correction & Exposure"]["Gamma"].asFloat());
+	//ENGINE.GetCamera()->SetExposure(Root["effects"]["Gamma Correction & Exposure"]["Exposure"].asFloat());
 	// *********** Anti-Aliasing(FXAA) ***********
-	RENDERER.SetFXAASpanMax(Root["effects"]["Anti-Aliasing(FXAA)"]["FXAASpanMax"].asFloat());
-	RENDERER.SetFXAAReduceMin(Root["effects"]["Anti-Aliasing(FXAA)"]["FXAAReduceMin"].asFloat());
-	RENDERER.SetFXAAReduceMul(Root["effects"]["Anti-Aliasing(FXAA)"]["FXAAReduceMul"].asFloat());
+	//RENDERER.SetFXAASpanMax(Root["effects"]["Anti-Aliasing(FXAA)"]["FXAASpanMax"].asFloat());
+	//RENDERER.SetFXAAReduceMin(Root["effects"]["Anti-Aliasing(FXAA)"]["FXAAReduceMin"].asFloat());
+	//RENDERER.SetFXAAReduceMul(Root["effects"]["Anti-Aliasing(FXAA)"]["FXAAReduceMul"].asFloat());
 	// *********** Bloom ***********
 	//PPEffect = RENDERER.getPostProcessEffect("bloom");
-	RENDERER.SetBloomThreshold(Root["effects"]["Bloom"]["thresholdBrightness"].asFloat());
-	RENDERER.SetBloomSize(Root["effects"]["Bloom"]["BloomSize"].asFloat());
+	//RENDERER.SetBloomThreshold(Root["effects"]["Bloom"]["thresholdBrightness"].asFloat());
+	//RENDERER.SetBloomSize(Root["effects"]["Bloom"]["BloomSize"].asFloat());
 	// *********** Depth of Field ***********
-	RENDERER.SetDOFNearDistance(Root["effects"]["Depth of Field"]["Near distance"].asFloat());
+	/*RENDERER.SetDOFNearDistance(Root["effects"]["Depth of Field"]["Near distance"].asFloat());
 	RENDERER.SetDOFFarDistance(Root["effects"]["Depth of Field"]["Far distance"].asFloat());
 	RENDERER.SetDOFStrength(Root["effects"]["Depth of Field"]["Strength"].asFloat());
-	RENDERER.SetDOFDistanceDependentStrength(Root["effects"]["Depth of Field"]["Distance dependent strength"].asFloat());
+	RENDERER.SetDOFDistanceDependentStrength(Root["effects"]["Depth of Field"]["Distance dependent strength"].asFloat());*/
 	// *********** Distance fog ***********
-	if (Root["effects"]["Distance fog"].isMember("isDistanceFogEnabled"))
+	/*if (Root["effects"]["Distance fog"].isMember("isDistanceFogEnabled"))
 	{
 		RENDERER.SetDistanceFogEnabled(Root["effects"]["Distance fog"]["isDistanceFogEnabled"].asBool());
 	}
@@ -1361,9 +1333,9 @@ void FEProject::LoadScene()
 		RENDERER.SetDistanceFogEnabled(Root["effects"]["Distance fog"]["Density"].asFloat() > -1.0f ? true : false);
 	}
 	RENDERER.SetDistanceFogDensity(Root["effects"]["Distance fog"]["Density"].asFloat());
-	RENDERER.SetDistanceFogGradient(Root["effects"]["Distance fog"]["Gradient"].asFloat());
+	RENDERER.SetDistanceFogGradient(Root["effects"]["Distance fog"]["Gradient"].asFloat());*/
 	// *********** Chromatic Aberration ***********
-	RENDERER.SetChromaticAberrationIntensity(Root["effects"]["Chromatic Aberration"]["Shift strength"].asFloat());
+	//RENDERER.SetChromaticAberrationIntensity(Root["effects"]["Chromatic Aberration"]["Shift strength"].asFloat());
 	// *********** Sky ***********
 	//SKY_DOME_SYSTEM.SetEnabled(Root["effects"]["Sky"]["Enabled"].asFloat() > 0.0f ? true : false);
 	//SKY_DOME_SYSTEM.SetDistanceToSky(Root["effects"]["Sky"]["Sphere size"].asFloat());
@@ -1376,6 +1348,15 @@ void FEProject::LoadScene()
 	FEEntity* Entity = ProjectScene->CreateEntity("Camera Entity");
 	Entity->AddComponent<FECameraComponent>();
 	FECameraComponent& CameraComponent = Entity->GetComponent<FECameraComponent>();
+	if (Root["effects"]["Distance fog"].isMember("isDistanceFogEnabled"))
+	{
+		CameraComponent.SetDistanceFogEnabled(Root["effects"]["Distance fog"]["isDistanceFogEnabled"].asBool());
+	}
+	else
+	{
+		CameraComponent.SetDistanceFogEnabled(Root["effects"]["Distance fog"]["Density"].asFloat() > -1.0f ? true : false);
+	}
+	
 	// Will work in future.
 	//ReadTransformToJson(Root["camera"]["transformation"], &Entity->GetComponent<FETransformComponent>());
 
@@ -1385,13 +1366,13 @@ void FEProject::LoadScene()
 
 	Entity->GetComponent<FETransformComponent>().SetPosition(CameraPosition);
 
-	ENGINE.GetCamera()->SetPosition(CameraPosition);
+	//ENGINE.GetCamera()->SetPosition(CameraPosition);
 
-	ENGINE.GetCamera()->SetFov(Root["camera"]["fov"].asFloat());
+	//ENGINE.GetCamera()->SetFov(Root["camera"]["fov"].asFloat());
 	CameraComponent.SetFOV(50.680f);
-	ENGINE.GetCamera()->SetNearPlane(Root["camera"]["nearPlane"].asFloat());
+	//ENGINE.GetCamera()->SetNearPlane(Root["camera"]["nearPlane"].asFloat());
 	CameraComponent.SetNearPlane(Root["camera"]["nearPlane"].asFloat());
-	ENGINE.GetCamera()->SetFarPlane(Root["camera"]["farPlane"].asFloat());
+	//ENGINE.GetCamera()->SetFarPlane(Root["camera"]["farPlane"].asFloat());
 	CameraComponent.SetFarPlane(Root["camera"]["farPlane"].asFloat());
 
 	glm::vec3 CameraRotation = glm::vec3(Root["camera"]["yaw"].asFloat(),
@@ -1403,17 +1384,17 @@ void FEProject::LoadScene()
 	CameraComponent.CurrentMouseXAngle = -CameraRotation.x;
 	CameraComponent.CurrentMouseYAngle = -CameraRotation.y;
 
-	ENGINE.GetCamera()->SetYaw(CameraRotation.x);
+	/*ENGINE.GetCamera()->SetYaw(CameraRotation.x);
 	ENGINE.GetCamera()->SetPitch(CameraRotation.y);
-	ENGINE.GetCamera()->SetRoll(CameraRotation.z);
+	ENGINE.GetCamera()->SetRoll(CameraRotation.z);*/
 
-	ENGINE.GetCamera()->SetAspectRatio(Root["camera"]["aspectRatio"].asFloat());
+	//ENGINE.GetCamera()->SetAspectRatio(Root["camera"]["aspectRatio"].asFloat());
 	CameraComponent.SetAspectRatio(Root["camera"]["aspectRatio"].asFloat());
 
 	CAMERA_SYSTEM.SetMainCamera(Entity);
 
-	if (ProjectVersion >= 0.02f && Root["camera"].isMember("movementSpeed"))
-		ENGINE.GetCamera()->SetMovementSpeed(Root["camera"]["movementSpeed"].asFloat());
+	//if (ProjectVersion >= 0.02f && Root["camera"].isMember("movementSpeed"))
+	//	ENGINE.GetCamera()->SetMovementSpeed(Root["camera"]["movementSpeed"].asFloat());
 
 	// After all scene objects are loaded, we need to update all objects.
 	ProjectScene->Update();
@@ -1517,8 +1498,8 @@ void FEProject::LoadScene()
 
 void FEProject::CreateDummyScreenshot()
 {
-	const size_t Width = ENGINE.GetRenderTargetWidth();
-	const size_t Height = ENGINE.GetRenderTargetHeight();
+	const size_t Width = ENGINE.GetDefaultViewport()->GetWidth();
+	const size_t Height = ENGINE.GetDefaultViewport()->GetHeight();
 
 	unsigned char* Pixels = new unsigned char[4 * Width * Height];
 	for (size_t j = 0; j < Height; j++)

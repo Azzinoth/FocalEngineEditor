@@ -3,27 +3,43 @@
 #include "../FEngine.h"
 using namespace FocalEngine;
 
-class FEEditorSelectedObject;
-class FEEditor;
+class FEHaloSelectionData
+{
+	friend class FEEditor;
+	friend class FEEditorSelectedObject;
+	friend class FEEditorHaloSelectionEffect;
+
+	std::string SceneID = "";
+	FEFramebuffer* HaloObjectsFB = nullptr;
+	FEPostProcess* PostProcess = nullptr;
+
+	~FEHaloSelectionData()
+	{
+		delete HaloObjectsFB;
+	}
+};
 
 class FEEditorHaloSelectionEffect
 {
-	friend FEEditorSelectedObject;
-	friend FEEditor;
+	friend class FEEditorSelectedObject;
+	friend class FEEditor;
 private:
 	SINGLETON_PUBLIC_PART(FEEditorHaloSelectionEffect)
 	SINGLETON_PRIVATE_PART(FEEditorHaloSelectionEffect)
 
 	void InitializeResources();
-	void ReInitializeResources();
+	void UpdateResources(FEScene* Scene);
 
-	FEFramebuffer* HaloObjectsFb = nullptr;
 	FEMaterial* HaloMaterial = nullptr;
-	FEPostProcess* PostProcess = nullptr;
-
 	FEShader* HaloDrawInstancedObjectShader = nullptr;
 	FEShader* HaloDrawObjectShader = nullptr;
 	FEShader* HaloFinalShader = nullptr;
+
+	std::unordered_map<std::string, FEHaloSelectionData*> PerSceneData;
+	void ClearAllSceneData();
+	void ClearSceneData(const std::string& SceneID);
+	void AddSceneData(const std::string& SceneID);
+	FEHaloSelectionData* GetSceneData(const std::string& SceneID);
 };
 
 #define HALO_SELECTION_EFFECT FEEditorHaloSelectionEffect::getInstance()

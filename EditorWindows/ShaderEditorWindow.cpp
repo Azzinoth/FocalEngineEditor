@@ -1,4 +1,5 @@
 #include "ShaderEditorWindow.h"
+#include "../FEEditor.h"
 
 ShaderDebugWindow* ShaderDebugWindow::Instance = nullptr;
 
@@ -466,11 +467,9 @@ void ShaderEditorWindow::ReplaceShader(FEShader* OldShader, FEShader* NewShader)
 		}
 	}
 
-	// FIX ME! Temporary solution, only supports one scene
-	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
-	if (!ActiveScenes.empty())
+	if (EDITOR.GetFocusedScene() != nullptr)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
+		FEScene* CurrentScene = EDITOR.GetFocusedScene();
 		const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWith<FETerrainComponent>();
 		for (size_t i = 0; i < TerrainList.size(); i++)
 		{

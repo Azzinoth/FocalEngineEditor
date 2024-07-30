@@ -73,6 +73,7 @@ file(GLOB EditorWindows_SRC
 	"EditorWindows/EditPopups.cpp"
 	"EditorWindows/EditPopups.h"
 	"EditorWindows/GyzmosSettingsWindow.h"
+	"EditorWindows/GyzmosSettingsWindow.cpp"
 	"EditorWindows/CombineChannelsToTexturePopUp.cpp"
 	"EditorWindows/CombineChannelsToTexturePopUp.h"
 	"EditorWindows/ProjectWasModifiedPopUp.cpp"

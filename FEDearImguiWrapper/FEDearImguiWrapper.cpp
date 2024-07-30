@@ -393,6 +393,11 @@ void FEImGuiWindow::SetCaption(const std::string NewCaption)
 	strcpy_s(Caption, NewCaption.size() + 1, NewCaption.c_str());
 }
 
+ImGuiWindow* FEImGuiWindow::GetWindow() const
+{
+	return Window;
+}
+
 void FEImGuiWindow::SetVisible(bool NewValue)
 {
 	bVisible = NewValue;
@@ -762,7 +767,7 @@ void MessagePopUp::Render()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 	if (ImGui::BeginPopupModal(PopupCaption.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		ImGui::Text(Message.c_str());
 		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f - 120.0f / 2.0f);
 		if (ImGui::Button("Ok", ImVec2(120, 0)))

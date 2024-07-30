@@ -1,7 +1,6 @@
 #include "InspectorWindow.h"
 #include "../FEEditor.h"
 
-
 FEEditorInspectorWindow* FEEditorInspectorWindow::Instance = nullptr;
 FEEntity* FEEditorInspectorWindow::EntityToModify = nullptr;
 FEEntity* FEEditorInspectorWindow::TerrainToWorkWith = nullptr;
@@ -75,14 +74,19 @@ bool FEEditorInspectorWindow::EntityChangePrefabTargetCallBack(FEObject* Object,
 
 bool FEEditorInspectorWindow::TerrainChangeMaterialTargetCallBack(FEObject* Object, void** LayerIndex)
 {
-	if (SELECTED.GetSelected() == nullptr || !SELECTED.GetSelected()->HasComponent<FETerrainComponent>())
+	if (EDITOR.GetFocusedScene() == nullptr)
+		return false;
+
+	FEScene* CurrentScene = EDITOR.GetFocusedScene();
+
+	if (SELECTED.GetSelected(CurrentScene) == nullptr || !SELECTED.GetSelected(CurrentScene)->HasComponent<FETerrainComponent>())
 		return false;
 
 	FEMaterial* MaterialToAssign = RESOURCE_MANAGER.GetMaterial(Object->GetObjectID());
 	if (!MaterialToAssign->IsCompackPacking())
 		return false;
 
-	FETerrainComponent& Terrain = SELECTED.GetSelected()->GetComponent<FETerrainComponent>();
+	FETerrainComponent& Terrain = SELECTED.GetSelected(CurrentScene)->GetComponent<FETerrainComponent>();
 	const int TempLayerIndex = *(int*)LayerIndex;
 	if (TempLayerIndex >= 0 && TempLayerIndex < FE_TERRAIN_MAX_LAYERS)
 		Terrain.GetLayerInSlot(TempLayerIndex)->SetMaterial(MaterialToAssign);
@@ -419,8 +423,8 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
 
 	bool bIsMainCamera = CameraComponent.IsMainCamera();
-	ImGui::Checkbox("Main camera", &bIsMainCamera);
-	CAMERA_SYSTEM.SetMainCamera(CameraEntity);
+	if (ImGui::Checkbox("Main camera", &bIsMainCamera))
+		CAMERA_SYSTEM.SetMainCamera(CameraEntity);
 	
 	float CameraSpeed = CameraComponent.GetMovementSpeed();
 	ImGui::Text("Camera speed in m/s : ");
@@ -463,6 +467,398 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	ImGui::SetNextItemWidth(70);
 	ImGui::DragFloat("##Exposure", &Exposure, 0.1f, 0.1f, 10.0f);
 	CameraComponent.SetExposure(Exposure);
+
+	// *********** Bloom ***********
+	ImGui::Separator();
+	ImGui::Text("Bloom:");
+	ImGui::Text("Threshold:");
+	float Threshold = CameraComponent.GetBloomThreshold();
+	ImGui::SetNextItemWidth(70);
+	ImGui::DragFloat("##Threshold", &Threshold, 0.01f, 0.001f, 30.0f);
+	CameraComponent.SetBloomThreshold(Threshold);
+
+	/*ImGui::PushID(GUIID++);
+	ImGui::SameLine();
+	ResetButton->Render();
+	if (ResetButton->IsClicked())
+	{
+		CameraComponent.SetBloomThreshold(1.5f);
+	}
+	ImGui::PopID();*/
+
+	ImGui::Text("Size:");
+	float Size = CameraComponent.GetBloomSize();
+	ImGui::SetNextItemWidth(70);
+	ImGui::DragFloat("##BloomSize", &Size, 0.01f, 0.001f, 100.0f);
+	CameraComponent.SetBloomSize(Size);
+
+	/*ImGui::PushID(GUIID++);
+	ImGui::SameLine();
+	ResetButton->Render();
+	if (ResetButton->IsClicked())
+	{
+		CameraComponent.SetBloomSize(5.0f);
+	}
+	ImGui::PopID();*/
+
+	// *********** Anti-Aliasing(FXAA) ***********
+	ImGui::Separator();
+	ImGui::Text("Anti-Aliasing(FXAA)");
+	static const char* options[5] = { "none", "1x", "2x", "4x", "8x" };
+	static std::string SelectedOption = "1x";
+
+	// FIX ME! Was used with one camera only.
+	static bool bFirstLook = true;
+	if (bFirstLook)
+	{
+		const float FXAASpanMax = CameraComponent.GetFXAASpanMax();
+		if (FXAASpanMax == 0.0f)
+		{
+			SelectedOption = options[0];
+		}
+		else if (FXAASpanMax > 0.1f && FXAASpanMax < 1.1f)
+		{
+			SelectedOption = options[1];
+		}
+		else if (FXAASpanMax > 1.1f && FXAASpanMax < 2.1f)
+		{
+			SelectedOption = options[2];
+		}
+		else if (FXAASpanMax > 2.1f && FXAASpanMax < 4.1f)
+		{
+			SelectedOption = options[3];
+		}
+		else if (FXAASpanMax > 4.1f && FXAASpanMax < 8.1f)
+		{
+			SelectedOption = options[4];
+		}
+		else
+		{
+			SelectedOption = options[5];
+		}
+
+		bFirstLook = false;
+	}
+
+	static bool bDebugSettings = false;
+	if (ImGui::Checkbox("debug view", &bDebugSettings))
+	{
+		const float FXAASpanMax = CameraComponent.GetFXAASpanMax();
+		if (FXAASpanMax == 0.0f)
+		{
+			SelectedOption = options[0];
+		}
+		else if (FXAASpanMax > 0.1f && FXAASpanMax < 1.1f)
+		{
+			SelectedOption = options[1];
+		}
+		else if (FXAASpanMax > 1.1f && FXAASpanMax < 2.1f)
+		{
+			SelectedOption = options[2];
+		}
+		else if (FXAASpanMax > 2.1f && FXAASpanMax < 4.1f)
+		{
+			SelectedOption = options[3];
+		}
+		else if (FXAASpanMax > 4.1f && FXAASpanMax < 8.1f)
+		{
+			SelectedOption = options[4];
+		}
+		else
+		{
+			SelectedOption = options[5];
+		}
+	}
+
+	if (!bDebugSettings)
+	{
+		ImGui::Text("Anti Aliasing Strength:");
+		if (ImGui::BeginCombo("##Anti Aliasing Strength", SelectedOption.c_str(), ImGuiWindowFlags_None))
+		{
+			for (size_t i = 0; i < 5; i++)
+			{
+				const bool is_selected = (SelectedOption == options[i]);
+				if (ImGui::Selectable(options[i], is_selected))
+				{
+					CameraComponent.SetFXAASpanMax(float(pow(2.0, (i - 1))));
+					if (i == 0)
+						CameraComponent.SetFXAASpanMax(0.0f);
+					SelectedOption = options[i];
+				}
+
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+	}
+	else
+	{
+		ImGui::Text("FXAASpanMax:");
+		ImGui::SetNextItemWidth(70);
+		float FXAASpanMax = CameraComponent.GetFXAASpanMax();
+		ImGui::DragFloat("##FXAASpanMax", &FXAASpanMax, 0.0f, 0.001f, 32.0f);
+		CameraComponent.SetFXAASpanMax(FXAASpanMax);
+
+		/*ImGui::PushID(GUIID++);
+		ImGui::SameLine();
+		ResetButton->Render();
+		if (ResetButton->IsClicked())
+		{
+			CameraComponent.SetFXAASpanMax(8.0f);
+		}
+		ImGui::PopID();*/
+
+		ImGui::Text("FXAAReduceMin:");
+		ImGui::SetNextItemWidth(70);
+		float FXAAReduceMin = CameraComponent.GetFXAAReduceMin();
+		ImGui::DragFloat("##FXAAReduceMin", &FXAAReduceMin, 0.01f, 0.001f, 100.0f);
+		CameraComponent.SetFXAAReduceMin(FXAAReduceMin);
+
+		/*ImGui::PushID(GUIID++);
+		ImGui::SameLine();
+		ResetButton->Render();
+		if (ResetButton->IsClicked())
+		{
+			CameraComponent.SetFXAAReduceMin(0.008f);
+		}
+		ImGui::PopID();*/
+
+		ImGui::Text("FXAAReduceMul:");
+		ImGui::SetNextItemWidth(70);
+		float FXAAReduceMul = CameraComponent.GetFXAAReduceMul();
+		ImGui::DragFloat("##FXAAReduceMul", &FXAAReduceMul, 0.01f, 0.001f, 100.0f);
+		CameraComponent.SetFXAAReduceMul(FXAAReduceMul);
+
+		/*ImGui::PushID(GUIID++);
+		ImGui::SameLine();
+		ResetButton->Render();
+		if (ResetButton->IsClicked())
+		{
+			CameraComponent.SetFXAAReduceMul(0.400f);
+		}
+		ImGui::PopID();*/
+	}
+
+	ImGui::Separator();
+	ImGui::Text("Depth of Field:");
+	// *********** Depth of Field ***********
+	ImGui::Text("Near distance:");
+	ImGui::SetNextItemWidth(70);
+	float DepthThreshold = CameraComponent.GetDOFNearDistance();
+	ImGui::DragFloat("##depthThreshold", &DepthThreshold, 0.0f, 0.001f, 100.0f);
+	CameraComponent.SetDOFNearDistance(DepthThreshold);
+
+	ImGui::Text("Far distance:");
+	ImGui::SetNextItemWidth(70);
+	float DepthThresholdFar = CameraComponent.GetDOFFarDistance();
+	ImGui::DragFloat("##depthThresholdFar", &DepthThresholdFar, 0.0f, 0.001f, 100.0f);
+	CameraComponent.SetDOFFarDistance(DepthThresholdFar);
+
+	ImGui::Text("Strength:");
+	ImGui::SetNextItemWidth(70);
+	float Strength = CameraComponent.GetDOFStrength();
+	ImGui::DragFloat("##Strength", &Strength, 0.0f, 0.001f, 10.0f);
+	CameraComponent.SetDOFStrength(Strength);
+
+	ImGui::Text("Distance dependent strength:");
+	ImGui::SetNextItemWidth(70);
+	float IntMult = CameraComponent.GetDOFDistanceDependentStrength();
+	ImGui::DragFloat("##Distance dependent strength", &IntMult, 0.0f, 0.001f, 100.0f);
+	CameraComponent.SetDOFDistanceDependentStrength(IntMult);
+
+	ImGui::Separator();
+	ImGui::Text("Chromatic Aberration:");
+	ImGui::Text("Shift strength:");
+	ImGui::SetNextItemWidth(70);
+	float intensity = CameraComponent.GetChromaticAberrationIntensity();
+	ImGui::DragFloat("##intensity", &intensity, 0.01f, 0.0f, 30.0f);
+	CameraComponent.SetChromaticAberrationIntensity(intensity);
+
+	/*ImGui::PushID(GUIID++);
+	ImGui::SameLine();
+	ResetButton->Render();
+	if (ResetButton->IsClicked())
+	{
+		CameraComponent.SetChromaticAberrationIntensity(1.0f);
+	}
+	ImGui::PopID();*/
+
+	ImGui::Separator();
+	ImGui::Text("SSAO:");
+	// *********** SSAO ***********
+	static const char* SSAO_Options[5] = { "Off", "Low", "Medium", "High", "Custom" };
+	static std::string SSAO_SelectedOption = "Medium";
+
+	// FIX ME! Was used with one camera only.
+	static bool bSSAO_FirstLook = true;
+	if (bFirstLook)
+	{
+		const int SampleCount = CameraComponent.GetSSAOSampleCount();
+
+		if (!CameraComponent.IsSSAOEnabled())
+		{
+			SSAO_SelectedOption = SSAO_Options[0];
+		}
+		else if (SampleCount == 4)
+		{
+			SSAO_SelectedOption = SSAO_Options[1];
+		}
+		else if (SampleCount == 16 && CameraComponent.GetSSAORadiusSmallDetails())
+		{
+			SSAO_SelectedOption = SSAO_Options[2];
+		}
+		else if (SampleCount == 32 && CameraComponent.GetSSAORadiusSmallDetails())
+		{
+			SSAO_SelectedOption = SSAO_Options[3];
+		}
+		else
+		{
+			SSAO_SelectedOption = SSAO_Options[4];
+		}
+
+		//bFirstLook = false;
+	}
+
+	static bool bSSAO_DebugSettings = false;
+	if (ImGui::Checkbox("Debug view", &bSSAO_DebugSettings))
+	{
+
+	}
+
+	if (!bSSAO_DebugSettings)
+	{
+		ImGui::Text("SSAO Quality:");
+		ImGui::SetNextItemWidth(150);
+		if (ImGui::BeginCombo("##SSAO Quality", SSAO_SelectedOption.c_str(), ImGuiWindowFlags_None))
+		{
+			for (size_t i = 0; i < 5; i++)
+			{
+				const bool is_selected = (SSAO_SelectedOption == SSAO_Options[i]);
+				if (ImGui::Selectable(SSAO_Options[i], is_selected))
+				{
+					CameraComponent.SetSSAOResultBlured(true);
+					CameraComponent.SetSSAOBias(0.013f);
+					CameraComponent.SetSSAORadius(10.0f);
+					CameraComponent.SetSSAORadiusSmallDetails(0.4f);
+					CameraComponent.SetSSAOSmallDetailsWeight(0.2f);
+
+					if (i == 0)
+					{
+						CameraComponent.SetSSAOEnabled(false);
+					}
+					else if (i == 1)
+					{
+						CameraComponent.SetSSAOEnabled(true);
+
+						CameraComponent.SetSSAOSampleCount(4);
+						CameraComponent.SetSSAOSmallDetailsEnabled(false);
+					}
+					else if (i == 2)
+					{
+						CameraComponent.SetSSAOEnabled(true);
+
+						CameraComponent.SetSSAOSampleCount(16);
+						CameraComponent.SetSSAOSmallDetailsEnabled(true);
+					}
+					else if (i == 3)
+					{
+						CameraComponent.SetSSAOEnabled(true);
+
+						CameraComponent.SetSSAOSampleCount(32);
+						CameraComponent.SetSSAOSmallDetailsEnabled(true);
+					}
+
+					SSAO_SelectedOption = SSAO_Options[i];
+				}
+
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+	}
+	else
+	{
+		bool TempBool = CameraComponent.IsSSAOEnabled();
+		ImGui::Checkbox("SSAO active", &TempBool);
+		CameraComponent.SetSSAOEnabled(TempBool);
+
+		TempBool = CameraComponent.IsSSAOSmallDetailsEnabled();
+		ImGui::Checkbox("SSAO small details", &TempBool);
+		CameraComponent.SetSSAOSmallDetailsEnabled(TempBool);
+
+		TempBool = CameraComponent.IsSSAOResultBlured();
+		ImGui::Checkbox("SSAO blured", &TempBool);
+		CameraComponent.SetSSAOResultBlured(TempBool);
+
+		int TempInt = CameraComponent.GetSSAOSampleCount();
+		ImGui::SetNextItemWidth(100);
+		ImGui::DragInt("SSAO sample count", &TempInt);
+		CameraComponent.SetSSAOSampleCount(TempInt);
+
+		float TempFloat = CameraComponent.GetSSAOBias();
+		ImGui::SetNextItemWidth(100);
+		ImGui::DragFloat("SSAO bias", &TempFloat, 0.1f);
+		CameraComponent.SetSSAOBias(TempFloat);
+
+		TempFloat = CameraComponent.GetSSAORadius();
+		ImGui::SetNextItemWidth(100);
+		ImGui::DragFloat("SSAO radius", &TempFloat, 0.1f);
+		CameraComponent.SetSSAORadius(TempFloat);
+
+		TempFloat = CameraComponent.GetSSAORadiusSmallDetails();
+		ImGui::SetNextItemWidth(100);
+		ImGui::DragFloat("SSAO radius small details", &TempFloat, 0.1f);
+		CameraComponent.SetSSAORadiusSmallDetails(TempFloat);
+
+		TempFloat = CameraComponent.GetSSAOSmallDetailsWeight();
+		ImGui::SetNextItemWidth(100);
+		ImGui::DragFloat("SSAO small details weight", &TempFloat, 0.01f);
+		CameraComponent.SetSSAOSmallDetailsWeight(TempFloat);
+	}
+	
+	// *********** Distance Fog ***********
+	ImGui::Separator();
+	ImGui::Text("Distance Fog:");
+	bool bEnabledFog = CameraComponent.IsDistanceFogEnabled();
+	if (ImGui::Checkbox("Enable fog", &bEnabledFog))
+	{
+		CameraComponent.SetDistanceFogEnabled(bEnabledFog);
+	}
+
+	if (bEnabledFog)
+	{
+		ImGui::Text("Density:");
+		ImGui::SetNextItemWidth(70);
+		float FogDensity = CameraComponent.GetDistanceFogDensity();
+		ImGui::DragFloat("##fogDensity", &FogDensity, 0.0001f, 0.0f, 5.0f);
+		CameraComponent.SetDistanceFogDensity(FogDensity);
+
+		/*ImGui::PushID(GUIID++);
+		ImGui::SameLine();
+		ResetButton->Render();
+		if (ResetButton->IsClicked())
+		{
+			CameraComponent.SetDistanceFogDensity(0.007f);
+		}
+		ImGui::PopID();*/
+
+		ImGui::Text("Gradient:");
+		ImGui::SetNextItemWidth(70);
+		float FogGradient = CameraComponent.GetDistanceFogGradient();
+		ImGui::DragFloat("##fogGradient", &FogGradient, 0.001f, 0.0f, 5.0f);
+		CameraComponent.SetDistanceFogGradient(FogGradient);
+
+		/*ImGui::PushID(GUIID++);
+		ImGui::SameLine();
+		ResetButton->Render();
+		if (ResetButton->IsClicked())
+		{
+			CameraComponent.SetDistanceFogGradient(2.5f);
+		}
+		ImGui::PopID();*/
+	}
 }
 
 // FIX ME!
@@ -539,18 +935,25 @@ void FEEditorInspectorWindow::Render()
 	if (!bVisible)
 		return;
 
+	if (EDITOR.GetFocusedScene() == nullptr)
+		return;
+
+	FEScene* CurrentScene = EDITOR.GetFocusedScene();
+	FEEntity* MainCameraEntity = CAMERA_SYSTEM.GetMainCameraEntity(CurrentScene);
+	if (MainCameraEntity == nullptr)
+		return;
+
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 	ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None);
 
-	if (SELECTED.GetSelected() == nullptr)
+	if (SELECTED.GetSelected(CurrentScene) == nullptr)
 	{
 		ImGui::PopStyleVar();
 		ImGui::End();
 		return;
 	}
 
-	FEEntity* EntitySelected = SELECTED.GetSelected();
-	FEScene* CurrentScene = EntitySelected->GetParentScene();
+	FEEntity* EntitySelected = SELECTED.GetSelected(CurrentScene);
 
 	ImGui::Text("ID : %s", EntitySelected->GetObjectID().c_str());
 	ImGui::Text("Name : %s", EntitySelected->GetName().c_str());
@@ -651,21 +1054,22 @@ void FEEditorInspectorWindow::Render()
 	{
 		if (ImGui::CollapsingHeader("Instanced", ImGuiTreeNodeFlags_DefaultOpen))
 		{
+			FESelectionData* CurrentSelectionData = SELECTED.GetSceneData(CurrentScene->GetObjectID());
 			FEInstancedComponent& InstancedComponent = EntitySelected->GetComponent<FEInstancedComponent>();
 
-			if (SELECTED.InstancedSubObjectIndexSelected != -1)
+			if (CurrentSelectionData->InstancedSubObjectIndexSelected != -1)
 			{
 				std::string InstancedSubObjectInfo = "index: ";
 
 				ImGui::Text("Selected instance info:");
-				InstancedSubObjectInfo = "index: " + std::to_string(SELECTED.InstancedSubObjectIndexSelected);
+				InstancedSubObjectInfo = "index: " + std::to_string(CurrentSelectionData->InstancedSubObjectIndexSelected);
 				ImGui::Text(InstancedSubObjectInfo.c_str());
 
-				FETransformComponent TempTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(SELECTED.InstancedSubObjectIndexSelected));
+				FETransformComponent TempTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(CurrentSelectionData->InstancedSubObjectIndexSelected));
 				TempTransform.SetSceneIndependent(true);
 				ShowTransformConfiguration("Selected instance", &TempTransform);
 
-				INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(EntitySelected, SELECTED.InstancedSubObjectIndexSelected, TempTransform.GetWorldMatrix());
+				INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(EntitySelected, CurrentSelectionData->InstancedSubObjectIndexSelected, TempTransform.GetWorldMatrix());
 
 				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.55f, 0.55f, 0.95f));
 				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
@@ -673,7 +1077,7 @@ void FEEditorInspectorWindow::Render()
 
 				if (ImGui::ImageButton((void*)(intptr_t)ArrowToGroundIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 				{
-					INSTANCED_RENDERING_SYSTEM.TryToSnapIndividualInstance(EntitySelected, SELECTED.InstancedSubObjectIndexSelected);
+					INSTANCED_RENDERING_SYSTEM.TryToSnapIndividualInstance(EntitySelected, CurrentSelectionData->InstancedSubObjectIndexSelected);
 				}
 				ShowToolTip("Selected instance will attempt to snap to the terrain.");
 
@@ -874,8 +1278,8 @@ void FEEditorInspectorWindow::Render()
 				if (ImGui::Button("Add instance"))
 				{
 					glm::mat4 NewInstanceMatrix = glm::identity<glm::mat4>();
-					FETransformComponent& CameraTransformComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FETransformComponent>();
-					FECameraComponent& CameraComponent = EDITOR.GetCurrentEditorCameraEntity()->GetComponent<FECameraComponent>();
+					FETransformComponent& CameraTransformComponent = MainCameraEntity->GetComponent<FETransformComponent>();
+					FECameraComponent& CameraComponent = MainCameraEntity->GetComponent<FECameraComponent>();
 					NewInstanceMatrix = glm::translate(NewInstanceMatrix, CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
 					INSTANCED_RENDERING_SYSTEM.AddIndividualInstance(EntitySelected, NewInstanceMatrix);
 
@@ -901,7 +1305,7 @@ void FEEditorInspectorWindow::Render()
 					INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(EntitySelected, !INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected));
 					if (!INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected))
 					{
-						SELECTED.Clear();
+						SELECTED.Clear(CurrentScene);
 						SELECTED.SetSelected(EntitySelected);
 					}
 				}
@@ -951,7 +1355,7 @@ void FEEditorInspectorWindow::Render()
 	{
 		if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			DisplayLightProperties(SELECTED.GetSelected());
+			DisplayLightProperties(SELECTED.GetSelected(CurrentScene));
 		}
 	}
 
@@ -959,7 +1363,7 @@ void FEEditorInspectorWindow::Render()
 	{
 		if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			DisplayCameraProperties(SELECTED.GetSelected());
+			DisplayCameraProperties(SELECTED.GetSelected(CurrentScene));
 		}
 	}
 

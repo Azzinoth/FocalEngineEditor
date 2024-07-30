@@ -1,5 +1,6 @@
 #include "PrefabEditorWindow.h"
-
+#include "SceneGraphWindow.h"
+#include "../FEEditor.h"
 PrefabEditorWindow* PrefabEditorWindow::Instance = nullptr;
 FEPrefab* PrefabEditorWindow::ObjToWorkWith = nullptr;
 
@@ -16,71 +17,6 @@ bool PrefabEditorWindow::AddGameModelTargetCallBack(FEObject* Object, void** Ent
 
 void PrefabEditorWindow::ShowTransformConfiguration(FETransformComponent* Transform, const int Index)
 {
-	// FIX ME!
-	//// ********************* POSITION *********************
-	//glm::vec3 position = Transform->GetPosition();
-	//ImGui::Text("Position : ");
-	//ImGui::SameLine();
-	//ImGui::SetNextItemWidth(50);
-	//ImGui::DragFloat((std::string("##X pos : ") + std::to_string(Index)).c_str(), &position[0], 0.1f);
-	//ShowToolTip("X position");
-
-	//ImGui::SameLine();
-	//ImGui::SetNextItemWidth(50);
-	//ImGui::DragFloat((std::string("##Y pos : ") + std::to_string(Index)).c_str(), &position[1], 0.1f);
-	//ShowToolTip("Y position");
-
-	//ImGui::SameLine();
-	//ImGui::SetNextItemWidth(50);
-	//ImGui::DragFloat((std::string("##Z pos : ") + std::to_string(Index)).c_str(), &position[2], 0.1f);
-	//ShowToolTip("Z position");
-	//Transform->SetPosition(position);
-
-	//// ********************* ROTATION *********************
-	//glm::vec3 rotation = Transform->GetRotation();
-	//ImGui::Text("Rotation : ");
-	//ImGui::SameLine();
-	//ImGui::SetNextItemWidth(50);
-	//ImGui::DragFloat((std::string("##X rot : ") + std::to_string(Index)).c_str(), &rotation[0], 0.1f, -360.0f, 360.0f);
-	//ShowToolTip("X rotation");
-
-	//ImGui::SameLine();
-	//ImGui::SetNextItemWidth(50);
-	//ImGui::DragFloat((std::string("##Y rot : ") + std::to_string(Index)).c_str(), &rotation[1], 0.1f, -360.0f, 360.0f);
-	//ShowToolTip("Y rotation");
-
-	//ImGui::SameLine();
-	//ImGui::SetNextItemWidth(50);
-	//ImGui::DragFloat((std::string("##Z rot : ") + std::to_string(Index)).c_str(), &rotation[2], 0.1f, -360.0f, 360.0f);
-	//ShowToolTip("Z rotation");
-	//Transform->SetRotation(rotation);
-
-	//// ********************* SCALE *********************
-	//bool bUniformScaling = Transform->IsUniformScalingSet();
-	//ImGui::Checkbox("Uniform scaling", &bUniformScaling);
-	//Transform->SetUniformScaling(bUniformScaling);
-
-	//glm::vec3 scale = Transform->GetScale();
-	//ImGui::Text("Scale : ");
-	//ImGui::SameLine();
-	//ImGui::SetNextItemWidth(50);
-	//ImGui::DragFloat((std::string("##X scale : ") + std::to_string(Index)).c_str(), &scale[0], 0.01f, 0.01f, 1000.0f);
-	//ShowToolTip("X scale");
-
-	//ImGui::SameLine();
-	//ImGui::SetNextItemWidth(50);
-	//ImGui::DragFloat((std::string("##Y scale : ") + std::to_string(Index)).c_str(), &scale[1], 0.01f, 0.01f, 1000.0f);
-	//ShowToolTip("Y scale");
-
-	//ImGui::SameLine();
-	//ImGui::SetNextItemWidth(50);
-	//ImGui::DragFloat((std::string("##Z scale : ") + std::to_string(Index)).c_str(), &scale[2], 0.01f, 0.01f, 1000.0f);
-	//ShowToolTip("Z scale");
-
-	//glm::vec3 OldScale = Transform->GetScale();
-	//Transform->ChangeXScaleBy(scale[0] - OldScale[0]);
-	//Transform->ChangeYScaleBy(scale[1] - OldScale[1]);
-	//Transform->ChangeZScaleBy(scale[2] - OldScale[2]);
 }
 
 void PrefabEditorWindow::AddNewGameModelCallBack(const std::vector<FEObject*> SelectionsResult)
@@ -89,7 +25,7 @@ void PrefabEditorWindow::AddNewGameModelCallBack(const std::vector<FEObject*> Se
 	{
 		if (SelectionsResult[i]->GetType() == FE_GAMEMODEL)
 			ObjToWorkWith->AddComponent(reinterpret_cast<FEGameModel*>(SelectionsResult[i]));
-	}	
+	}
 }
 
 PrefabEditorWindow::PrefabEditorWindow()
@@ -109,25 +45,48 @@ PrefabEditorWindow::~PrefabEditorWindow()
 	delete CloseButton;
 }
 
-// FIX ME! Temporary.
-#include "SceneGraphWindow.h"
 void PrefabEditorWindow::Show(FEPrefab* Prefab)
 {
-	// FIX ME! test
 	if (Prefab->Scene != nullptr)
 	{
-		SCENE_MANAGER.TestScene = Prefab->Scene;
-		SCENE_GRAPH_WINDOW.SetScene(SCENE_MANAGER.TestScene);
+		if (CurrentPrefabScene != nullptr)
+			SCENE_MANAGER.DeleteScene(CurrentPrefabScene);
+		CurrentPrefabScene = SCENE_MANAGER.DuplicateScene(Prefab->Scene, "Scene: " + Prefab->GetName());
+
+		FEEntity* Camera = CurrentPrefabScene->CreateEntity("Prefab scene camera");
+		CurrentCameraEntity = Camera;
+		Camera->AddComponent<FECameraComponent>();
+		FECameraComponent& CameraComponent = Camera->GetComponent<FECameraComponent>();
+		// FIX ME! It should be model camera but it is not working with transform component
+		CameraComponent.Type = 0;
+		CameraComponent.DistanceToModel = 10.0;
+
+		CAMERA_SYSTEM.SetMainCamera(Camera);
+		FETransformComponent& CameraTransform = Camera->GetComponent<FETransformComponent>();
+		CameraTransform.SetPosition(glm::vec3(0.0f, 0.0f, 30.0f));
+
+		FEEntity* SkyDomeEntity = CurrentPrefabScene->CreateEntity("Prefab scene skydome");
+		SkyDomeEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(100.0f));
+		SkyDomeEntity->AddComponent<FESkyDomeComponent>();
+
+		FEEntity* LightEntity = CurrentPrefabScene->CreateEntity("Prefab scene light");
+		LightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
+		FELightComponent& LightComponent = LightEntity->GetComponent<FELightComponent>();
+		LightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
+		LightComponent.SetIntensity(4.3f);
+		LightComponent.SetCastShadows(false);
+
+		EDITOR.AddEditorScene(CurrentPrefabScene);
+
+		/*Size = ImVec2(800, 800);
+		Position = ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2 - Size.x / 2, APPLICATION.GetMainWindow()->GetHeight() / 2 - Size.y / 2);
+
+		Flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse;
+
+		ObjToWorkWith = Prefab;
+
+		FEImGuiWindow::Show();*/
 	}
-		
-	Size = ImVec2(800, 800);
-	Position = ImVec2(FEngine::getInstance().GetWindowWidth() / 2 - Size.x / 2, FEngine::getInstance().GetWindowHeight() / 2 - Size.y / 2);
-
-	Flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse;
-
-	ObjToWorkWith = Prefab;
-	
-	FEImGuiWindow::Show();
 }
 
 void PrefabEditorWindow::Render()
@@ -251,7 +210,15 @@ void PrefabEditorWindow::Render()
 
 	CloseButton->Render();
 	if (CloseButton->IsClicked())
+	{
+		if (CurrentPrefabScene != nullptr)
+		{
+			SCENE_MANAGER.DeleteScene(CurrentPrefabScene);
+			CurrentPrefabScene = nullptr;
+		}
+			
 		Close();
+	}
 	
 	FEImGuiWindow::OnRenderEnd();
 }

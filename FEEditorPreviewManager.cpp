@@ -10,12 +10,9 @@ FETransformComponent FEEditorPreviewManager::OriginalTransform = FETransformComp
 
 void FEEditorPreviewManager::InitializeResources()
 {
-	PreviewScene = SCENE_MANAGER.CreateScene("EditorPreviewScene", "", false);
+	PreviewScene = SCENE_MANAGER.CreateScene("EditorPreviewScene");
 
-	PreviewFB = RESOURCE_MANAGER.CreateFramebuffer(FE_COLOR_ATTACHMENT | FE_DEPTH_ATTACHMENT, 128, 128);
 	PreviewGameModel = new FEGameModel(nullptr, nullptr, "editorPreviewGameModel");
-	PreviewPrefab = new FEPrefab(PreviewGameModel, "editorPreviewPrefab");
-
 	MeshPreviewMaterial = RESOURCE_MANAGER.CreateMaterial("meshPreviewMaterial");
 	RESOURCE_MANAGER.MakeMaterialStandard(MeshPreviewMaterial);
 	MeshPreviewMaterial->Shader = RESOURCE_MANAGER.CreateShader("FEMeshPreviewShader", RESOURCE_MANAGER.LoadGLSL("Resources//Materials//FE_MeshPreview_VS.glsl").c_str(),
@@ -28,56 +25,34 @@ void FEEditorPreviewManager::InitializeResources()
 
 	RESOURCE_MANAGER.MakeShaderStandard(MeshPreviewMaterial->Shader);
 
-
 	PreviewEntity = PreviewScene->CreateEntity("EditorPreviewEntity");
 	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
-	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
 
 	LocalCameraEntity = PreviewScene->CreateEntity("EditorPreview CameraEntity");
 	LocalCameraEntity->AddComponent<FECameraComponent>();
 	FECameraComponent& CameraComponent = LocalCameraEntity->GetComponent<FECameraComponent>();
-	CameraComponent.SetIsUsingDefaultRenderTargetSize(false);
 	CameraComponent.SetRenderTargetSize(128, 128);
+	CameraComponent.SetDistanceFogEnabled(false);
+	CAMERA_SYSTEM.SetMainCamera(LocalCameraEntity);
 
-	/*LocalSunEntity = PreviewScene->CreateEntity("EditorPreview LightEntity");
+	LocalSunEntity = PreviewScene->CreateEntity("EditorPreview LightEntity");
 	LocalSunEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
 	FELightComponent& LightComponent = LocalSunEntity->GetComponent<FELightComponent>();
 	LocalSunEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
-	LightComponent.SetIntensity(10.0f);*/
+	LightComponent.SetIntensity(10.0f);
+	LightComponent.SetCastShadows(false);
 
-	// FIX ME! Temporary solution, only supports one scene
-	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
-	if (!ActiveScenes.empty())
-	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-		PreviewEntity = PreviewScene->CreateEntity("EditorPreviewEntity");
-		PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
-		PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	// FIX ME! This scene should not have skydome. Fix bloom shader.
+	FEEntity* SkyDome = PreviewScene->CreateEntity("SkyDome");
+	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
+	SKY_DOME_SYSTEM.AddToEntity(SkyDome);
 
-		/*LocalSunEntity = PreviewScene->CreateEntity("EditorPreview LightEntity");
-		LocalSunEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
-		FELightComponent& LightComponent = LocalSunEntity->GetComponent<FELightComponent>();
-		LocalSunEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
-		LightComponent.SetIntensity(10.0f);*/
-	}
+	SCENE_MANAGER.DeactivateScene(PreviewScene);
 }
 
 void FEEditorPreviewManager::ReInitializeEntities()
 {
-	// FIX ME! Temporary solution, only supports one scene
-	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
-	if (!ActiveScenes.empty())
-	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-		PreviewEntity = CurrentScene->CreateEntity("EditorPreviewEntity");
-		PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
-		PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-
-		/*LocalLightEntity = SCENE.CreateEntity("EditorPreview LightEntity");
-		FELightComponent& LightComponent = LocalLightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
-		LocalLightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
-		LightComponent.SetIntensity(10.0f);*/
-	}
 }
 
 void FEEditorPreviewManager::UpdateAll()
@@ -105,105 +80,16 @@ void FEEditorPreviewManager::UpdateAll()
 
 void FEEditorPreviewManager::BeforePreviewActions()
 {
-	// FIX ME! Temporary solution, only supports one scene
-	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
-	if (ActiveScenes.empty())
-		return;
-
-	FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-
-	PreviewFB->Bind();
-	// We use these values even with the deferred renderer because the final image will not undergo gamma correction. Therefore, values exceeding 1.0f will not function correctly.
-	OriginalClearColor = ENGINE.GetClearColor();
-	ENGINE.SetClearColor(glm::vec4(0.55f, 0.73f, 0.87f, 1.0f));
-
-	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-
-	OriginalTransform = PreviewEntity->GetComponent<FETransformComponent>();
-
 	// The transform impacts the AABB. Therefore, the necessary values must be set prior to any calculations.
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, 0.0));
 	PreviewEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(1.0, 1.0, 1.0));
 	PreviewEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(15.0, -15.0, 0.0));
-
-	//CameraComponent.SetAspectRatio(1.0f);
-	FE_GL_ERROR(glViewport(0, 0, 128, 128));
-
-	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-
-	FEEntity* CurrentLightEntity = nullptr;
-	std::vector< std::string> LightsIDList = CurrentScene->GetEntityIDListWith<FELightComponent>();
-	for (size_t i = 0; i < LightsIDList.size(); i++)
-	{
-		FEEntity* LightEntity = CurrentScene->GetEntity(LightsIDList[i]);
-		FETransformComponent& TransformComponent = LightEntity->GetComponent<FETransformComponent>();
-		FELightComponent& LightComponent = LightEntity->GetComponent<FELightComponent>();
-
-		if (LightComponent.GetType() == FE_DIRECTIONAL_LIGHT)
-		{
-			CurrentLightEntity = LightEntity;
-			break;
-		}
-	}
-	FETransformComponent& TransformComponent = CurrentLightEntity->GetComponent<FETransformComponent>();
-	FELightComponent& LightComponent = CurrentLightEntity->GetComponent<FELightComponent>();
-
-	RegularLightWorldMatrix = TransformComponent.GetWorldMatrix();
-
-	RegularLightRotation = TransformComponent.GetRotation();
-	TransformComponent.SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
-	TransformComponent.ForceSetWorldMatrix(TransformComponent.GetLocalMatrix());
-
-	RegularLightIntensity = LightComponent.GetIntensity();
-	LightComponent.SetIntensity(10.0f);
-
-	//LocalSunEntity->GetComponent<FELightComponent>().SetLightEnabled(true);
-
-	bIsRegularFogEnabled = RENDERER.IsDistanceFogEnabled();
-	RENDERER.SetDistanceFogEnabled(false);
 }
 
 void FEEditorPreviewManager::AfterPreviewActions()
 {
-	// FIX ME! Temporary solution, only supports one scene
-	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
-	if (ActiveScenes.empty())
-		return;
-
-	FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-
-	// We are reversing all of our previously applied transformations.
-	PreviewEntity->GetComponent<FETransformComponent>() = OriginalTransform;
-
-	PreviewFB->UnBind();
-
-	ENGINE.SetClearColor(OriginalClearColor);
-
-	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-	//LocalSunEntity->GetComponent<FELightComponent>().SetLightEnabled(false);
-
-	FEEntity* CurrentLightEntity = nullptr;
-	std::vector< std::string> LightsIDList = CurrentScene->GetEntityIDListWith<FELightComponent>();
-	for (size_t i = 0; i < LightsIDList.size(); i++)
-	{
-		FEEntity* LightEntity = CurrentScene->GetEntity(LightsIDList[i]);
-		FETransformComponent& TransformComponent = LightEntity->GetComponent<FETransformComponent>();
-		FELightComponent& LightComponent = LightEntity->GetComponent<FELightComponent>();
-
-		if (LightComponent.GetType() == FE_DIRECTIONAL_LIGHT)
-		{
-			CurrentLightEntity = LightEntity;
-			break;
-		}
-	}
-	FETransformComponent& TransformComponent = CurrentLightEntity->GetComponent<FETransformComponent>();
-	FELightComponent& LightComponent = CurrentLightEntity->GetComponent<FELightComponent>();
-
-	TransformComponent.SetRotation(RegularLightRotation);
-	TransformComponent.ForceSetWorldMatrix(RegularLightWorldMatrix);
-	LightComponent.SetIntensity(RegularLightIntensity);
-
-	RENDERER.SetDistanceFogEnabled(bIsRegularFogEnabled);
+	PreviewGameModel->Mesh = nullptr;
+	PreviewGameModel->Material = nullptr;
 }
 
 void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
@@ -228,14 +114,10 @@ void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 
 	// invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(Max.x - XSize / 2.0f, Max.y - YSize / 2.0f, Max.z - ZSize / 2.0f));
-	// FIX ME! Temporary solution
 	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
-	LocalCameraEntity->GetComponent<FETransformComponent>().Update();
-	LocalCameraEntity->GetComponent<FETransformComponent>().ForceSetWorldMatrix(LocalCameraEntity->GetComponent<FETransformComponent>().GetLocalMatrix());
 	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
 
-	// Rendering mesh to texture.
-	RENDERER.RenderGameModelComponent(PreviewEntity, LocalCameraEntity);
+	RENDERER.Render(PreviewScene);
 
 	AfterPreviewActions();
 
@@ -243,8 +125,9 @@ void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 	if (MeshPreviewTextures.find(MeshID) != MeshPreviewTextures.end())
 		delete MeshPreviewTextures[MeshID];
 
-	MeshPreviewTextures[MeshID] = PreviewFB->GetColorAttachment();
-	PreviewFB->SetColorAttachment(RESOURCE_MANAGER.CreateSameFormatTexture(PreviewFB->GetColorAttachment()));
+	FETexture* CameraResult = RENDERER.GetCameraResult(LocalCameraEntity);
+	if (CameraResult != nullptr)
+		MeshPreviewTextures[MeshID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
 }
 
 FETexture* FEEditorPreviewManager::GetMeshPreview(const std::string MeshID)
@@ -289,14 +172,10 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	BeforePreviewActions();
 
-	// FIX ME! Temporary solution
-	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, 70.0f));
-	LocalCameraEntity->GetComponent<FETransformComponent>().Update();
-	LocalCameraEntity->GetComponent<FETransformComponent>().ForceSetWorldMatrix(LocalCameraEntity->GetComponent<FETransformComponent>().GetLocalMatrix());
+	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, 50.0f));
 	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
 
-	// Rendering material to texture
-	RENDERER.RenderGameModelComponentForward(PreviewEntity, LocalCameraEntity, true);
+	RENDERER.Render(PreviewScene);
 
 	AfterPreviewActions();
 
@@ -304,10 +183,13 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 	if (MaterialPreviewTextures.find(MaterialID) != MaterialPreviewTextures.end())
 		delete MaterialPreviewTextures[MaterialID];
 
-	MaterialPreviewTextures[MaterialID] = PreviewFB->GetColorAttachment();
-	PreviewFB->SetColorAttachment(RESOURCE_MANAGER.CreateSameFormatTexture(PreviewFB->GetColorAttachment()));
+	FETexture* CameraResult = RENDERER.GetCameraResult(LocalCameraEntity);
+	if (CameraResult != nullptr)
+	{
+		MaterialPreviewTextures[MaterialID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
+	}
 
-	// looking for all gameModels that uses this material to also update them
+	// Looking for all gameModels that uses this material to also update them.
 	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
@@ -316,14 +198,15 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 			CreateGameModelPreview(CurrentGameModel->GetObjectID());
 	}
 
+	// FIX ME!
 	// looking for all prefabs that uses this material to also update them
-	const std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
+	/*const std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
 	for (size_t i = 0; i < PrefabList.size(); i++)
 	{
 		FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[i]);
 		if (CurrentPrefab->UsesMaterial(MaterialID))
 			CreatePrefabPreview(CurrentPrefab->GetObjectID());
-	}
+	}*/
 }
 
 FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string MaterialID)
@@ -352,7 +235,6 @@ FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string Material
 						CreatePrefabPreview(CurrentPrefab->GetObjectID());
 				}
 			}
-				
 		}
 
 		RESOURCE_MANAGER.GetMaterial(MaterialID)->SetDirtyFlag(false);
@@ -380,7 +262,6 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	BeforePreviewActions();
 
-	//FEAABB MeshAABB = PreviewEntity->GetAABB();
 	FEAABB MeshAABB = PreviewEntity->GetComponent<FEGameModelComponent>().GameModel->Mesh->GetAABB();
 	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
 	const glm::vec3 min = MeshAABB.GetMin();
@@ -392,14 +273,10 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 
 	// invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
-	// FIX ME! Temporary solution
 	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
-	LocalCameraEntity->GetComponent<FETransformComponent>().Update();
-	LocalCameraEntity->GetComponent<FETransformComponent>().ForceSetWorldMatrix(LocalCameraEntity->GetComponent<FETransformComponent>().GetLocalMatrix());
 	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
 
-	// rendering game model to texture
-	RENDERER.RenderGameModelComponentForward(PreviewEntity, LocalCameraEntity, true);
+	RENDERER.Render(PreviewScene);
 
 	AfterPreviewActions();
 
@@ -407,10 +284,12 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 	if (GameModelPreviewTextures.find(GameModelID) != GameModelPreviewTextures.end())
 		delete GameModelPreviewTextures[GameModelID];
 
-	GameModelPreviewTextures[GameModelID] = PreviewFB->GetColorAttachment();
-	PreviewFB->SetColorAttachment(RESOURCE_MANAGER.CreateSameFormatTexture(PreviewFB->GetColorAttachment()));
+	FETexture* CameraResult = RENDERER.GetCameraResult(LocalCameraEntity);
+	if (CameraResult != nullptr)
+		GameModelPreviewTextures[GameModelID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
 }
 
+// FIX ME! Should not be needed as now there will be scene for new game model.
 void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel, FETexture** ResultingTexture)
 {
 	if (GameModel == nullptr)
@@ -419,14 +298,13 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 	PreviewGameModel->Mesh = GameModel->Mesh;
 	PreviewGameModel->Material = GameModel->Material;
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
-	if (*ResultingTexture == nullptr)
-		*ResultingTexture = RESOURCE_MANAGER.CreateSameFormatTexture(PreviewFB->GetColorAttachment());
-	FETexture* TempTexture = PreviewFB->GetColorAttachment();
-	PreviewFB->SetColorAttachment(*ResultingTexture);
+	//if (*ResultingTexture == nullptr)
+	//	*ResultingTexture = RESOURCE_MANAGER.CreateSameFormatTexture(PreviewFB->GetColorAttachment());
+	//FETexture* TempTexture = PreviewFB->GetColorAttachment();
+	//PreviewFB->SetColorAttachment(*ResultingTexture);
 
 	BeforePreviewActions();
 
-	//FEAABB MeshAABB = PreviewEntity->GetAABB();
 	FEAABB MeshAABB = PreviewEntity->GetComponent<FEGameModelComponent>().GameModel->Mesh->GetAABB();
 	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
 	const glm::vec3 min = MeshAABB.GetMin();
@@ -438,18 +316,14 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 
 	// invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
-	// FIX ME! Temporary solution
 	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
-	LocalCameraEntity->GetComponent<FETransformComponent>().Update();
-	LocalCameraEntity->GetComponent<FETransformComponent>().ForceSetWorldMatrix(LocalCameraEntity->GetComponent<FETransformComponent>().GetLocalMatrix());
 	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
 
-	// rendering game model to texture
-	RENDERER.RenderGameModelComponentForward(PreviewEntity, LocalCameraEntity, true);
+	RENDERER.Render(PreviewScene);
 
 	AfterPreviewActions();
 
-	PreviewFB->SetColorAttachment(TempTexture);
+	//PreviewFB->SetColorAttachment(TempTexture);
 }
 
 FETexture* FEEditorPreviewManager::GetGameModelPreview(const std::string GameModelID)
@@ -505,14 +379,10 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 	if (GameModel == nullptr)
 		return;
 
-	//Fix ME!
-	//PreviewEntity->Prefab = Prefab;
 	PreviewEntity->GetComponent<FEGameModelComponent>().GameModel = GameModel;
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	BeforePreviewActions();
 
-	//PreviewEntity->SetDirtyFlag(true);
-	//FEAABB MeshAABB = PreviewEntity->GetAABB();
 	FEAABB MeshAABB = PreviewEntity->GetComponent<FEGameModelComponent>().GameModel->Mesh->GetAABB();
 	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
 	const glm::vec3 min = MeshAABB.GetMin();
@@ -524,14 +394,10 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 
 	// invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
-	// FIX ME! Temporary solution
 	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
-	LocalCameraEntity->GetComponent<FETransformComponent>().Update();
-	LocalCameraEntity->GetComponent<FETransformComponent>().ForceSetWorldMatrix(LocalCameraEntity->GetComponent<FETransformComponent>().GetLocalMatrix());
 	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
 
-	// rendering game model to texture
-	RENDERER.RenderGameModelComponentForward(PreviewEntity, LocalCameraEntity, true);
+	RENDERER.Render(PreviewScene);
 
 	//PreviewEntity->Prefab = PreviewPrefab;
 	PreviewEntity->GetComponent<FEGameModelComponent>().GameModel = PreviewGameModel;
@@ -542,8 +408,8 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 	if (PrefabPreviewTextures.find(PrefabID) != PrefabPreviewTextures.end())
 		delete PrefabPreviewTextures[PrefabID];
 
-	PrefabPreviewTextures[PrefabID] = PreviewFB->GetColorAttachment();
-	PreviewFB->SetColorAttachment(RESOURCE_MANAGER.CreateSameFormatTexture(PreviewFB->GetColorAttachment()));
+	//PrefabPreviewTextures[PrefabID] = PreviewFB->GetColorAttachment();
+	//PreviewFB->SetColorAttachment(RESOURCE_MANAGER.CreateSameFormatTexture(PreviewFB->GetColorAttachment()));
 }
 
 void CreatePrefabPreview(FEPrefab* Prefab, FETexture** ResultingTexture)
@@ -553,33 +419,33 @@ void CreatePrefabPreview(FEPrefab* Prefab, FETexture** ResultingTexture)
 
 FETexture* FEEditorPreviewManager::GetPrefabPreview(const std::string PrefabID)
 {
-	FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabID);
-	if (CurrentPrefab == nullptr)
-	{
-		LOG.Add("FEEditorPreviewManager::GetPrefabPreview could not find prefab with ID: " + PrefabID, "FE_LOG_RENDERING", FE_LOG_ERROR);
-		return RESOURCE_MANAGER.NoTexture;
-	}
-		
-	// if Prefab's dirty flag is set we need to update preview
-	if (CurrentPrefab->IsDirty())
-	{
-		CreatePrefabPreview(PrefabID);
-		CurrentPrefab->SetDirtyFlag(false);
-	}
+	//FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabID);
+	//if (CurrentPrefab == nullptr)
+	//{
+	//	LOG.Add("FEEditorPreviewManager::GetPrefabPreview could not find prefab with ID: " + PrefabID, "FE_LOG_RENDERING", FE_LOG_ERROR);
+	//	return RESOURCE_MANAGER.NoTexture;
+	//}
+	//	
+	//// if Prefab's dirty flag is set we need to update preview
+	//if (CurrentPrefab->IsDirty())
+	//{
+	//	CreatePrefabPreview(PrefabID);
+	//	CurrentPrefab->SetDirtyFlag(false);
+	//}
 
-	for (int i = 0; i < CurrentPrefab->ComponentsCount(); i++)
-	{
-		// if Prefab's material dirty flag is set we need to update preview
-		if (CurrentPrefab->GetComponent(i)->GameModel->GetMaterial() != nullptr && CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->IsDirty())
-		{
-			CreateMaterialPreview(CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->GetObjectID());
-			CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->SetDirtyFlag(false);
-		}
-	}
+	//for (int i = 0; i < CurrentPrefab->ComponentsCount(); i++)
+	//{
+	//	// if Prefab's material dirty flag is set we need to update preview
+	//	if (CurrentPrefab->GetComponent(i)->GameModel->GetMaterial() != nullptr && CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->IsDirty())
+	//	{
+	//		CreateMaterialPreview(CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->GetObjectID());
+	//		CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->SetDirtyFlag(false);
+	//	}
+	//}
 
-	// if we somehow could not find preview, we will create it.
-	if (PrefabPreviewTextures.find(PrefabID) == PrefabPreviewTextures.end())
-		CreatePrefabPreview(PrefabID);
+	//// if we somehow could not find preview, we will create it.
+	//if (PrefabPreviewTextures.find(PrefabID) == PrefabPreviewTextures.end())
+	//	CreatePrefabPreview(PrefabID);
 
 	// if still we don't have it
 	if (PrefabPreviewTextures.find(PrefabID) == PrefabPreviewTextures.end())

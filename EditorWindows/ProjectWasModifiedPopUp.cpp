@@ -32,7 +32,7 @@ void ProjectWasModifiedPopUp::Render()
 
 		bool ButtonPressed = false;
 
-		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		ImGui::Text("Project was modified, should it be saved before exit ?");
 		ImGui::SetCursorPosX(ImGui::GetWindowWidth() * 0.15f - 140.0f / 2.0f);
 		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10.0f);

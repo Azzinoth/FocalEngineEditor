@@ -1,4 +1,5 @@
 #include "ContentBrowserWindow.h"
+#include "../FEEditor.h"
 using namespace FocalEngine;
 
 FEEditorContentBrowserWindow* FEEditorContentBrowserWindow::Instance = nullptr;
@@ -132,12 +133,9 @@ void FEEditorContentBrowserWindow::Render()
 				FILE_SYSTEM.ShowFileOpenDialog(FilePath, ALL_IMPORT_LOAD_FILTER, 3);
 				if (!FilePath.empty())
 				{
-					// FIX ME! Temporary solution, only supports one scene
-					std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
-					if (!ActiveScenes.empty())
+					if (EDITOR.GetFocusedScene() != nullptr)
 					{
-						FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-						const std::vector<FEObject*> LoadedObjects = CurrentScene->ImportAsset(FilePath.c_str());
+						const std::vector<FEObject*> LoadedObjects = EDITOR.GetFocusedScene()->ImportAsset(FilePath.c_str());
 						for (size_t i = 0; i < LoadedObjects.size(); i++)
 						{
 							if (LoadedObjects[i] != nullptr)

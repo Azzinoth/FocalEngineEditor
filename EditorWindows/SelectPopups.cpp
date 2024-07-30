@@ -125,7 +125,7 @@ void SelectFEObjectPopUp::Render()
 	ImGui::SetNextWindowSize(ImVec2(128 * 7, 800));
 	if (ImGui::BeginPopupModal(PopupCaption.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
 	{
-		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		ImGui::SetCursorPosX(10);
 		ImGui::SetCursorPosY(40);
 		ImGui::Text("Filter: ");

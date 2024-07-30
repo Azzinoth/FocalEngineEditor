@@ -175,6 +175,8 @@ public:
 	bool IsMouseHovered() const;
 
 	virtual void SetCaption(std::string NewCaption);
+
+	ImGuiWindow* GetWindow() const;
 };
 
 class FEArrowScroller

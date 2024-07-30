@@ -1,4 +1,5 @@
 #include "DeletePopups.h"
+#include "../FEEditor.h"
 
 DeleteTexturePopup* DeleteTexturePopup::Instance = nullptr;
 
@@ -28,7 +29,7 @@ void DeleteTexturePopup::Render()
 			return;
 		}
 
-		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		// check if this texture is used in some materials
 		// to-do: should be done through counter, not by searching each time.
 		const std::vector<FEMaterial*> MaterialsThatUseTexture = MaterialsThatUsesTexture(ObjToWorkWith);
@@ -81,12 +82,9 @@ std::vector<FEMaterial*> DeleteTexturePopup::MaterialsThatUsesTexture(const FETe
 		}
 	}
 
-	// FIX ME! Temporary solution, only supports one scene
-	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
-	if (!ActiveScenes.empty())
+	if (EDITOR.GetFocusedScene() != nullptr)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-		const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWith<FETerrainComponent>();
+		const std::vector<std::string> TerrainList = EDITOR.GetFocusedScene()->GetEntityIDListWith<FETerrainComponent>();
 		for (size_t i = 0; i < TerrainList.size(); i++)
 		{
 			/*FEEntity* CurrentTerrain = SCENE.GetEntity(TerrainList[i]);
@@ -164,7 +162,7 @@ void DeleteMeshPopup::Render()
 			return;
 		}
 
-		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		// check if this mesh is used in some game model
 		// to-do: should be done through counter, not by searching each time.
 		const int Result = TimesMeshUsed(ObjToWorkWith);
@@ -270,7 +268,7 @@ void DeleteGameModelPopup::Render()
 			return;
 		}
 
-		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		// check if this game model is used in some prefabs
 		// to-do: should be done through counter, not by searching each time.
 		const int Result = TimesGameModelUsed(ObjToWorkWith);
@@ -327,12 +325,9 @@ void DeleteGameModelPopup::DeleteGameModel(FEGameModel* GameModel)
 {
 	VIRTUAL_FILE_SYSTEM.LocateAndDeleteFile(GameModel);
 
-	// FIX ME! Temporary solution, only supports one scene
-	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
-	if (!ActiveScenes.empty())
+	if (EDITOR.GetFocusedScene() != nullptr)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-		CurrentScene->PrepareForGameModelDeletion(GameModel);
+		EDITOR.GetFocusedScene()->PrepareForGameModelDeletion(GameModel);
 	}
 	RESOURCE_MANAGER.DeleteGameModel(GameModel);
 	PROJECT_MANAGER.GetCurrent()->SetModified(true);
@@ -367,7 +362,7 @@ void DeletePrefabPopup::Render()
 			return;
 		}
 
-		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		// check if this prefab is used in some entities
 		// to-do: should be done through counter, not by searching each time.
 		const int Result = TimesPrefabUsed(ObjToWorkWith);
@@ -422,12 +417,9 @@ void DeletePrefabPopup::DeletePrefab(FEPrefab* Prefab)
 {
 	VIRTUAL_FILE_SYSTEM.LocateAndDeleteFile(Prefab);
 
-	// FIX ME! Temporary solution, only supports one scene
-	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
-	if (!ActiveScenes.empty())
+	if (EDITOR.GetFocusedScene() != nullptr)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetActiveScenes()[0];
-		CurrentScene->PrepareForPrefabDeletion(Prefab);
+		EDITOR.GetFocusedScene()->PrepareForPrefabDeletion(Prefab);
 	}
 	RESOURCE_MANAGER.DeletePrefab(Prefab);
 	PROJECT_MANAGER.GetCurrent()->SetModified(true);
@@ -461,7 +453,7 @@ void DeleteMaterialPopup::Render()
 			return;
 		}
 
-		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		// check if this material is used in some game model
 		// to-do: should be done through counter, not by searching each time.
 		const int Result = TimesMaterialUsed(ObjToWorkWith);
@@ -611,7 +603,7 @@ void DeleteDirectoryPopup::Render()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 	if (ImGui::BeginPopupModal(PopupCaption.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		ImGui::Text(("Do you want to delete \"" + ObjToWorkWith + "\" folder ?").c_str());
 		ImGui::Text("It is not empty !");
 

@@ -3,9 +3,22 @@
 #include "EditorWindows/InspectorWindow.h"
 #include <functional>
 
-class DragAndDropTarget;
+struct FEEditorSceneData
+{
+    bool bMain = false;
+
+    FEScene* Scene = nullptr;
+    FEEntity* CameraEntity = nullptr;
+
+    ImGuiWindow* SceneWindow = nullptr;
+    bool bWindowHovered = false;
+};
+
 class FEEditor
 {
+    friend class FEProjectManager;
+    // FIX ME! It is temporary solution
+    friend class PrefabEditorWindow;
 public:
     SINGLETON_PUBLIC_PART(FEEditor)
 
@@ -27,25 +40,23 @@ public:
     std::string GetSceneEntityIDInClipboard();
     void SetSceneEntityIDInClipboard(std::string NewValue);
 
-    FEScene* GetCurrentEditorScene() const;
-    FEEntity* GetCurrentEditorCameraEntity() const;
+    FEScene* GetFocusedScene() const;
 private:
     SINGLETON_PRIVATE_PART(FEEditor)
 
     // Mouse and input
     double LastMouseX, LastMouseY;
     double MouseX, MouseY;
-    bool bSceneWindowHovered;
-    bool bIsCameraInputActive = false;
 
-    FEScene* CurrentEditorScene = nullptr;
-    FEEntity* CurrentEditorCameraEntity = nullptr;
+    std::string FocusedEditorSceneID = "";
+    ImGuiID DockspaceID = 0;
+
+    void AddEditorScene(FEScene* Scene, bool bMain = false);
+
+    std::vector<FEEditorSceneData> EditorScenes;
 
     // Clipboard
     std::string SceneEntityIDInClipboard;
-
-    // Scene window
-    static ImGuiWindow* SceneWindow;
 
     // Drag and drop
     DragAndDropTarget* SceneWindowTarget = nullptr;
@@ -55,7 +66,7 @@ private:
     static void MouseButtonCallback(int Button, int Action, int Mods);
     static void MouseMoveCallback(double Xpos, double Ypos);
     static void KeyButtonCallback(int Key, int Scancode, int Action, int Mods);
-    static void RenderTargetResizeCallback(int NewW, int NewH);
+    static void OnViewportResize(std::string ViewportID);
     static void DropCallback(int Count, const char** Paths);
     static void CloseWindowCallBack();
 
@@ -88,6 +99,9 @@ private:
     void SetImguiStyle();
 
     void OnProjectClose();
+
+    void SetFocusedScene(FEScene* NewSceneInFocus);
+    void BeforeChangeOfFocusedScene(FEScene* NewSceneInFocus);
 };
 
 #define EDITOR FEEditor::getInstance()

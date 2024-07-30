@@ -104,7 +104,7 @@ void FEEditor::DisplayLogWindow() const
 	LogEditor.SetReadOnly(true);
 	LogEditor.SetShowWhitespaces(false);
 	LogEditor.SetText(LogMessages);
-	LogEditor.Render("Log messages");*/
+	LogEditor.Update("Log messages");*/
 
 	static char LogMessages_[1000000];
 	strcpy_s(LogMessages_, LogMessages.c_str());
