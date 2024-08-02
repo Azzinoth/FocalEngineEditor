@@ -7,6 +7,7 @@ struct FEEditorSceneData
 {
     FEScene* Scene = nullptr;
     ImGuiWindow* SceneWindow = nullptr;
+    DragAndDropTarget* SceneWindowTarget = nullptr;
  
     bool bJustAdded = true;
     bool bMain = false;
@@ -52,13 +53,10 @@ private:
 
     void AddEditorScene(FEScene* Scene, bool bMain = false);
 
-    std::vector<FEEditorSceneData> EditorScenes;
+    std::vector<FEEditorSceneData*> EditorScenes;
 
     // Clipboard
     std::string SceneEntityIDInClipboard;
-
-    // Drag and drop
-    DragAndDropTarget* SceneWindowTarget = nullptr;
 
     // Callbacks
     static void AfterEngineUpdate();

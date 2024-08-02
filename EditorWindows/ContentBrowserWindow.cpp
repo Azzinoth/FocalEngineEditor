@@ -787,6 +787,10 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 
 void FEEditorContentBrowserWindow::UpdateDirectoryDragAndDropTargets()
 {
+	for (size_t i = 0; i < DirectoriesTargets.size(); i++)
+	{
+		delete DirectoriesTargets[i];
+	}
 	DirectoriesTargets.clear();
 	DirectoryDragAndDropInfo.clear();
 	AllResources.clear();
