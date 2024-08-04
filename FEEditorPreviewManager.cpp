@@ -43,7 +43,7 @@ void FEEditorPreviewManager::InitializeResources()
 	LightComponent.SetIntensity(10.0f);
 	LightComponent.SetCastShadows(false);
 
-	// FIX ME! This scene should not have skydome. Fix bloom shader.
+	// FIX ME! This scene should not have skydome.
 	FEEntity* SkyDome = PreviewScene->CreateEntity("SkyDome");
 	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
 	SKY_DOME_SYSTEM.AddToEntity(SkyDome);
@@ -225,7 +225,7 @@ FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string Material
 			{
 				CreateGameModelPreview(CurrentGameModel->GetObjectID());
 
-				// if some Prefab uses this game model we should also update it's preview
+				// If some Prefab uses this game model we should also update it's preview.
 				std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
 				for (size_t j = 0; j < PrefabList.size(); j++)
 				{

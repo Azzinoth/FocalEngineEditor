@@ -2,6 +2,7 @@
 
 #include "ProjectWasModifiedPopUp.h"
 
+#define EDITOR_SCENE_TAG "EDITOR_PRIVATE_SCENE_ENTITY"
 
 class FEEditorSceneGraphWindow
 {

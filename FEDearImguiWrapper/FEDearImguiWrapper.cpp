@@ -7,7 +7,7 @@ ImGuiModalPopup::ImGuiModalPopup()
 	PopupCaption = "";
 	bShouldOpen = false;
 	bOpened = false;
-	WindowsManager::getInstance().RegisterPopup(this);
+	FE_IMGUI_WINDOW_MANAGER.RegisterPopup(this);
 }
 
 void ImGuiModalPopup::Show()
@@ -317,11 +317,12 @@ FEImGuiWindow::FEImGuiWindow()
 	Position = ImVec2(0.0f, 0.0f);
 	Size = ImVec2(100.0f, 100.0f);
 	bVisible = false;
-	WindowsManager::getInstance().RegisterWindow(this);
+	FE_IMGUI_WINDOW_MANAGER.RegisterWindow(this);
 }
 
 FEImGuiWindow::~FEImGuiWindow()
 {
+	FE_IMGUI_WINDOW_MANAGER.UnRegisterWindow(this);
 }
 
 void FEImGuiWindow::Show()
@@ -353,8 +354,13 @@ void FEImGuiWindow::Render()
 		ImGui::SetNextWindowSize(Size);
 
 		bWasClosedLastFrame = false;
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 2);
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
+
+		if (GetBorderSize() != 0.0f)
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, GetBorderSize());
+
+		if (GetPadding().x != 0.0f || GetPadding().y != 0.0f)
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(GetPadding().x, GetPadding().y));
+
 		ImGui::Begin(Caption, nullptr, Flags);
 		Window = ImGui::GetCurrentWindow();
 	}
@@ -366,8 +372,13 @@ void FEImGuiWindow::OnRenderEnd()
 	{
 		if (!Window->Collapsed)
 			Size = ImGui::GetWindowSize();
-		ImGui::PopStyleVar();
-		ImGui::PopStyleVar();
+
+		if (GetBorderSize() != 0.0f)
+			ImGui::PopStyleVar();
+
+		if (GetPadding().x != 0.0f || GetPadding().y != 0.0f)
+			ImGui::PopStyleVar();
+
 		ImGui::End();
 	}
 }
@@ -382,8 +393,13 @@ void FEImGuiWindow::Close()
 	if (bVisible)
 	{
 		bVisible = false;
-		ImGui::PopStyleVar();
-		ImGui::PopStyleVar();
+
+		if (GetBorderSize() != 0.0f)
+			ImGui::PopStyleVar();
+
+		if (GetPadding().x != 0.0f || GetPadding().y != 0.0f)
+			ImGui::PopStyleVar();
+
 		ImGui::End();
 	}
 }
@@ -403,6 +419,26 @@ void FEImGuiWindow::SetVisible(bool NewValue)
 	bVisible = NewValue;
 }
 
+float FEImGuiWindow::GetBorderSize() const
+{
+	return BorderSize;
+}
+
+void FEImGuiWindow::SetBorderSize(float NewValue)
+{
+	BorderSize = NewValue;
+}
+
+glm::vec2 FEImGuiWindow::GetPadding() const
+{
+	return Padding;
+}
+
+void FEImGuiWindow::SetPadding(glm::vec2 NewValue)
+{
+	Padding = NewValue;
+}
+
 WindowsManager::WindowsManager()
 {
 }
@@ -410,6 +446,18 @@ WindowsManager::WindowsManager()
 void WindowsManager::RegisterWindow(FEImGuiWindow* Window)
 {
 	Windows.push_back(Window);
+}
+
+void WindowsManager::UnRegisterWindow(FEImGuiWindow* Window)
+{
+	for (size_t i = 0; i < Windows.size(); i++)
+	{
+		if (Windows[i] == Window)
+		{
+			Windows.erase(Windows.begin() + i);
+			break;
+		}
+	}
 }
 
 void WindowsManager::RegisterPopup(ImGuiModalPopup* Popup)

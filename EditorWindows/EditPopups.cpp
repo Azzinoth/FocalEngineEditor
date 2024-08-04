@@ -716,51 +716,101 @@ bool EditGameModelPopup::IsLastSetupLOD(const size_t LODIndex)
 	return true;
 }
 
-EditMaterialPopup* EditMaterialPopup::Instance = nullptr;
+EditMaterialWindow* EditMaterialWindow::Instance = nullptr;
 
-EditMaterialPopup::EditMaterialPopup()
+EditMaterialWindow::EditMaterialWindow()
 {
 	ObjToWorkWith = nullptr;
-	Flags = ImGuiWindowFlags_NoResize;
+	Flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
 	CancelButton = new ImGuiButton("Cancel");
 	CancelButton->SetDefaultColor(ImVec4(0.7f, 0.5f, 0.5f, 1.0f));
 	CancelButton->SetHoveredColor(ImVec4(0.95f, 0.5f, 0.0f, 1.0f));
 	CancelButton->SetActiveColor(ImVec4(0.1f, 1.0f, 0.1f, 1.0f));
-#ifdef USE_NODES
 	NodeAreaTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_TEXTURE, DragAndDropnodeAreaTargetCallback, reinterpret_cast<void**>(&DragAndDropCallbackInfo), "Drop to add texture");
-#endif // USE_NODES
+
+	PreviewScene = SCENE_MANAGER.CreateScene("MaterialEditor_Scene");
+
+	PreviewGameModel = new FEGameModel(nullptr, nullptr, "MaterialEditor_Preview_GameModel");
+	PreviewGameModel->Mesh = RESOURCE_MANAGER.GetMesh("7F251E3E0D08013E3579315F"/*"sphere"*/);
+
+	PreviewEntity = PreviewScene->CreateEntity("MaterialEditor_Scene_PreviewEntity");
+	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
+	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+	PreviewEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(0.1f));
+
+	PreviewCameraEntity = PreviewScene->CreateEntity("MaterialEditor_Scene_CameraEntity");
+	PreviewCameraEntity->AddComponent<FECameraComponent>();
+	FECameraComponent& CameraComponent = PreviewCameraEntity->GetComponent<FECameraComponent>();
+	CameraComponent.Type = 1;
+	CameraComponent.DistanceToModel = 10.0;
+	CameraComponent.SetRenderTargetSize(512, 1020);
+	CameraComponent.SetDistanceFogEnabled(false);
+	CAMERA_SYSTEM.SetMainCamera(PreviewCameraEntity);
+
+	PreviewLightEntity = PreviewScene->CreateEntity("MaterialEditor_Scene_LightEntity");
+	PreviewLightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
+	FELightComponent& LightComponent = PreviewLightEntity->GetComponent<FELightComponent>();
+	PreviewLightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
+	LightComponent.SetIntensity(5.0f);
+	LightComponent.SetCastShadows(false);
+
+	FEEntity* SkyDome = PreviewScene->CreateEntity("SkyDome");
+	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
+	SKY_DOME_SYSTEM.AddToEntity(SkyDome);
+
+	SCENE_MANAGER.DeactivateScene(PreviewScene);
+	ENGINE.AddMouseButtonCallback(MouseButtonCallback);
 }
 
-EditMaterialPopup::~EditMaterialPopup()
+void EditMaterialWindow::MouseButtonCallback(const int Button, const int Action, int Mods)
+{
+	EDITOR_MATERIAL_WINDOW.bWindowHovered = false;
+	if (ImGui::GetCurrentContext()->HoveredWindow == EDITOR_MATERIAL_WINDOW.GetWindow())
+		EDITOR_MATERIAL_WINDOW.bWindowHovered = true;
+
+	if (ImGui::GetIO().WantCaptureMouse && (!EDITOR_MATERIAL_WINDOW.bWindowHovered || !EDITOR_MATERIAL_WINDOW.bCameraOutputHovered))
+	{
+		CAMERA_SYSTEM.SetIsIndividualInputActive(EDITOR_MATERIAL_WINDOW.PreviewCameraEntity, false);
+	}
+
+	if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_PRESS && EDITOR_MATERIAL_WINDOW.bWindowHovered && EDITOR_MATERIAL_WINDOW.bCameraOutputHovered)
+	{
+		CAMERA_SYSTEM.SetIsIndividualInputActive(EDITOR_MATERIAL_WINDOW.PreviewCameraEntity, true);
+	}
+	else if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_RELEASE)
+	{
+		CAMERA_SYSTEM.SetIsIndividualInputActive(EDITOR_MATERIAL_WINDOW.PreviewCameraEntity, false);
+	}
+}
+
+EditMaterialWindow::~EditMaterialWindow()
 {
 	delete CancelButton;
 	delete IconButton;
 }
 
-#ifdef USE_NODES
-FEMaterial* EditMaterialPopup::ObjToWorkWith = nullptr;
-VisNodeSys::NodeArea* EditMaterialPopup::MaterialNodeArea = nullptr;
-ImVec2 EditMaterialPopup::NodeGridRelativePosition = ImVec2(5, 30);
-ImVec2 EditMaterialPopup::WindowPosition = ImVec2(0, 0);
-ImVec2 EditMaterialPopup::MousePositionWhenContextMenuWasOpened = ImVec2(0, 0);
-FETexture* EditMaterialPopup::TextureForNewNode = nullptr;
-#endif // USE_NODES
-void EditMaterialPopup::Show(FEMaterial* Material)
+FEMaterial* EditMaterialWindow::ObjToWorkWith = nullptr;
+VisNodeSys::NodeArea* EditMaterialWindow::MaterialNodeArea = nullptr;
+ImVec2 EditMaterialWindow::NodeGridRelativePosition = ImVec2(5, 30);
+ImVec2 EditMaterialWindow::WindowPosition = ImVec2(0, 0);
+ImVec2 EditMaterialWindow::MousePositionWhenContextMenuWasOpened = ImVec2(0, 0);
+FETexture* EditMaterialWindow::TextureForNewNode = nullptr;
+
+void EditMaterialWindow::Show(FEMaterial* Material)
 {
 	if (Material != nullptr)
 	{
+		PreviewGameModel->SetMaterial(Material);
+		SCENE_MANAGER.ActivateScene(PreviewScene);
+
 		TempContainer = RESOURCE_MANAGER.NoTexture;
 		ObjToWorkWith = Material;
 
 		std::string TempCaption = "Edit material:";
 		TempCaption += " " + ObjToWorkWith->GetName();
 		strcpy_s(Caption, TempCaption.size() + 1, TempCaption.c_str());
-#ifdef USE_NODES
-		Size = ImVec2(1500.0f, 1000.0f);
-#else
-		size = ImVec2(1500.0f, 700.0f);
-#endif // USE_NODES
+		Size = ImVec2(1512.0f, 1000.0f);
 		Position = ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2 - Size.x / 2, APPLICATION.GetMainWindow()->GetHeight() / 2 - Size.y / 2);
 		FEImGuiWindow::Show();
 
@@ -770,19 +820,20 @@ void EditMaterialPopup::Show(FEMaterial* Material)
 		IconButton->SetUV1(ImVec2(1.0f, 1.0f));
 		IconButton->SetFramePadding(8);
 
-#ifdef USE_NODES
 		MaterialNodeArea = NODE_SYSTEM.CreateNodeArea();
 		MaterialNodeArea->SetMainContextMenuFunc(NodeSystemMainContextMenu);
 		MaterialNodeArea->AddNodeEventCallback(TextureNodeCallback);
 
-		FEEditorMaterialNode* NewNode = new FEEditorMaterialNode(Material);
+		MaterialNodeArea->SetRenderOffset(ImVec2(-340, 250));
+
+		FEEditorMaterialNode* MaterialNode = new FEEditorMaterialNode(Material);
 
 		ImVec2 PositionOnCanvas;
-		PositionOnCanvas.x = NodeGridRelativePosition.x + Size.x - Size.x / 6 - NewNode->GetSize().x / 2.0f;
-		PositionOnCanvas.y = NodeGridRelativePosition.y + Size.y / 2 - NewNode->GetSize().y / 2.0f;
-		NewNode->SetPosition(PositionOnCanvas);
+		PositionOnCanvas.x = NodeGridRelativePosition.x + Size.x - Size.x / 6 - MaterialNode->GetSize().x / 2.0f - 150;
+		PositionOnCanvas.y = NodeGridRelativePosition.y + Size.y / 2 - MaterialNode->GetSize().y / 2.0f - 300;
+		MaterialNode->SetPosition(PositionOnCanvas);
 
-		MaterialNodeArea->AddNode(NewNode);
+		MaterialNodeArea->AddNode(MaterialNode);
 
 		// Add all textures of material as a texture nodes
 		// Place them in shifted grid.
@@ -804,80 +855,64 @@ void EditMaterialPopup::Show(FEMaterial* Material)
 			// We should recreate proper connections.
 			if (Material->GetAlbedoMap() == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, 5, NewNode, 0);
+				MaterialNodeArea->TryToConnect(NewTextureNode, 5, MaterialNode, 0);
 			}
 			else if (Material->GetAlbedoMap(1) == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, 5, NewNode, 6);
+				MaterialNodeArea->TryToConnect(NewTextureNode, 5, MaterialNode, 6);
 			}
 
 			if (Material->GetNormalMap() == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, 5, NewNode, 1);
+				MaterialNodeArea->TryToConnect(NewTextureNode, 5, MaterialNode, 1);
 			}
 			else if (Material->GetNormalMap(1) == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, 5, NewNode, 7);
+				MaterialNodeArea->TryToConnect(NewTextureNode, 5, MaterialNode, 7);
 			}
 
 			if (Material->GetAOMap() == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetAOMapChannel(), NewNode, 2);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetAOMapChannel(), MaterialNode, 2);
 			}
 			else if (Material->GetAOMap(1) == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetAOMapChannel(), NewNode, 8);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetAOMapChannel(), MaterialNode, 8);
 			}
 
 			if (Material->GetRoughnessMap() == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetRoughnessMapChannel(), NewNode, 3);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetRoughnessMapChannel(), MaterialNode, 3);
 			}
 			else if (Material->GetRoughnessMap(1) == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetRoughnessMapChannel(), NewNode, 9);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetRoughnessMapChannel(), MaterialNode, 9);
 			}
 
 			if (Material->GetMetalnessMap() == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetMetalnessMapChannel(), NewNode, 4);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetMetalnessMapChannel(), MaterialNode, 4);
 			}
 			else if (Material->GetMetalnessMap(1) == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetMetalnessMapChannel(), NewNode, 10);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetMetalnessMapChannel(), MaterialNode, 10);
 			}
 
 			if (Material->GetDisplacementMap() == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetDisplacementMapChannel(), NewNode, 5);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetDisplacementMapChannel(), MaterialNode, 5);
 			}
 			else if (Material->GetDisplacementMap(1) == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetDisplacementMapChannel(), NewNode, 11);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetDisplacementMapChannel(), MaterialNode, 11);
 			}
 		}
-#else
-		// ************** Drag&Drop **************
-		TexturesListTarget = DRAG_AND_DROP_MANAGER.addTarget(FE_TEXTURE, DragAndDropTexturesListCallback, reinterpret_cast<void**>(&ObjToWorkWith), "Drop to add texture");
-		if (MaterialBindingtargets.size() == 0)
-		{
-			MaterialBindingInfo.resize(12);
-			for (size_t i = 0; i < 12; i++)
-			{
-				MaterialBindingInfo[i].Material = reinterpret_cast<void**>(&ObjToWorkWith);
-				MaterialBindingInfo[i].TextureBinding = i;
-
-				MaterialBindingCallbackInfo* test = &MaterialBindingInfo[i];
-				MaterialBindingtargets.push_back(DRAG_AND_DROP_MANAGER.addTarget(FE_TEXTURE, DragAndDropMaterialBindingsCallback, reinterpret_cast<void**>(&MaterialBindingInfo[i]), "Drop to assign texture"));
-			}
-		}
-		// ************** Drag&Drop END **************
-#endif // USE_NODES
 	}
 }
 
-void EditMaterialPopup::Render()
+void EditMaterialWindow::Render()
 {
+	bCameraOutputHovered = false;
 	FEImGuiWindow::Render();
 
 	if (!IsVisible())
@@ -889,9 +924,23 @@ void EditMaterialPopup::Render()
 		return;
 	}
 
-#ifdef USE_NODES
-	MaterialNodeArea->SetPosition(ImVec2(0, 0));
-	MaterialNodeArea->SetSize(ImVec2(ImGui::GetWindowWidth(), ImGui::GetWindowHeight() - 50.0f));
+	RENDERER.Render(PreviewScene);
+
+	FETexture* CameraResult = RENDERER.GetCameraResult(PreviewCameraEntity);
+	if (CameraResult != nullptr)
+	{
+		ImGui::SetCursorPosX(-10);
+		ImGui::SetCursorPosY(-10);
+		
+		ImGui::Image((void*)(intptr_t)CameraResult->GetTextureID(), ImVec2(512, 1020), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		if (ImGui::IsItemHovered())
+		{
+			bCameraOutputHovered = true;
+		}
+	}
+
+	MaterialNodeArea->SetPosition(ImVec2(512 - 10, 0));
+	MaterialNodeArea->SetSize(ImVec2(ImGui::GetWindowWidth() - 500, ImGui::GetWindowHeight()));
 	MaterialNodeArea->Update();
 	NodeAreaTarget->StickToItem();
 
@@ -901,657 +950,6 @@ void EditMaterialPopup::Render()
 		MousePositionWhenContextMenuWasOpened = ImGui::GetMousePos();
 
 	CancelButton->SetPosition(ImVec2(CancelButton->GetPosition().x, ImGui::GetWindowHeight() - 44.0f));
-#else
-	// lame callback
-	if (tempContainer != RESOURCE_MANAGER.noTexture)
-	{
-		if (textureDestination == -1)
-		{
-			ObjToWorkWith->addTexture(tempContainer);
-		}
-		else
-		{
-			int subMaterial = textureDestination > 5;
-			if (subMaterial)
-				textureDestination -= 6;
-
-			switch (textureDestination)
-			{
-			case 0:
-			{
-				ObjToWorkWith->setAlbedoMap(tempContainer, subMaterial);
-				break;
-			}
-			case 1:
-			{
-				ObjToWorkWith->setNormalMap(tempContainer, subMaterial);
-				break;
-			}
-			case 2:
-			{
-				ObjToWorkWith->setAOMap(tempContainer, 0, subMaterial);
-				break;
-			}
-			case 3:
-			{
-				ObjToWorkWith->setRoughnessMap(tempContainer, 0, subMaterial);
-				break;
-			}
-			case 4:
-			{
-				ObjToWorkWith->setMetalnessMap(tempContainer, 0, subMaterial);
-				break;
-			}
-			case 5:
-			{
-				ObjToWorkWith->setDisplacementMap(tempContainer, 0, subMaterial);
-				break;
-			}
-			}
-		}
-
-		tempContainer = RESOURCE_MANAGER.noTexture;
-		PREVIEW_MANAGER.createMaterialPreview(ObjToWorkWith->getObjectID());
-		PROJECT_MANAGER.getCurrent()->bModified = true;
-	}
-
-	ImGui::Text("Textures (%d out of 16):", textureCount);
-	ImGui::SameLine();
-	ImGui::SetCursorPosX(size.x * 0.26f);
-	ImGui::Text("Bindings:");
-
-	ImGui::SameLine();
-	ImGui::SetCursorPosX(size.x * 0.26f + size.x * 0.49f);
-	ImGui::Text("Settings:");
-
-	// Textures
-	{
-		ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 162, 232, 50));
-		ImGui::BeginChild("Textures", ImVec2(ImGui::GetContentRegionAvail().x * 0.25f, 600), true, ImGuiWindowFlags_HorizontalScrollbar);
-
-		if (!ImGui::IsPopupOpen("##materialPropertiesContext_menu"))
-			textureFromListUnderMouse = -1;
-
-		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(1))
-			ImGui::OpenPopup("##materialPropertiesContext_menu");
-
-		TexturesListTarget->stickToCurrentWindow();
-
-		if (ImGui::BeginPopup("##materialPropertiesContext_menu"))
-		{
-			if (textureFromListUnderMouse == -1)
-			{
-				if (ImGui::MenuItem("Add texture..."))
-				{
-					textureDestination = -1;
-					selectTexturePopUp::getInstance().show(&tempContainer);
-				}
-			}
-			else
-			{
-				if (ImGui::MenuItem("Remove"))
-				{
-					ObjToWorkWith->removeTexture(textureFromListUnderMouse);
-					PROJECT_MANAGER.getCurrent()->bModified = true;
-				}
-			}
-
-			ImGui::EndPopup();
-		}
-
-		ImGui::Columns(2, "TextureColumns", false);
-		textureCount = 0;
-		for (size_t i = 0; i < ObjToWorkWith->textures.size(); i++)
-		{
-			if (ObjToWorkWith->textures[i] == nullptr)
-				continue;
-
-			textureCount++;
-			ImGui::PushID(ObjToWorkWith->textures[i]->getName().c_str());
-
-			ObjToWorkWith->textures[i]->getName() == "noTexture" ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(RESOURCE_MANAGER.getTexture(ObjToWorkWith->textures[i]->getObjectID()));
-			iconButton->render();
-
-			if (iconButton->isHovered())
-			{
-				textureFromListUnderMouse = i;
-			}
-
-			if (iconButton->isHovered() && ImGui::IsMouseDragging(0) && !DRAG_AND_DROP_MANAGER.objectIsDraged())
-				DRAG_AND_DROP_MANAGER.setObject(ObjToWorkWith->textures[i], ObjToWorkWith->textures[i], ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
-
-			ImGui::Text(ObjToWorkWith->textures[i]->getName().c_str());
-			ImGui::PopID();
-			ImGui::NextColumn();
-		}
-		ImGui::Columns(1);
-
-		ImGui::PopStyleColor();
-		ImGui::EndChild();
-	}
-
-	// material options
-	{
-		ImGui::SameLine();
-		ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 162, 232, 50));
-		ImGui::BeginChild("Bindings", ImVec2(ImGui::GetContentRegionAvail().x * 0.49f, 600), true, ImGuiWindowFlags_HorizontalScrollbar);
-
-		ImGui::Text("First sub material:");
-
-		// ************* Albedo *************
-		ImGui::SetCursorPosX(10);
-		ImGui::SetCursorPosY(38);
-		ImGui::Text("Albedo:");
-		ObjToWorkWith->getAlbedoMap() == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getAlbedoMap());
-		iconButton->render();
-		if (iconButton->getWasClicked())
-		{
-			textureDestination = 0;
-			selectTexturePopUp::getInstance().showWithCustomList(&tempContainer, ObjToWorkWith->textures);
-		}
-
-		if (MaterialBindingtargets.size() > 0)
-			MaterialBindingtargets[0]->stickToItem();
-
-		if (ObjToWorkWith->getAlbedoMap() != nullptr)
-		{
-			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##albedo", "rgba", ImGuiWindowFlags_None))
-			{
-				bool is_selected = true;
-				ImGui::Selectable("rgba", is_selected);
-				ImGui::SetItemDefaultFocus();
-				ImGui::EndCombo();
-			}
-		}
-
-		// ************* Normal *************
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
-		ImGui::SetCursorPosY(38);
-		ImGui::Text("Normal:");
-		ObjToWorkWith->getNormalMap() == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getNormalMap());
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
-		iconButton->render();
-		if (iconButton->getWasClicked())
-		{
-			textureDestination = 1;
-			selectTexturePopUp::getInstance().showWithCustomList(&tempContainer, ObjToWorkWith->textures);
-		}
-
-		if (MaterialBindingtargets.size() > 0)
-			MaterialBindingtargets[1]->stickToItem();
-
-		if (ObjToWorkWith->getNormalMap() != nullptr)
-		{
-			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
-			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##normal", "rgb", ImGuiWindowFlags_None))
-			{
-				bool is_selected = true;
-				ImGui::Selectable("rgb", is_selected);
-				ImGui::SetItemDefaultFocus();
-				ImGui::EndCombo();
-			}
-		}
-
-		// ************* AO *************
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
-		ImGui::SetCursorPosY(38);
-		ImGui::Text("AO:");
-		ObjToWorkWith->getAOMap() == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getAOMap());
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
-		iconButton->render();
-		if (iconButton->getWasClicked())
-		{
-			textureDestination = 2;
-			selectTexturePopUp::getInstance().showWithCustomList(&tempContainer, ObjToWorkWith->textures);
-		}
-
-		if (MaterialBindingtargets.size() > 0)
-			MaterialBindingtargets[2]->stickToItem();
-
-		if (ObjToWorkWith->getAOMap() != nullptr)
-		{
-			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
-			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##ao", channels[ObjToWorkWith->getAOMapChannel()].c_str(), ImGuiWindowFlags_None))
-			{
-				for (size_t i = 0; i < channels.size(); i++)
-				{
-					// if texture was compresed with out alpha channel
-					if (i == 3 && ObjToWorkWith->getAOMap()->getInternalFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
-						continue;
-
-					bool is_selected = (channels[ObjToWorkWith->getAOMapChannel()] == channels[i]);
-					if (ImGui::Selectable(channels[i].c_str(), is_selected))
-						ObjToWorkWith->setAOMap(ObjToWorkWith->getAOMap(), i);
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-		}
-
-		// ************* Roughness *************
-		ImGui::SetCursorPosX(10);
-		ImGui::SetCursorPosY(38 + 128 + 80);
-		ImGui::Text("Roughness:");
-		ObjToWorkWith->getRoughnessMap() == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getRoughnessMap());
-		ImGui::SetCursorPosX(10);
-		iconButton->render();
-		if (iconButton->getWasClicked())
-		{
-			textureDestination = 3;
-			selectTexturePopUp::getInstance().showWithCustomList(&tempContainer, ObjToWorkWith->textures);
-		}
-
-		if (MaterialBindingtargets.size() > 0)
-			MaterialBindingtargets[3]->stickToItem();
-
-		if (ObjToWorkWith->getRoughnessMap() != nullptr)
-		{
-			ImGui::SetCursorPosX(10);
-			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##roughness", channels[ObjToWorkWith->getRoughnessMapChannel()].c_str(), ImGuiWindowFlags_None))
-			{
-				for (size_t i = 0; i < channels.size(); i++)
-				{
-					// if texture was compresed with out alpha channel
-					if (i == 3 && ObjToWorkWith->getRoughnessMap()->getInternalFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
-						continue;
-
-					bool is_selected = (channels[ObjToWorkWith->getRoughnessMapChannel()] == channels[i]);
-					if (ImGui::Selectable(channels[i].c_str(), is_selected))
-						ObjToWorkWith->setRoughnessMap(ObjToWorkWith->getRoughnessMap(), i);
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-		}
-
-		// ************* Metalness *************
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
-		ImGui::SetCursorPosY(38 + 128 + 80);
-		ImGui::Text("Metalness:");
-		ObjToWorkWith->getMetalnessMap() == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getMetalnessMap());
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
-		iconButton->render();
-		if (iconButton->getWasClicked())
-		{
-			textureDestination = 4;
-			selectTexturePopUp::getInstance().showWithCustomList(&tempContainer, ObjToWorkWith->textures);
-		}
-
-		if (MaterialBindingtargets.size() > 0)
-			MaterialBindingtargets[4]->stickToItem();
-
-		if (ObjToWorkWith->getMetalnessMap() != nullptr)
-		{
-			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
-			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##metalness", channels[ObjToWorkWith->getMetalnessMapChannel()].c_str(), ImGuiWindowFlags_None))
-			{
-				for (size_t i = 0; i < channels.size(); i++)
-				{
-					// if texture was compresed with out alpha channel
-					if (i == 3 && ObjToWorkWith->getMetalnessMap()->getInternalFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
-						continue;
-
-					bool is_selected = (channels[ObjToWorkWith->getMetalnessMapChannel()] == channels[i]);
-					if (ImGui::Selectable(channels[i].c_str(), is_selected))
-						ObjToWorkWith->setMetalnessMap(ObjToWorkWith->getMetalnessMap(), i);
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-		}
-
-		// ************* Displacement *************
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
-		ImGui::SetCursorPosY(38 + 128 + 80);
-		ImGui::Text("Displacement:");
-		ObjToWorkWith->getDisplacementMap() == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getDisplacementMap());
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
-		iconButton->render();
-		if (iconButton->getWasClicked())
-		{
-			textureDestination = 5;
-			selectTexturePopUp::getInstance().showWithCustomList(&tempContainer, ObjToWorkWith->textures);
-		}
-
-		if (MaterialBindingtargets.size() > 0)
-			MaterialBindingtargets[5]->stickToItem();
-
-		if (ObjToWorkWith->getDisplacementMap() != nullptr)
-		{
-			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
-			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##displacement", channels[ObjToWorkWith->getDisplacementMapChannel()].c_str(), ImGuiWindowFlags_None))
-			{
-				for (size_t i = 0; i < channels.size(); i++)
-				{
-					// if texture was compresed with out alpha channel
-					if (i == 3 && ObjToWorkWith->getDisplacementMap()->getInternalFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
-						continue;
-
-					bool is_selected = (channels[ObjToWorkWith->getDisplacementMapChannel()] == channels[i]);
-					if (ImGui::Selectable(channels[i].c_str(), is_selected))
-						ObjToWorkWith->setDisplacementMap(ObjToWorkWith->getDisplacementMap(), i);
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-		}
-
-		ImGui::SetCursorPosY(38 + 128 + 80 + 128 + 80);
-		ImGui::Separator();
-
-		ImGui::Text("Second sub material:");
-		// ************* Albedo *************
-		ImGui::SetCursorPosX(10);
-		ImGui::SetCursorPosY(64 + 128 + 80 + 128 + 80);
-		ImGui::Text("Albedo:");
-		ObjToWorkWith->getAlbedoMap(1) == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getAlbedoMap(1));
-		iconButton->render();
-		if (iconButton->getWasClicked())
-		{
-			textureDestination = 6;
-			selectTexturePopUp::getInstance().showWithCustomList(&tempContainer, ObjToWorkWith->textures);
-		}
-
-		if (MaterialBindingtargets.size() > 0)
-			MaterialBindingtargets[6]->stickToItem();
-
-		if (ObjToWorkWith->getAlbedoMap(1) != nullptr)
-		{
-			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##albedoSubmaterial", "rgba", ImGuiWindowFlags_None))
-			{
-				bool is_selected = true;
-				ImGui::Selectable("rgba", is_selected);
-				ImGui::SetItemDefaultFocus();
-				ImGui::EndCombo();
-			}
-		}
-
-		// ************* Normal *************
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
-		ImGui::SetCursorPosY(64 + 128 + 80 + 128 + 80);
-		ImGui::Text("Normal:");
-		ObjToWorkWith->getNormalMap(1) == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getNormalMap(1));
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
-		iconButton->render();
-		if (iconButton->getWasClicked())
-		{
-			textureDestination = 7;
-			selectTexturePopUp::getInstance().showWithCustomList(&tempContainer, ObjToWorkWith->textures);
-		}
-
-		if (MaterialBindingtargets.size() > 0)
-			MaterialBindingtargets[7]->stickToItem();
-
-		if (ObjToWorkWith->getNormalMap(1) != nullptr)
-		{
-			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
-			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##normalSubmaterial", "rgb", ImGuiWindowFlags_None))
-			{
-				bool is_selected = true;
-				ImGui::Selectable("rgb", is_selected);
-				ImGui::SetItemDefaultFocus();
-				ImGui::EndCombo();
-			}
-		}
-
-		// ************* AO *************
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
-		ImGui::SetCursorPosY(64 + 128 + 80 + 128 + 80);
-		ImGui::Text("AO:");
-		ObjToWorkWith->getAOMap(1) == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getAOMap(1));
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
-		iconButton->render();
-		if (iconButton->getWasClicked())
-		{
-			textureDestination = 8;
-			selectTexturePopUp::getInstance().showWithCustomList(&tempContainer, ObjToWorkWith->textures);
-		}
-
-		if (MaterialBindingtargets.size() > 0)
-			MaterialBindingtargets[8]->stickToItem();
-
-		if (ObjToWorkWith->getAOMap(1) != nullptr)
-		{
-			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
-			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##aoSubmaterial", channels[ObjToWorkWith->getAOMapChannel(1)].c_str(), ImGuiWindowFlags_None))
-			{
-				for (size_t i = 0; i < channels.size(); i++)
-				{
-					// if texture was compresed with out alpha channel
-					if (i == 3 && ObjToWorkWith->getAOMap(1)->getInternalFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
-						continue;
-
-					bool is_selected = (channels[ObjToWorkWith->getAOMapChannel(1)] == channels[i]);
-					if (ImGui::Selectable(channels[i].c_str(), is_selected))
-						ObjToWorkWith->setAOMap(ObjToWorkWith->getAOMap(1), i, 1);
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-		}
-
-		// ************* Roughness *************
-		ImGui::SetCursorPosX(10);
-		ImGui::SetCursorPosY(64 + 128 + 80 + 128 + 80 + 128 + 80);
-		ImGui::Text("Roughness:");
-		ObjToWorkWith->getRoughnessMap(1) == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getRoughnessMap(1));
-		ImGui::SetCursorPosX(10);
-		iconButton->render();
-		if (iconButton->getWasClicked())
-		{
-			textureDestination = 9;
-			selectTexturePopUp::getInstance().showWithCustomList(&tempContainer, ObjToWorkWith->textures);
-		}
-
-		if (MaterialBindingtargets.size() > 0)
-			MaterialBindingtargets[9]->stickToItem();
-
-		if (ObjToWorkWith->getRoughnessMap(1) != nullptr)
-		{
-			ImGui::SetCursorPosX(10);
-			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##roughnessSubmaterial", channels[ObjToWorkWith->getRoughnessMapChannel(1)].c_str(), ImGuiWindowFlags_None))
-			{
-				for (size_t i = 0; i < channels.size(); i++)
-				{
-					// if texture was compresed with out alpha channel
-					if (i == 3 && ObjToWorkWith->getRoughnessMap(1)->getInternalFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
-						continue;
-
-					bool is_selected = (channels[ObjToWorkWith->getRoughnessMapChannel(1)] == channels[i]);
-					if (ImGui::Selectable(channels[i].c_str(), is_selected))
-						ObjToWorkWith->setRoughnessMap(ObjToWorkWith->getRoughnessMap(1), i, 1);
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-		}
-
-		// ************* Metalness *************
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
-		ImGui::SetCursorPosY(64 + 128 + 80 + 128 + 80 + 128 + 80);
-		ImGui::Text("Metalness:");
-		ObjToWorkWith->getMetalnessMap(1) == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getMetalnessMap(1));
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
-		iconButton->render();
-		if (iconButton->getWasClicked())
-		{
-			textureDestination = 10;
-			selectTexturePopUp::getInstance().showWithCustomList(&tempContainer, ObjToWorkWith->textures);
-		}
-
-		if (MaterialBindingtargets.size() > 0)
-			MaterialBindingtargets[10]->stickToItem();
-
-		if (ObjToWorkWith->getMetalnessMap(1) != nullptr)
-		{
-			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f);
-			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##metalnessSubmaterial", channels[ObjToWorkWith->getMetalnessMapChannel(1)].c_str(), ImGuiWindowFlags_None))
-			{
-				for (size_t i = 0; i < channels.size(); i++)
-				{
-					// if texture was compresed with out alpha channel
-					if (i == 3 && ObjToWorkWith->getMetalnessMap(1)->getInternalFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
-						continue;
-
-					bool is_selected = (channels[ObjToWorkWith->getMetalnessMapChannel(1)] == channels[i]);
-					if (ImGui::Selectable(channels[i].c_str(), is_selected))
-						ObjToWorkWith->setMetalnessMap(ObjToWorkWith->getMetalnessMap(1), i, 1);
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-		}
-
-		// ************* Displacement *************
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
-		ImGui::SetCursorPosY(64 + 128 + 80 + 128 + 80 + 128 + 80);
-		ImGui::Text("Displacement:");
-		ObjToWorkWith->getDisplacementMap(1) == nullptr ? iconButton->setTexture(RESOURCE_MANAGER.noTexture) : iconButton->setTexture(ObjToWorkWith->getDisplacementMap(1));
-		ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
-		iconButton->render();
-		if (iconButton->getWasClicked())
-		{
-			textureDestination = 11;
-			selectTexturePopUp::getInstance().showWithCustomList(&tempContainer, ObjToWorkWith->textures);
-		}
-
-		if (MaterialBindingtargets.size() > 0)
-			MaterialBindingtargets[11]->stickToItem();
-
-		if (ObjToWorkWith->getDisplacementMap(1) != nullptr)
-		{
-			ImGui::SetCursorPosX(10 + ImGui::GetContentRegionAvail().x / 3.0f * 2.0f);
-			ImGui::SetNextItemWidth(85);
-			if (ImGui::BeginCombo("Channel##displacementSubmaterial", channels[ObjToWorkWith->getDisplacementMapChannel(1)].c_str(), ImGuiWindowFlags_None))
-			{
-				for (size_t i = 0; i < channels.size(); i++)
-				{
-					// if texture was compresed with out alpha channel
-					if (i == 3 && ObjToWorkWith->getDisplacementMap(1)->getInternalFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
-						continue;
-
-					bool is_selected = (channels[ObjToWorkWith->getDisplacementMapChannel(1)] == channels[i]);
-					if (ImGui::Selectable(channels[i].c_str(), is_selected))
-						ObjToWorkWith->setDisplacementMap(ObjToWorkWith->getDisplacementMap(1), i, 1);
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-		}
-
-		ImGui::PopStyleColor();
-		ImGui::EndChild();
-	}
-
-	// Settings
-	{
-		static float fieldWidth = 350.0f;
-		ImGui::SameLine();
-		ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 162, 232, 50));
-		ImGui::BeginChild("Settings", ImVec2(ImGui::GetContentRegionAvail().x * 0.30f, 600), true, ImGuiWindowFlags_HorizontalScrollbar);
-
-		FEShaderParam* debugFlag = ObjToWorkWith->getParameter("debugFlag");
-		if (debugFlag != nullptr)
-		{
-			ImGui::Text("Debug flag:");
-			ImGui::SetNextItemWidth(fieldWidth);
-			int iData = *(int*)debugFlag->data;
-			ImGui::SliderInt("##Debug flag", &iData, 0, 10);
-			debugFlag->updateData(iData);
-		}
-
-		// ************* Normal *************
-		ImGui::Text("Normal map intensity:");
-		ImGui::SetNextItemWidth(fieldWidth);
-		float normalMapIntensity = ObjToWorkWith->getNormalMapIntensity();
-		ImGui::DragFloat("##Normal map intensity", &normalMapIntensity, 0.01f, 0.0f, 1.0f);
-		ObjToWorkWith->setNormalMapIntensity(normalMapIntensity);
-
-		// ************* AO *************
-		if (ObjToWorkWith->getAOMap() == nullptr)
-		{
-			ImGui::Text("Ambient occlusion intensity:");
-			ImGui::SetNextItemWidth(fieldWidth);
-			float ambientOcclusionIntensity = ObjToWorkWith->getAmbientOcclusionIntensity();
-			ImGui::DragFloat("##Ambient occlusion intensity", &ambientOcclusionIntensity, 0.01f, 0.0f, 10.0f);
-			ObjToWorkWith->setAmbientOcclusionIntensity(ambientOcclusionIntensity);
-		}
-		else
-		{
-			ImGui::Text("Ambient occlusion map intensity:");
-			ImGui::SetNextItemWidth(fieldWidth);
-			float AOMapIntensity = ObjToWorkWith->getAmbientOcclusionMapIntensity();
-			ImGui::DragFloat("##Ambient occlusion map intensity", &AOMapIntensity, 0.01f, 0.0f, 10.0f);
-			ObjToWorkWith->setAmbientOcclusionMapIntensity(AOMapIntensity);
-		}
-
-		// ************* Roughness *************
-		if (ObjToWorkWith->getRoughnessMap() == nullptr)
-		{
-			ImGui::Text("Roughness:");
-			ImGui::SetNextItemWidth(fieldWidth);
-			float roughness = ObjToWorkWith->getRoughness();
-			ImGui::DragFloat("##Roughness", &roughness, 0.01f, 0.0f, 1.0f);
-			ObjToWorkWith->setRoughness(roughness);
-		}
-		else
-		{
-			ImGui::Text("Roughness map intensity:");
-			ImGui::SetNextItemWidth(fieldWidth);
-			float roughness = ObjToWorkWith->getRoughnessMapIntensity();
-			ImGui::DragFloat("##Roughness map intensity", &roughness, 0.01f, 0.0f, 10.0f);
-			ObjToWorkWith->setRoughnessMapIntensity(roughness);
-		}
-
-		// ************* Metalness *************
-		if (ObjToWorkWith->getMetalnessMap() == nullptr)
-		{
-			ImGui::Text("Metalness:");
-			ImGui::SetNextItemWidth(fieldWidth);
-			float metalness = ObjToWorkWith->getMetalness();
-			ImGui::DragFloat("##Metalness", &metalness, 0.01f, 0.0f, 1.0f);
-			ObjToWorkWith->setMetalness(metalness);
-		}
-		else
-		{
-			ImGui::Text("Metalness map intensity:");
-			ImGui::SetNextItemWidth(fieldWidth);
-			float metalness = ObjToWorkWith->getMetalnessMapIntensity();
-			ImGui::DragFloat("##Metalness map intensity", &metalness, 0.01f, 0.0f, 10.0f);
-			ObjToWorkWith->setMetalnessMapIntensity(metalness);
-		}
-
-		ImGui::PopStyleColor();
-		ImGui::EndChild();
-	}
-#endif // USE_NODES
 	
 	CancelButton->Render();
 	if (CancelButton->IsClicked())
@@ -1563,13 +961,19 @@ void EditMaterialPopup::Render()
 	FEImGuiWindow::OnRenderEnd();
 }
 
-void EditMaterialPopup::Close()
+void EditMaterialWindow::Close()
 {
+	Stop();
 	FEImGuiWindow::Close();
 }
 
-#ifdef USE_NODES
-bool EditMaterialPopup::DragAndDropnodeAreaTargetCallback(FEObject* Object, void** CallbackInfo)
+void EditMaterialWindow::Stop()
+{
+	SCENE_MANAGER.DeactivateScene(PreviewScene);
+	PreviewGameModel->SetMaterial(nullptr);
+}
+
+bool EditMaterialWindow::DragAndDropnodeAreaTargetCallback(FEObject* Object, void** CallbackInfo)
 {
 	if (ObjToWorkWith->IsTextureInList(RESOURCE_MANAGER.GetTexture(Object->GetObjectID())))
 		return false;
@@ -1587,83 +991,8 @@ bool EditMaterialPopup::DragAndDropnodeAreaTargetCallback(FEObject* Object, void
 	MaterialNodeArea->AddNode(NewNode);
 	return true;
 }
-#else
-bool editMaterialPopup::dragAndDropCallback(FEObject* object, void** oldTexture)
-{
-	FETexture* newTexture = RESOURCE_MANAGER.getTexture(object->getObjectID());
-	*oldTexture = reinterpret_cast<void*>(newTexture);
 
-	return true;
-}
-
-bool editMaterialPopup::dragAndDropTexturesListCallback(FEObject* object, void** material)
-{
-	reinterpret_cast<FEMaterial*>(*material)->addTexture(RESOURCE_MANAGER.getTexture(object->getObjectID()));
-	return true;
-}
-
-bool editMaterialPopup::dragAndDropMaterialBindingsCallback(FEObject* object, void** callbackInfoPointer)
-{
-	materialBindingCallbackInfo* info = reinterpret_cast<materialBindingCallbackInfo*>(callbackInfoPointer);
-	FEMaterial* material = reinterpret_cast<FEMaterial*>(*info->material);
-
-
-	if (!material->isTextureInList(RESOURCE_MANAGER.getTexture(object->getObjectID())))
-		material->addTexture(RESOURCE_MANAGER.getTexture(object->getObjectID()));
-
-	int subMaterial = info->textureBinding > 5;
-	if (subMaterial)
-		info->textureBinding -= 6;
-
-	switch (info->textureBinding)
-	{
-	case 0:
-	{
-		material->setAlbedoMap(RESOURCE_MANAGER.getTexture(object->getObjectID()), subMaterial);
-		break;
-	}
-
-	case 1:
-	{
-		material->setNormalMap(RESOURCE_MANAGER.getTexture(object->getObjectID()), subMaterial);
-		break;
-	}
-
-	case 2:
-	{
-		material->setAOMap(RESOURCE_MANAGER.getTexture(object->getObjectID()), 0, subMaterial);
-		break;
-	}
-
-	case 3:
-	{
-		material->setRoughnessMap(RESOURCE_MANAGER.getTexture(object->getObjectID()), 0, subMaterial);
-		break;
-	}
-
-	case 4:
-	{
-		material->setMetalnessMap(RESOURCE_MANAGER.getTexture(object->getObjectID()), 0, subMaterial);
-		break;
-	}
-
-	case 5:
-	{
-		material->setDisplacementMap(RESOURCE_MANAGER.getTexture(object->getObjectID()), 0, subMaterial);
-		break;
-	}
-
-	default:
-		break;
-	}
-
-	return true;
-}
-#endif // USE_NODES
-
-
-#ifdef USE_NODES
-void EditMaterialPopup::NodeSystemMainContextMenu()
+void EditMaterialWindow::NodeSystemMainContextMenu()
 {
 	if (ImGui::BeginMenu("Add"))
 	{
@@ -1690,7 +1019,7 @@ void EditMaterialPopup::NodeSystemMainContextMenu()
 	}
 }
 
-void EditMaterialPopup::TextureNodeCallback(VisNodeSys::Node* Node, const VisNodeSys::NODE_EVENT EventWithNode)
+void EditMaterialWindow::TextureNodeCallback(VisNodeSys::Node* Node, const VisNodeSys::NODE_EVENT EventWithNode)
 {
 	if (Node == nullptr)
 		return;
@@ -1708,7 +1037,7 @@ void EditMaterialPopup::TextureNodeCallback(VisNodeSys::Node* Node, const VisNod
 	}
 }
 
-void EditMaterialPopup::TextureNodeCreationCallback(const std::vector<FEObject*> SelectionsResult)
+void EditMaterialWindow::TextureNodeCreationCallback(const std::vector<FEObject*> SelectionsResult)
 {
 	if (SelectionsResult.size() != 1 && SelectionsResult[0]->GetType() != FE_TEXTURE)
 		return;
@@ -1731,4 +1060,3 @@ void EditMaterialPopup::TextureNodeCreationCallback(const std::vector<FEObject*>
 		}
 	}
 }
-#endif // USE_NODES

@@ -253,7 +253,7 @@ void FEEditorContentBrowserWindow::Render()
 			{
 				if (ImGui::MenuItem("Edit"))
 				{
-					EditMaterialPopup::getInstance().Show(RESOURCE_MANAGER.GetMaterial(FilteredResources[ItemUnderMouse]->GetObjectID()));
+					EDITOR_MATERIAL_WINDOW.Show(RESOURCE_MANAGER.GetMaterial(FilteredResources[ItemUnderMouse]->GetObjectID()));
 				}
 			}
 
@@ -276,7 +276,7 @@ void FEEditorContentBrowserWindow::Render()
 			{
 				if (ImGui::MenuItem("Edit"))
 				{
-					PrefabEditorWindow::getInstance().Show(RESOURCE_MANAGER.GetPrefab(FilteredResources[ItemUnderMouse]->GetObjectID()));
+					PREFAB_EDITOR_MANAGER.PrepareEditWinow(RESOURCE_MANAGER.GetPrefab(FilteredResources[ItemUnderMouse]->GetObjectID()));
 				}
 			}
 
@@ -764,7 +764,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		}
 		else if (FilteredResources[ItemUnderMouse]->GetType() == FE_MATERIAL)
 		{
-			EditMaterialPopup::getInstance().Show(RESOURCE_MANAGER.GetMaterial(FilteredResources[ItemUnderMouse]->GetObjectID()));
+			EDITOR_MATERIAL_WINDOW.Show(RESOURCE_MANAGER.GetMaterial(FilteredResources[ItemUnderMouse]->GetObjectID()));
 		}
 		else if (FilteredResources[ItemUnderMouse]->GetType() == FE_GAMEMODEL)
 		{
@@ -775,9 +775,9 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		}
 		else if (FilteredResources[ItemUnderMouse]->GetType() == FE_PREFAB)
 		{
-			if (!bShouldOpenContextMenu && !PrefabEditorWindow::getInstance().IsVisible())
+			if (!bShouldOpenContextMenu)
 			{
-				PrefabEditorWindow::getInstance().Show(RESOURCE_MANAGER.GetPrefab(FilteredResources[ItemUnderMouse]->GetObjectID()));
+				PREFAB_EDITOR_MANAGER.PrepareEditWinow(RESOURCE_MANAGER.GetPrefab(FilteredResources[ItemUnderMouse]->GetObjectID()));
 			}
 		}
 	}

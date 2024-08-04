@@ -23,6 +23,8 @@ public:
 	void CloseAllWindows() const;
 
 	void RenderAllWindows() const;
+
+	void UnRegisterWindow(FEImGuiWindow* Window);
 private:
 	SINGLETON_PRIVATE_PART(WindowsManager)
 
@@ -162,6 +164,9 @@ protected:
 	bool bWasClosedLastFrame = false;
 	FEImGuiWindow();
 	ImGuiWindow* Window = nullptr;
+
+	float BorderSize = 2.0f;
+	glm::vec2 Padding = glm::vec2(15.0f, 15.0f);
 public:
 	virtual ~FEImGuiWindow();
 	virtual void Show();
@@ -177,6 +182,12 @@ public:
 	virtual void SetCaption(std::string NewCaption);
 
 	ImGuiWindow* GetWindow() const;
+
+	float GetBorderSize() const;
+	void SetBorderSize(float NewValue);
+
+	glm::vec2 GetPadding() const;
+	void SetPadding(glm::vec2 NewValue);
 };
 
 class FEArrowScroller

@@ -454,6 +454,10 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	ImGui::DragFloat("##FarPlane", &FarPlane, 0.1f, 0.01f, 10000.0f);
 	CameraComponent.SetFarPlane(FarPlane);
 
+	glm::vec4 CurrentClearColor = CameraComponent.GetClearColor();
+	ImGui::ColorEdit4("Clear color", &CurrentClearColor.x);
+	CameraComponent.SetClearColor(CurrentClearColor);
+
 	float Gamma = CameraComponent.GetGamma();
 	ImGui::Text("Gamma : ");
 	ImGui::SameLine();
@@ -979,13 +983,15 @@ void FEEditorInspectorWindow::Render()
 
 		if (ImGui::CollapsingHeader("Tag", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			FETagComponent& Tag = EntitySelected->GetComponent<FETagComponent>();
+			FETagComponent& TagComponent = EntitySelected->GetComponent<FETagComponent>();
 			char Buffer[256];
 			memset(Buffer, 0, 256);
-			strcpy_s(Buffer, Tag.Tag.c_str());
+			strcpy_s(Buffer, TagComponent.GetTag().c_str());
 			if (ImGui::InputText("##Tag Edit", Buffer, 256))
 			{
-				Tag.Tag = std::string(Buffer);
+				std::string NewTag = Buffer;
+				if (NewTag != EDITOR_SCENE_TAG)
+					TagComponent.SetTag(NewTag);
 			}
 		}
 	}
@@ -1047,6 +1053,14 @@ void FEEditorInspectorWindow::Render()
 			ImGui::PopStyleColor();
 			ImGui::PopStyleColor();
 			ImGui::PopStyleColor();
+		}
+	}
+
+	if (EntitySelected->HasComponent<FEPrefabInstanceComponent>())
+	{
+		if (ImGui::CollapsingHeader("Prefab Instance", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+
 		}
 	}
 

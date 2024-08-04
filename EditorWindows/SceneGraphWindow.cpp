@@ -215,28 +215,38 @@ DragAndDropTarget* FEEditorSceneGraphWindow::GetSceneNodeDragAndDropTarget(FENai
 
 void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 {
+	if (SubTreeRoot == nullptr)
+		return;
+
+	FEEntity* CurrentEntity = SubTreeRoot->GetEntity();
+	if (CurrentEntity != nullptr)
+	{
+		if (CurrentEntity->GetComponent<FETagComponent>().GetTag() == EDITOR_SCENE_TAG)
+			return;
+	}
+
 	SceneNodeDragAndDropTargetIndex++;
 	int64_t UniqueID = 0;
 	bool bIsLeaf = SubTreeRoot->GetChildren().size() == 0;
 	ImGuiTreeNodeFlags NodeFlags = bIsLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : ImGuiTreeNodeFlags_OpenOnArrow;
 	std::string Name = SubTreeRoot->GetParent() == nullptr ? PROJECT_MANAGER.GetCurrent()->GetName() : SubTreeRoot->GetName();
 
-	if (SELECTED.GetSelected(EDITOR.GetFocusedScene()) != nullptr && SubTreeRoot->GetEntity() != nullptr)
+	if (SELECTED.GetSelected(EDITOR.GetFocusedScene()) != nullptr && CurrentEntity != nullptr)
 	{
-		if (SELECTED.GetSelected(EDITOR.GetFocusedScene())->GetObjectID() == SubTreeRoot->GetEntity()->GetObjectID())
+		if (SELECTED.GetSelected(EDITOR.GetFocusedScene())->GetObjectID() == CurrentEntity->GetObjectID())
 		{
 			NodeFlags |= ImGuiTreeNodeFlags_Selected;
 		}
 	}
 
 	// If node is root.
-	if (SubTreeRoot->GetEntity() == nullptr)
+	if (CurrentEntity == nullptr)
 	{
 		UniqueID = -1;
 	}
 	else
 	{
-		UniqueID = static_cast<intptr_t>(std::hash<std::string>{}(SubTreeRoot->GetEntity()->GetObjectID().c_str()));
+		UniqueID = static_cast<intptr_t>(std::hash<std::string>{}(CurrentEntity->GetObjectID().c_str()));
 	}
 
 	bool bOpened = ImGui::TreeNodeEx((void*)UniqueID, NodeFlags, Name.c_str(), 0);
@@ -246,7 +256,7 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 	{
 		if (SubTreeRoot->GetParent() != nullptr)
 		{
-			SELECTED.SetSelected(SubTreeRoot->GetEntity());
+			SELECTED.SetSelected(CurrentEntity);
 		}
 	}
 

@@ -214,10 +214,9 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 		return -1;
 
 	CurrentSelectionData->PixelAccurateSelectionFB->Bind();
-	glm::vec4 OriginalClearColor = ENGINE.GetClearColor();
 	glm::ivec4 OriginalViewport = RENDERER.GetViewport();
 	RENDERER.SetViewport(0, 0, CurrentSelectionData->PixelAccurateSelectionFB->GetWidth(), CurrentSelectionData->PixelAccurateSelectionFB->GetHeight());
-	ENGINE.SetClearColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
 	FEEntity* CurrentCamera = CAMERA_SYSTEM.GetMainCameraEntity(Scene);
@@ -300,6 +299,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			int b = ((LastColorShiftIndex + 1) >> 16) & 255;
 
 			static FEEntity* DummyEntity = Scene->CreateEntity("DummyEntity");
+			DummyEntity->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
 			if (!DummyEntity->HasComponent<FEGameModelComponent>())
 				DummyEntity->AddComponent<FEGameModelComponent>();
 			
@@ -341,7 +341,6 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 	FE_GL_ERROR(glReadPixels(static_cast<GLint>(LocalMouseX), GLint(CameraComponent.GetRenderTargetHeight() - LocalMouseY), 1, 1, GL_RGB, GL_UNSIGNED_BYTE, CurrentSelectionData->ColorUnderMouse));
 	CurrentSelectionData->PixelAccurateSelectionFB->UnBind();
 	RENDERER.SetViewport(OriginalViewport);
-	ENGINE.SetClearColor(OriginalClearColor);
 
 #ifndef EDITOR_SELECTION_DEBUG_MODE
 	if (!CurrentSelectionData->SceneEntitiesUnderMouse.empty())
@@ -437,14 +436,12 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 		FECameraComponent& CameraComponent = CurrentCamera->GetComponent<FECameraComponent>();
 		RENDERER.SetViewport(0, 0, CameraComponent.GetRenderTargetWidth(), CameraComponent.GetRenderTargetHeight());
 
-		glm::vec4 OriginalClearColor = ENGINE.GetClearColor();
-		ENGINE.SetClearColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT));
 
 		if (CurrentSelectionData->Container == nullptr)
 		{
 			HaloSelectionData->HaloObjectsFB->UnBind();
-			ENGINE.SetClearColor(OriginalClearColor);
 			HaloSelectionData->PostProcess->bActive = true;
 
 			SceneIterator++;
@@ -529,7 +526,6 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 		}
 
 		HaloSelectionData->HaloObjectsFB->UnBind();
-		ENGINE.SetClearColor(OriginalClearColor);
 		HaloSelectionData->PostProcess->bActive = true;
 
 		SceneIterator++;
@@ -614,7 +610,10 @@ void FEEditorSelectedObject::AddSceneData(const std::string& SceneID)
 	PerSceneData[SceneID]->PixelAccurateSelectionFB->SetColorAttachment(RESOURCE_MANAGER.CreateTexture(GL_RGB, GL_RGB, CameraComponent.GetRenderTargetWidth(), CameraComponent.GetRenderTargetHeight()));
 
 	if (CurrentScene->GetEntityByName("Editor_Selection_Dummy_Entity").empty())
+	{
 		PerSceneData[SceneID]->DummyEntity = CurrentScene->CreateEntity("Editor_Selection_Dummy_Entity");
+		PerSceneData[SceneID]->DummyEntity->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
+	}
 
 	HALO_SELECTION_EFFECT.AddSceneData(SceneID);
 }

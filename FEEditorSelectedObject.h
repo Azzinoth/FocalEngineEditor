@@ -41,6 +41,8 @@ class FEEditorSelectedObject
 	friend class FEEditor;
 	friend class GizmoManager;
 	friend class FEEditorInspectorWindow;
+	friend class FEEditorSceneWindow;
+
 	SINGLETON_PRIVATE_PART(FEEditorSelectedObject)
 public:
 	SINGLETON_PUBLIC_PART(FEEditorSelectedObject)

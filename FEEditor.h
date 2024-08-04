@@ -1,24 +1,15 @@
 ﻿#pragma once
 
 #include "EditorWindows/InspectorWindow.h"
+#include "EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.h"
 #include <functional>
-
-struct FEEditorSceneData
-{
-    FEScene* Scene = nullptr;
-    ImGuiWindow* SceneWindow = nullptr;
-    DragAndDropTarget* SceneWindowTarget = nullptr;
- 
-    bool bJustAdded = true;
-    bool bMain = false;
-    bool bWindowHovered = false;
-};
 
 class FEEditor
 {
+    friend class FEEditorSceneWindow;
     friend class FEProjectManager;
     // FIX ME! It is temporary solution
-    friend class PrefabEditorWindow;
+    friend class FEPrefabEditorManager;
 public:
     SINGLETON_PUBLIC_PART(FEEditor)
 
@@ -52,8 +43,8 @@ private:
     ImGuiID DockspaceID = 0;
 
     void AddEditorScene(FEScene* Scene, bool bMain = false);
-
-    std::vector<FEEditorSceneData*> EditorScenes;
+    void AddCustomEditorScene(FEEditorSceneWindow* SceneWindow);
+    std::vector<FEEditorSceneWindow*> EditorSceneWindows;
 
     // Clipboard
     std::string SceneEntityIDInClipboard;

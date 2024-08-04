@@ -286,7 +286,7 @@ void GizmoManager::Update()
 		}
 		
 		FEScene* Scene = SCENE_MANAGER.GetScene(GizmoSceneData->SceneID);
-		if (SELECTED.GetSelected(Scene) == nullptr || SELECTED.GetSelected(Scene)->GetType() == FE_CAMERA_DEPRECATED)
+		if (SELECTED.GetSelected(Scene) == nullptr || CAMERA_SYSTEM.GetMainCameraEntity(Scene) == nullptr || SELECTED.GetSelected(Scene)->GetType() == FE_CAMERA_DEPRECATED)
 		{
 			HideAllGizmo(Scene);
 			PerSceneIterator++;
@@ -583,6 +583,9 @@ void GizmoManager::MouseMoveTransformationGizmos(FEScene* Scene)
 
 	FEGizmoSceneData* GizmoSceneData = GIZMO_MANAGER.GetSceneData(Scene->GetObjectID());
 	if (GizmoSceneData == nullptr)
+		return;
+
+	if (CAMERA_SYSTEM.GetMainCameraEntity(Scene) == nullptr)
 		return;
 
 	FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(Scene)->GetComponent<FETransformComponent>();
@@ -943,6 +946,7 @@ void GizmoManager::AddSceneData(const std::string& SceneID)
 	PerSceneData[SceneID]->SceneID = SceneID;
 
 	PerSceneData[SceneID]->ParentGizmoEntity = CurrentScene->CreateEntity("ParentGizmoEntity");
+	PerSceneData[SceneID]->ParentGizmoEntity->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
 	PerSceneData[SceneID]->ParentGizmoGraphNode = CurrentScene->SceneGraph.GetNodeByEntityID(PerSceneData[SceneID]->ParentGizmoEntity->GetObjectID());
 
 	// TransformationXGizmo

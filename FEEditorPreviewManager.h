@@ -16,10 +16,10 @@ class FEEditorPreviewManager
 	friend class SelectMaterialPopUp;
 	friend class SelectGameModelPopUp;
 	friend class EditGameModelPopup;
-	friend class EditMaterialPopup;
+	friend class EditMaterialWindow;
 	friend class DeleteMaterialPopup;
 	friend class SelectFEObjectPopUp;
-	friend class PrefabEditorWindow;
+	friend class FEPrefabEditorManager;
 
 private:
 	SINGLETON_PUBLIC_PART(FEEditorPreviewManager)

@@ -2,58 +2,6 @@
 
 FEEditor* FEEditor::Instance = nullptr;
 
-bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
-{
-	if (EDITOR.GetFocusedScene() == nullptr)
-		return false;
-
-	if (CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene()) == nullptr)
-		return false;
-
-	if (UserData == nullptr)
-		return false;
-
-	FEEditorSceneData* EditorSceneData = reinterpret_cast<FEEditorSceneData*>(*UserData);
-	if (EditorSceneData->Scene == nullptr)
-		return false;
-
-	if (Object->GetType() == FE_GAMEMODEL)
-	{
-		FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Object->GetObjectID());
-
-		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
-		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
-
-		FEEntity* Entity = EditorSceneData->Scene->CreateEntity(Object->GetName());
-		Entity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
-		Entity->AddComponent<FEGameModelComponent>(GameModel);
-
-		SELECTED.SetSelected(Entity);
-		PROJECT_MANAGER.GetCurrent()->SetModified(true);
-
-		return true;
-	
-	}
-	else if (Object->GetType() == FE_PREFAB)
-	{
-		FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Object->GetObjectID())->GetComponent(0)->GameModel;
-
-		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
-		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
-
-		FEEntity* Entity = EditorSceneData->Scene->CreateEntity(Object->GetName());
-		Entity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
-		Entity->AddComponent<FEGameModelComponent>(GameModel);
-
-		SELECTED.SetSelected(Entity);
-		PROJECT_MANAGER.GetCurrent()->SetModified(true);
-
-		return true;
-	}
-
-	return false;
-}
-
 FEEditor::FEEditor()
 {
 	ImGuiIO& IO = ImGui::GetIO();
@@ -118,24 +66,21 @@ void FEEditor::MouseButtonCallback(const int Button, const int Action, int Mods)
 	if (Button == GLFW_MOUSE_BUTTON_1 && Action == GLFW_RELEASE)
 		DRAG_AND_DROP_MANAGER.DropAction();
 
-	for (size_t i = 0; i < EDITOR.EditorScenes.size(); i++)
+	for (size_t i = 0; i < EDITOR.EditorSceneWindows.size(); i++)
 	{
-		EDITOR.EditorScenes[i]->bWindowHovered = false;
+		EDITOR.EditorSceneWindows[i]->bWindowHovered = false;
 
-		if (EDITOR.EditorScenes[i]->SceneWindow == nullptr)
+		if (EDITOR.EditorSceneWindows[i]->Scene != EDITOR.GetFocusedScene())
 			continue;
 
-		if (EDITOR.EditorScenes[i]->Scene != EDITOR.GetFocusedScene())
-			continue;
+		if (ImGui::GetCurrentContext()->HoveredWindow != nullptr && EDITOR.EditorSceneWindows[i]->GetWindow() != nullptr)
+			EDITOR.EditorSceneWindows[i]->bWindowHovered = ImGui::GetCurrentContext()->HoveredWindow->Name == EDITOR.EditorSceneWindows[i]->GetWindow()->Name;
 
-		if (ImGui::GetCurrentContext()->HoveredWindow != nullptr)
-			EDITOR.EditorScenes[i]->bWindowHovered = ImGui::GetCurrentContext()->HoveredWindow->Name == EDITOR.EditorScenes[i]->SceneWindow->Name;
-
-		FEEntity* CurrentMainCamera = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.EditorScenes[i]->Scene);
+		FEEntity* CurrentMainCamera = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.EditorSceneWindows[i]->Scene);
 		
-		if (ImGui::GetIO().WantCaptureMouse && !EDITOR.EditorScenes[i]->bWindowHovered)
+		if (ImGui::GetIO().WantCaptureMouse && !EDITOR.EditorSceneWindows[i]->bWindowHovered)
 		{
-			if (EDITOR.EditorScenes[i]->Scene != nullptr)
+			if (EDITOR.EditorSceneWindows[i]->Scene != nullptr)
 			{
 				if (CurrentMainCamera != nullptr)
 					CAMERA_SYSTEM.SetIsIndividualInputActive(CurrentMainCamera, false);
@@ -155,18 +100,18 @@ void FEEditor::MouseButtonCallback(const int Button, const int Action, int Mods)
 
 		if (Button == GLFW_MOUSE_BUTTON_1 && Action == GLFW_PRESS)
 		{
-			if (EDITOR.EditorScenes[i]->bWindowHovered)
+			if (EDITOR.EditorSceneWindows[i]->bWindowHovered)
 			{
 				bool bEditingTerrain = false;
-				if (SELECTED.GetSelected(EDITOR.EditorScenes[i]->Scene) != nullptr && SELECTED.GetSelected(EDITOR.EditorScenes[i]->Scene)->HasComponent<FETerrainComponent>())
+				if (SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene) != nullptr && SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene)->HasComponent<FETerrainComponent>())
 				{
 					bEditingTerrain = TERRAIN_SYSTEM.GetBrushMode() != FE_TERRAIN_BRUSH_NONE;
 				}
 
 				if (!bEditingTerrain)
 				{
-					FESelectionData* CurrentSelectionData = SELECTED.GetSceneData(EDITOR.EditorScenes[i]->Scene->GetObjectID());
-					SELECTED.DetermineEntityUnderMouse(EDITOR.GetMouseX(), EDITOR.GetMouseY(), EDITOR.EditorScenes[i]->Scene);
+					FESelectionData* CurrentSelectionData = SELECTED.GetSceneData(EDITOR.EditorSceneWindows[i]->Scene->GetObjectID());
+					SELECTED.DetermineEntityUnderMouse(EDITOR.GetMouseX(), EDITOR.GetMouseY(), EDITOR.EditorSceneWindows[i]->Scene);
 					CurrentSelectionData->CheckForSelectionisNeeded = true;
 				}
 			}
@@ -176,7 +121,7 @@ void FEEditor::MouseButtonCallback(const int Button, const int Action, int Mods)
 		else if (Button == GLFW_MOUSE_BUTTON_1 && Action == GLFW_RELEASE)
 		{
 			INSPECTOR_WINDOW.bLeftMousePressed = false;
-			GIZMO_MANAGER.DeactivateAllGizmo(EDITOR.EditorScenes[i]->Scene);
+			GIZMO_MANAGER.DeactivateAllGizmo(EDITOR.EditorSceneWindows[i]->Scene);
 		}
 	}
 }
@@ -197,46 +142,46 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 		}
 	}
 
-	for (size_t i = 0; i < EDITOR.EditorScenes.size(); i++)
+	for (size_t i = 0; i < EDITOR.EditorSceneWindows.size(); i++)
 	{
-		if (EDITOR.EditorScenes[i]->Scene != EDITOR.GetFocusedScene())
+		if (EDITOR.EditorSceneWindows[i]->Scene != EDITOR.GetFocusedScene())
 			continue;
 
-		FESelectionData* CurrentSelectionData = SELECTED.GetSceneData(EDITOR.EditorScenes[i]->Scene->GetObjectID());
+		FESelectionData* CurrentSelectionData = SELECTED.GetSceneData(EDITOR.EditorSceneWindows[i]->Scene->GetObjectID());
 		if (!ImGui::GetIO().WantCaptureKeyboard && Key == GLFW_KEY_DELETE)
 		{
-			if (SELECTED.GetSelected(EDITOR.EditorScenes[i]->Scene) != nullptr)
+			if (SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene) != nullptr)
 			{
-				if (CurrentSelectionData->InstancedSubObjectIndexSelected != -1 && SELECTED.GetSelected(EDITOR.EditorScenes[i]->Scene)->HasComponent<FEInstancedComponent>())
+				if (CurrentSelectionData->InstancedSubObjectIndexSelected != -1 && SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene)->HasComponent<FEInstancedComponent>())
 				{
-					INSTANCED_RENDERING_SYSTEM.DeleteIndividualInstance(SELECTED.GetSelected(EDITOR.EditorScenes[i]->Scene), CurrentSelectionData->InstancedSubObjectIndexSelected);
+					INSTANCED_RENDERING_SYSTEM.DeleteIndividualInstance(SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene), CurrentSelectionData->InstancedSubObjectIndexSelected);
 				}
 				else
 				{
 					if (EDITOR.GetFocusedScene() != nullptr)
 					{
-						EDITOR.GetFocusedScene()->DeleteEntity(SELECTED.GetSelected(EDITOR.EditorScenes[i]->Scene));
+						EDITOR.GetFocusedScene()->DeleteEntity(SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene));
 					}
 				}
 
-				SELECTED.Clear(EDITOR.EditorScenes[i]->Scene);
+				SELECTED.Clear(EDITOR.EditorSceneWindows[i]->Scene);
 				PROJECT_MANAGER.GetCurrent()->SetModified(true);
 			}
 		}
 
 		if (!ImGui::GetIO().WantCaptureKeyboard && Mods == GLFW_MOD_CONTROL && Key == GLFW_KEY_C && Action == GLFW_RELEASE)
 		{
-			if (SELECTED.GetSelected(EDITOR.EditorScenes[i]->Scene) != nullptr)
-				EDITOR.SetSceneEntityIDInClipboard(SELECTED.GetSelected(EDITOR.EditorScenes[i]->Scene)->GetObjectID());
+			if (SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene) != nullptr)
+				EDITOR.SetSceneEntityIDInClipboard(SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene)->GetObjectID());
 		}
 
 		if (!ImGui::GetIO().WantCaptureKeyboard && (Key == GLFW_KEY_RIGHT_SHIFT || Key == GLFW_KEY_LEFT_SHIFT) && Action == GLFW_RELEASE)
 		{
-			FEGizmoSceneData* GizmoSceneData = GIZMO_MANAGER.GetSceneData(EDITOR.EditorScenes[i]->Scene->GetObjectID());
+			FEGizmoSceneData* GizmoSceneData = GIZMO_MANAGER.GetSceneData(EDITOR.EditorSceneWindows[i]->Scene->GetObjectID());
 			int NewState = GizmoSceneData->GizmosState + 1;
 			if (NewState > 2)
 				NewState = 0;
-			GIZMO_MANAGER.UpdateGizmoState(NewState, EDITOR.EditorScenes[i]->Scene);
+			GIZMO_MANAGER.UpdateGizmoState(NewState, EDITOR.EditorSceneWindows[i]->Scene);
 		}
 	}
 
@@ -334,20 +279,20 @@ void FEEditor::MouseMoveCallback(double Xpos, double Ypos)
 
 	DRAG_AND_DROP_MANAGER.MouseMove();
 
-	for (size_t i = 0; i < EDITOR.EditorScenes.size(); i++)
+	for (size_t i = 0; i < EDITOR.EditorSceneWindows.size(); i++)
 	{
-		if (EDITOR.EditorScenes[i]->Scene != EDITOR.GetFocusedScene())
+		if (EDITOR.EditorSceneWindows[i]->Scene != EDITOR.GetFocusedScene())
 			continue;
 
-		if (SELECTED.GetSelected(EDITOR.EditorScenes[i]->Scene) != nullptr)
+		if (SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene) != nullptr)
 		{
-			if (SELECTED.GetSelected(EDITOR.EditorScenes[i]->Scene) != nullptr && SELECTED.GetSelected(EDITOR.EditorScenes[i]->Scene)->HasComponent<FETerrainComponent>())
+			if (SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene) != nullptr && SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene)->HasComponent<FETerrainComponent>())
 			{
 				if (TERRAIN_SYSTEM.GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
 					return;
 			}
 
-			GIZMO_MANAGER.MouseMove(EDITOR.GetLastMouseX(), EDITOR.GetLastMouseY(), EDITOR.GetMouseX(), EDITOR.GetMouseY(), EDITOR.EditorScenes[i]->Scene);
+			GIZMO_MANAGER.MouseMove(EDITOR.GetLastMouseX(), EDITOR.GetLastMouseY(), EDITOR.GetMouseX(), EDITOR.GetMouseY(), EDITOR.EditorSceneWindows[i]->Scene);
 		}
 	}
 }
@@ -363,7 +308,7 @@ void FEEditor::Render()
 	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetActiveScenes();
 	if (ActiveScenes.empty())
 	{
-		EditorScenes.clear();
+		EditorSceneWindows.clear();
 		SetFocusedScene(nullptr);
 	}
 
@@ -512,57 +457,32 @@ void FEEditor::Render()
 		}
 		ImGui::PopStyleVar();
 
-		for (size_t i = 0; i < EditorScenes.size(); i++)
+		for (size_t i = 0; i < EditorSceneWindows.size(); i++)
 		{
-			std::string WindowName = EditorScenes[i]->Scene->GetName();
-			// Window name must be unique.
-			WindowName += "##" + EditorScenes[i]->Scene->GetObjectID();
-			if (EditorScenes[i]->bMain)
-				WindowName = "Main Scene";
+			// Rendeting would be done by RenderAllSubWindows().
 
-			if (ImGui::Begin(WindowName.c_str(), nullptr, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollbar))
+			// Check if some window is waiting for removal
+			if (EditorSceneWindows[i]->bWaitingForRemoval)
 			{
-				if (EditorScenes[i]->bJustAdded)
+				if (FocusedEditorSceneID == EditorSceneWindows[i]->Scene->GetObjectID())
 				{
-					ImGui::SetWindowFocus();
-					ImGui::SetWindowSize(ImVec2(256, 256));
-					EditorScenes[i]->bJustAdded = false;
+					FocusedEditorSceneID = "";
+					for (size_t j = 0; j < EditorSceneWindows.size(); j++)
+					{
+						if (EditorSceneWindows[j]->bMain && EditorSceneWindows[j] != EditorSceneWindows[i])
+						{
+							FocusedEditorSceneID = EditorSceneWindows[j]->Scene->GetObjectID();
+							break;
+						}
+					}
 				}
-
-				EditorScenes[i]->SceneWindow = ImGui::GetCurrentWindow();
-				if (EditorScenes[i]->SceneWindowTarget != nullptr)
-					EditorScenes[i]->SceneWindowTarget->StickToCurrentWindow();
-
-				if (ImGui::IsWindowFocused())
-					SetFocusedScene(EditorScenes[i]->Scene);
-
-				FEEntity* CameraEntity = CAMERA_SYSTEM.GetMainCameraEntity(EditorScenes[i]->Scene);
-				FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
-
-				if (CameraComponent.GetViewport() == nullptr)
-				{
-					std::string NewViewportID = ENGINE.AddViewport(EditorScenes[i]->SceneWindow);
-					CAMERA_SYSTEM.SetCameraViewport(CameraEntity, NewViewportID);
-					SELECTED.AddSceneData(EditorScenes[i]->Scene->GetObjectID());
-					GIZMO_MANAGER.AddSceneData(EditorScenes[i]->Scene->GetObjectID());
-					EditorScenes[i]->SceneWindowTarget = DRAG_AND_DROP_MANAGER.AddTarget(std::vector<FE_OBJECT_TYPE>{ FE_GAMEMODEL, FE_PREFAB },
-																						SceneWindowDragAndDropCallBack,
-																						reinterpret_cast<void**>(&EditorScenes[i]),
-																						std::vector<std::string>{ "Drop to add to scene", "Drop to add to scene" });
-				}
-
-				ImGuiStyle& Style = ImGui::GetStyle();
-				Style.WindowBorderSize = 0.0f;
-				Style.WindowPadding = ImVec2(0.0f, 0.0f);
-
-				FETexture* CameraResult = RENDERER.GetCameraResult(CAMERA_SYSTEM.GetMainCameraEntity(EditorScenes[i]->Scene));
-				if (CameraResult != nullptr)
-				{
-					ImGui::Image((void*)(intptr_t)CameraResult->GetTextureID(), ImVec2(ImGui::GetCurrentWindow()->ContentRegionRect.GetWidth(), ImGui::GetCurrentWindow()->ContentRegionRect.GetHeight()), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
-				}
+				
+				FEScene* Scene = EditorSceneWindows[i]->Scene;
+				delete EditorSceneWindows[i];
+				EditorSceneWindows.erase(EditorSceneWindows.begin() + i);
+				i--;
+				continue;
 			}
-
-			ImGui::End();
 		}
 
 		SCENE_GRAPH_WINDOW.Render();
@@ -574,17 +494,17 @@ void FEEditor::Render()
 			GyzmosSettingsWindowObject.Show();
 		GyzmosSettingsWindowObject.Render();
 
-		for (size_t i = 0; i < EditorScenes.size(); i++)
+		for (size_t i = 0; i < EditorSceneWindows.size(); i++)
 		{
-			if (EditorScenes[i]->Scene != EDITOR.GetFocusedScene())
+			if (EditorSceneWindows[i]->Scene != EDITOR.GetFocusedScene())
 				continue;
 
-			const int ObjectIndex = SELECTED.GetIndexOfObjectUnderMouse(EDITOR.GetMouseX(), EDITOR.GetMouseY(), EditorScenes[i]->Scene);
+			const int ObjectIndex = SELECTED.GetIndexOfObjectUnderMouse(EDITOR.GetMouseX(), EDITOR.GetMouseY(), EditorSceneWindows[i]->Scene);
 			if (ObjectIndex >= 0)
 			{
-				if (!GIZMO_MANAGER.WasSelected(ObjectIndex, EditorScenes[i]->Scene))
+				if (!GIZMO_MANAGER.WasSelected(ObjectIndex, EditorSceneWindows[i]->Scene))
 				{
-					SELECTED.SetSelectedByIndex(ObjectIndex, EditorScenes[i]->Scene);
+					SELECTED.SetSelectedByIndex(ObjectIndex, EditorSceneWindows[i]->Scene);
 				}
 			}
 		}
@@ -623,14 +543,16 @@ void FEEditor::OnViewportResize(std::string ViewportID)
 	if (PROJECT_MANAGER.GetCurrent() == nullptr)
 		return;
 
-	for (size_t i = 0; i < EDITOR.EditorScenes.size(); i++)
+	for (size_t i = 0; i < EDITOR.EditorSceneWindows.size(); i++)
 	{
-		FEEntity* CameraEntity = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.EditorScenes[i]->Scene);
-		FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
+		FEEntity* CameraEntity = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.EditorSceneWindows[i]->Scene);
+		if (CameraEntity == nullptr)
+			continue;
 
+		FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
 		if (CameraComponent.GetViewport()->GetID() == ViewportID)
 		{
-			SELECTED.UpdateResources(EDITOR.EditorScenes[i]->Scene);
+			SELECTED.UpdateResources(EDITOR.EditorSceneWindows[i]->Scene);
 		}
 	}
 }
@@ -848,20 +770,30 @@ void FEEditor::SetUpImgui()
 
 void FEEditor::OnProjectClose()
 {
-	EditorScenes.clear();
+	EDITOR_MATERIAL_WINDOW.Stop();
+	EditorSceneWindows.clear();
 	SetFocusedScene(nullptr);
 
 	PROJECT_MANAGER.CloseCurrentProject();
 	CONTENT_BROWSER_WINDOW.Clear();
 	SCENE_GRAPH_WINDOW.Clear();
+	PREFAB_EDITOR_MANAGER.Clear();
 }
 
 void FEEditor::AddEditorScene(FEScene* Scene, bool bMain)
 {
-	FEEditorSceneData* NewEditorSceneData = new FEEditorSceneData();
-	NewEditorSceneData->bMain = bMain;
-	NewEditorSceneData->Scene = Scene;
-	EditorScenes.push_back(NewEditorSceneData);
+	FEEditorSceneWindow* NewSceneWindow = new FEEditorSceneWindow(Scene, bMain);
+	NewSceneWindow->SetVisible(true);
+	EditorSceneWindows.push_back(NewSceneWindow);
+}
+
+void FEEditor::AddCustomEditorScene(FEEditorSceneWindow* SceneWindow)
+{
+	if (SceneWindow == nullptr)
+		return;
+
+	SceneWindow->SetVisible(true);
+	EditorSceneWindows.push_back(SceneWindow);
 }
 
 FEScene* FEEditor::GetFocusedScene() const

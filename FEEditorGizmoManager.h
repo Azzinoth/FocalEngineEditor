@@ -72,6 +72,7 @@ class GizmoManager
 	friend class FEEditor;
 	friend class FEProjectManager;
 	friend class GyzmosSettingsWindow;
+	friend class FEEditorSceneWindow;
 public:
 	SINGLETON_PUBLIC_PART(GizmoManager)
 

@@ -67,6 +67,11 @@ file(GLOB FEDearImguiWrapper_SRC
 	"FEDearImguiWrapper/FEDearImguiWrapper.h"
 )
 
+file(GLOB EditorWindows_BaseWindowClasses_SRC
+	"EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.h"
+	"EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.cpp"
+)
+
 file(GLOB EditorWindows_SRC
 	"EditorWindows/DeletePopups.cpp"
 	"EditorWindows/DeletePopups.h"
@@ -86,8 +91,8 @@ file(GLOB EditorWindows_SRC
 	"EditorWindows/ShaderEditorWindow.h"
 	"EditorWindows/ResizeTexturePopup.cpp"
 	"EditorWindows/ResizeTexturePopup.h"
-	"EditorWindows/PrefabEditorWindow.cpp"
-	"EditorWindows/PrefabEditorWindow.h"
+	"EditorWindows/PrefabEditorManager.cpp"
+	"EditorWindows/PrefabEditorManager.h"
 	"EditorWindows/DebugTextureViewWindow.cpp"
 	"EditorWindows/DebugTextureViewWindow.h"
 	"EditorWindows/SceneGraphWindow.cpp"
@@ -136,6 +141,7 @@ link_directories(${GLFW_LIB_DIR})
 add_executable(FocalEngineEditor WIN32
 								 ${Editor_SRC}
 								 ${FEDearImguiWrapper_SRC}
+								 ${EditorWindows_BaseWindowClasses_SRC}
 								 ${EditorWindows_SRC}
 								 ${Editor_Materials_SRC}
 								 ${VisualNodeSystem_CustomNodes_SRC}
@@ -152,6 +158,7 @@ source_group("Source Files" FILES ${Application_SRC})
 # *************** EDITOR ***************
 source_group("Source Files/" FILES ${Editor_SRC})
 source_group("Source Files/FEDearImguiWrapper" FILES ${FEDearImguiWrapper_SRC})
+source_group("Source Files/EditorWindows/BaseWindowClasses" FILES ${EditorWindows_BaseWindowClasses_SRC})
 source_group("Source Files/EditorWindows" FILES ${EditorWindows_SRC})
 source_group("Source Files/Materials" FILES ${Editor_Materials_SRC})
 source_group("Source Files/NodeSystem/CustomNodes" FILES ${VisualNodeSystem_CustomNodes_SRC})

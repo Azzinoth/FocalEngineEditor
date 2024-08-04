@@ -52,6 +52,9 @@ void FEEditorHaloSelectionEffect::UpdateResources(FEScene* Scene)
 		return;
 
 	FECameraRenderingData* CameraData = RENDERER.GetCameraRenderingData(CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene()));
+	if (CameraData == nullptr)
+		return;
+
 	std::vector<FEPostProcess*>& PostProcesses = CameraData->PostProcessEffects;
 
 	delete CurrentHaloSelectionData->HaloObjectsFB;
