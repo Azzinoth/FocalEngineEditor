@@ -1060,7 +1060,7 @@ void FEEditorInspectorWindow::Render()
 	{
 		if (ImGui::CollapsingHeader("Prefab Instance", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-
+			ImGui::Text("Prefab ID : %s", EntitySelected->GetComponent<FEPrefabInstanceComponent>().GetPrefab()->GetObjectID().c_str());
 		}
 	}
 

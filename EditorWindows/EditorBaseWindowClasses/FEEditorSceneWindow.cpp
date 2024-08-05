@@ -1,7 +1,33 @@
 #include "FEEditorSceneWindow.h"
 #include "../../FEEditor.h"
 
-bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
+FEEditorSceneWindow::FEEditorSceneWindow(FEScene* Scene, bool bMain)
+{
+	if (Scene == nullptr)
+		return;
+
+	this->Scene = Scene;
+	this->bMain = bMain;
+	Flags = ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+
+	std::string WindowName = Scene->GetName();
+	// Window name must be unique.
+	WindowName += "##" + Scene->GetObjectID();
+	if (bMain)
+		WindowName = "Main Scene";
+
+	SetCaption(WindowName);
+	SetBorderSize(0.0f);
+	SetPadding(glm::vec2(0.0f, 0.0f));
+
+	AcceptedTypes.push_back(FE_GAMEMODEL);
+	AcceptedTypes.push_back(FE_PREFAB);
+	ToolTipTexts.push_back("Drop to add to scene");
+	ToolTipTexts.push_back("Drop to add to scene");
+	CurrentDragAndDropCallback = DragAndDropCallBack;
+}
+
+bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
 {
 	if (EDITOR.GetFocusedScene() == nullptr)
 		return false;
@@ -40,41 +66,31 @@ bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
 		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
 		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
 
-		std::vector<FENaiveSceneGraphNode*> NewNodes = SCENE_MANAGER.ImportSceneAsNode(RESOURCE_MANAGER.GetPrefab(Object->GetObjectID())->Scene, EditorSceneWindow->GetScene());
+		FEPrefab* Prefab = RESOURCE_MANAGER.GetPrefab(Object->GetObjectID());
+		FEScene* PrefabScene = Prefab->Scene;
+		FENaiveSceneGraphNode* RootNode = PrefabScene->SceneGraph.GetRoot();
+
+		FEEntity* NewEntity = EditorSceneWindow->GetScene()->CreateEntity(Object->GetName());
+		FENaiveSceneGraphNode* NewNode = EditorSceneWindow->GetScene()->SceneGraph.GetNodeByEntityID(NewEntity->GetObjectID());
+
+		std::vector<FENaiveSceneGraphNode*> NewNodes = SCENE_MANAGER.ImportSceneAsNode(PrefabScene, EditorSceneWindow->GetScene(), NewNode);
 		if (!NewNodes.empty())
 		{
-			// Currently we are interested in the first node only
-			FEEntity* Entity = NewNodes[0]->GetEntity();
-			Entity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
-
-			SELECTED.SetSelected(Entity);
+			NewEntity->AddComponent<FEPrefabInstanceComponent>(Prefab);
+			SELECTED.SetSelected(NewEntity);
 			PROJECT_MANAGER.GetCurrent()->SetModified(true);
 
+			NewEntity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
 			return true;
+		}
+		else
+		{
+			EditorSceneWindow->GetScene()->DeleteEntity(NewEntity);
+			return false;
 		}
 	}
 
 	return false;
-}
-
-FEEditorSceneWindow::FEEditorSceneWindow(FEScene* Scene, bool bMain)
-{
-	if (Scene == nullptr)
-		return;
-
-	this->Scene = Scene;
-	this->bMain = bMain;
-	Flags = ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
-
-	std::string WindowName = Scene->GetName();
-	// Window name must be unique.
-	WindowName += "##" + Scene->GetObjectID();
-	if (bMain)
-		WindowName = "Main Scene";
-
-	SetCaption(WindowName);
-	SetBorderSize(0.0f);
-	SetPadding(glm::vec2(0.0f, 0.0f));
 }
 
 FEEditorSceneWindow::~FEEditorSceneWindow()
@@ -118,10 +134,10 @@ void FEEditorSceneWindow::Render()
 			CAMERA_SYSTEM.SetCameraViewport(CameraEntity, NewViewportID);
 			SELECTED.AddSceneData(Scene->GetObjectID());
 			GIZMO_MANAGER.AddSceneData(Scene->GetObjectID());
-			SceneWindowTarget = DRAG_AND_DROP_MANAGER.AddTarget(std::vector<FE_OBJECT_TYPE>{ FE_GAMEMODEL, FE_PREFAB },
-				SceneWindowDragAndDropCallBack,
+			SceneWindowTarget = DRAG_AND_DROP_MANAGER.AddTarget(AcceptedTypes,
+				CurrentDragAndDropCallback,
 				reinterpret_cast<void**>(this),
-				std::vector<std::string>{ "Drop to add to scene", "Drop to add to scene" });
+				ToolTipTexts);
 		}
 
 		ImGuiStyle& Style = ImGui::GetStyle();

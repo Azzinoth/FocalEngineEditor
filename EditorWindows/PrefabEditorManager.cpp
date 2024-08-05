@@ -3,7 +3,6 @@
 #include "../FEEditor.h"
 FEPrefabEditorManager* FEPrefabEditorManager::Instance = nullptr;
 
-
 FEPrefabSceneEditorWindow::FEPrefabSceneEditorWindow(FEScene* Scene) : FEEditorSceneWindow(Scene, false)
 {
 	bSelfContained = false;
@@ -15,6 +14,12 @@ FEPrefabSceneEditorWindow::FEPrefabSceneEditorWindow(FEScene* Scene) : FEEditorS
 	CloseButton = new ImGuiButton("Close");
 	CloseButton->SetSize(ImVec2(140, 24));
 	CloseButton->SetDefaultColor(ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
+
+	AcceptedTypes.clear();
+	AcceptedTypes.push_back(FE_GAMEMODEL);
+	ToolTipTexts.clear();
+	ToolTipTexts.push_back("Drop to add to scene");
+	CurrentDragAndDropCallback = FEPrefabSceneEditorWindow::DragAndDropCallBack;
 }
 
 FEPrefabSceneEditorWindow::~FEPrefabSceneEditorWindow()
@@ -68,6 +73,42 @@ void FEPrefabSceneEditorWindow::Render()
 	FEEditorSceneWindow::OnRenderEnd();
 }
 
+bool FEPrefabSceneEditorWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
+{
+	if (EDITOR.GetFocusedScene() == nullptr)
+		return false;
+
+	if (CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene()) == nullptr)
+		return false;
+
+	if (UserData == nullptr)
+		return false;
+
+	FEEditorSceneWindow* EditorSceneWindow = reinterpret_cast<FEEditorSceneWindow*>(UserData);
+	if (EditorSceneWindow->GetScene() == nullptr)
+		return false;
+
+	if (Object->GetType() == FE_GAMEMODEL)
+	{
+		FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Object->GetObjectID());
+
+		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
+		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
+
+		FEEntity* Entity = EditorSceneWindow->GetScene()->CreateEntity(Object->GetName());
+		Entity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
+		Entity->AddComponent<FEGameModelComponent>(GameModel);
+
+		SELECTED.SetSelected(Entity);
+		PROJECT_MANAGER.GetCurrent()->SetModified(true);
+
+		return true;
+
+	}
+
+	return false;
+}
+
 FEPrefabEditorManager::FEPrefabEditorManager()
 {
 	
@@ -104,16 +145,36 @@ void FEPrefabEditorManager::PrepareEditWinow(FEPrefab* Prefab)
 
 	FEScene* CurrentPrefabScene = SCENE_MANAGER.DuplicateScene(Prefab->Scene, "Scene: " + Prefab->GetName());
 
+	// Because by default camera is looking at 0,0,0 we need to place "empty" entity at 0,0,0.
+	// To ensure that scene AABB would include some entity at 0,0,0.
+	FEEntity* EmptyEntity = CurrentPrefabScene->CreateEntity("Empty entity");
+
+	FEAABB SceneAABB = CurrentPrefabScene->GetSceneAABB([](FEEntity* Entity) -> bool {
+		if (Entity->GetComponent<FETagComponent>().GetTag() == EDITOR_SCENE_TAG)
+			return false;
+
+		if (Entity->HasComponent<FESkyDomeComponent>())
+			return false;
+
+		if (Entity->HasComponent<FECameraComponent>())
+			return false;
+
+		return true;
+	});
+
+	CurrentPrefabScene->DeleteEntity(EmptyEntity);
+
 	FEEntity* Camera = CurrentPrefabScene->CreateEntity("Prefab scene camera");
 	Camera->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
 	Camera->AddComponent<FECameraComponent>();
 	FECameraComponent& CameraComponent = Camera->GetComponent<FECameraComponent>();
 	CameraComponent.Type = 1;
-	CameraComponent.DistanceToModel = 10.0;
+	CameraComponent.DistanceToModel = SceneAABB.GetLongestAxisLength() * 2.5;
 	CameraComponent.SetSSAOEnabled(false);
-
 	CAMERA_SYSTEM.SetMainCamera(Camera);
 	FETransformComponent& CameraTransform = Camera->GetComponent<FETransformComponent>();
+	// To make sure that next scene FEAABB calculation will include correct camera position.
+	CAMERA_SYSTEM.IndividualUpdate(Camera, 0.0);
 
 	FEEntity* SkyDomeEntity = CurrentPrefabScene->CreateEntity("Prefab scene skydome");
 	SkyDomeEntity->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
@@ -126,7 +187,17 @@ void FEPrefabEditorManager::PrepareEditWinow(FEPrefab* Prefab)
 	FELightComponent& LightComponent = LightEntity->GetComponent<FELightComponent>();
 	LightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
 	LightComponent.SetIntensity(4.3f);
-	LightComponent.SetCastShadows(false);
+	SceneAABB = CurrentPrefabScene->GetSceneAABB([](FEEntity* Entity) -> bool {
+		if (Entity->GetComponent<FETagComponent>().GetTag() == EDITOR_SCENE_TAG && !Entity->HasComponent<FECameraComponent>())
+			return false;
+
+		if (Entity->HasComponent<FESkyDomeComponent>())
+			return false;
+
+		return true;
+	});
+	LightComponent.SetShadowCoverage(SceneAABB.GetLongestAxisLength() * 2);
+	LightComponent.SetCastShadows(true);
 
 	PrefabWindows[Prefab] = new FEPrefabSceneEditorWindow(CurrentPrefabScene);
 	EDITOR.AddCustomEditorScene(PrefabWindows[Prefab]);
@@ -157,4 +228,7 @@ void FEPrefabEditorManager::ApplyModificationsToPrefabScene(FEPrefabSceneEditorW
 	SCENE_MANAGER.ImportSceneAsNode(ModifiedScene, Prefab->Scene, Prefab->Scene->SceneGraph.GetRoot(), [](FEEntity* EntityToCheck) {
 		return !(EntityToCheck->GetComponent<FETagComponent>().GetTag() == EDITOR_SCENE_TAG);
 	});
+
+	Prefab->SetDirtyFlag(true);
+	PREVIEW_MANAGER.GetPrefabPreview(Prefab->GetObjectID());
 }

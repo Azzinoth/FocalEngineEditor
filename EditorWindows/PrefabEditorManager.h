@@ -11,6 +11,8 @@ class FEPrefabSceneEditorWindow : public FEEditorSceneWindow
 
 	ImGuiButton* CloseButton = nullptr;
 	ImGuiButton* ApplyButton = nullptr;
+
+	static bool DragAndDropCallBack(FEObject* Object, void** UserData);
 public:
 	FEPrefabSceneEditorWindow(FEScene* Scene);
 	void Render() override;

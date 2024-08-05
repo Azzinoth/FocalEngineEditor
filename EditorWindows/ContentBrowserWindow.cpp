@@ -661,7 +661,8 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 
 				ImGui::BeginTooltip();
 				ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-				ImGui::TextUnformatted(("Name: " + FilteredResources[i]->GetName() +
+				ImGui::TextUnformatted(("ID: " + FilteredResources[i]->GetObjectID() +
+										"\nName: " + FilteredResources[i]->GetName() +
 										"\nType: " + FEObjectTypeToString(FilteredResources[i]->GetType()) +
 										AdditionalTypeInfo +
 										"\nPath: " + VIRTUAL_FILE_SYSTEM.GetCurrentPath()

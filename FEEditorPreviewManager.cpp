@@ -198,15 +198,14 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 			CreateGameModelPreview(CurrentGameModel->GetObjectID());
 	}
 
-	// FIX ME!
-	// looking for all prefabs that uses this material to also update them
-	/*const std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
+	// Looking for all prefabs that uses this material to also update them.
+	const std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
 	for (size_t i = 0; i < PrefabList.size(); i++)
 	{
 		FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[i]);
 		if (CurrentPrefab->UsesMaterial(MaterialID))
 			CreatePrefabPreview(CurrentPrefab->GetObjectID());
-	}*/
+	}
 }
 
 FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string MaterialID)
@@ -322,8 +321,6 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 	RENDERER.Render(PreviewScene);
 
 	AfterPreviewActions();
-
-	//PreviewFB->SetColorAttachment(TempTexture);
 }
 
 FETexture* FEEditorPreviewManager::GetGameModelPreview(const std::string GameModelID)
@@ -369,47 +366,74 @@ void FEEditorPreviewManager::UpdateAllGameModelPreviews()
 void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 {
 	FEPrefab* Prefab = RESOURCE_MANAGER.GetPrefab(PrefabID);
-	if (Prefab == nullptr)
+	if (Prefab == nullptr || Prefab->Scene == nullptr)
 		return;
 
-	if (Prefab->ComponentsCount() < 1)
-		return;
+	FEScene* CurrentPrefabScene = SCENE_MANAGER.DuplicateScene(Prefab->Scene, "Scene: " + Prefab->GetName());
 
-	FEGameModel* GameModel = Prefab->GetComponent(0)->GameModel;
-	if (GameModel == nullptr)
-		return;
+	// Because by default camera is looking at 0,0,0 we need to place "empty" entity at 0,0,0.
+	// To ensure that scene AABB would include some entity at 0,0,0.
+	CurrentPrefabScene->CreateEntity("Empty entity");
 
-	PreviewEntity->GetComponent<FEGameModelComponent>().GameModel = GameModel;
-	PreviewEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
-	BeforePreviewActions();
+	FEAABB SceneAABB = CurrentPrefabScene->GetSceneAABB([](FEEntity* Entity) -> bool {
+		if (Entity->GetComponent<FETagComponent>().GetTag() == EDITOR_SCENE_TAG)
+			return false;
 
-	FEAABB MeshAABB = PreviewEntity->GetComponent<FEGameModelComponent>().GameModel->Mesh->GetAABB();
-	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
-	const glm::vec3 min = MeshAABB.GetMin();
-	const glm::vec3 max = MeshAABB.GetMax();
+		if (Entity->HasComponent<FESkyDomeComponent>())
+			return false;
 
-	const float XSize = sqrt((max.x - min.x) * (max.x - min.x));
-	const float YSize = sqrt((max.y - min.y) * (max.y - min.y));
-	const float ZSize = sqrt((max.z - min.z) * (max.z - min.z));
+		if (Entity->HasComponent<FECameraComponent>())
+			return false;
 
-	// invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
-	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
-	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
-	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
+		return true;
+	});
 
-	RENDERER.Render(PreviewScene);
+	FEEntity* Camera = CurrentPrefabScene->CreateEntity("Prefab scene camera");
+	Camera->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
+	Camera->AddComponent<FECameraComponent>();
+	Camera->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, SceneAABB.GetLongestAxisLength() * 2));
+	FECameraComponent& CameraComponent = Camera->GetComponent<FECameraComponent>();
+	CameraComponent.SetRenderTargetSize(128, 128);
+	CameraComponent.SetDistanceFogEnabled(false);
+	CameraComponent.SetSSAOEnabled(false);
+	CAMERA_SYSTEM.SetMainCamera(Camera);
+	// To make sure that next scene FEAABB calculation will include correct camera position.
+	CAMERA_SYSTEM.IndividualUpdate(Camera, 0.0);
 
-	//PreviewEntity->Prefab = PreviewPrefab;
-	PreviewEntity->GetComponent<FEGameModelComponent>().GameModel = PreviewGameModel;
+	FEEntity* SkyDomeEntity = CurrentPrefabScene->CreateEntity("Prefab scene skydome");
+	SkyDomeEntity->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
+	SkyDomeEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(100.0f));
+	SkyDomeEntity->AddComponent<FESkyDomeComponent>();
 
-	AfterPreviewActions();
+	FEEntity* LightEntity = CurrentPrefabScene->CreateEntity("Prefab scene light");
+	LightEntity->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
+	LightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
+	FELightComponent& LightComponent = LightEntity->GetComponent<FELightComponent>();
+	LightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
+	LightComponent.SetIntensity(4.3f);
+	SceneAABB = CurrentPrefabScene->GetSceneAABB([](FEEntity* Entity) -> bool {
+		if (Entity->GetComponent<FETagComponent>().GetTag() == EDITOR_SCENE_TAG && !Entity->HasComponent<FECameraComponent>())
+			return false;
+
+		if (Entity->HasComponent<FESkyDomeComponent>())
+			return false;
+
+		return true;
+	});
+	LightComponent.SetShadowCoverage(SceneAABB.GetLongestAxisLength() * 2);
+	LightComponent.SetCastShadows(true);
+
+	RENDERER.Render(CurrentPrefabScene);
 
 	// if we are updating preview we should delete old texture.
 	if (PrefabPreviewTextures.find(PrefabID) != PrefabPreviewTextures.end())
 		delete PrefabPreviewTextures[PrefabID];
 
-	//PrefabPreviewTextures[PrefabID] = PreviewFB->GetColorAttachment();
-	//PreviewFB->SetColorAttachment(RESOURCE_MANAGER.CreateSameFormatTexture(PreviewFB->GetColorAttachment()));
+	FETexture* CameraResult = RENDERER.GetCameraResult(Camera);
+	if (CameraResult != nullptr)
+		PrefabPreviewTextures[PrefabID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
+
+	SCENE_MANAGER.DeleteScene(CurrentPrefabScene);
 }
 
 void CreatePrefabPreview(FEPrefab* Prefab, FETexture** ResultingTexture)
@@ -419,33 +443,33 @@ void CreatePrefabPreview(FEPrefab* Prefab, FETexture** ResultingTexture)
 
 FETexture* FEEditorPreviewManager::GetPrefabPreview(const std::string PrefabID)
 {
-	//FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabID);
-	//if (CurrentPrefab == nullptr)
-	//{
-	//	LOG.Add("FEEditorPreviewManager::GetPrefabPreview could not find prefab with ID: " + PrefabID, "FE_LOG_RENDERING", FE_LOG_ERROR);
-	//	return RESOURCE_MANAGER.NoTexture;
-	//}
-	//	
-	//// if Prefab's dirty flag is set we need to update preview
-	//if (CurrentPrefab->IsDirty())
-	//{
-	//	CreatePrefabPreview(PrefabID);
-	//	CurrentPrefab->SetDirtyFlag(false);
-	//}
+	FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabID);
+	if (CurrentPrefab == nullptr)
+	{
+		LOG.Add("FEEditorPreviewManager::GetPrefabPreview could not find prefab with ID: " + PrefabID, "FE_LOG_RENDERING", FE_LOG_ERROR);
+		return RESOURCE_MANAGER.NoTexture;
+	}
+		
+	// if Prefab's dirty flag is set we need to update preview
+	if (CurrentPrefab->IsDirty())
+	{
+		CreatePrefabPreview(PrefabID);
+		CurrentPrefab->SetDirtyFlag(false);
+	}
 
-	//for (int i = 0; i < CurrentPrefab->ComponentsCount(); i++)
-	//{
-	//	// if Prefab's material dirty flag is set we need to update preview
-	//	if (CurrentPrefab->GetComponent(i)->GameModel->GetMaterial() != nullptr && CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->IsDirty())
-	//	{
-	//		CreateMaterialPreview(CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->GetObjectID());
-	//		CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->SetDirtyFlag(false);
-	//	}
-	//}
+	for (int i = 0; i < CurrentPrefab->ComponentsCount(); i++)
+	{
+		// if Prefab's material dirty flag is set we need to update preview
+		if (CurrentPrefab->GetComponent(i)->GameModel->GetMaterial() != nullptr && CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->IsDirty())
+		{
+			CreateMaterialPreview(CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->GetObjectID());
+			CurrentPrefab->GetComponent(i)->GameModel->GetMaterial()->SetDirtyFlag(false);
+		}
+	}
 
-	//// if we somehow could not find preview, we will create it.
-	//if (PrefabPreviewTextures.find(PrefabID) == PrefabPreviewTextures.end())
-	//	CreatePrefabPreview(PrefabID);
+	// if we somehow could not find preview, we will create it.
+	if (PrefabPreviewTextures.find(PrefabID) == PrefabPreviewTextures.end())
+		CreatePrefabPreview(PrefabID);
 
 	// if still we don't have it
 	if (PrefabPreviewTextures.find(PrefabID) == PrefabPreviewTextures.end())

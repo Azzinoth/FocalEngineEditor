@@ -557,39 +557,36 @@ void FEEditorSceneGraphWindow::Render()
 		ImGui::EndPopup();
 	}
 
-	//FEBasicCamera* Camera = ENGINE.GetCamera();
-	//INSPECTOR_WINDOW.ShowTransformConfiguration("Camera", & Camera->TestTransform);
+	//// FIX ME! It should not be here.
+	//static bool bDisplayGrid = true;
+	//ImGui::Checkbox("Display grid", &bDisplayGrid);
 
-	// FIX ME! It should not be here.
-	static bool bDisplayGrid = true;
-	ImGui::Checkbox("Display grid", &bDisplayGrid);
+	//static glm::vec3 color = glm::vec3(0.2f, 0.3f, 0.4f);
 
-	static glm::vec3 color = glm::vec3(0.2f, 0.3f, 0.4f);
+	//const float BasicW = 0.1f;
+	//float width = BasicW * 4.0f;
+	//if (bDisplayGrid)
+	//{
+	//	const int GridSize = 200;
+	//	for (int i = -GridSize / 2; i < GridSize / 2; i++)
+	//	{
+	//		color = glm::vec3(0.4f, 0.65f, 0.73f);
+	//		width = BasicW * 4.0f;
+	//		if (i % 2 != 0 && i != 0)
+	//		{
+	//			color = color / 4.0f;
+	//			width = width / 4.0f;
+	//		}
+	//		else if (i == 0)
+	//		{
+	//			color = glm::vec3(0.9f, 0.9f, 0.9f);
+	//			width = BasicW * 4.0f;
+	//		}
 
-	const float BasicW = 0.1f;
-	float width = BasicW * 4.0f;
-	if (bDisplayGrid)
-	{
-		const int GridSize = 200;
-		for (int i = -GridSize / 2; i < GridSize / 2; i++)
-		{
-			color = glm::vec3(0.4f, 0.65f, 0.73f);
-			width = BasicW * 4.0f;
-			if (i % 2 != 0 && i != 0)
-			{
-				color = color / 4.0f;
-				width = width / 4.0f;
-			}
-			else if (i == 0)
-			{
-				color = glm::vec3(0.9f, 0.9f, 0.9f);
-				width = BasicW * 4.0f;
-			}
-
-			RENDERER.DrawLine(glm::vec3(i, 0.0f, -GridSize / 2), glm::vec3(i, 0.0f, GridSize / 2), color, width);
-			RENDERER.DrawLine(glm::vec3(-GridSize / 2, 0.0f, i), glm::vec3(GridSize / 2, 0.0f, i), color, width);
-		}
-	}
+	//		RENDERER.DrawLine(glm::vec3(i, 0.0f, -GridSize / 2), glm::vec3(i, 0.0f, GridSize / 2), color, width);
+	//		RENDERER.DrawLine(glm::vec3(-GridSize / 2, 0.0f, i), glm::vec3(GridSize / 2, 0.0f, i), color, width);
+	//	}
+	//}
 
 	static float FavgTime = 0.0f;
 	static std::vector<float> AvgTime;
@@ -630,34 +627,50 @@ void FEEditorSceneGraphWindow::Render()
 	ImGui::Checkbox("Display AABB of selected object", &bDisplaySelectedObjAABB);
 
 	// Draw AABB
-	if (SELECTED.GetSelected(CurrentScene) != nullptr &&
-		(SELECTED.GetSelected(CurrentScene)->HasComponent<FEGameModelComponent>() || SELECTED.GetSelected(CurrentScene)->HasComponent<FETerrainComponent>()) &&
+	FEEntity* SelectedEntity = SELECTED.GetSelected(CurrentScene);
+	if (SelectedEntity != nullptr &&
+		(SelectedEntity->HasComponent<FEGameModelComponent>() || SelectedEntity->HasComponent<FETerrainComponent>()) &&
 		bDisplaySelectedObjAABB)
 	{
-		if (SELECTED.GetSelected(CurrentScene)->HasComponent<FEGameModelComponent>())
+		FEAABB SelectedAABB;
+		SelectedAABB = SelectedEntity->GetParentScene()->GetEntityAABB(SelectedEntity);
+		RENDERER.DrawAABB(SelectedAABB);
+
+		if (SelectedEntity->HasComponent<FEInstancedComponent>())
 		{
-			FEGameModel* GameModel = SELECTED.GetSelected(CurrentScene)->GetComponent<FEGameModelComponent>().GameModel;
-			FEAABB SelectedAABB = GameModel->GetMesh()->GetAABB().Transform(SELECTED.GetSelected(CurrentScene)->GetComponent<FETransformComponent>().GetWorldMatrix());
+			static bool bDisplaySubObjAABB = false;
+			ImGui::Checkbox("Display AABB of instanced entity subobjects", &bDisplaySubObjAABB);
 
-			RENDERER.DrawAABB(SelectedAABB);
-
-			if (SELECTED.GetSelected(CurrentScene)->HasComponent<FEInstancedComponent>())
+			if (bDisplaySubObjAABB)
 			{
-				static bool bDisplaySubObjAABB = false;
-				ImGui::Checkbox("Display AABB of instanced entity subobjects", &bDisplaySubObjAABB);
+				FEInstancedComponent& InstancedComponent = SelectedEntity->GetComponent<FEInstancedComponent>();
+				const int MaxIterations = InstancedComponent.IndividualInstancedAABB.size() * 8 >= FE_MAX_LINES ? FE_MAX_LINES : int(InstancedComponent.IndividualInstancedAABB.size());
 
-				if (bDisplaySubObjAABB)
+				for (size_t j = 0; j < MaxIterations; j++)
 				{
-					FEInstancedComponent& InstancedComponent = SELECTED.GetSelected(CurrentScene)->GetComponent<FEInstancedComponent>();
-					const int MaxIterations = InstancedComponent.IndividualInstancedAABB.size() * 8 >= FE_MAX_LINES ? FE_MAX_LINES : int(InstancedComponent.IndividualInstancedAABB.size());
-					
-					for (size_t j = 0; j < MaxIterations; j++)
-					{
-						RENDERER.DrawAABB(InstancedComponent.IndividualInstancedAABB[j]);
-					}
+					RENDERER.DrawAABB(InstancedComponent.IndividualInstancedAABB[j]);
 				}
 			}
 		}
+	}
+
+	static bool bDisplaySceneAABB = false;
+	ImGui::Checkbox("Display AABB of scene", &bDisplaySceneAABB);
+	if (bDisplaySceneAABB)
+	{
+		FEAABB SceneAABB = CurrentScene->GetSceneAABB([](FEEntity* Entity) -> bool {
+			if (Entity->GetComponent<FETagComponent>().GetTag() == EDITOR_SCENE_TAG)
+				return false;
+
+			if (Entity->HasComponent<FESkyDomeComponent>())
+				return false;
+
+			if (Entity->HasComponent<FECameraComponent>())
+				return false;
+
+			return true;
+		});
+		RENDERER.DrawAABB(SceneAABB);
 	}
 
 	ImGui::PopStyleVar();
