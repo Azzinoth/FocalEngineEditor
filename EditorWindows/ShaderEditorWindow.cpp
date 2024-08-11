@@ -457,7 +457,7 @@ void ShaderEditorWindow::ReplaceShader(FEShader* OldShader, FEShader* NewShader)
 		}
 	}
 
-	MaterialList = RESOURCE_MANAGER.GetStandardMaterialList();
+	MaterialList = RESOURCE_MANAGER.GetEnginePrivateMaterialList();
 	for (size_t i = 0; i < MaterialList.size(); i++)
 	{
 		FEMaterial* TempMaterial = RESOURCE_MANAGER.GetMaterial(MaterialList[i]);

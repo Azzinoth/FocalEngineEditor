@@ -61,13 +61,11 @@ bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
 	}
 	else if (Object->GetType() == FE_PREFAB)
 	{
-		FEGameModel* GameModel = RESOURCE_MANAGER.GetPrefab(Object->GetObjectID())->GetComponent(0)->GameModel;
-
 		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
 		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
 
 		FEPrefab* Prefab = RESOURCE_MANAGER.GetPrefab(Object->GetObjectID());
-		FEScene* PrefabScene = Prefab->Scene;
+		FEScene* PrefabScene = Prefab->GetScene();
 		FENaiveSceneGraphNode* RootNode = PrefabScene->SceneGraph.GetRoot();
 
 		FEEntity* NewEntity = EditorSceneWindow->GetScene()->CreateEntity(Object->GetName());

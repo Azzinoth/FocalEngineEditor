@@ -3,8 +3,6 @@
 #include "../FEngine.h"
 using namespace FocalEngine;
 
-#define EDITOR_SCENE_TAG "EDITOR_PRIVATE_SCENE_ENTITY"
-
 class FEEditorPreviewManager
 {
 	friend class FEEditor;

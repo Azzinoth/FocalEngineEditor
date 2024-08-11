@@ -49,7 +49,8 @@ static void CreateNewPrefabCallBack(const std::vector<FEObject*> SelectionsResul
 {
 	if (!SelectionsResult.empty() && SelectionsResult[0]->GetType() == FE_GAMEMODEL)
 	{
-		FEPrefab* NewPrefab = RESOURCE_MANAGER.CreatePrefab(reinterpret_cast<FEGameModel*>(SelectionsResult[0]));
+		// FIX ME!
+		FEPrefab* NewPrefab = RESOURCE_MANAGER.CreatePrefab();
 
 		if (SelectionsResult.size() > 1)
 		{
@@ -266,9 +267,10 @@ void FEEditorContentBrowserWindow::Render()
 
 				if (ImGui::MenuItem("Create Prefab out of this Game Model"))
 				{
-					FEPrefab* NewPrefab = RESOURCE_MANAGER.CreatePrefab(RESOURCE_MANAGER.GetGameModel(FilteredResources[ItemUnderMouse]->GetObjectID()));
+					// FIX ME !
+					/*FEPrefab* NewPrefab = RESOURCE_MANAGER.CreatePrefab(RESOURCE_MANAGER.GetGameModel(FilteredResources[ItemUnderMouse]->GetObjectID()));
 					PROJECT_MANAGER.GetCurrent()->SetModified(true);
-					VIRTUAL_FILE_SYSTEM.CreateFile(NewPrefab, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
+					VIRTUAL_FILE_SYSTEM.CreateFile(NewPrefab, VIRTUAL_FILE_SYSTEM.GetCurrentPath());*/
 				}
 			}
 
@@ -401,32 +403,32 @@ void FEEditorContentBrowserWindow::Clear()
 void FEEditorContentBrowserWindow::InitializeResources()
 {
 	FolderIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/folderIcon.png", "folderIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(FolderIcon);
+	RESOURCE_MANAGER.SetTag(FolderIcon, EDITOR_RESOURCE_TAG);
 
 	ShaderIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/shaderIcon.png", "shaderIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(ShaderIcon);
+	RESOURCE_MANAGER.SetTag(ShaderIcon, EDITOR_RESOURCE_TAG);
 
 	VFSBackIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/VFSBackIcon.png", "VFSBackIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(VFSBackIcon);
+	RESOURCE_MANAGER.SetTag(VFSBackIcon, EDITOR_RESOURCE_TAG);
 
 	TextureIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/textureContentBrowserIcon.png", "textureContentBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(TextureIcon);
+	RESOURCE_MANAGER.SetTag(TextureIcon, EDITOR_RESOURCE_TAG);
 
 	MeshIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/meshContentBrowserIcon.png", "meshContentBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(MeshIcon);
+	RESOURCE_MANAGER.SetTag(MeshIcon, EDITOR_RESOURCE_TAG);
 
 	MaterialIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/materialContentBrowserIcon.png", "materialContentBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(MaterialIcon);
+	RESOURCE_MANAGER.SetTag(MaterialIcon, EDITOR_RESOURCE_TAG);
 
 	GameModelIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/gameModelContentBrowserIcon.png", "gameModelContentBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(GameModelIcon);
+	RESOURCE_MANAGER.SetTag(GameModelIcon, EDITOR_RESOURCE_TAG);
 
 	PrefabIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/prefabContentBrowserIcon.png", "prefabContentBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(PrefabIcon);
+	RESOURCE_MANAGER.SetTag(PrefabIcon, EDITOR_RESOURCE_TAG);
 
 	AllIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/allContentBrowserIcon.png", "allIcon");
 	FilterAllTypesButton = new ImGuiImageButton(AllIcon);
-	RESOURCE_MANAGER.MakeTextureStandard(AllIcon);
+	RESOURCE_MANAGER.SetTag(AllIcon, EDITOR_RESOURCE_TAG);
 	FilterAllTypesButton->SetSize(ImVec2(32, 32));
 
 	FilterTextureTypeButton = new ImGuiImageButton(TextureIcon);
@@ -662,6 +664,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 				ImGui::BeginTooltip();
 				ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
 				ImGui::TextUnformatted(("ID: " + FilteredResources[i]->GetObjectID() +
+										"\nTag: " + FilteredResources[i]->GetTag() +
 										"\nName: " + FilteredResources[i]->GetName() +
 										"\nType: " + FEObjectTypeToString(FilteredResources[i]->GetType()) +
 										AdditionalTypeInfo +

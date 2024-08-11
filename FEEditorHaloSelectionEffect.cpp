@@ -9,7 +9,7 @@ FEEditorHaloSelectionEffect::~FEEditorHaloSelectionEffect() {}
 void FEEditorHaloSelectionEffect::InitializeResources()
 {
 	HaloMaterial = RESOURCE_MANAGER.CreateMaterial("haloMaterial");
-	RESOURCE_MANAGER.MakeMaterialStandard(HaloMaterial);
+	RESOURCE_MANAGER.SetTag(HaloMaterial, EDITOR_RESOURCE_TAG);
 
 	HaloDrawObjectShader = RESOURCE_MANAGER.CreateShader("HaloDrawObjectShader", RESOURCE_MANAGER.LoadGLSL("Resources//Materials//FE_HaloDrawObject_VS.glsl").c_str(),
 																				 RESOURCE_MANAGER.LoadGLSL("Resources//Materials//FE_HaloDrawObject_FS.glsl").c_str(),
@@ -19,7 +19,7 @@ void FEEditorHaloSelectionEffect::InitializeResources()
 																				 nullptr,
 																				 "E4F5165B2E1B05321A182C77"/*"HaloDrawObjectShader"*/);
 	
-	RESOURCE_MANAGER.MakeShaderStandard(HaloDrawObjectShader);
+	RESOURCE_MANAGER.SetTag(HaloDrawObjectShader, EDITOR_RESOURCE_TAG);
 	HaloMaterial->Shader = HaloDrawObjectShader;
 
 	HaloDrawInstancedObjectShader = RESOURCE_MANAGER.CreateShader("HaloDrawInstancedObjectShader", RESOURCE_MANAGER.LoadGLSL("Resources//Materials//FE_HaloDrawObject_INSTANCED_VS.glsl").c_str(),
@@ -29,7 +29,7 @@ void FEEditorHaloSelectionEffect::InitializeResources()
 																								   nullptr,
 																								   nullptr,
 																								   "16A2A65B2C1B013217219C67"/*"HaloDrawInstancedObjectShader"*/);
-	RESOURCE_MANAGER.MakeShaderStandard(HaloDrawInstancedObjectShader);
+	RESOURCE_MANAGER.SetTag(HaloDrawInstancedObjectShader, EDITOR_RESOURCE_TAG);
 
 	HaloFinalShader = RESOURCE_MANAGER.CreateShader("HaloFinalShader", RESOURCE_MANAGER.LoadGLSL("SubSystems//FocalEngine//CoreExtensions//PostProcessEffects//FE_ScreenQuad_VS.glsl").c_str(),
 																	   RESOURCE_MANAGER.LoadGLSL("Resources//Materials//FE_HaloSelectionEffect_FS.glsl").c_str(),
@@ -39,7 +39,7 @@ void FEEditorHaloSelectionEffect::InitializeResources()
 																	   nullptr,
 																	   "4AC7365B2C1B07324721A127"/*"HaloFinalShader"*/);
 
-	RESOURCE_MANAGER.MakeShaderStandard(HaloFinalShader);
+	RESOURCE_MANAGER.SetTag(HaloFinalShader, EDITOR_RESOURCE_TAG);
 }
 
 void FEEditorHaloSelectionEffect::UpdateResources(FEScene* Scene)

@@ -10,140 +10,140 @@ void GizmoManager::InitializeResources()
 {
 	SELECTED.SetOnUpdateFunction(OnSelectedObjectUpdate);
 	FEMesh* TransformationGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "45191B6F172E3B531978692E.model").c_str(), "transformationGizmoMesh");
-	RESOURCE_MANAGER.MakeMeshStandard(TransformationGizmoMesh);
+	RESOURCE_MANAGER.SetTag(TransformationGizmoMesh, EDITOR_RESOURCE_TAG);
 
 	// TransformationXGizmo
 	FEMaterial* CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationXGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.9f, 0.1f, 0.1f), "baseColor"));
-	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
+	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
-	TransformationXGizmoGM = new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationXGizmoGM");
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationXGizmoGM);
+	TransformationXGizmoGM = RESOURCE_MANAGER.CreateGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationXGizmoGM");
+	RESOURCE_MANAGER.SetTag(TransformationXGizmoGM, EDITOR_RESOURCE_TAG);
 
 	// TransformationYGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationYGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.1f, 0.9f, 0.1f), "baseColor"));
-	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
+	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
-	TransformationYGizmoGM = new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationYGizmoGM");
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationYGizmoGM);
+	TransformationYGizmoGM = RESOURCE_MANAGER.CreateGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationYGizmoGM");
+	RESOURCE_MANAGER.SetTag(TransformationYGizmoGM, EDITOR_RESOURCE_TAG);
 
 	// TransformationZGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.1f, 0.1f, 0.9f), "baseColor"));
-	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
+	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
-	TransformationZGizmoGM = new FEGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationZGizmoGM");
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationZGizmoGM);
+	TransformationZGizmoGM = RESOURCE_MANAGER.CreateGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationZGizmoGM");
+	RESOURCE_MANAGER.SetTag(TransformationZGizmoGM, EDITOR_RESOURCE_TAG);
 
 	// Plane gizmos
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationXYGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(1.0f, 1.0f, 1.0f), "baseColor"));
-	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
+	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
-	TransformationXYGizmoGM = new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXYGizmoGM");
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationXYGizmoGM);
+	TransformationXYGizmoGM = RESOURCE_MANAGER.CreateGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXYGizmoGM");
+	RESOURCE_MANAGER.SetTag(TransformationXYGizmoGM, EDITOR_RESOURCE_TAG);
 
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationYZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(1.0f, 1.0f, 1.0f), "baseColor"));
-	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
+	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
-	TransformationYZGizmoGM = new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationYZGizmoGM");
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationYZGizmoGM);
+	TransformationYZGizmoGM = RESOURCE_MANAGER.CreateGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationYZGizmoGM");
+	RESOURCE_MANAGER.SetTag(TransformationYZGizmoGM, EDITOR_RESOURCE_TAG);
 
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationXZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(1.0f, 1.0f, 1.0f), "baseColor"));
-	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
+	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
-	TransformationXZGizmoGM = new FEGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXZGizmoGM");
-	RESOURCE_MANAGER.MakeGameModelStandard(TransformationXZGizmoGM);
+	TransformationXZGizmoGM = RESOURCE_MANAGER.CreateGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXZGizmoGM");
+	RESOURCE_MANAGER.SetTag(TransformationXZGizmoGM, EDITOR_RESOURCE_TAG);
 
 	// Scale gizmos.
 	FEMesh* ScaleGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "637C784B2E5E5C6548190E1B.model").c_str(), "scaleGizmoMesh");
-	RESOURCE_MANAGER.MakeMeshStandard(ScaleGizmoMesh);
+	RESOURCE_MANAGER.SetTag(ScaleGizmoMesh, EDITOR_RESOURCE_TAG);
 
 	// ScaleXGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("scaleXGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.9f, 0.1f, 0.1f), "baseColor"));
-	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
+	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
-	ScaleXGizmoGM = new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleXGizmoGM");
-	RESOURCE_MANAGER.MakeGameModelStandard(ScaleXGizmoGM);
+	ScaleXGizmoGM = RESOURCE_MANAGER.CreateGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleXGizmoGM");
+	RESOURCE_MANAGER.SetTag(ScaleXGizmoGM, EDITOR_RESOURCE_TAG);
 
 	// ScaleYGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("scaleYGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.1f, 0.9f, 0.1f), "baseColor"));
-	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
+	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
-	ScaleYGizmoGM = new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleYGizmoGM");
-	RESOURCE_MANAGER.MakeGameModelStandard(ScaleYGizmoGM);
+	ScaleYGizmoGM = RESOURCE_MANAGER.CreateGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleYGizmoGM");
+	RESOURCE_MANAGER.SetTag(ScaleYGizmoGM, EDITOR_RESOURCE_TAG);
 
 	// ScaleZGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("scaleZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.1f, 0.1f, 0.9f), "baseColor"));
-	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
+	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
-	ScaleZGizmoGM = new FEGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleZGizmoGM");
-	RESOURCE_MANAGER.MakeGameModelStandard(ScaleZGizmoGM);
+	ScaleZGizmoGM = RESOURCE_MANAGER.CreateGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleZGizmoGM");
+	RESOURCE_MANAGER.SetTag(ScaleZGizmoGM, EDITOR_RESOURCE_TAG);
 
 	// RotateAroundAxis gizmos
 	FEMesh* RotateGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "19622421516E5B317E1B5360.model").c_str(), "rotateGizmoMesh");
-	RESOURCE_MANAGER.MakeMeshStandard(RotateGizmoMesh);
+	RESOURCE_MANAGER.SetTag(RotateGizmoMesh, EDITOR_RESOURCE_TAG);
 
 	// RotateXGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("rotateXGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.9f, 0.1f, 0.1f), "baseColor"));
-	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
+	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
-	RotateXGizmoGM = new FEGameModel(RotateGizmoMesh, CurrentMaterial, "RotateXGizmoGM");
-	RESOURCE_MANAGER.MakeGameModelStandard(RotateXGizmoGM);
+	RotateXGizmoGM = RESOURCE_MANAGER.CreateGameModel(RotateGizmoMesh, CurrentMaterial, "RotateXGizmoGM");
+	RESOURCE_MANAGER.SetTag(RotateXGizmoGM, EDITOR_RESOURCE_TAG);
 
 	// RotateYGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("rotateYGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.1f, 0.9f, 0.1f), "baseColor"));
-	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
+	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
-	RotateYGizmoGM = new FEGameModel(RotateGizmoMesh, CurrentMaterial, "RotateYGizmoGM");
-	RESOURCE_MANAGER.MakeGameModelStandard(RotateYGizmoGM);
+	RotateYGizmoGM = RESOURCE_MANAGER.CreateGameModel(RotateGizmoMesh, CurrentMaterial, "RotateYGizmoGM");
+	RESOURCE_MANAGER.SetTag(RotateYGizmoGM, EDITOR_RESOURCE_TAG);
 
 	// RotateZGizmo
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("rotateZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
 	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.1f, 0.1f, 0.9f), "baseColor"));
-	RESOURCE_MANAGER.MakeMaterialStandard(CurrentMaterial);
+	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
-	RotateZGizmoGM = new FEGameModel(RotateGizmoMesh, CurrentMaterial, "RotateZGizmoGM");
-	RESOURCE_MANAGER.MakeGameModelStandard(RotateZGizmoGM);
+	RotateZGizmoGM = RESOURCE_MANAGER.CreateGameModel(RotateGizmoMesh, CurrentMaterial, "RotateZGizmoGM");
+	RESOURCE_MANAGER.SetTag(RotateZGizmoGM, EDITOR_RESOURCE_TAG);
 
 	TransformationGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "456A31026A1C3152181A6064.texture").c_str(), "transformationGizmoIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(TransformationGizmoIcon);
+	RESOURCE_MANAGER.SetTag(TransformationGizmoIcon, EDITOR_RESOURCE_TAG);
 	ScaleGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "3F2118296C1E4533506A472E.texture").c_str(), "scaleGizmoIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(ScaleGizmoIcon);
+	RESOURCE_MANAGER.SetTag(ScaleGizmoIcon, EDITOR_RESOURCE_TAG);
 	RotateGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "7F6057403249580D73311B54.texture").c_str(), "rotateGizmoIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(RotateGizmoIcon);
+	RESOURCE_MANAGER.SetTag(RotateGizmoIcon, EDITOR_RESOURCE_TAG);
 }
 
 void GizmoManager::HideAllGizmo(FEScene* Scene)
@@ -278,6 +278,12 @@ void GizmoManager::Update()
 	auto PerSceneIterator = PerSceneData.begin();
 	while (PerSceneIterator != PerSceneData.end())
 	{
+		if (SCENE_MANAGER.GetScene(PerSceneIterator->first) == nullptr)
+		{
+			PerSceneIterator = PerSceneData.erase(PerSceneIterator);
+			continue;
+		}
+
 		FEGizmoSceneData* GizmoSceneData = PerSceneIterator->second;
 		if (GizmoSceneData == nullptr)
 		{
@@ -303,51 +309,51 @@ void GizmoManager::Update()
 		if (GizmoSceneData->GizmosState == TRANSFORM_GIZMOS)
 		{
 			// X Gizmos
-			GizmoSceneData->TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
+			GizmoSceneData->TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
 			if (GizmoSceneData->bTransformationXZGizmoActive || GizmoSceneData->bTransformationXYGizmoActive || GizmoSceneData->bTransformationXGizmoActive)
-				GizmoSceneData->TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+				GizmoSceneData->TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 			// Y Gizmos
-			GizmoSceneData->TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
+			GizmoSceneData->TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
 			if (GizmoSceneData->bTransformationYZGizmoActive || GizmoSceneData->bTransformationXYGizmoActive || GizmoSceneData->bTransformationYGizmoActive)
-				GizmoSceneData->TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+				GizmoSceneData->TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 			// Z Gizmos
-			GizmoSceneData->TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
+			GizmoSceneData->TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
 			if (GizmoSceneData->bTransformationYZGizmoActive || GizmoSceneData->bTransformationXZGizmoActive || GizmoSceneData->bTransformationZGizmoActive)
-				GizmoSceneData->TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+				GizmoSceneData->TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 			// XY Gizmos 
-			GizmoSceneData->TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
+			GizmoSceneData->TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
 			if (GizmoSceneData->bTransformationXYGizmoActive)
-				GizmoSceneData->TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+				GizmoSceneData->TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 			// YZ Gizmos
-			GizmoSceneData->TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
+			GizmoSceneData->TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
 			if (GizmoSceneData->bTransformationYZGizmoActive)
-				GizmoSceneData->TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+				GizmoSceneData->TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 			// XZ Gizmos
-			GizmoSceneData->TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
+			GizmoSceneData->TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
 			if (GizmoSceneData->bTransformationXZGizmoActive)
-				GizmoSceneData->TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+				GizmoSceneData->TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 		}
 		else if (GizmoSceneData->GizmosState == SCALE_GIZMOS)
 		{
 			// X Gizmos
-			GizmoSceneData->ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
+			GizmoSceneData->ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
 			if (GizmoSceneData->bScaleXGizmoActive)
-				GizmoSceneData->ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+				GizmoSceneData->ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 			// Y Gizmos
-			GizmoSceneData->ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
+			GizmoSceneData->ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
 			if (GizmoSceneData->bScaleYGizmoActive)
-				GizmoSceneData->ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+				GizmoSceneData->ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 
 			// Z Gizmos
-			GizmoSceneData->ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
+			GizmoSceneData->ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
 			if (GizmoSceneData->bScaleZGizmoActive)
-				GizmoSceneData->ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+				GizmoSceneData->ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 		}
 		else if (GizmoSceneData->GizmosState == ROTATE_GIZMOS)
 		{
@@ -359,28 +365,28 @@ void GizmoManager::Update()
 			}
 
 			// X Gizmos
-			GizmoSceneData->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
+			GizmoSceneData->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
 			if (GizmoSceneData->bRotateXGizmoActive)
 			{
-				GizmoSceneData->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+				GizmoSceneData->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 				GizmoSceneData->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 				GizmoSceneData->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 			}
 
 			// Y Gizmos
-			GizmoSceneData->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
+			GizmoSceneData->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
 			if (GizmoSceneData->bRotateYGizmoActive)
 			{
-				GizmoSceneData->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+				GizmoSceneData->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 				GizmoSceneData->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 				GizmoSceneData->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 			}
 
 			// Z Gizmos
-			GizmoSceneData->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
+			GizmoSceneData->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
 			if (GizmoSceneData->bRotateZGizmoActive)
 			{
-				GizmoSceneData->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().GameModel->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
+				GizmoSceneData->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
 				GizmoSceneData->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 				GizmoSceneData->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
 			}
@@ -946,11 +952,12 @@ void GizmoManager::AddSceneData(const std::string& SceneID)
 	PerSceneData[SceneID]->SceneID = SceneID;
 
 	PerSceneData[SceneID]->ParentGizmoEntity = CurrentScene->CreateEntity("ParentGizmoEntity");
-	PerSceneData[SceneID]->ParentGizmoEntity->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
+	RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->ParentGizmoEntity, EDITOR_RESOURCE_TAG);
 	PerSceneData[SceneID]->ParentGizmoGraphNode = CurrentScene->SceneGraph.GetNodeByEntityID(PerSceneData[SceneID]->ParentGizmoEntity->GetObjectID());
 
 	// TransformationXGizmo
 	PerSceneData[SceneID]->TransformationXGizmoEntity = CurrentScene->CreateEntity("TransformationXGizmoEntity");
+	RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->TransformationXGizmoEntity, EDITOR_RESOURCE_TAG);
 	PerSceneData[SceneID]->TransformationXGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationXGizmoGM")[0]);
 	PerSceneData[SceneID]->TransformationXGizmoEntity->SetName("TransformationXGizmoEntity");
 	PerSceneData[SceneID]->TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
@@ -962,6 +969,7 @@ void GizmoManager::AddSceneData(const std::string& SceneID)
 
 	// TransformationYGizmo
 	PerSceneData[SceneID]->TransformationYGizmoEntity = CurrentScene->CreateEntity("TransformationYGizmoEntity");
+	RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->TransformationYGizmoEntity, EDITOR_RESOURCE_TAG);
 	PerSceneData[SceneID]->TransformationYGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationYGizmoGM")[0]);
 	PerSceneData[SceneID]->TransformationYGizmoEntity->SetName("TransformationYGizmoEntity");
 	PerSceneData[SceneID]->TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
@@ -973,6 +981,7 @@ void GizmoManager::AddSceneData(const std::string& SceneID)
 
 	// TransformationZGizmo
 	PerSceneData[SceneID]->TransformationZGizmoEntity = CurrentScene->CreateEntity("TransformationZGizmoEntity");
+	RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->TransformationZGizmoEntity, EDITOR_RESOURCE_TAG);
 	PerSceneData[SceneID]->TransformationZGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationZGizmoGM")[0]);
 	PerSceneData[SceneID]->TransformationZGizmoEntity->SetName("TransformationZGizmoEntity");
 	PerSceneData[SceneID]->TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
@@ -984,6 +993,7 @@ void GizmoManager::AddSceneData(const std::string& SceneID)
 
 	// Plane gizmos
 	PerSceneData[SceneID]->TransformationXYGizmoEntity = CurrentScene->CreateEntity("TransformationXYGizmoEntity");
+	RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->TransformationXYGizmoEntity, EDITOR_RESOURCE_TAG);
 	PerSceneData[SceneID]->TransformationXYGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationXYGizmoGM")[0]);
 	PerSceneData[SceneID]->TransformationXYGizmoEntity->SetName("TransformationXYGizmoEntity");
 	PerSceneData[SceneID]->TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
@@ -996,6 +1006,7 @@ void GizmoManager::AddSceneData(const std::string& SceneID)
 	CurrentScene->SceneGraph.MoveNode(CurrentScene->SceneGraph.GetNodeByEntityID(PerSceneData[SceneID]->TransformationXYGizmoEntity->GetObjectID())->GetObjectID(), PerSceneData[SceneID]->ParentGizmoGraphNode->GetObjectID(), false);
 
 	PerSceneData[SceneID]->TransformationYZGizmoEntity = CurrentScene->CreateEntity("TransformationYZGizmoEntity");
+	RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->TransformationYZGizmoEntity, EDITOR_RESOURCE_TAG);
 	PerSceneData[SceneID]->TransformationYZGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationYZGizmoGM")[0]);
 	PerSceneData[SceneID]->TransformationYZGizmoEntity->SetName("TransformationYZGizmoEntity");
 	PerSceneData[SceneID]->TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
@@ -1008,6 +1019,7 @@ void GizmoManager::AddSceneData(const std::string& SceneID)
 	CurrentScene->SceneGraph.MoveNode(CurrentScene->SceneGraph.GetNodeByEntityID(PerSceneData[SceneID]->TransformationYZGizmoEntity->GetObjectID())->GetObjectID(), PerSceneData[SceneID]->ParentGizmoGraphNode->GetObjectID(), false);
 
 	PerSceneData[SceneID]->TransformationXZGizmoEntity = CurrentScene->CreateEntity("TransformationXZGizmoEntity");
+	RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->TransformationXZGizmoEntity, EDITOR_RESOURCE_TAG);
 	PerSceneData[SceneID]->TransformationXZGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("TransformationXZGizmoGM")[0]);
 	PerSceneData[SceneID]->TransformationXZGizmoEntity->SetName("TransformationXZGizmoEntity");
 	PerSceneData[SceneID]->TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
@@ -1020,6 +1032,7 @@ void GizmoManager::AddSceneData(const std::string& SceneID)
 
 	// ScaleXGizmo
 	PerSceneData[SceneID]->ScaleXGizmoEntity = CurrentScene->CreateEntity("ScaleXGizmoEntity");
+	RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->ScaleXGizmoEntity, EDITOR_RESOURCE_TAG);
 	PerSceneData[SceneID]->ScaleXGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("ScaleXGizmoGM")[0]);
 	PerSceneData[SceneID]->ScaleXGizmoEntity->SetName("ScaleXGizmoEntity");
 	PerSceneData[SceneID]->ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
@@ -1031,6 +1044,7 @@ void GizmoManager::AddSceneData(const std::string& SceneID)
 
 	// ScaleYGizmo
 	PerSceneData[SceneID]->ScaleYGizmoEntity = CurrentScene->CreateEntity("ScaleYGizmoEntity");
+	RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->ScaleYGizmoEntity, EDITOR_RESOURCE_TAG);
 	PerSceneData[SceneID]->ScaleYGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("ScaleYGizmoGM")[0]);
 	PerSceneData[SceneID]->ScaleYGizmoEntity->SetName("ScaleYGizmoEntity");
 	PerSceneData[SceneID]->ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
@@ -1042,6 +1056,7 @@ void GizmoManager::AddSceneData(const std::string& SceneID)
 
 	// ScaleZGizmo
 	PerSceneData[SceneID]->ScaleZGizmoEntity = CurrentScene->CreateEntity("ScaleZGizmoEntity");
+	RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->ScaleZGizmoEntity, EDITOR_RESOURCE_TAG);
 	PerSceneData[SceneID]->ScaleZGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("ScaleZGizmoGM")[0]);
 	PerSceneData[SceneID]->ScaleZGizmoEntity->SetName("ScaleZGizmoEntity");
 	PerSceneData[SceneID]->ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
@@ -1053,6 +1068,7 @@ void GizmoManager::AddSceneData(const std::string& SceneID)
 
 	// RotateXGizmo
 	PerSceneData[SceneID]->RotateXGizmoEntity = CurrentScene->CreateEntity("RotateXGizmoEntity");
+	RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->RotateXGizmoEntity, EDITOR_RESOURCE_TAG);
 	PerSceneData[SceneID]->RotateXGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("RotateXGizmoGM")[0]);
 	PerSceneData[SceneID]->RotateXGizmoEntity->SetName("RotateXGizmoEntity");
 	PerSceneData[SceneID]->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
@@ -1064,6 +1080,7 @@ void GizmoManager::AddSceneData(const std::string& SceneID)
 
 	// RotateYGizmo
 	PerSceneData[SceneID]->RotateYGizmoEntity = CurrentScene->CreateEntity("RotateYGizmoEntity");
+	RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->RotateYGizmoEntity, EDITOR_RESOURCE_TAG);
 	PerSceneData[SceneID]->RotateYGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("RotateYGizmoGM")[0]);
 	PerSceneData[SceneID]->RotateYGizmoEntity->SetName("RotateYGizmoEntity");
 	PerSceneData[SceneID]->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);
@@ -1075,6 +1092,7 @@ void GizmoManager::AddSceneData(const std::string& SceneID)
 
 	// RotateZGizmo
 	PerSceneData[SceneID]->RotateZGizmoEntity = CurrentScene->CreateEntity("RotateZGizmoEntity");
+	RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->RotateZGizmoEntity, EDITOR_RESOURCE_TAG);
 	PerSceneData[SceneID]->RotateZGizmoEntity->AddComponent<FEGameModelComponent>(RESOURCE_MANAGER.GetGameModelByName("RotateZGizmoGM")[0]);
 	PerSceneData[SceneID]->RotateZGizmoEntity->SetName("RotateZGizmoEntity");
 	PerSceneData[SceneID]->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetCastShadows(false);

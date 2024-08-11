@@ -7,6 +7,7 @@ FEEditor::FEEditor()
 	ImGuiIO& IO = ImGui::GetIO();
 	IO.ConfigWindowsMoveFromTitleBarOnly = true;
 	ENGINE.SetVsyncEnabled(true);
+	RESOURCE_MANAGER.AddTagThatWillPreventDeletion(EDITOR_RESOURCE_TAG);
 }
 
 FEEditor::~FEEditor() {}
@@ -329,8 +330,8 @@ void FEEditor::Render()
 			{
 				if (ImGui::MenuItem("Save project"))
 				{
-					PROJECT_MANAGER.GetCurrent()->SaveScene();
-					ENGINE.TakeScreenshot((PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + "projectScreenShot.texture").c_str());
+					PROJECT_MANAGER.GetCurrent()->SaveProject();
+					ENGINE.SaveScreenshot((PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + "projectScreenShot.texture").c_str(), PROJECT_MANAGER.GetCurrent()->GetScene());
 				}
 
 				if (ImGui::MenuItem("Save project as..."))

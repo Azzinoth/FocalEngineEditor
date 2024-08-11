@@ -12,22 +12,22 @@ FEEditorSceneGraphWindow::FEEditorSceneGraphWindow()
 void FEEditorSceneGraphWindow::InitializeResources()
 {
 	EntityIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/entitySceneBrowserIcon.png", "entitySceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(EntityIcon);
+	RESOURCE_MANAGER.SetTag(EntityIcon, EDITOR_RESOURCE_TAG);
 	InstancedEntityIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/instancedEntitySceneBrowserIcon.png", "instancedEntitySceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(InstancedEntityIcon);
+	RESOURCE_MANAGER.SetTag(InstancedEntityIcon, EDITOR_RESOURCE_TAG);
 
 	DirectionalLightIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/directionalLightSceneBrowserIcon.png", "directionalLightSceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(DirectionalLightIcon);
+	RESOURCE_MANAGER.SetTag(DirectionalLightIcon, EDITOR_RESOURCE_TAG);
 	SpotLightIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/spotLightSceneBrowserIcon.png", "spotLightSceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(SpotLightIcon);
+	RESOURCE_MANAGER.SetTag(SpotLightIcon, EDITOR_RESOURCE_TAG);
 	PointLightIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/pointLightSceneBrowserIcon.png", "pointLightSceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(PointLightIcon);
+	RESOURCE_MANAGER.SetTag(PointLightIcon, EDITOR_RESOURCE_TAG);
 
 	TerrainIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/terrainSceneBrowserIcon.png", "terrainSceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(TerrainIcon);
+	RESOURCE_MANAGER.SetTag(TerrainIcon, EDITOR_RESOURCE_TAG);
 
 	CameraIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/cameraSceneBrowserIcon.png", "cameraSceneBrowserIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(CameraIcon);
+	RESOURCE_MANAGER.SetTag(CameraIcon, EDITOR_RESOURCE_TAG);
 }
 
 void FEEditorSceneGraphWindow::Clear()
@@ -82,15 +82,15 @@ static void CreateInstancedEntityCallBack(const std::vector<FEObject*> Selection
 
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_PREFAB)
 	{
-		FEPrefab* SelectedPrefab = RESOURCE_MANAGER.GetPrefab(SelectionsResult[0]->GetObjectID());
-		if (SelectedPrefab == nullptr)
+		FEGameModel* SelectedGameModel = RESOURCE_MANAGER.GetGameModel(SelectionsResult[0]->GetObjectID());
+		if (SelectedGameModel == nullptr)
 			return;
 
 		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
 		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
 		FEEntity* Entity = EDITOR.GetFocusedScene()->CreateEntity();
 		Entity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
-		Entity->AddComponent<FEGameModelComponent>(SelectedPrefab->GetComponent(0)->GameModel);
+		Entity->AddComponent<FEGameModelComponent>(SelectedGameModel);
 		Entity->AddComponent<FEInstancedComponent>();
 		SELECTED.SetSelected(Entity);
 
@@ -221,7 +221,7 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 	FEEntity* CurrentEntity = SubTreeRoot->GetEntity();
 	if (CurrentEntity != nullptr)
 	{
-		if (CurrentEntity->GetComponent<FETagComponent>().GetTag() == EDITOR_SCENE_TAG)
+		if (CurrentEntity->GetTag() == EDITOR_RESOURCE_TAG)
 			return;
 	}
 
@@ -659,7 +659,7 @@ void FEEditorSceneGraphWindow::Render()
 	if (bDisplaySceneAABB)
 	{
 		FEAABB SceneAABB = CurrentScene->GetSceneAABB([](FEEntity* Entity) -> bool {
-			if (Entity->GetComponent<FETagComponent>().GetTag() == EDITOR_SCENE_TAG)
+			if (Entity->GetTag() == EDITOR_RESOURCE_TAG)
 				return false;
 
 			if (Entity->HasComponent<FESkyDomeComponent>())

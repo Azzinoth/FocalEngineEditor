@@ -60,7 +60,7 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 			{
 				TempList = RESOURCE_MANAGER.GetMeshList();
 
-				const std::vector<std::string> StandardMeshList = RESOURCE_MANAGER.GetStandardMeshList();
+				const std::vector<std::string> StandardMeshList = RESOURCE_MANAGER.GetEnginePrivateMeshList();
 				for (size_t i = 0; i < StandardMeshList.size(); i++)
 				{
 					if (EDITOR_INTERNAL_RESOURCES.IsInInternalEditorList(RESOURCE_MANAGER.GetMesh(StandardMeshList[i])))

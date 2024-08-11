@@ -8,7 +8,6 @@ class FEEditor
 {
     friend class FEEditorSceneWindow;
     friend class FEProjectManager;
-    // FIX ME! It is temporary solution
     friend class FEPrefabEditorManager;
 public:
     SINGLETON_PUBLIC_PART(FEEditor)

@@ -22,22 +22,22 @@ void FEEditorInspectorWindow::InitializeResources()
 	ImportHeightMapButton->SetSize(ImVec2(200, 0));
 
 	SculptBrushIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/sculptBrush.png", "sculptBrushIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(SculptBrushIcon);
+	RESOURCE_MANAGER.SetTag(SculptBrushIcon, EDITOR_RESOURCE_TAG);
 	SculptBrushButton = new ImGuiImageButton(SculptBrushIcon);
 	SculptBrushButton->SetSize(ImVec2(24, 24));
 
 	LevelBrushIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/levelBrush.png", "levelBrushIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(LevelBrushIcon);
+	RESOURCE_MANAGER.SetTag(LevelBrushIcon, EDITOR_RESOURCE_TAG);
 	LevelBrushButton = new ImGuiImageButton(LevelBrushIcon);
 	LevelBrushButton->SetSize(ImVec2(24, 24));
 
 	SmoothBrushIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/smoothBrush.png", "smoothBrushIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(SmoothBrushIcon);
+	RESOURCE_MANAGER.SetTag(SmoothBrushIcon, EDITOR_RESOURCE_TAG);
 	SmoothBrushButton = new ImGuiImageButton(SmoothBrushIcon);
 	SmoothBrushButton->SetSize(ImVec2(24, 24));
 
 	DrawBrushIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/paintbrush.png", "drawBrushIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(DrawBrushIcon);
+	RESOURCE_MANAGER.SetTag(DrawBrushIcon, EDITOR_RESOURCE_TAG);
 	LayerBrushButton = new ImGuiImageButton(DrawBrushIcon);
 	LayerBrushButton->SetSize(ImVec2(48, 48));
 
@@ -45,9 +45,9 @@ void FEEditorInspectorWindow::InitializeResources()
 	// ************** Terrain Settings END **************
 
 	MouseCursorIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/mouseCursorIcon.png", "mouseCursorIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(MouseCursorIcon);
+	RESOURCE_MANAGER.SetTag(MouseCursorIcon, EDITOR_RESOURCE_TAG);
 	ArrowToGroundIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/arrowToGroundIcon.png", "arrowToGroundIcon");
-	RESOURCE_MANAGER.MakeTextureStandard(ArrowToGroundIcon);
+	RESOURCE_MANAGER.SetTag(ArrowToGroundIcon, EDITOR_RESOURCE_TAG);
 }
 
 void FEEditorInspectorWindow::Clear()
@@ -971,7 +971,6 @@ void FEEditorInspectorWindow::Render()
 		float cursorPosX = ImGui::GetCursorPosX();
 		ImVec2 PreviosCursorPos = ImGui::GetCursorPos();
 		
-	
 		ImGui::SetCursorPos(ImVec2(headerWidth - ButtonSize / 8.0f - 4.0f/*- ButtonSize*/, PreviosCursorPos.y + 4.0f/*(headerHeight - ButtonSize) * 0.5f*/));
 		if (ImGui::Button("x", ImVec2(ButtonSize, ButtonSize)))
 		{
@@ -990,8 +989,7 @@ void FEEditorInspectorWindow::Render()
 			if (ImGui::InputText("##Tag Edit", Buffer, 256))
 			{
 				std::string NewTag = Buffer;
-				if (NewTag != EDITOR_SCENE_TAG)
-					TagComponent.SetTag(NewTag);
+				TagComponent.SetTag(NewTag);
 			}
 		}
 	}
@@ -1019,7 +1017,7 @@ void FEEditorInspectorWindow::Render()
 			GameModelComponent.SetWireframeMode(bActive);
 
 			ImGui::Text("Game Model : ");
-			FETexture* PreviewTexture = PREVIEW_MANAGER.GetGameModelPreview(GameModelComponent.GameModel->GetObjectID());
+			FETexture* PreviewTexture = PREVIEW_MANAGER.GetGameModelPreview(GameModelComponent.GetGameModel()->GetObjectID());
 
 			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
@@ -1043,7 +1041,7 @@ void FEEditorInspectorWindow::Render()
 
 				if (ImGui::MenuItem("Show in folder"))
 				{
-					CONTENT_BROWSER_WINDOW.OpenItemParentFolder(GameModelComponent.GameModel);
+					CONTENT_BROWSER_WINDOW.OpenItemParentFolder(GameModelComponent.GetGameModel());
 				}
 
 				ImGui::EndPopup();

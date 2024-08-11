@@ -12,7 +12,7 @@ void FEEditorSelectedObject::InitializeResources()
 	HALO_SELECTION_EFFECT.InitializeResources();
 	
 	PixelAccurateSelectionMaterial = RESOURCE_MANAGER.CreateMaterial("pixelAccurateSelectionMaterial");
-	RESOURCE_MANAGER.MakeMaterialStandard(PixelAccurateSelectionMaterial);
+	RESOURCE_MANAGER.SetTag(PixelAccurateSelectionMaterial, EDITOR_RESOURCE_TAG);
 
 	FEPixelAccurateSelection = RESOURCE_MANAGER.CreateShader("FEPixelAccurateSelection", RESOURCE_MANAGER.LoadGLSL("Resources//Materials//FE_PixelAccurateSelection_VS.glsl").c_str(),
 																						 RESOURCE_MANAGER.LoadGLSL("Resources//Materials//FE_PixelAccurateSelection_FS.glsl").c_str(),
@@ -21,7 +21,7 @@ void FEEditorSelectedObject::InitializeResources()
 																						 nullptr,
 																						 nullptr,
 																						 "4279660C7D3D27360358354E"/*"FEPixelAccurateSelection"*/);
-	RESOURCE_MANAGER.MakeShaderStandard(FEPixelAccurateSelection);
+	RESOURCE_MANAGER.SetTag(FEPixelAccurateSelection, EDITOR_RESOURCE_TAG);
 	PixelAccurateSelectionMaterial->Shader = FEPixelAccurateSelection;
 
 	FEPixelAccurateInstancedSelection = RESOURCE_MANAGER.CreateShader("FEPixelAccurateInstancedSelection", RESOURCE_MANAGER.LoadGLSL("Resources//Materials//FE_PixelAccurateSelection_INSTANCED_VS.glsl").c_str(),
@@ -32,7 +32,7 @@ void FEEditorSelectedObject::InitializeResources()
 																										   nullptr,
 																										   "0E213D3542135C15471F0D6B"/*"FEPixelAccurateInstancedSelection"*/);
 
-	RESOURCE_MANAGER.MakeShaderStandard(FEPixelAccurateInstancedSelection);
+	RESOURCE_MANAGER.SetTag(FEPixelAccurateInstancedSelection, EDITOR_RESOURCE_TAG);
 
 	const FEShaderParam ColorParam(glm::vec3(0.0f, 0.0f, 0.0f), "baseColor");
 	PixelAccurateSelectionMaterial->AddParameter(ColorParam);
@@ -150,20 +150,7 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 		FEEntity* CurrentEntity = Scene->GetEntity(EntityList[i]);
 		if (CurrentEntity != nullptr)
 		{
-			FEAABB Box;
-			if (CurrentEntity->HasComponent<FEGameModelComponent>() && !CurrentEntity->HasComponent<FEInstancedComponent>())
-			{
-				Box = CurrentEntity->GetComponent<FEGameModelComponent>().GameModel->GetMesh()->GetAABB().Transform(CurrentEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
-			}
-			else if (CurrentEntity->HasComponent<FEGameModelComponent>() && CurrentEntity->HasComponent<FEInstancedComponent>())
-			{
-				Box = INSTANCED_RENDERING_SYSTEM.GetAABB(CurrentEntity);
-			}
-			else if (CurrentEntity->HasComponent<FETerrainComponent>())
-			{
-				Box = TERRAIN_SYSTEM.GetAABB(CurrentEntity);
-			}
-
+			FEAABB Box = Scene->GetEntityAABB(CurrentEntity);
 			if (Box.RayIntersect(CameraTransformComponent.GetPosition(FE_WORLD_SPACE), MouseRay, Distance))
 			{
 				if (CurrentEntity->HasComponent<FEInstancedComponent>())
@@ -185,6 +172,98 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 				CurrentSelectionData->SceneEntitiesUnderMouse.push_back(CurrentEntity);
 			}
 		}
+	}
+}
+
+void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm::vec3 ColorID, FEEntity* CameraEntity, FESelectionData* CurrentSelectionData)
+{
+	if (Entity == nullptr || CameraEntity == nullptr)
+		return;
+
+	if (Entity->HasComponent<FEGameModelComponent>())
+	{
+		FEGameModelComponent& GameModelComponent = Entity->GetComponent<FEGameModelComponent>();
+		if (!GameModelComponent.IsVisible())
+			return;
+
+		FEMaterial* RegularMaterial = GameModelComponent.GetGameModel()->Material;
+		GameModelComponent.GetGameModel()->Material = PixelAccurateSelectionMaterial;
+		PixelAccurateSelectionMaterial->SetBaseColor(ColorID);
+		PixelAccurateSelectionMaterial->ClearAllTexturesInfo();
+		PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
+		PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
+
+		if (!Entity->HasComponent<FEInstancedComponent>())
+		{
+			RENDERER.RenderGameModelComponent(Entity, CameraEntity);
+		}
+		else if (Entity->HasComponent<FEInstancedComponent>())
+		{
+			// Update instanced object only if it is not in individual select mode
+			if (!INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(Entity))
+			{
+				PixelAccurateSelectionMaterial->Shader = FEPixelAccurateInstancedSelection;
+				FEMaterial* RegularBillboardMaterials = GameModelComponent.GetGameModel()->GetBillboardMaterial();
+				GameModelComponent.GetGameModel()->SetBillboardMaterial(PixelAccurateSelectionMaterial);
+
+				FEInstancedComponent& InstancedComponent = Entity->GetComponent<FEInstancedComponent>();
+				RENDERER.RenderGameModelComponentWithInstanced(Entity, CameraEntity);
+
+				PixelAccurateSelectionMaterial->Shader = FEPixelAccurateSelection;
+				GameModelComponent.GetGameModel()->SetBillboardMaterial(RegularBillboardMaterials);
+			}
+		}
+
+		GameModelComponent.GetGameModel()->Material = RegularMaterial;
+		PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr);
+		PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr, 1);
+	}
+	else if (Entity->HasComponent<FETerrainComponent>())
+	{
+		FETerrainComponent& TerrainComponent = Entity->GetComponent<FETerrainComponent>();
+		if (!TerrainComponent.IsVisible())
+			return;
+
+		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
+		TerrainComponent.Shader->UpdateParameterData("baseColor", ColorID);
+		RENDERER.RenderTerrainComponent(Entity, CameraEntity);
+		TerrainComponent.Shader->UpdateParameterData("baseColor", glm::vec3(1.0f));
+		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("5A3E4F5C13115856401F1D1C"/*"FETerrainShader"*/);
+	}
+	else if (Entity->HasComponent<FEInstancedComponent>() && Entity->HasComponent<FEPrefabInstanceComponent>())
+	{
+		PixelAccurateSelectionMaterial->Shader = FEPixelAccurateInstancedSelection;
+
+		FEInstancedComponent& InstancedComponent = Entity->GetComponent<FEInstancedComponent>();
+		for (size_t i = 0; i < InstancedComponent.InstancedElementsData.size(); i++)
+		{
+			FEEntity* EntityWithGameModel = INSTANCED_RENDERING_SYSTEM.GetEntityWithGameModelComponent(InstancedComponent.InstancedElementsData[i]->EntityIDWithGameModelComponent);
+			if (EntityWithGameModel == nullptr)
+				continue;
+
+			FEGameModelComponent& GameModelComponent = EntityWithGameModel->GetComponent<FEGameModelComponent>();
+			if (!GameModelComponent.IsVisible())
+				continue;
+
+			FEMaterial* RegularMaterial = GameModelComponent.GetGameModel()->Material;
+			GameModelComponent.GetGameModel()->Material = PixelAccurateSelectionMaterial;
+			PixelAccurateSelectionMaterial->SetBaseColor(ColorID);
+			PixelAccurateSelectionMaterial->ClearAllTexturesInfo();
+			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
+			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
+			
+			FEMaterial* RegularBillboardMaterials = GameModelComponent.GetGameModel()->GetBillboardMaterial();
+			GameModelComponent.GetGameModel()->SetBillboardMaterial(PixelAccurateSelectionMaterial);
+
+			RENDERER.RenderGameModelComponentWithInstanced(Entity, nullptr, false, false, i);
+
+			GameModelComponent.GetGameModel()->SetBillboardMaterial(RegularBillboardMaterials);
+			GameModelComponent.GetGameModel()->Material = RegularMaterial;
+			PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr);
+			PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr, 1);
+		}
+
+		PixelAccurateSelectionMaterial->Shader = FEPixelAccurateSelection;
 	}
 }
 
@@ -232,58 +311,10 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 		int g = ((i + 1) >> 8) & 255;
 		int b = ((i + 1) >> 16) & 255;
 #endif
-		FEEntity* PotentiallySelectedEntity = CurrentSelectionData->SceneEntitiesUnderMouse[i];
-		if (PotentiallySelectedEntity->HasComponent<FEGameModelComponent>())
-		{
-			FEGameModelComponent& GameModelComponent = PotentiallySelectedEntity->GetComponent<FEGameModelComponent>();
-			if (!GameModelComponent.IsVisible())
-				continue;
 
-			// FIX ME! Prefab not supported
-			FEMaterial* RegularMaterial = GameModelComponent.GameModel->Material;
-			GameModelComponent.GameModel->Material = PixelAccurateSelectionMaterial;
-			PixelAccurateSelectionMaterial->SetBaseColor(glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
-			PixelAccurateSelectionMaterial->ClearAllTexturesInfo();
-			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
-			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
-
-			if (!PotentiallySelectedEntity->HasComponent<FEInstancedComponent>())
-			{
-				RENDERER.RenderGameModelComponent(PotentiallySelectedEntity, CurrentCamera);
-			}
-			else if (PotentiallySelectedEntity->HasComponent<FEInstancedComponent>())
-			{
-				// Update instanced object only if it is not in individual select mode
-				if (!INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(PotentiallySelectedEntity))
-				{
-					PixelAccurateSelectionMaterial->Shader = FEPixelAccurateInstancedSelection;
-					FEMaterial* RegularBillboardMaterials = GameModelComponent.GameModel->GetBillboardMaterial();
-					GameModelComponent.GameModel->SetBillboardMaterial(PixelAccurateSelectionMaterial);
-
-					FEInstancedComponent& InstancedComponent = PotentiallySelectedEntity->GetComponent<FEInstancedComponent>();
-					RENDERER.RenderGameModelComponentWithInstanced(PotentiallySelectedEntity, CurrentCamera);
-
-					PixelAccurateSelectionMaterial->Shader = FEPixelAccurateSelection;
-					GameModelComponent.GameModel->SetBillboardMaterial(RegularBillboardMaterials);
-				}
-			}
-
-			GameModelComponent.GameModel->Material = RegularMaterial;
-			PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr);
-			PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr, 1);
-		}
-		else if (PotentiallySelectedEntity->HasComponent<FETerrainComponent>())
-		{
-			FETerrainComponent& TerrainComponent = PotentiallySelectedEntity->GetComponent<FETerrainComponent>();
-			if (!TerrainComponent.IsVisible())
-				continue;
-
-			TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
-			TerrainComponent.Shader->UpdateParameterData("baseColor", glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
-			RENDERER.RenderTerrainComponent(PotentiallySelectedEntity, CurrentCamera);
-			TerrainComponent.Shader->UpdateParameterData("baseColor", glm::vec3(1.0f));
-			TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("5A3E4F5C13115856401F1D1C"/*"FETerrainShader"*/);
-		}
+		RenderEntitySelectionColorID(CurrentSelectionData->SceneEntitiesUnderMouse[i],
+									 glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f),
+									 CurrentCamera, CurrentSelectionData);
 	}
 
 	int LastColorShiftIndex = static_cast<int>(CurrentSelectionData->SceneEntitiesUnderMouse.size() - 1);
@@ -299,14 +330,14 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			int b = ((LastColorShiftIndex + 1) >> 16) & 255;
 
 			static FEEntity* DummyEntity = Scene->CreateEntity("DummyEntity");
-			DummyEntity->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
+			RESOURCE_MANAGER.SetTag(DummyEntity, EDITOR_RESOURCE_TAG);
 			if (!DummyEntity->HasComponent<FEGameModelComponent>())
 				DummyEntity->AddComponent<FEGameModelComponent>();
 			
 			FEGameModelComponent& DummyGameModelComponent = DummyEntity->GetComponent<FEGameModelComponent>();
 			FEGameModelComponent& OriginalGameModelComponent = InstancedSubObjectIterator->first->GetComponent<FEGameModelComponent>();
 
-			DummyGameModelComponent.GameModel = OriginalGameModelComponent.GameModel;
+			DummyGameModelComponent.SetGameModel(OriginalGameModelComponent.GetGameModel());
 			DummyGameModelComponent.SetVisibility(true);
 
 			FEInstancedComponent& InstancedComponent = InstancedSubObjectIterator->first->GetComponent<FEInstancedComponent>();
@@ -320,16 +351,8 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			DummyTransformComponent.SetQuaternion(Rotation);
 			DummyTransformComponent.SetScale(Scale);
 
-			FEMaterial* RegularMaterial = OriginalGameModelComponent.GameModel->Material;
-			DummyGameModelComponent.GameModel->Material = PixelAccurateSelectionMaterial;
-			PixelAccurateSelectionMaterial->SetBaseColor(glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f));
-			PixelAccurateSelectionMaterial->ClearAllTexturesInfo();
-			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
-			PixelAccurateSelectionMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
+			RenderEntitySelectionColorID(DummyEntity, glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f), CurrentCamera, CurrentSelectionData);
 
-			RENDERER.RenderGameModelComponent(DummyEntity, CurrentCamera);
-
-			OriginalGameModelComponent.GameModel->Material = RegularMaterial;
 			DummyGameModelComponent.SetVisibility(false);
 		}
 		InstancedSubObjectIterator++;
@@ -407,6 +430,88 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 #endif
 }
 
+void FEEditorSelectedObject::RenderEntityHaloEffectInternal(FEEntity* Entity, glm::vec3 Color, FEEntity* CameraEntity, FESelectionData* CurrentSelectionData)
+{
+	if (Entity == nullptr)
+		return;
+
+	HALO_SELECTION_EFFECT.HaloMaterial->SetBaseColor(Color);
+
+	if (Entity->HasComponent<FEGameModelComponent>())
+	{
+		FEGameModelComponent& GameModelComponent = Entity->GetComponent<FEGameModelComponent>();
+		FEMaterial* RegularMaterial = GameModelComponent.GetGameModel()->Material;
+
+		GameModelComponent.GetGameModel()->Material = HALO_SELECTION_EFFECT.HaloMaterial;
+		HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
+		HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
+
+		if (!Entity->HasComponent<FEInstancedComponent>())
+		{
+			RENDERER.RenderGameModelComponent(Entity, CameraEntity);
+		}
+		else if (Entity->HasComponent<FEInstancedComponent>())
+		{
+			HALO_SELECTION_EFFECT.HaloMaterial->Shader = HALO_SELECTION_EFFECT.HaloDrawInstancedObjectShader;
+			
+			FEMaterial* RegularBillboardMaterial = GameModelComponent.GetGameModel()->GetBillboardMaterial();
+			GameModelComponent.GetGameModel()->SetBillboardMaterial(HALO_SELECTION_EFFECT.HaloMaterial);
+
+			RENDERER.RenderGameModelComponentWithInstanced(Entity, CameraEntity);
+
+			GameModelComponent.GetGameModel()->SetBillboardMaterial(RegularBillboardMaterial);
+			
+			HALO_SELECTION_EFFECT.HaloMaterial->Shader = HALO_SELECTION_EFFECT.HaloDrawObjectShader;
+		}
+
+		GameModelComponent.GetGameModel()->Material = RegularMaterial;
+	}
+	else if (Entity->HasComponent<FETerrainComponent>())
+	{
+		FETerrainComponent& TerrainComponent = Entity->GetComponent<FETerrainComponent>();
+		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
+		TerrainComponent.Shader->UpdateParameterData("baseColor", Color);
+		const float RegularLODLevel = TerrainComponent.GetLODLevel();
+		TerrainComponent.SetLODLevel(0.0f);
+
+		RENDERER.RenderTerrainComponent(Entity, CameraEntity);
+
+		TerrainComponent.SetLODLevel(RegularLODLevel);
+		TerrainComponent.Shader->UpdateParameterData("baseColor", glm::vec3(1.0f));
+		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("5A3E4F5C13115856401F1D1C"/*"FETerrainShader"*/);
+	}
+	else if (Entity->HasComponent<FEInstancedComponent>() && Entity->HasComponent<FEPrefabInstanceComponent>())
+	{
+		HALO_SELECTION_EFFECT.HaloMaterial->Shader = HALO_SELECTION_EFFECT.HaloDrawInstancedObjectShader;
+
+		FEInstancedComponent& InstancedComponent = Entity->GetComponent<FEInstancedComponent>();
+		for (size_t i = 0; i < InstancedComponent.InstancedElementsData.size(); i++)
+		{
+			FEEntity* EntityWithGameModel = INSTANCED_RENDERING_SYSTEM.GetEntityWithGameModelComponent(InstancedComponent.InstancedElementsData[i]->EntityIDWithGameModelComponent);
+			if (EntityWithGameModel == nullptr)
+				continue;
+
+			FEGameModelComponent& GameModelComponent = EntityWithGameModel->GetComponent<FEGameModelComponent>();
+
+			FEMaterial* RegularMaterial = GameModelComponent.GetGameModel()->Material;
+
+			GameModelComponent.GetGameModel()->Material = HALO_SELECTION_EFFECT.HaloMaterial;
+			HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
+			HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
+
+			FEMaterial* RegularBillboardMaterial = GameModelComponent.GetGameModel()->GetBillboardMaterial();
+			GameModelComponent.GetGameModel()->SetBillboardMaterial(HALO_SELECTION_EFFECT.HaloMaterial);
+
+			RENDERER.RenderGameModelComponentWithInstanced(Entity, nullptr, false, false, i);
+
+			GameModelComponent.GetGameModel()->Material = RegularMaterial;
+			GameModelComponent.GetGameModel()->SetBillboardMaterial(RegularBillboardMaterial);
+		}
+
+		HALO_SELECTION_EFFECT.HaloMaterial->Shader = HALO_SELECTION_EFFECT.HaloDrawObjectShader;
+	}
+}
+
 void FEEditorSelectedObject::OnCameraUpdate() const
 {
 	auto SceneIterator = PerSceneData.begin();
@@ -431,7 +536,6 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 
 		HaloSelectionData->HaloObjectsFB->Bind();
 		HALO_SELECTION_EFFECT.HaloMaterial->ClearAllTexturesInfo();
-		HALO_SELECTION_EFFECT.HaloMaterial->SetBaseColor(glm::vec3(1.0f, 0.25f, 0.0f));
 
 		FECameraComponent& CameraComponent = CurrentCamera->GetComponent<FECameraComponent>();
 		RENDERER.SetViewport(0, 0, CameraComponent.GetRenderTargetWidth(), CameraComponent.GetRenderTargetHeight());
@@ -450,106 +554,43 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 			continue;
 		}
 
-		FEEntity* ParentPrefabInstance = PREFAB_INSTANCE_SYSTEM.GetParentPrefabInstanceIfAny(SelectedEntity);
-		if (ParentPrefabInstance != nullptr && PREFAB_INSTANCE_SYSTEM.IsPrefabInstanceUnmodified(ParentPrefabInstance))
+		// If selected entity is instanced and in individual select mode.
+		if (SelectedEntity->HasComponent<FEInstancedComponent>() && CurrentSelectionData->InstancedSubObjectIndexSelected != -1)
 		{
-			FENaiveSceneGraphNode* ParentPrefabInstanceNode = ParentPrefabInstance->GetParentScene()->SceneGraph.GetNodeByEntityID(ParentPrefabInstance->GetObjectID());
-			std::vector<FENaiveSceneGraphNode*> PrefabElements = ParentPrefabInstanceNode->GetChildren();
-			for (size_t i = 0; i < PrefabElements.size(); i++)
-			{
-				FEEntity* PrefabElement = PrefabElements[i]->GetEntity();
-				if (PrefabElement->HasComponent<FEGameModelComponent>())
-				{
-					FEGameModelComponent& GameModelComponent = PrefabElement->GetComponent<FEGameModelComponent>();
-					FEMaterial* RegularMaterial = GameModelComponent.GameModel->Material;
+			FEGameModelComponent& GameModelComponent = SelectedEntity->GetComponent<FEGameModelComponent>();
+			
+			if (!CurrentSelectionData->DummyEntity->HasComponent<FEGameModelComponent>())
+				CurrentSelectionData->DummyEntity->AddComponent<FEGameModelComponent>();
 
-					GameModelComponent.GameModel->Material = HALO_SELECTION_EFFECT.HaloMaterial;
-					HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
-					HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
+			FEGameModelComponent& DummyGameModelComponent = CurrentSelectionData->DummyEntity->GetComponent<FEGameModelComponent>();
+			DummyGameModelComponent.SetGameModel(GameModelComponent.GetGameModel());
+			DummyGameModelComponent.SetVisibility(true);
 
-					RENDERER.RenderGameModelComponent(PrefabElement, CurrentCamera);
+			FEInstancedComponent& InstancedComponent = SelectedEntity->GetComponent<FEInstancedComponent>();
+			FETransformComponent& DummyTransformComponent = CurrentSelectionData->DummyEntity->GetComponent<FETransformComponent>();
 
-					GameModelComponent.GameModel->Material = RegularMaterial;
-				}
-			}
+			glm::dvec3 Position, Scale;
+			glm::dquat Rotation;
+			GEOMETRY.DecomposeMatrixToTranslationRotationScale(InstancedComponent.GetTransformedInstancedMatrix(CurrentSelectionData->InstancedSubObjectIndexSelected), Position, Rotation, Scale);
+
+			DummyTransformComponent.SetPosition(Position);
+			DummyTransformComponent.SetQuaternion(Rotation);
+			DummyTransformComponent.SetScale(Scale);
+
+			SELECTED.RenderEntityHaloEffectInternal(CurrentSelectionData->DummyEntity, glm::vec3(0.61f, 0.86f, 1.0f), CurrentCamera, CurrentSelectionData);
+
+			DummyGameModelComponent.SetVisibility(false);
 		}
 		else
 		{
-			if (SelectedEntity->HasComponent<FEGameModelComponent>())
+			SELECTED.RenderEntityHaloEffectInternal(SelectedEntity, glm::vec3(1.0f, 0.25f, 0.0f), CurrentCamera, CurrentSelectionData);
+			FENaiveSceneGraphNode* SelectedEntityNode = CurrentScene->SceneGraph.GetNodeByEntityID(SelectedEntity->GetObjectID());
+			std::vector<FENaiveSceneGraphNode*> AllChildren = SelectedEntityNode->GetRecursiveChildren();
+
+			for (size_t i = 0; i < AllChildren.size(); i++)
 			{
-				FEGameModelComponent& GameModelComponent = SelectedEntity->GetComponent<FEGameModelComponent>();
-				FEMaterial* RegularMaterial = GameModelComponent.GameModel->Material;
-
-				GameModelComponent.GameModel->Material = HALO_SELECTION_EFFECT.HaloMaterial;
-				HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
-				HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
-
-				if (!SelectedEntity->HasComponent<FEInstancedComponent>())
-				{
-					RENDERER.RenderGameModelComponent(SelectedEntity, CurrentCamera);
-				}
-				else if (SelectedEntity->HasComponent<FEInstancedComponent>())
-				{
-					if (CurrentSelectionData->InstancedSubObjectIndexSelected != -1)
-					{
-						if (!CurrentSelectionData->DummyEntity->HasComponent<FEGameModelComponent>())
-							CurrentSelectionData->DummyEntity->AddComponent<FEGameModelComponent>();
-
-						FEGameModelComponent& DummyGameModelComponent = CurrentSelectionData->DummyEntity->GetComponent<FEGameModelComponent>();
-						DummyGameModelComponent.GameModel = GameModelComponent.GameModel;
-						DummyGameModelComponent.SetVisibility(true);
-
-						FEInstancedComponent& InstancedComponent = SelectedEntity->GetComponent<FEInstancedComponent>();
-						FETransformComponent& DummyTransformComponent = CurrentSelectionData->DummyEntity->GetComponent<FETransformComponent>();
-
-						glm::dvec3 Position, Scale;
-						glm::dquat Rotation;
-						GEOMETRY.DecomposeMatrixToTranslationRotationScale(InstancedComponent.GetTransformedInstancedMatrix(CurrentSelectionData->InstancedSubObjectIndexSelected), Position, Rotation, Scale);
-
-						DummyTransformComponent.SetPosition(Position);
-						DummyTransformComponent.SetQuaternion(Rotation);
-						DummyTransformComponent.SetScale(Scale);
-
-						FEMaterial* RegularMaterial = GameModelComponent.GameModel->Material;
-						DummyGameModelComponent.GameModel->Material = HALO_SELECTION_EFFECT.HaloMaterial;
-
-						HALO_SELECTION_EFFECT.HaloMaterial->SetBaseColor(glm::vec3(0.61f, 0.86f, 1.0f));
-						HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap());
-						HALO_SELECTION_EFFECT.HaloMaterial->SetAlbedoMap(RegularMaterial->GetAlbedoMap(1), 1);
-
-						RENDERER.RenderGameModelComponent(CurrentSelectionData->DummyEntity, CurrentCamera);
-
-						GameModelComponent.GameModel->Material = RegularMaterial;
-						DummyGameModelComponent.SetVisibility(false);
-					}
-					else
-					{
-						HALO_SELECTION_EFFECT.HaloMaterial->Shader = HALO_SELECTION_EFFECT.HaloDrawInstancedObjectShader;
-						FEMaterial* RegularBillboardMaterial = GameModelComponent.GameModel->GetBillboardMaterial();
-						GameModelComponent.GameModel->SetBillboardMaterial(HALO_SELECTION_EFFECT.HaloMaterial);
-
-						RENDERER.RenderGameModelComponentWithInstanced(SelectedEntity, CurrentCamera);
-
-						HALO_SELECTION_EFFECT.HaloMaterial->Shader = HALO_SELECTION_EFFECT.HaloDrawObjectShader;
-						GameModelComponent.GameModel->SetBillboardMaterial(RegularBillboardMaterial);
-					}
-				}
-
-				GameModelComponent.GameModel->Material = RegularMaterial;
-			}
-			else if (SelectedEntity->HasComponent<FETerrainComponent>())
-			{
-				FETerrainComponent& TerrainComponent = SelectedEntity->GetComponent<FETerrainComponent>();
-				TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
-				TerrainComponent.Shader->UpdateParameterData("baseColor", glm::vec3(1.0f, 0.25f, 0.0f));
-				const float RegularLODLevel = TerrainComponent.GetLODLevel();
-				TerrainComponent.SetLODLevel(0.0f);
-
-				RENDERER.RenderTerrainComponent(SelectedEntity, CurrentCamera);
-
-				TerrainComponent.SetLODLevel(RegularLODLevel);
-				TerrainComponent.Shader->UpdateParameterData("baseColor", glm::vec3(1.0f));
-				TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("5A3E4F5C13115856401F1D1C"/*"FETerrainShader"*/);
+				FEEntity* CurrentEntity = AllChildren[i]->GetEntity();
+				SELECTED.RenderEntityHaloEffectInternal(CurrentEntity, glm::vec3(0.61f, 0.86f, 1.0f), CurrentCamera, CurrentSelectionData);
 			}
 		}
 
@@ -640,7 +681,7 @@ void FEEditorSelectedObject::AddSceneData(const std::string& SceneID)
 	if (CurrentScene->GetEntityByName("Editor_Selection_Dummy_Entity").empty())
 	{
 		PerSceneData[SceneID]->DummyEntity = CurrentScene->CreateEntity("Editor_Selection_Dummy_Entity");
-		PerSceneData[SceneID]->DummyEntity->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
+		RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->DummyEntity, EDITOR_RESOURCE_TAG);
 	}
 
 	HALO_SELECTION_EFFECT.AddSceneData(SceneID);

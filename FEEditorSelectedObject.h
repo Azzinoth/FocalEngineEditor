@@ -77,6 +77,9 @@ private:
 	void ClearAllSceneData();
 	void ClearSceneData(const std::string& SceneID);
 	void AddSceneData(const std::string& SceneID);
+
+	void RenderEntitySelectionColorID(FEEntity* Entity, glm::vec3 ColorID, FEEntity* CameraEntity, FESelectionData* CurrentSelectionData);
+	void RenderEntityHaloEffectInternal(FEEntity* Entity, glm::vec3 Color, FEEntity* CameraEntity, FESelectionData* CurrentSelectionData);
 };
 
 #define SELECTED FEEditorSelectedObject::getInstance()

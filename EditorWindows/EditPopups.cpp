@@ -1,4 +1,5 @@
 #include "EditPopups.h"
+#include "../FEEditor.h"
 
 EditGameModelPopup* EditGameModelPopup::Instance = nullptr;
 FEMesh** EditGameModelPopup::MeshToModify = nullptr;
@@ -380,7 +381,8 @@ void EditGameModelPopup::Render()
 	ImGui::Text("Preview of game model:");
 	ImGui::SetCursorPosX(Size.x / 2 - 128 / 2);
 	ImGui::SetCursorPosY(CurrentY + 50);
-	ImGui::Image((void*)static_cast<intptr_t>(TempPreview->GetTextureID()), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+	// FIX ME!
+	//ImGui::Image((void*)static_cast<intptr_t>(TempPreview->GetTextureID()), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 
 	if (CurrentMode == NO_LOD_MODE)
 	{
@@ -730,6 +732,7 @@ EditMaterialWindow::EditMaterialWindow()
 	NodeAreaTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_TEXTURE, DragAndDropnodeAreaTargetCallback, reinterpret_cast<void**>(&DragAndDropCallbackInfo), "Drop to add texture");
 
 	PreviewScene = SCENE_MANAGER.CreateScene("MaterialEditor_Scene");
+	RESOURCE_MANAGER.SetTag(PreviewScene, EDITOR_RESOURCE_TAG);
 
 	PreviewGameModel = new FEGameModel(nullptr, nullptr, "MaterialEditor_Preview_GameModel");
 	PreviewGameModel->Mesh = RESOURCE_MANAGER.GetMesh("7F251E3E0D08013E3579315F"/*"sphere"*/);
@@ -757,7 +760,7 @@ EditMaterialWindow::EditMaterialWindow()
 
 	FEEntity* SkyDome = PreviewScene->CreateEntity("SkyDome");
 	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
-	SKY_DOME_SYSTEM.AddToEntity(SkyDome);
+	SkyDome->AddComponent<FESkyDomeComponent>();
 
 	SCENE_MANAGER.DeactivateScene(PreviewScene);
 	ENGINE.AddMouseButtonCallback(MouseButtonCallback);

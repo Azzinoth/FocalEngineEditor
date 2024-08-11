@@ -8,10 +8,10 @@ DragAndDropManager::~DragAndDropManager() {}
 void DragAndDropManager::InitializeResources()
 {
 	HandCursor = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/handCursor.png", "handCursor");
-	RESOURCE_MANAGER.MakeTextureStandard(HandCursor);
+	RESOURCE_MANAGER.SetTag(HandCursor, EDITOR_RESOURCE_TAG);
 
 	HandCursorUnavailable = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/handCursorUnavailable.png", "handCursorUnavailable");
-	RESOURCE_MANAGER.MakeTextureStandard(HandCursorUnavailable);
+	RESOURCE_MANAGER.SetTag(HandCursorUnavailable, EDITOR_RESOURCE_TAG);
 }
 
 DragAndDropTarget* DragAndDropManager::AddTarget(const FE_OBJECT_TYPE AcceptedType, std::function<bool(FEObject*, void**)> Callback, void** UserData, const std::string ToolTipText)

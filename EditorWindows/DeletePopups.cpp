@@ -306,7 +306,8 @@ void DeleteGameModelPopup::Render()
 int DeleteGameModelPopup::TimesGameModelUsed(const FEGameModel* GameModel)
 {
 	int Result = 0;
-	const std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
+	// FIX ME!
+	/*const std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
 
 	for (int i = 0; i < PrefabList.size(); i++)
 	{
@@ -316,7 +317,7 @@ int DeleteGameModelPopup::TimesGameModelUsed(const FEGameModel* GameModel)
 			if (CurrentPrefab->GetComponent(j)->GameModel == GameModel)
 				Result++;
 		}
-	}
+	}*/
 
 	return Result;
 }

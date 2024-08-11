@@ -4,6 +4,8 @@
 #include <any>
 using namespace FocalEngine;
 
+#define EDITOR_RESOURCE_TAG "EDITOR_PRIVATE_RESOURCE"
+
 class DragAndDropTarget
 {
 	friend class DragAndDropManager;

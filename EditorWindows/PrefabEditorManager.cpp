@@ -136,21 +136,21 @@ void FEPrefabEditorManager::Clear()
 
 void FEPrefabEditorManager::PrepareEditWinow(FEPrefab* Prefab)
 {
-	if (Prefab->Scene == nullptr)
+	if (Prefab->GetScene() == nullptr)
 		return;
 
 	// We don't want to open the same prefab scene twice
 	if (PrefabWindows.find(Prefab) != PrefabWindows.end())
 		return;
 
-	FEScene* CurrentPrefabScene = SCENE_MANAGER.DuplicateScene(Prefab->Scene, "Scene: " + Prefab->GetName());
+	FEScene* CurrentPrefabScene = SCENE_MANAGER.DuplicateScene(Prefab->GetScene(), "Scene: " + Prefab->GetName());
 
 	// Because by default camera is looking at 0,0,0 we need to place "empty" entity at 0,0,0.
 	// To ensure that scene AABB would include some entity at 0,0,0.
 	FEEntity* EmptyEntity = CurrentPrefabScene->CreateEntity("Empty entity");
 
 	FEAABB SceneAABB = CurrentPrefabScene->GetSceneAABB([](FEEntity* Entity) -> bool {
-		if (Entity->GetComponent<FETagComponent>().GetTag() == EDITOR_SCENE_TAG)
+		if (Entity->GetTag() == EDITOR_RESOURCE_TAG)
 			return false;
 
 		if (Entity->HasComponent<FESkyDomeComponent>())
@@ -165,7 +165,7 @@ void FEPrefabEditorManager::PrepareEditWinow(FEPrefab* Prefab)
 	CurrentPrefabScene->DeleteEntity(EmptyEntity);
 
 	FEEntity* Camera = CurrentPrefabScene->CreateEntity("Prefab scene camera");
-	Camera->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
+	RESOURCE_MANAGER.SetTag(Camera, EDITOR_RESOURCE_TAG);
 	Camera->AddComponent<FECameraComponent>();
 	FECameraComponent& CameraComponent = Camera->GetComponent<FECameraComponent>();
 	CameraComponent.Type = 1;
@@ -177,18 +177,18 @@ void FEPrefabEditorManager::PrepareEditWinow(FEPrefab* Prefab)
 	CAMERA_SYSTEM.IndividualUpdate(Camera, 0.0);
 
 	FEEntity* SkyDomeEntity = CurrentPrefabScene->CreateEntity("Prefab scene skydome");
-	SkyDomeEntity->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
+	RESOURCE_MANAGER.SetTag(SkyDomeEntity, EDITOR_RESOURCE_TAG);
 	SkyDomeEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(100.0f));
 	SkyDomeEntity->AddComponent<FESkyDomeComponent>();
 
 	FEEntity* LightEntity = CurrentPrefabScene->CreateEntity("Prefab scene light");
-	LightEntity->GetComponent<FETagComponent>().SetTag(EDITOR_SCENE_TAG);
+	RESOURCE_MANAGER.SetTag(LightEntity, EDITOR_RESOURCE_TAG);
 	LightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
 	FELightComponent& LightComponent = LightEntity->GetComponent<FELightComponent>();
 	LightEntity->GetComponent<FETransformComponent>().SetRotation(glm::vec3(-40.0f, 10.0f, 0.0f));
 	LightComponent.SetIntensity(4.3f);
 	SceneAABB = CurrentPrefabScene->GetSceneAABB([](FEEntity* Entity) -> bool {
-		if (Entity->GetComponent<FETagComponent>().GetTag() == EDITOR_SCENE_TAG && !Entity->HasComponent<FECameraComponent>())
+		if (Entity->GetTag() == EDITOR_RESOURCE_TAG && !Entity->HasComponent<FECameraComponent>())
 			return false;
 
 		if (Entity->HasComponent<FESkyDomeComponent>())
@@ -223,10 +223,10 @@ void FEPrefabEditorManager::ApplyModificationsToPrefabScene(FEPrefabSceneEditorW
 		return;
 
 	FEScene* ModifiedScene = Window->GetScene();
-	Prefab->Scene->Clear();
+	Prefab->GetScene()->Clear();
 
-	SCENE_MANAGER.ImportSceneAsNode(ModifiedScene, Prefab->Scene, Prefab->Scene->SceneGraph.GetRoot(), [](FEEntity* EntityToCheck) {
-		return !(EntityToCheck->GetComponent<FETagComponent>().GetTag() == EDITOR_SCENE_TAG);
+	SCENE_MANAGER.ImportSceneAsNode(ModifiedScene, Prefab->GetScene(), Prefab->GetScene()->SceneGraph.GetRoot(), [](FEEntity* EntityToCheck) {
+		return !(EntityToCheck->GetTag() == EDITOR_RESOURCE_TAG);
 	});
 
 	Prefab->SetDirtyFlag(true);
