@@ -14,6 +14,7 @@ class FEEditorInspectorWindow
 
     void DisplayLightProperties(FEEntity* LightEntity) const;
     void DisplayCameraProperties(FEEntity* CameraEntity) const;
+	void DisplayVirtualUIProperties(FEEntity* VirtualUIEntity) const;
 
     // Terrain settings
     static FEEntity* TerrainToWorkWith;
@@ -63,9 +64,13 @@ class FEEditorInspectorWindow
 
     bool AddComponent(FEEntity* Entity, std::string ComponentName);
     std::unordered_map<std::type_index, std::function<void(FEEntity*)>> AddComponentHandlers;
+	std::unordered_map<std::type_index, std::function<void(FEEntity*)>> RemoveComponentHandlers;
+
+	bool RenderComponentDeleteButton(FEEntity* Entity, FEComponentTypeInfo* ComponentInfo) const;
 
     static void AddLightComponent(FEEntity* Entity);
     static void AddCameraComponent(FEEntity* Entity);
+    static void AddVirtualUIComponent(FEEntity* Entity);
 public:
     SINGLETON_PUBLIC_PART(FEEditorInspectorWindow)
 };

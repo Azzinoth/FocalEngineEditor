@@ -10,6 +10,32 @@ FEEditorInspectorWindow::FEEditorInspectorWindow()
 	std::vector<FEComponentTypeInfo> RegisteredComponentList = COMPONENTS_TOOL.GetComponentInfoList();
 	AddComponentHandlers[typeid(FELightComponent)] = &FEEditorInspectorWindow::AddLightComponent;
 	AddComponentHandlers[typeid(FECameraComponent)] = &FEEditorInspectorWindow::AddCameraComponent;
+	AddComponentHandlers[typeid(FEVirtualUIComponent)] = &FEEditorInspectorWindow::AddVirtualUIComponent;
+
+	RemoveComponentHandlers[typeid(FECameraComponent)] = [](FEEntity* ParentEntity) -> void {
+		ParentEntity->RemoveComponent<FECameraComponent>();
+	};
+	RemoveComponentHandlers[typeid(FELightComponent)] = [](FEEntity* ParentEntity) -> void {
+		ParentEntity->RemoveComponent<FELightComponent>();
+	};
+	RemoveComponentHandlers[typeid(FEGameModelComponent)] = [](FEEntity* ParentEntity) -> void {
+		ParentEntity->RemoveComponent<FEGameModelComponent>();
+	};
+	RemoveComponentHandlers[typeid(FEInstancedComponent)] = [](FEEntity* ParentEntity) -> void {
+		ParentEntity->RemoveComponent<FEInstancedComponent>();
+	};
+	RemoveComponentHandlers[typeid(FETerrainComponent)] = [](FEEntity* ParentEntity) -> void {
+		ParentEntity->RemoveComponent<FETerrainComponent>();
+	};
+	RemoveComponentHandlers[typeid(FESkyDomeComponent)] = [](FEEntity* ParentEntity) -> void {
+		ParentEntity->RemoveComponent<FESkyDomeComponent>();
+	};
+	RemoveComponentHandlers[typeid(FEPrefabInstanceComponent)] = [](FEEntity* ParentEntity) -> void {
+		ParentEntity->RemoveComponent<FEPrefabInstanceComponent>();
+	};
+	RemoveComponentHandlers[typeid(FEVirtualUIComponent)] = [](FEEntity* ParentEntity) -> void {
+		ParentEntity->RemoveComponent<FEVirtualUIComponent>();
+	};
 }
 
 void FEEditorInspectorWindow::InitializeResources()
@@ -900,7 +926,7 @@ std::vector<std::string> FEEditorInspectorWindow::GetAvailableComponentsToAdd(FE
 	auto RegisteredComponentList = COMPONENTS_TOOL.GetComponentInfoList();
 	for (size_t i = 0; i < RegisteredComponentList.size(); i++)
 	{
-		if (RegisteredComponentList[i].IsCompatible(Entity))
+		if (RegisteredComponentList[i].CanBeAddedToEntity(Entity))
 			Result.push_back(RegisteredComponentList[i].Name);
 	}
 
@@ -930,6 +956,47 @@ bool FEEditorInspectorWindow::AddComponent(FEEntity* Entity, std::string Compone
 			}
 		}
 	}
+
+	return false;
+}
+
+bool FEEditorInspectorWindow::RenderComponentDeleteButton(FEEntity* Entity, FEComponentTypeInfo* ComponentInfo) const
+{
+	if (!ComponentInfo->CanBeRemovedFromEntity(Entity))
+		return false;
+
+	float HeaderHeight = ImGui::GetFrameHeight();
+	float HeaderWidth = ImGui::GetContentRegionAvail().x;
+
+	float ButtonSize = 24;
+	ImVec2 PreviosCursorPos = ImGui::GetCursorPos();
+
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.9f, 0.5f, 0.5f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.95f, 0.90f, 0.0f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.1f, 1.0f, 0.1f, 1.0f));
+	ImGui::SetCursorPos(ImVec2(HeaderWidth - ButtonSize / 8.0f - 2.0f, PreviosCursorPos.y + 2.0f));
+	if (ImGui::Button(std::string("x##" + ComponentInfo->Name).c_str(), ImVec2(ButtonSize, ButtonSize)))
+	{
+		size_t ComponentHashCode = ComponentInfo->Type->hash_code();
+
+		auto ComponentIterator = RemoveComponentHandlers.begin();
+		while (ComponentIterator != RemoveComponentHandlers.end())
+		{
+			if (ComponentIterator->first.hash_code() == ComponentHashCode)
+			{
+				ComponentIterator->second(Entity);
+
+				ImGui::PopStyleColor(3);
+				ImGui::SetCursorPos(PreviosCursorPos);
+				return true;
+			}
+
+			ComponentIterator++;
+		}
+	}
+
+	ImGui::PopStyleColor(3);
+	ImGui::SetCursorPos(PreviosCursorPos);
 
 	return false;
 }
@@ -964,21 +1031,12 @@ void FEEditorInspectorWindow::Render()
 
 	if (EntitySelected->HasComponent<FETagComponent>())
 	{
-		float headerHeight = ImGui::GetFrameHeight();
-		float headerWidth = ImGui::GetContentRegionAvail().x;
-
-		float ButtonSize = ImGui::GetFrameHeight() * 0.7f;
-		float cursorPosX = ImGui::GetCursorPosX();
-		ImVec2 PreviosCursorPos = ImGui::GetCursorPos();
-		
-		ImGui::SetCursorPos(ImVec2(headerWidth - ButtonSize / 8.0f - 4.0f/*- ButtonSize*/, PreviosCursorPos.y + 4.0f/*(headerHeight - ButtonSize) * 0.5f*/));
-		if (ImGui::Button("x", ImVec2(ButtonSize, ButtonSize)))
+		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FETagComponent>()))
 		{
-			int y = 0;
-			y++;
+			ImGui::PopStyleVar();
+			ImGui::End();
+			return;
 		}
-
-		ImGui::SetCursorPos(PreviosCursorPos);
 
 		if (ImGui::CollapsingHeader("Tag", ImGuiTreeNodeFlags_DefaultOpen))
 		{
@@ -996,7 +1054,14 @@ void FEEditorInspectorWindow::Render()
 
 	if (EntitySelected->HasComponent<FETransformComponent>())
 	{
-		if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen /*| ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding*/))
+		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FETransformComponent>()))
+		{
+			ImGui::PopStyleVar();
+			ImGui::End();
+			return;
+		}
+
+		if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			FETransformComponent& Transform = EntitySelected->GetComponent<FETransformComponent>();
 			ShowTransformConfiguration(EntitySelected->GetName(), &Transform);
@@ -1005,7 +1070,14 @@ void FEEditorInspectorWindow::Render()
 
 	if (EntitySelected->HasComponent<FEGameModelComponent>())
 	{
-		if (ImGui::CollapsingHeader("Game Model", ImGuiTreeNodeFlags_DefaultOpen /*| ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding*/))
+		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FEGameModelComponent>()))
+		{
+			ImGui::PopStyleVar();
+			ImGui::End();
+			return;
+		}
+
+		if (ImGui::CollapsingHeader("Game Model", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.5f, 0.5f, 0.5f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.95f, 0.90f, 0.0f));
@@ -1056,6 +1128,13 @@ void FEEditorInspectorWindow::Render()
 
 	if (EntitySelected->HasComponent<FEPrefabInstanceComponent>())
 	{
+		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FEPrefabInstanceComponent>()))
+		{
+			ImGui::PopStyleVar();
+			ImGui::End();
+			return;
+		}
+
 		if (ImGui::CollapsingHeader("Prefab Instance", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			ImGui::Text("Prefab ID : %s", EntitySelected->GetComponent<FEPrefabInstanceComponent>().GetPrefab()->GetObjectID().c_str());
@@ -1064,6 +1143,13 @@ void FEEditorInspectorWindow::Render()
 
 	if (EntitySelected->HasComponent<FEInstancedComponent>())
 	{
+		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FEInstancedComponent>()))
+		{
+			ImGui::PopStyleVar();
+			ImGui::End();
+			return;
+		}
+
 		if (ImGui::CollapsingHeader("Instanced", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			FESelectionData* CurrentSelectionData = SELECTED.GetSceneData(CurrentScene->GetObjectID());
@@ -1332,6 +1418,13 @@ void FEEditorInspectorWindow::Render()
 
 	if (EntitySelected->HasComponent<FETerrainComponent>())
 	{
+		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FETerrainComponent>()))
+		{
+			ImGui::PopStyleVar();
+			ImGui::End();
+			return;
+		}
+
 		if (ImGui::CollapsingHeader("Terrain", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			FETerrainComponent& TerrainComponent = EntitySelected->GetComponent<FETerrainComponent>();
@@ -1365,6 +1458,13 @@ void FEEditorInspectorWindow::Render()
 
 	if (EntitySelected->HasComponent<FELightComponent>())
 	{
+		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FELightComponent>()))
+		{
+			ImGui::PopStyleVar();
+			ImGui::End();
+			return;
+		}
+
 		if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			DisplayLightProperties(SELECTED.GetSelected(CurrentScene));
@@ -1373,9 +1473,31 @@ void FEEditorInspectorWindow::Render()
 
 	if (EntitySelected->HasComponent<FECameraComponent>())
 	{
+		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FECameraComponent>()))
+		{
+			ImGui::PopStyleVar();
+			ImGui::End();
+			return;
+		}
+
 		if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			DisplayCameraProperties(SELECTED.GetSelected(CurrentScene));
+		}
+	}
+
+	if (EntitySelected->HasComponent<FEVirtualUIComponent>())
+	{
+		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FEVirtualUIComponent>()))
+		{
+			ImGui::PopStyleVar();
+			ImGui::End();
+			return;
+		}
+
+		if (ImGui::CollapsingHeader("Virtual UI", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			DisplayVirtualUIProperties(SELECTED.GetSelected(CurrentScene));
 		}
 	}
 
@@ -1871,4 +1993,54 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 		}
 		ImGui::EndTabBar();
 	}
+}
+
+void FEEditorInspectorWindow::AddVirtualUIComponent(FEEntity* Entity)
+{
+	Entity->AddComponent<FEVirtualUIComponent>();
+}
+
+void FEEditorInspectorWindow::DisplayVirtualUIProperties(FEEntity* VirtualUIEntity) const
+{
+	FEVirtualUIComponent& VirtualUIComponent = VirtualUIEntity->GetComponent<FEVirtualUIComponent>();
+
+	// TO-DO: Give user ability to change window.
+	FEWindow* CurrentWindow = VirtualUIComponent.GetWindowToListen();
+
+	// TO-DO: Give user ability to change canvas mesh.
+	FEMesh* CurrentCanvasMesh = VirtualUIComponent.GetCanvasMesh();
+
+	// Internal resolution.
+	ImGui::Text("Internal Resolution:");
+	glm::vec2 InternalResolution = VirtualUIComponent.GetCanvasResolution();
+	ImGui::DragFloat2("##InternalResolution", &InternalResolution[0], 1.0f, 1.0f, 4096.0f);
+	VirtualUIComponent.SetCanvasResolution(InternalResolution);
+
+	bool bActive = VirtualUIComponent.IsInputActive();
+	ImGui::Checkbox("Input Active", &bActive);
+	VirtualUIComponent.SetInputActive(bActive);
+
+	bool bMouseButtonPassThrough = VirtualUIComponent.IsMouseButtonPassThroughActive();
+	ImGui::Checkbox("Mouse Button Pass Through", &bMouseButtonPassThrough);
+	VirtualUIComponent.SetMouseButtonPassThrough(bMouseButtonPassThrough);
+
+	bool bMouseMovePassThrough = VirtualUIComponent.IsMouseMovePassThroughActive();
+	ImGui::Checkbox("Mouse Move Pass Through", &bMouseMovePassThrough);
+	VirtualUIComponent.SetMouseMovePassThrough(bMouseMovePassThrough);
+
+	bool bMouseScrollPassThrough = VirtualUIComponent.IsScrollPassThroughActive();
+	ImGui::Checkbox("Mouse Scroll Pass Through", &bMouseScrollPassThrough);
+	VirtualUIComponent.SetScrollPassThrough(bMouseScrollPassThrough);
+
+	bool bCharPassThrough = VirtualUIComponent.IsCharPassThroughActive();
+	ImGui::Checkbox("Char Pass Through", &bCharPassThrough);
+	VirtualUIComponent.SetCharPassThrough(bCharPassThrough);
+
+	bool bKeyboardPassThrough = VirtualUIComponent.IsKeyPassThroughActive();
+	ImGui::Checkbox("Key Pass Through", &bKeyboardPassThrough);
+	VirtualUIComponent.SetKeyPassThrough(bKeyboardPassThrough);
+
+	bool bDropPassThrough = VirtualUIComponent.IsDropPassThroughActive();
+	ImGui::Checkbox("Drop Pass Through", &bDropPassThrough);
+	VirtualUIComponent.SetDropPassThrough(bDropPassThrough);
 }

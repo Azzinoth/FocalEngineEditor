@@ -30,6 +30,24 @@ SelectFEObjectPopUp::~SelectFEObjectPopUp()
 	delete IconButton;
 }
 
+void SelectFEObjectPopUp::FilterOutTags(std::vector<std::string>& FEObjectIDList, std::vector<std::string> ListOfTagsToFilterOut)
+{
+	for (int i = 0; i < FEObjectIDList.size(); i++)
+	{
+		FEObject* CurrentObject = OBJECT_MANAGER.GetFEObject(FEObjectIDList[i]);
+
+		for (size_t j = 0; j < ListOfTagsToFilterOut.size(); j++)
+		{
+			if (CurrentObject->GetTag() == ListOfTagsToFilterOut[j])
+			{
+				FEObjectIDList.erase(FEObjectIDList.begin() + i);
+				i--;
+				break;
+			}
+		}
+	}
+}
+
 void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::vector<FEObject*>), FEObject* HighlightedObject, const std::vector<FEObject*> CustomList)
 {
 	CurrenType = Type;
@@ -51,32 +69,18 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 			case FE_TEXTURE:
 			{
 				TempList = RESOURCE_MANAGER.GetTextureList();
-				TempList.insert(TempList.begin(), RESOURCE_MANAGER.NoTexture->GetObjectID());
-
 				break;
 			}
 
 			case FE_MESH:
 			{
 				TempList = RESOURCE_MANAGER.GetMeshList();
-
-				const std::vector<std::string> StandardMeshList = RESOURCE_MANAGER.GetEnginePrivateMeshList();
-				for (size_t i = 0; i < StandardMeshList.size(); i++)
-				{
-					if (EDITOR_INTERNAL_RESOURCES.IsInInternalEditorList(RESOURCE_MANAGER.GetMesh(StandardMeshList[i])))
-						continue;
-
-					TempList.push_back(StandardMeshList[i]);
-				}
-
 				break;
 			}
 			
 			case FE_MATERIAL:
 			{
 				TempList = RESOURCE_MANAGER.GetMaterialList();
-				TempList.insert(TempList.begin(), "18251A5E0F08013Z3939317U"/*"SolidColorMaterial"*/);
-
 				break;
 			}
 			
@@ -92,6 +96,14 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 				break;
 			}
 		}
+
+		FilterOutTags(TempList, std::vector<std::string>{ ENGINE_RESOURCE_TAG, EDITOR_RESOURCE_TAG});
+
+		if (CurrenType == FE_TEXTURE)
+			TempList.insert(TempList.begin(), RESOURCE_MANAGER.NoTexture->GetObjectID());
+
+		if (CurrenType == FE_MATERIAL)
+			TempList.insert(TempList.begin(), "18251A5E0F08013Z3939317U"/*"SolidColorMaterial"*/);
 		
 		for (size_t i = 0; i < TempList.size(); i++)
 			ItemsList.push_back(OBJECT_MANAGER.GetFEObject(TempList[i]));

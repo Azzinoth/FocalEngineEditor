@@ -209,7 +209,7 @@ void GizmoManager::UpdateGizmoState(int NewState, FEScene* Scene)
 	GizmoSceneData->GizmosState = NewState;
 	HideAllGizmo(Scene);
 
-	if (SELECTED.GetSelected(Scene) == nullptr || SELECTED.GetSelected(Scene)->GetType() == FE_CAMERA_DEPRECATED)
+	if (SELECTED.GetSelected(Scene) == nullptr)
 		return;
 
 	switch (NewState)
@@ -292,7 +292,7 @@ void GizmoManager::Update()
 		}
 		
 		FEScene* Scene = SCENE_MANAGER.GetScene(GizmoSceneData->SceneID);
-		if (SELECTED.GetSelected(Scene) == nullptr || CAMERA_SYSTEM.GetMainCameraEntity(Scene) == nullptr || SELECTED.GetSelected(Scene)->GetType() == FE_CAMERA_DEPRECATED)
+		if (SELECTED.GetSelected(Scene) == nullptr || CAMERA_SYSTEM.GetMainCameraEntity(Scene) == nullptr)
 		{
 			HideAllGizmo(Scene);
 			PerSceneIterator++;

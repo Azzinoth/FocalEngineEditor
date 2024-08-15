@@ -43,36 +43,38 @@ void FEEditorSceneGraphWindow::SetCorrectItemColor(FEObject* SceneObject) const
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, LightItemColor);
 	}
-	else if (SceneObject->GetType() == FE_CAMERA_DEPRECATED)
+	// FIX ME !
+	/*else if (SceneObject->GetType() == FE_CAMERA_DEPRECATED)
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, CameraItemColor);
 	}
 	else if (SceneObject->GetType() == FE_TERRAIN_DEPRECATED)
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, TerrainItemColor);
-	}
+	}*/
 	else if (SceneObject->GetType() == FE_ENTITY)
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, EntityItemColor);
 	}
-	else if (SceneObject->GetType() == FE_ENTITY_INSTANCED_DEPRECATED)
+	/*else if (SceneObject->GetType() == FE_ENTITY_INSTANCED_DEPRECATED)
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, InstancedEntityItemColor);
-	}
+	}*/
 }
 
 void FEEditorSceneGraphWindow::PopCorrectItemColor(FEObject* SceneObject)
 {
-	if (SceneObject->GetType() == FE_DIRECTIONAL_LIGHT ||
+	// FIX ME !
+	/*if (SceneObject->GetType() == FE_DIRECTIONAL_LIGHT ||
 		SceneObject->GetType() == FE_SPOT_LIGHT ||
 		SceneObject->GetType() == FE_POINT_LIGHT ||
 		SceneObject->GetType() == FE_CAMERA_DEPRECATED ||
 		SceneObject->GetType() == FE_TERRAIN_DEPRECATED ||
 		SceneObject->GetType() == FE_ENTITY ||
 		SceneObject->GetType() == FE_ENTITY_INSTANCED_DEPRECATED)
-	{
+	{*/
 		ImGui::PopStyleColor();
-	}
+	//}
 }
 
 static void CreateInstancedEntityCallBack(const std::vector<FEObject*> SelectionsResult)
@@ -158,7 +160,7 @@ void FEEditorSceneGraphWindow::DrawCorrectIcon(const FEObject* SceneObject) cons
 		}
 	}*/
 
-	if (SceneObject->GetType() == FE_DIRECTIONAL_LIGHT)
+	/*if (SceneObject->GetType() == FE_DIRECTIONAL_LIGHT)
 	{
 		ImGui::Image((void*)(intptr_t)DirectionalLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 
@@ -184,7 +186,7 @@ void FEEditorSceneGraphWindow::DrawCorrectIcon(const FEObject* SceneObject) cons
 	if (SceneObject->GetType() == FE_CAMERA_DEPRECATED)
 	{
 		ImGui::Image((void*)(intptr_t)CameraIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-	}
+	}*/
 
 	ImGui::SameLine();
 	return;

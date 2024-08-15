@@ -265,6 +265,22 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 
 		PixelAccurateSelectionMaterial->Shader = FEPixelAccurateSelection;
 	}
+	else if (Entity->HasComponent<FEVirtualUIComponent>())
+	{
+		FEVirtualUIComponent& VirtualUIComponent = Entity->GetComponent<FEVirtualUIComponent>();
+		if (!VirtualUIComponent.IsVisible() || VirtualUIComponent.IsInputActive())
+			return;
+
+		PixelAccurateSelectionMaterial->SetBaseColor(ColorID);
+		PixelAccurateSelectionMaterial->ClearAllTexturesInfo();
+
+		VIRTUAL_UI_SYSTEM.RenderVirtualUIComponent(Entity, PixelAccurateSelectionMaterial);
+
+		PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr);
+		PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr, 1);
+	}
+
+	PixelAccurateSelectionMaterial->ClearAllTexturesInfo();
 }
 
 int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, const double MouseY, FEScene* Scene)
@@ -510,6 +526,16 @@ void FEEditorSelectedObject::RenderEntityHaloEffectInternal(FEEntity* Entity, gl
 
 		HALO_SELECTION_EFFECT.HaloMaterial->Shader = HALO_SELECTION_EFFECT.HaloDrawObjectShader;
 	}
+	else if (Entity->HasComponent<FEVirtualUIComponent>())
+	{
+		FEVirtualUIComponent& VirtualUIComponent = Entity->GetComponent<FEVirtualUIComponent>();
+		if (!VirtualUIComponent.IsVisible() || VirtualUIComponent.IsInputActive())
+			return;
+
+		VIRTUAL_UI_SYSTEM.RenderVirtualUIComponent(Entity, HALO_SELECTION_EFFECT.HaloMaterial);
+	}
+
+	HALO_SELECTION_EFFECT.HaloMaterial->ClearAllTexturesInfo();
 }
 
 void FEEditorSelectedObject::OnCameraUpdate() const

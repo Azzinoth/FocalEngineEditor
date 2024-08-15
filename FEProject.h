@@ -5,7 +5,6 @@
 #include "FEDearImguiWrapper/FEDearImguiWrapper.h"
 #include "FEEditorGizmoManager.h"
 #include "FEEditorPreviewManager.h"
-#include "FEEditorInternalResources.h"
 #include "FEEditorVirtualFileSystem.h"
 
 class FEProject

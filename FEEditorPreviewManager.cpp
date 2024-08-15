@@ -30,6 +30,7 @@ void FEEditorPreviewManager::InitializeResources()
 	PreviewEntity = PreviewScene->CreateEntity("EditorPreviewEntity");
 	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+	RESOURCE_MANAGER.SetTag(PreviewEntity, EDITOR_RESOURCE_TAG);
 
 	LocalCameraEntity = PreviewScene->CreateEntity("EditorPreview CameraEntity");
 	LocalCameraEntity->AddComponent<FECameraComponent>();
@@ -52,10 +53,6 @@ void FEEditorPreviewManager::InitializeResources()
 	SCENE_MANAGER.DeactivateScene(PreviewScene);
 }
 
-void FEEditorPreviewManager::ReInitializeEntities()
-{
-}
-
 void FEEditorPreviewManager::UpdateAll()
 {
 	Clear();
@@ -69,13 +66,17 @@ void FEEditorPreviewManager::UpdateAll()
 	const std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialList();
 	for (size_t i = 0; i < MaterialList.size(); i++)
 	{
-		CreateMaterialPreview(MaterialList[i]);
+		FEObject* CurrentMaterial = OBJECT_MANAGER.GetFEObject(MaterialList[i]);
+		if (CurrentMaterial->GetTag() != EDITOR_RESOURCE_TAG)
+			CreateMaterialPreview(MaterialList[i]);
 	}
 
 	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
-		CreateGameModelPreview(GameModelList[i]);
+		FEObject* CurrentGameModel = OBJECT_MANAGER.GetFEObject(GameModelList[i]);
+		if (CurrentGameModel->GetTag() != EDITOR_RESOURCE_TAG)
+			CreateGameModelPreview(GameModelList[i]);
 	}
 }
 
@@ -254,7 +255,7 @@ FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string Material
 void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelID)
 {
 	const FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(GameModelID);
-	if (GameModel == nullptr)
+	if (GameModel == nullptr || GameModel->Mesh == nullptr || GameModel->Material == nullptr)
 		return;
 
 	PreviewGameModel->Mesh = GameModel->Mesh;

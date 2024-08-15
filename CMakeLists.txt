@@ -12,8 +12,8 @@ project(FocalEngineEditor)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_FLAGS_DEBUG "/MP /ZI /W3 /Od /MDd /JMC /sdl /FC /D IMGUI_IMPL_OPENGL_LOADER_GLEW /D WIN32 /D _WINDOWS /D _DEBUG /D FE_DEBUG_ENABLED")
-set(CMAKE_CXX_FLAGS_RELEASE "/MP /W3 /O2 /Oi /MD /Gy /sdl /FC /GL /OPT:REF /OPT:ICF /D IMGUI_IMPL_OPENGL_LOADER_GLEW /D NDEBUG /D WIN32 /D _WINDOWS")
+set(CMAKE_CXX_FLAGS_DEBUG "/MP /ZI /W3 /Od /MTd /JMC /sdl /FC /D IMGUI_IMPL_OPENGL_LOADER_GLEW /D WIN32 /D _WINDOWS /D _DEBUG /D FE_DEBUG_ENABLED")
+set(CMAKE_CXX_FLAGS_RELEASE "/MP /W3 /O2 /Oi /MT /Gy /sdl /FC /GL /OPT:REF /OPT:ICF /D IMGUI_IMPL_OPENGL_LOADER_GLEW /D NDEBUG /D WIN32 /D _WINDOWS")
 
 # Turn on the ability to create folders to organize projects (.vcproj)
 # It creates "CMakePredefinedTargets" folder by default and adds CMake
@@ -50,8 +50,6 @@ file(GLOB Editor_SRC
 	"FEEditorGizmoManager.h"
 	"FEEditorHaloSelectionEffect.cpp"
 	"FEEditorHaloSelectionEffect.h"
-	"FEEditorInternalResources.cpp"
-	"FEEditorInternalResources.h"
 	"FEEditorPreviewManager.cpp"
 	"FEEditorPreviewManager.h"
 	"FEEditorSelectedObject.cpp"

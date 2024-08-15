@@ -237,29 +237,7 @@ void FEEditor::InitializeResources()
 	PREVIEW_MANAGER.InitializeResources();
 	DRAG_AND_DROP_MANAGER.InitializeResources();
 	
-	// **************************** Gizmos ****************************
 	GIZMO_MANAGER.InitializeResources();
-
-	// hide all resources for gizmos from content browser
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("45191B6F172E3B531978692E"/*"transformationGizmoMesh"*/));
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("637C784B2E5E5C6548190E1B"/*"scaleGizmoMesh"*/));
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("19622421516E5B317E1B5360"/*"rotateGizmoMesh"*/));
-
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoGM);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoGM);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoGM);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoGM);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoGM);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoGM);
-
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoGM);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoGM);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoGM);
-
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoGM);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoGM);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoGM);
-
 	SCENE_GRAPH_WINDOW.InitializeResources();
 	CONTENT_BROWSER_WINDOW.InitializeResources();
 	INSPECTOR_WINDOW.InitializeResources();

@@ -68,9 +68,6 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 	EDITOR.FocusedEditorSceneID = PROJECT_MANAGER.GetCurrent()->ProjectScene->GetObjectID();
 	IndexChosen = -1;
 
-	PREVIEW_MANAGER.ReInitializeEntities();
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(PREVIEW_MANAGER.PreviewEntity);
-
 	// after loading project we should update our previews
 	PREVIEW_MANAGER.UpdateAll();
 	SELECTED.ClearAll();
@@ -379,7 +376,6 @@ FEProject::~FEProject()
 	if (SceneScreenshot != RESOURCE_MANAGER.NoTexture)
 		delete SceneScreenshot;
 
-	EDITOR_INTERNAL_RESOURCES.ClearListByType(FE_ENTITY);
 	RESOURCE_MANAGER.Clear();
 	VIRTUAL_FILE_SYSTEM.Clear();
 }
