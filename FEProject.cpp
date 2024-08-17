@@ -922,29 +922,6 @@ void FEProject::AddUnSavedObject(FEObject* Object)
 	UnSavedObjects.push_back(Object);
 }
 
-bool FEProject::ShouldIncludeInSceneFile(const FETexture* Texture)
-{
-	// Terrain should manage it's textures in a different way.
-	const std::vector<std::string> TerrainList = ProjectScene->GetEntityIDListWith<FETerrainComponent>();
-	Json::Value TerrainData;
-	for (size_t i = 0; i < TerrainList.size(); i++)
-	{
-		FEEntity* Terrain = ProjectScene->GetEntity(TerrainList[i]);
-		FETerrainComponent& TerrainComponent = Terrain->GetComponent<FETerrainComponent>();
-
-		if (TerrainComponent.HeightMap->GetObjectID() == Texture->GetObjectID())
-			return false;
-
-		if (TerrainComponent.LayerMaps[0] != nullptr && TerrainComponent.LayerMaps[0]->GetObjectID() == Texture->GetObjectID())
-			return false;
-
-		if (TerrainComponent.LayerMaps[1] != nullptr && TerrainComponent.LayerMaps[1]->GetObjectID() == Texture->GetObjectID())
-			return false;
-	}
-
-	return true;
-}
-
 void FEProject::SetProjectFolder(const std::string NewValue)
 {
 	if (!FILE_SYSTEM.CheckDirectory(NewValue.c_str()))

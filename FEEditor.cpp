@@ -634,7 +634,7 @@ void FEEditor::DisplayEffectsWindow() const
 
 void FEEditor::RenderAllSubWindows()
 {
-	SelectFEObjectPopUp::getInstance().Render();
+	SELECT_FEOBJECT_POPUP.Render();
 
 	DeleteTexturePopup::getInstance().Render();
 	DeleteMeshPopup::getInstance().Render();

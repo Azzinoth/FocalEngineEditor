@@ -401,7 +401,7 @@ void EditGameModelPopup::Render()
 			UpdatedLODMeshs[0] = TempModel->GetLODMesh(0);
 
 			MeshToModify = &UpdatedLODMeshs[0];
-			SelectFEObjectPopUp::getInstance().Show(FE_MESH, ChangeMeshCallBack, UpdatedLODMeshs[0]);
+			SELECT_FEOBJECT_POPUP.Show(FE_MESH, ChangeMeshCallBack, UpdatedLODMeshs[0]);
 		}
 
 		TextSize = ImGui::CalcTextSize("Material component:");
@@ -418,7 +418,7 @@ void EditGameModelPopup::Render()
 			UpdatedMaterial = TempModel->GetMaterial();
 
 			MaterialToModify = &UpdatedMaterial;
-			SelectFEObjectPopUp::getInstance().Show(FE_MATERIAL, ChangeMaterialCallBack, UpdatedMaterial);
+			SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialCallBack, UpdatedMaterial);
 		}
 	}
 	else if (CurrentMode == HAS_LOD_MODE)
@@ -443,7 +443,7 @@ void EditGameModelPopup::Render()
 					UpdatedLODMeshs[i] = TempModel->GetLODMesh(i);
 
 					MeshToModify = &UpdatedLODMeshs[i];
-					SelectFEObjectPopUp::getInstance().Show(FE_MESH, ChangeMeshCallBack, UpdatedLODMeshs[i]);
+					SELECT_FEOBJECT_POPUP.Show(FE_MESH, ChangeMeshCallBack, UpdatedLODMeshs[i]);
 				}
 
 				AddBillboard->SetPosition(ImVec2(CurrentXPosition - AddBillboard->GetSize().x / 2, CurrentY + 210.0f + 128.0f / 2.0f + 10.0f / 2.0f));
@@ -501,7 +501,7 @@ void EditGameModelPopup::Render()
 				UpdatedLODMeshs[i] = TempModel->GetLODMesh(i);
 
 				MeshToModify = &UpdatedLODMeshs[i];
-				SelectFEObjectPopUp::getInstance().Show(FE_MESH, ChangeMeshCallBack, UpdatedLODMeshs[i]);
+				SELECT_FEOBJECT_POPUP.Show(FE_MESH, ChangeMeshCallBack, UpdatedLODMeshs[i]);
 			}
 		}
 
@@ -525,7 +525,7 @@ void EditGameModelPopup::Render()
 					if (ChangeMaterialButton->IsClicked())
 					{
 						MaterialToModify = &UpdatedMaterial;
-						SelectFEObjectPopUp::getInstance().Show(FE_MATERIAL, ChangeMaterialCallBack, UpdatedMaterial);
+						SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialCallBack, UpdatedMaterial);
 					}
 
 					TextSize = ImGui::CalcTextSize("Billboard Material component:");
@@ -556,7 +556,7 @@ void EditGameModelPopup::Render()
 						}
 
 						BillboardMaterialToModify = &UpdatedBillboardMaterial;
-						SelectFEObjectPopUp::getInstance().Show(FE_MATERIAL, ChangeBillboardMaterialCallBack, UpdatedBillboardMaterial, FinalMaterialList);
+						SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeBillboardMaterialCallBack, UpdatedBillboardMaterial, FinalMaterialList);
 					}
 				}
 				else
@@ -574,7 +574,7 @@ void EditGameModelPopup::Render()
 					if (ChangeMaterialButton->IsClicked())
 					{
 						MaterialToModify = &UpdatedMaterial;
-						SelectFEObjectPopUp::getInstance().Show(FE_MATERIAL, ChangeMaterialCallBack, UpdatedMaterial);
+						SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialCallBack, UpdatedMaterial);
 					}
 				}
 
@@ -1004,7 +1004,7 @@ void EditMaterialWindow::NodeSystemMainContextMenu()
 		{
 			TextureForNewNode = RESOURCE_MANAGER.NoTexture;
 
-			SelectFEObjectPopUp::getInstance().Show(FE_TEXTURE, TextureNodeCreationCallback);
+			SELECT_FEOBJECT_POPUP.Show(FE_TEXTURE, TextureNodeCreationCallback);
 		}
 
 		if (ImGui::MenuItem("Float node"))

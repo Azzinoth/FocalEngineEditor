@@ -43,7 +43,6 @@ private:
 
 	std::vector<std::string> FilesToDelete;
 
-	bool ShouldIncludeInSceneFile(const FETexture* Texture);
 	void SetProjectFolder(std::string NewValue);
 };
 

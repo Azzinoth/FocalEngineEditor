@@ -10,6 +10,9 @@ FEEditorInspectorWindow::FEEditorInspectorWindow()
 	std::vector<FEComponentTypeInfo> RegisteredComponentList = COMPONENTS_TOOL.GetComponentInfoList();
 	AddComponentHandlers[typeid(FELightComponent)] = &FEEditorInspectorWindow::AddLightComponent;
 	AddComponentHandlers[typeid(FECameraComponent)] = &FEEditorInspectorWindow::AddCameraComponent;
+	AddComponentHandlers[typeid(FEGameModelComponent)] = &FEEditorInspectorWindow::AddGameModelComponent;
+	AddComponentHandlers[typeid(FEInstancedComponent)] = &FEEditorInspectorWindow::AddInstancedComponent;
+	AddComponentHandlers[typeid(FETerrainComponent)] = &FEEditorInspectorWindow::AddTerrainComponent;
 	AddComponentHandlers[typeid(FEVirtualUIComponent)] = &FEEditorInspectorWindow::AddVirtualUIComponent;
 
 	RemoveComponentHandlers[typeid(FECameraComponent)] = [](FEEntity* ParentEntity) -> void {
@@ -1094,7 +1097,7 @@ void FEEditorInspectorWindow::Render()
 			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
 				//EntityToModify = EntitySelected;
-				//SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, ChangePrefabOfEntityCallBack, Entity->Prefab);
+				//SELECT_FEOBJECT_POPUP.Show(FE_PREFAB, ChangePrefabOfEntityCallBack, Entity->Prefab);
 			}
 			//EntityChangePrefabTarget->StickToItem();
 
@@ -1634,7 +1637,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 				if (!FilePath.empty())
 				{
 					FilePath += ".png";
-					RESOURCE_MANAGER.ExportFETextureToPNG(TerrainComponent.HeightMap, FilePath.c_str());
+					RESOURCE_MANAGER.ExportFETextureToPNG(TerrainComponent.GetHeightMap(), FilePath.c_str());
 				}
 			}
 
@@ -1648,7 +1651,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 				if (!FilePath.empty())
 				{
 					TERRAIN_SYSTEM.LoadHeightMap(FilePath.c_str(), TerrainEntity);
-					FETexture* LoadedTexture = TerrainComponent.HeightMap;// RESOURCE_MANAGER.LoadPNGHeightmap(FilePath.c_str(), Terrain);
+					FETexture* LoadedTexture = TerrainComponent.GetHeightMap();
 					if (LoadedTexture == RESOURCE_MANAGER.NoTexture)
 					{
 						LOG.Add(std::string("can't load height map: ") + FilePath, "FE_LOG_LOADING", FE_LOG_ERROR);
@@ -1892,7 +1895,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 					else
 					{
 						TerrainToWorkWith = TerrainEntity;
-						SelectFEObjectPopUp::getInstance().Show(FE_MATERIAL, CreateNewTerrainLayerWithMaterialCallBack, nullptr, FinalMaterialList);
+						SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, CreateNewTerrainLayerWithMaterialCallBack, nullptr, FinalMaterialList);
 					}
 				}
 
@@ -1954,7 +1957,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 							{
 								TerrainToWorkWith = TerrainEntity;
 								TempLayerIndex = HoveredTerrainLayerItem;
-								SelectFEObjectPopUp::getInstance().Show(FE_MATERIAL, ChangeMaterialInTerrainLayerCallBack, TerrainComponent.GetLayerInSlot(HoveredTerrainLayerItem)->GetMaterial(), FinalMaterialList);
+								SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialInTerrainLayerCallBack, TerrainComponent.GetLayerInSlot(HoveredTerrainLayerItem)->GetMaterial(), FinalMaterialList);
 							}
 						}
 
@@ -2043,4 +2046,44 @@ void FEEditorInspectorWindow::DisplayVirtualUIProperties(FEEntity* VirtualUIEnti
 	bool bDropPassThrough = VirtualUIComponent.IsDropPassThroughActive();
 	ImGui::Checkbox("Drop Pass Through", &bDropPassThrough);
 	VirtualUIComponent.SetDropPassThrough(bDropPassThrough);
+}
+
+void FEEditorInspectorWindow::AddGameModelComponent(FEEntity* Entity)
+{
+	INSPECTOR_WINDOW.EntityToWorkWith = Entity;
+	SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, AddNewGameModelComponentCallBack);
+}
+
+void FEEditorInspectorWindow::AddNewGameModelComponentCallBack(const std::vector<FEObject*> SelectionsResult)
+{
+	if (!SelectionsResult.empty() && SelectionsResult[0]->GetType() == FE_GAMEMODEL)
+	{
+		FEGameModel* SelectedGameModel = RESOURCE_MANAGER.GetGameModel(SelectionsResult[0]->GetObjectID());
+		if (SelectedGameModel == nullptr)
+		{
+			LOG.Add("Can't add game model component. Game model is not loaded.", "FE_LOG_LOADING", FE_LOG_ERROR);
+			return;
+		}
+
+		if (INSPECTOR_WINDOW.EntityToWorkWith == nullptr)
+		{
+			LOG.Add("Can't add game model component. No entity selected.", "FE_LOG_LOADING", FE_LOG_ERROR);
+			return;
+		}
+
+		INSPECTOR_WINDOW.EntityToWorkWith->AddComponent<FEGameModelComponent>(SelectedGameModel);
+
+		PROJECT_MANAGER.GetCurrent()->SetModified(true);
+	}
+}
+
+void FEEditorInspectorWindow::AddTerrainComponent(FEEntity* Entity)
+{
+	Entity->AddComponent<FETerrainComponent>();
+	TERRAIN_SYSTEM.SetHeightMap(RESOURCE_MANAGER.CreateBlankHightMapTexture(1024, 1024), Entity);
+}
+
+void FEEditorInspectorWindow::AddInstancedComponent(FEEntity* Entity)
+{
+	Entity->AddComponent<FEInstancedComponent>();
 }

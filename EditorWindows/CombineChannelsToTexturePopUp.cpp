@@ -123,7 +123,7 @@ void CombineChannelsToTexturePopUp::NodeSystemMainContextMenu()
 		if (ImGui::MenuItem("Texture node"))
 		{
 			TextureForNewNode = RESOURCE_MANAGER.NoTexture;
-			SelectFEObjectPopUp::getInstance().Show(FE_TEXTURE, TextureNodeCreationCallback);
+			SELECT_FEOBJECT_POPUP.Show(FE_TEXTURE, TextureNodeCreationCallback);
 		}
 
 		if (ImGui::MenuItem("Float node"))

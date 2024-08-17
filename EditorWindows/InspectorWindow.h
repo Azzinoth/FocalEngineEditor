@@ -68,8 +68,13 @@ class FEEditorInspectorWindow
 
 	bool RenderComponentDeleteButton(FEEntity* Entity, FEComponentTypeInfo* ComponentInfo) const;
 
+	FEEntity* EntityToWorkWith = nullptr;
     static void AddLightComponent(FEEntity* Entity);
     static void AddCameraComponent(FEEntity* Entity);
+	static void AddGameModelComponent(FEEntity* Entity);
+    static void AddNewGameModelComponentCallBack(const std::vector<FEObject*> SelectionsResult);
+	static void AddTerrainComponent(FEEntity* Entity);
+	static void AddInstancedComponent(FEEntity* Entity);
     static void AddVirtualUIComponent(FEEntity* Entity);
 public:
     SINGLETON_PUBLIC_PART(FEEditorInspectorWindow)

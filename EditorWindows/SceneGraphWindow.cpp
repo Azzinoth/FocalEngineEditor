@@ -359,11 +359,11 @@ void FEEditorSceneGraphWindow::Render()
 	//	SceneObjectsList.push_back(EntityList[i]);
 	//}
 
-	const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWith<FETerrainComponent>();
+	/*const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWith<FETerrainComponent>();
 	for (size_t i = 0; i < TerrainList.size(); i++)
 	{
 		SceneObjectsList.push_back(TerrainList[i]);
-	}
+	}*/
 
 	//SceneObjectsList.push_back(ENGINE.GetCamera()->GetObjectID());
 
@@ -448,48 +448,6 @@ void FEEditorSceneGraphWindow::Render()
 					CurrentScene->CreateEntity("Unnamed entity");
 				}
 
-				// FIX ME!
-				//if (ImGui::MenuItem("Entity"))
-				//{
-				//	SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, CreateEntityCallBack);
-				//}
-
-				//if (ImGui::MenuItem("Instanced entity"))
-				//{
-				//	SelectFEObjectPopUp::getInstance().Show(FE_PREFAB, CreateInstancedEntityCallBack);
-				//}
-
-				//if (ImGui::MenuItem("Terrain"))
-				//{
-				//	FEEntity* Entity = SCENE.CreateEntity("Unnamed terrain");
-				//	FETransformComponent& TransformComponent = Entity->GetComponent<FETransformComponent>();
-				//	Entity->AddComponent<FETerrainComponent>();
-				//	FETerrainComponent& TerrainComponent = Entity->GetComponent<FETerrainComponent>();
-				//	TerrainComponent.HeightMap = RESOURCE_MANAGER.CreateBlankHightMapTexture();
-
-				//	PROJECT_MANAGER.GetCurrent()->SetModified(true);
-				//}
-
-				//if (ImGui::BeginMenu("Light"))
-				//{
-				//	/*if (ImGui::MenuItem("Directional"))
-				//	{
-				//		SCENE.AddLight(FE_DIRECTIONAL_LIGHT, "");
-				//	}
-
-				//	if (ImGui::MenuItem("Spot"))
-				//	{
-				//		SCENE.AddLight(FE_SPOT_LIGHT, "");
-				//	}
-
-				//	if (ImGui::MenuItem("Point"))
-				//	{
-				//		SCENE.AddLight(FE_POINT_LIGHT, "");
-				//	}*/
-
-				//	ImGui::EndMenu();
-				//}
-
 				ImGui::EndMenu();
 			}
 		}
@@ -513,47 +471,7 @@ void FEEditorSceneGraphWindow::Render()
 
 					CurrentScene->DeleteEntity(Entity);
 				}
-
-				// FIX ME!
-				/*if (SCENE.GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
-				{
-					const FEEntity* Entity = SCENE.GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
-					if (SELECTED.GetEntity() == Entity)
-						SELECTED.Clear();
-
-					SCENE.DeleteEntity(Entity->GetObjectID());
-				}
-				else if (SCENE.GetLight(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
-				{
-					const FELight* Light = SCENE.GetLight(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
-					if (SELECTED.GetLight() == Light)
-						SELECTED.Clear();
-
-					SCENE.DeleteLight(Light->GetObjectID());
-				}*/
 			}
-
-			/*if (ImGui::MenuItem("*DEBUG* Test model camera on this"))
-			{
-				FEModelViewCamera* NewCamera = new FEModelViewCamera("New ModelViewCamera");
-				NewCamera->SetAspectRatio(static_cast<float>(ENGINE.GetRenderTargetWidth()) / static_cast<float>(ENGINE.GetRenderTargetHeight()));
-
-				glm::vec3 Position = glm::vec3(0.0f);
-				if (SCENE.GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
-				{
-					const FEEntity* Entity = SCENE.GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
-					Position = Entity->Transform.GetPosition();
-				}
-				else if (SCENE.GetLight(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
-				{
-					const FELight* Light = SCENE.GetLight(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
-					Position = Light->Transform.GetPosition();
-				}
-
-				NewCamera->SetTrackingObjectPosition(Position);
-				NewCamera->SetOnUpdate(OnCameraUpdate);
-				ENGINE.SetCamera(NewCamera);
-			}*/
 		}
 
 		ImGui::EndPopup();

@@ -57,8 +57,13 @@ static void CreateNewPrefabCallBack(const std::vector<FEObject*> SelectionsResul
 			for (int i = 1; i < SelectionsResult.size(); i++)
 			{
 				// FIX ME! It should be here
-				//if (SelectionsResult[i]->GetType() == FE_GAMEMODEL)
-				//	NewPrefab->AddComponent(reinterpret_cast<FEGameModel*>(SelectionsResult[i]));
+				if (SelectionsResult[i]->GetType() == FE_GAMEMODEL)
+				{
+					//FEGameModel* CurrentGameModel = reinterpret_cast<FEGameModel*>(SelectionsResult[i]);
+					//NewPrefab->GetScene()->CreateEntity();
+
+					//NewPrefab->AddComponent(reinterpret_cast<FEGameModel*>(SelectionsResult[i]));
+				}	
 			}
 		}
 		
@@ -66,7 +71,7 @@ static void CreateNewPrefabCallBack(const std::vector<FEObject*> SelectionsResul
 		VIRTUAL_FILE_SYSTEM.CreateFile(NewPrefab, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 	}
 
-	SelectFEObjectPopUp::getInstance().SetOneObjectSelectonMode(true);
+	SELECT_FEOBJECT_POPUP.SetOneObjectSelectonMode(true);
 }
 
 void FEEditorContentBrowserWindow::MouseButtonCallback(int Button, int Action, int Mods)
@@ -220,8 +225,8 @@ void FEEditorContentBrowserWindow::Render()
 
 				if (ImGui::MenuItem("Create new prefab"))
 				{
-					SelectFEObjectPopUp::getInstance().SetOneObjectSelectonMode(false);
-					SelectFEObjectPopUp::getInstance().Show(FE_GAMEMODEL, CreateNewPrefabCallBack);
+					SELECT_FEOBJECT_POPUP.SetOneObjectSelectonMode(false);
+					SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, CreateNewPrefabCallBack);
 				}
 
 				ImGui::EndMenu();
@@ -356,7 +361,7 @@ void FEEditorContentBrowserWindow::Render()
 					if (ImGui::MenuItem("Choose transparency mask"))
 					{
 						TempTexture = reinterpret_cast<FETexture*>(FilteredResources[ItemUnderMouse]);
-						SelectFEObjectPopUp::getInstance().Show(FE_TEXTURE, AddTransparencyToTextureCallBack);
+						SELECT_FEOBJECT_POPUP.Show(FE_TEXTURE, AddTransparencyToTextureCallBack);
 					}
 
 					ImGui::EndMenu();

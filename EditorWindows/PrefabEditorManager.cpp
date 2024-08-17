@@ -96,7 +96,6 @@ bool FEPrefabSceneEditorWindow::DragAndDropCallBack(FEObject* Object, void** Use
 		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
 
 		FEEntity* Entity = EditorSceneWindow->GetScene()->CreateEntity(Object->GetName());
-		Entity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
 		Entity->AddComponent<FEGameModelComponent>(GameModel);
 
 		SELECTED.SetSelected(Entity);
@@ -169,7 +168,9 @@ void FEPrefabEditorManager::PrepareEditWinow(FEPrefab* Prefab)
 	Camera->AddComponent<FECameraComponent>();
 	FECameraComponent& CameraComponent = Camera->GetComponent<FECameraComponent>();
 	CameraComponent.Type = 1;
-	CameraComponent.DistanceToModel = SceneAABB.GetLongestAxisLength() * 2.5;
+	// We want to make sure that distance to model is at least 1.0
+	double CalculatedDistance = SceneAABB.GetLongestAxisLength() * 2.5;
+	CameraComponent.DistanceToModel = CalculatedDistance > 1.0 ? SceneAABB.GetLongestAxisLength() * 2.5 : 1.0;
 	CameraComponent.SetSSAOEnabled(false);
 	CAMERA_SYSTEM.SetMainCamera(Camera);
 	FETransformComponent& CameraTransform = Camera->GetComponent<FETransformComponent>();
