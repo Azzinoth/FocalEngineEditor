@@ -1,6 +1,5 @@
 #include "SelectPopups.h"
 
-SelectFEObjectPopUp* SelectFEObjectPopUp::Instance = nullptr;
 bool SelectFEObjectPopUp::ControlButtonPressed = false;
 bool SelectFEObjectPopUp::bOneObjectSelectonMode = true;
 
@@ -20,7 +19,7 @@ SelectFEObjectPopUp::SelectFEObjectPopUp()
 	CancelButton->SetSize(ImVec2(140, 24));
 	CancelButton->SetPosition(ImVec2(660, 35));
 
-	ENGINE.AddKeyCallback(SelectFEObjectPopUp::KeyButtonCallback);
+	INPUT.AddKeyCallback(SelectFEObjectPopUp::KeyButtonCallback);
 }
 
 SelectFEObjectPopUp::~SelectFEObjectPopUp()

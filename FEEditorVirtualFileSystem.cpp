@@ -152,7 +152,6 @@ void FEVFSDirectory::SetReadOnly(const bool NewValue)
 	bReadOnly = NewValue;
 }
 
-FEVirtualFileSystem* FEVirtualFileSystem::Instance = nullptr;
 FEVirtualFileSystem::FEVirtualFileSystem()
 {
 	Root = new FEVFSDirectory();

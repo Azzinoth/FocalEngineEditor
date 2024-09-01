@@ -110,4 +110,4 @@
         SINGLETON_PUBLIC_PART(FEEditorContentBrowserWindow)
     };
 
-#define CONTENT_BROWSER_WINDOW FEEditorContentBrowserWindow::getInstance()
+#define CONTENT_BROWSER_WINDOW FEEditorContentBrowserWindow::GetInstance()

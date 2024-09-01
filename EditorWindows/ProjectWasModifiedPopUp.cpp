@@ -1,7 +1,5 @@
 #include "ProjectWasModifiedPopUp.h"
 
-ProjectWasModifiedPopUp* ProjectWasModifiedPopUp::Instance = nullptr;
-
 ProjectWasModifiedPopUp::ProjectWasModifiedPopUp()
 {
 	PopupCaption = "Save project ?";

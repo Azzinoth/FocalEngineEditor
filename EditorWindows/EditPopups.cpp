@@ -1,7 +1,6 @@
 #include "EditPopups.h"
 #include "../FEEditor.h"
 
-EditGameModelPopup* EditGameModelPopup::Instance = nullptr;
 FEMesh** EditGameModelPopup::MeshToModify = nullptr;
 
 FEMaterial** EditGameModelPopup::MaterialToModify = nullptr;
@@ -718,7 +717,47 @@ bool EditGameModelPopup::IsLastSetupLOD(const size_t LODIndex)
 	return true;
 }
 
-EditMaterialWindow* EditMaterialWindow::Instance = nullptr;
+FEEntity* EditMaterialWindow::InjectModelViewCamera(FEScene* Scene)
+{
+	FEEntity* CameraEntity = nullptr;
+	std::vector<FEPrefab*> CameraPrefab = RESOURCE_MANAGER.GetPrefabByName("Model view camera prefab");
+	if (CameraPrefab.size() == 0)
+	{
+		LOG.Add("EditMaterialWindow::InjectModelViewCamera: Camera prefab not found! Inserting camera manually.", "FE_LOG_LOADING", FE_LOG_WARNING);
+
+		CameraEntity = Scene->CreateEntity("Prefab scene camera");
+		CameraEntity->AddComponent<FECameraComponent>();
+	}
+	else
+	{
+		FEPrefab* CameraPrefabToUse = CameraPrefab[0];
+		std::vector<FEEntity*> AddedEntities = SCENE_MANAGER.InstantiatePrefab(CameraPrefabToUse, Scene, true);
+		if (AddedEntities.empty())
+		{
+			LOG.Add("EditMaterialWindow::InjectModelViewCamera: Camera prefab was not instantiated correctly. Inserting camera manually.", "FE_LOG_LOADING", FE_LOG_WARNING);
+
+			CameraEntity = Scene->CreateEntity("Prefab scene camera");
+			CameraEntity->AddComponent<FECameraComponent>();
+		}
+		else
+		{
+			CameraEntity = AddedEntities[0];
+		}
+
+		if (CameraEntity == nullptr)
+		{
+			LOG.Add("EditMaterialWindow::InjectModelViewCamera: Camera prefab was not instantiated correctly. Inserting camera manually.", "FE_LOG_LOADING", FE_LOG_WARNING);
+
+			CameraEntity = Scene->CreateEntity("Prefab scene camera");
+			CameraEntity->AddComponent<FECameraComponent>();
+		}
+	}
+
+	RESOURCE_MANAGER.SetTag(CameraEntity, EDITOR_RESOURCE_TAG);
+	CAMERA_SYSTEM.SetMainCamera(CameraEntity);
+
+	return CameraEntity;
+}
 
 EditMaterialWindow::EditMaterialWindow()
 {
@@ -731,7 +770,7 @@ EditMaterialWindow::EditMaterialWindow()
 	CancelButton->SetActiveColor(ImVec4(0.1f, 1.0f, 0.1f, 1.0f));
 	NodeAreaTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_TEXTURE, DragAndDropnodeAreaTargetCallback, reinterpret_cast<void**>(&DragAndDropCallbackInfo), "Drop to add texture");
 
-	PreviewScene = SCENE_MANAGER.CreateScene("MaterialEditor_Scene");
+	PreviewScene = SCENE_MANAGER.CreateScene("MaterialEditor_Scene", "", FESceneFlag::Active);
 	RESOURCE_MANAGER.SetTag(PreviewScene, EDITOR_RESOURCE_TAG);
 
 	PreviewGameModel = new FEGameModel(nullptr, nullptr, "MaterialEditor_Preview_GameModel");
@@ -743,11 +782,13 @@ EditMaterialWindow::EditMaterialWindow()
 	PreviewEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(0.1f));
 	RESOURCE_MANAGER.SetTag(PreviewEntity, EDITOR_RESOURCE_TAG);
 
-	PreviewCameraEntity = PreviewScene->CreateEntity("MaterialEditor_Scene_CameraEntity");
-	PreviewCameraEntity->AddComponent<FECameraComponent>();
+	PreviewCameraEntity = InjectModelViewCamera(PreviewScene);
+	PreviewCameraEntity->SetName("MaterialEditor_Scene_CameraEntity");
+	//PreviewCameraEntity = PreviewScene->CreateEntity("MaterialEditor_Scene_CameraEntity");
+	//PreviewCameraEntity->AddComponent<FECameraComponent>();
 	FECameraComponent& CameraComponent = PreviewCameraEntity->GetComponent<FECameraComponent>();
-	CameraComponent.Type = 1;
-	CameraComponent.DistanceToModel = 10.0;
+	//CameraComponent.Type = 1;
+	//CameraComponent.DistanceToModel = 10.0;
 	CameraComponent.SetRenderTargetSize(512, 1020);
 	CameraComponent.SetDistanceFogEnabled(false);
 	CAMERA_SYSTEM.SetMainCamera(PreviewCameraEntity);
@@ -763,8 +804,9 @@ EditMaterialWindow::EditMaterialWindow()
 	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
 	SkyDome->AddComponent<FESkyDomeComponent>();
 
-	SCENE_MANAGER.DeactivateScene(PreviewScene);
-	ENGINE.AddMouseButtonCallback(MouseButtonCallback);
+	PreviewScene->SetFlag(FESceneFlag::Active, false);
+	PreviewScene->SetFlag(FESceneFlag::Renderable, false);
+	INPUT.AddMouseButtonCallback(MouseButtonCallback);
 }
 
 void EditMaterialWindow::MouseButtonCallback(const int Button, const int Action, int Mods)
@@ -775,16 +817,19 @@ void EditMaterialWindow::MouseButtonCallback(const int Button, const int Action,
 
 	if (ImGui::GetIO().WantCaptureMouse && (!EDITOR_MATERIAL_WINDOW.bWindowHovered || !EDITOR_MATERIAL_WINDOW.bCameraOutputHovered))
 	{
-		CAMERA_SYSTEM.SetIsIndividualInputActive(EDITOR_MATERIAL_WINDOW.PreviewCameraEntity, false);
+		EDITOR_MATERIAL_WINDOW.PreviewCameraEntity->GetComponent<FECameraComponent>().SetActive(false);
+		//CAMERA_SYSTEM.SetIsIndividualInputActive(EDITOR_MATERIAL_WINDOW.PreviewCameraEntity, false);
 	}
 
 	if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_PRESS && EDITOR_MATERIAL_WINDOW.bWindowHovered && EDITOR_MATERIAL_WINDOW.bCameraOutputHovered)
 	{
-		CAMERA_SYSTEM.SetIsIndividualInputActive(EDITOR_MATERIAL_WINDOW.PreviewCameraEntity, true);
+		EDITOR_MATERIAL_WINDOW.PreviewCameraEntity->GetComponent<FECameraComponent>().SetActive(true);
+		//CAMERA_SYSTEM.SetIsIndividualInputActive(EDITOR_MATERIAL_WINDOW.PreviewCameraEntity, true);
 	}
 	else if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_RELEASE)
 	{
-		CAMERA_SYSTEM.SetIsIndividualInputActive(EDITOR_MATERIAL_WINDOW.PreviewCameraEntity, false);
+		EDITOR_MATERIAL_WINDOW.PreviewCameraEntity->GetComponent<FECameraComponent>().SetActive(false);
+		//CAMERA_SYSTEM.SetIsIndividualInputActive(EDITOR_MATERIAL_WINDOW.PreviewCameraEntity, false);
 	}
 }
 
@@ -806,7 +851,7 @@ void EditMaterialWindow::Show(FEMaterial* Material)
 	if (Material != nullptr)
 	{
 		PreviewGameModel->SetMaterial(Material);
-		SCENE_MANAGER.ActivateScene(PreviewScene);
+		PreviewScene->SetFlag(FESceneFlag::Active | FESceneFlag::Renderable, true);
 
 		TempContainer = RESOURCE_MANAGER.NoTexture;
 		ObjToWorkWith = Material;
@@ -973,7 +1018,8 @@ void EditMaterialWindow::Close()
 
 void EditMaterialWindow::Stop()
 {
-	SCENE_MANAGER.DeactivateScene(PreviewScene);
+	PreviewScene->SetFlag(FESceneFlag::Active, false);
+	PreviewScene->SetFlag(FESceneFlag::Renderable, false);
 	PreviewGameModel->SetMaterial(nullptr);
 }
 

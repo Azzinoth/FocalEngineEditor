@@ -1,12 +1,11 @@
 #include "SceneGraphWindow.h"
 #include "../FEEditor.h"
 
-FEEditorSceneGraphWindow* FEEditorSceneGraphWindow::Instance = nullptr;
 FEEntity* FEEditorSceneGraphWindow::EntityToModify = nullptr;
 
 FEEditorSceneGraphWindow::FEEditorSceneGraphWindow()
 {
-	strcpy_s(FilterForEntities, "");
+	strcpy_s(FilterForEntities, "Filter entities...");
 }
 
 void FEEditorSceneGraphWindow::InitializeResources()
@@ -33,6 +32,7 @@ void FEEditorSceneGraphWindow::InitializeResources()
 void FEEditorSceneGraphWindow::Clear()
 {
 	strcpy_s(FilterForEntities, "");
+	bLastFrameWasInvisible = true;
 }
 
 void FEEditorSceneGraphWindow::SetCorrectItemColor(FEObject* SceneObject) const
@@ -215,16 +215,35 @@ DragAndDropTarget* FEEditorSceneGraphWindow::GetSceneNodeDragAndDropTarget(FENai
 	return SceneNodeDragAndDropTargets[UniqueID];
 }
 
-void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
+void FEEditorSceneGraphWindow::RenderNodeBackground()
+{
+	// Calculate the expected height of the node.
+	float NodeHeight = ImGui::GetFrameHeight();
+	NodeHeight += BackgroundHeightModifier;
+
+	ImRect BackgroundRect = ImRect(ImVec2(bIndintationAwareNodeBackground ? ImGui::GetCursorScreenPos().x : ImGui::GetWindowContentRegionMin().x, ImGui::GetCursorScreenPos().y),
+								   ImVec2(ImGui::GetWindowContentRegionMax().x, ImGui::GetCursorScreenPos().y + NodeHeight));
+
+	// Shift the background rectangle
+	BackgroundRect.Min.y += BackgroundColorYShift;
+	BackgroundRect.Max.y += BackgroundColorYShift;
+
+	// Render
+	ImColor BackgroundColor = bBackgroundColorSwitch ? ImColor(EvenNodeBackgroundColor) : ImColor(OddNodeBackgroundColor);
+	ImGui::GetWindowDrawList()->AddRectFilled(BackgroundRect.Min, BackgroundRect.Max, BackgroundColor);
+	bBackgroundColorSwitch = !bBackgroundColorSwitch;
+}
+
+ImRect FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 {
 	if (SubTreeRoot == nullptr)
-		return;
+		return ImRect();
 
 	FEEntity* CurrentEntity = SubTreeRoot->GetEntity();
 	if (CurrentEntity != nullptr)
 	{
 		if (CurrentEntity->GetTag() == EDITOR_RESOURCE_TAG)
-			return;
+			return ImRect();
 	}
 
 	SceneNodeDragAndDropTargetIndex++;
@@ -251,8 +270,21 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 		UniqueID = static_cast<intptr_t>(std::hash<std::string>{}(CurrentEntity->GetObjectID().c_str()));
 	}
 
+	// If last frame scene graph was invisible, open root node.
+	if (bLastFrameWasInvisible && CurrentEntity == nullptr)
+		ImGui::SetNextItemOpen(true);
+
+	if (bUseNodeBackground)
+		RenderNodeBackground();
+
 	bool bOpened = ImGui::TreeNodeEx((void*)UniqueID, NodeFlags, Name.c_str(), 0);
 	GetSceneNodeDragAndDropTarget(SubTreeRoot)->StickToItem();
+	const ImRect NodeRect = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+
+	ImVec2 VerticalLineStart = ImGui::GetCursorScreenPos();
+	VerticalLineStart.x += VerticalTreeLineXOffset;
+	VerticalLineStart.y += VerticalTreeLineYOffset;
+	ImVec2 VerticalLineEnd = VerticalLineStart;
 
 	if (ImGui::IsItemClicked())
 	{
@@ -283,6 +315,8 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 			ImGui::PopTextWrapPos();
 			ImGui::EndTooltip();*/
 
+			SceneGraphNodeHoveredID = SubTreeRoot->GetObjectID();
+
 			ItemUnderMouse = UniqueID;
 
 			if (ImGui::IsMouseDragging(0))
@@ -296,14 +330,104 @@ void FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
 		if (!Children.empty())
 		{
 			for (size_t i = 0; i < Children.size(); i++)
-				RenderSubTree(Children[i]);
+			{
+				// Double check if we need to draw child to make sure we don't draw internal editor resources.
+				FEEntity* ChildEntity = Children[i]->GetEntity();
+				if (ChildEntity != nullptr)
+				{
+					if (ChildEntity->GetTag() == EDITOR_RESOURCE_TAG)
+						continue;
+				}
+
+				const ImRect ChildRect = RenderSubTree(Children[i]);
+				
+				// Draw horizontal line.
+				const float MiddlePoint = (ChildRect.Min.y + ChildRect.Max.y) / 2.0f;
+				bool bChildHaveChildren = Children[i]->GetChildren().size() > 0;
+				ImVec2 HorizontalLineStart = ImVec2(VerticalLineStart.x, MiddlePoint);
+				ImVec2 HorizontalLineEnd = ImVec2(VerticalLineStart.x + HorizontalTreeLineLength, MiddlePoint);
+				if (bChildHaveChildren)
+					HorizontalLineEnd.x += HorizontalTreeLineLengthParentOffset;
+				ImGui::GetWindowDrawList()->AddLine(HorizontalLineStart, HorizontalLineEnd, ImColor(VerticalTreeLineColor));
+
+				VerticalLineEnd.y = MiddlePoint;
+			}
 
 			ImGui::TreePop();
 		}
+
+		// Draw vertical line.
+		ImGui::GetWindowDrawList()->AddLine(VerticalLineStart, VerticalLineEnd, ImColor(VerticalTreeLineColor));
 	}
+
+	SceneGraphBackgroundRect.Max.x = SceneGraphBackgroundRect.Max.x > NodeRect.Max.x ? SceneGraphBackgroundRect.Max.x : NodeRect.Max.x;
+	SceneGraphBackgroundRect.Max.y = SceneGraphBackgroundRect.Max.y > NodeRect.Max.y ? SceneGraphBackgroundRect.Max.y : NodeRect.Max.y;
+
+	return NodeRect;
 }
 
-void FEEditorSceneGraphWindow::RenderNewSceneGraph()
+int FEEditorSceneGraphWindow::FilterInputTextCallback(ImGuiInputTextCallbackData* Data)
+{
+	if (Data->EventFlag == ImGuiInputTextFlags_CallbackAlways)
+	{
+		bool isFocused = ImGui::IsItemActive();
+		if (SCENE_GRAPH_WINDOW.bIsPlaceHolderTextUsed)
+		{
+			// Check if the input just gained focus
+			if (isFocused && !SCENE_GRAPH_WINDOW.bFilterInputWasFocused)
+			{
+				strcpy_s(SCENE_GRAPH_WINDOW.FilterForEntities, "");
+				
+				// Update ImGui's buffer.
+				Data->BufDirty = true;
+				Data->DeleteChars(0, Data->BufTextLen);
+				Data->InsertChars(0, SCENE_GRAPH_WINDOW.FilterForEntities);
+
+				SCENE_GRAPH_WINDOW.bIsPlaceHolderTextUsed = false;
+			}
+		}
+
+		SCENE_GRAPH_WINDOW.bFilterInputWasFocused = isFocused;
+	}
+
+	return 0;
+}
+
+
+void FEEditorSceneGraphWindow::RenderFilterInput()
+{
+	bool bIsPlaceHolderTextUsedWasOn = bIsPlaceHolderTextUsed;
+
+	if (bIsPlaceHolderTextUsedWasOn)
+		ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 150));
+
+	// Setting up the callback for the input text.
+	std::function<int(ImGuiInputTextCallbackData*)> Callback = std::bind(&FEEditorSceneGraphWindow::FilterInputTextCallback, std::placeholders::_1);
+	auto StaticCallback = [](ImGuiInputTextCallbackData* data) -> int {
+		auto& callback = *static_cast<std::function<int(ImGuiInputTextCallbackData*)>*>(data->UserData);
+		return callback(data);
+	};
+
+	if (ImGui::InputText("##SceneGraphWindowFilter", FilterForEntities, FilterInputBufferSize, ImGuiInputTextFlags_CallbackAlways, StaticCallback, &Callback))
+	{
+		
+	}
+
+	if (!ImGui::IsItemActive())
+	{
+		if (strlen(FilterForEntities) == 0)
+		{
+			strcpy_s(FilterForEntities, PlaceHolderTextString.c_str());
+			bIsPlaceHolderTextUsed = true;
+			bFilterInputWasFocused = false;
+		}
+	}
+
+	if (bIsPlaceHolderTextUsedWasOn)
+		ImGui::PopStyleColor();
+}
+
+void FEEditorSceneGraphWindow::RenderSceneGraph()
 {
 	if (EDITOR.GetFocusedScene() == nullptr)
 		return;
@@ -313,23 +437,59 @@ void FEEditorSceneGraphWindow::RenderNewSceneGraph()
 	if (bSceneNodeTargetsDirty)
 		SceneNodeDragAndDropTargets.clear();
 
+	SceneGraphBackgroundRect.Min = ImGui::GetCursorScreenPos();
+	SceneGraphBackgroundRect.Max = SceneGraphBackgroundRect.Min;
+
+	RenderFilterInput();
+
 	SceneNodeDragAndDropTargetIndex = -1;
+	bBackgroundColorSwitch = true;
 	RenderSubTree(Root);
 
+	SceneGraphBackgroundRect.Max.x = ImGui::GetWindowContentRegionMax().x;
+	SceneGraphBackgroundRect.Min -= ImVec2(10.0f, 10.0f);
+	SceneGraphBackgroundRect.Max += ImVec2(10.0f, 10.0f);
+	// Render box around the scene graph.
+	ImGui::GetWindowDrawList()->AddRect(SceneGraphBackgroundRect.Min, SceneGraphBackgroundRect.Max, ImColor(ImVec4(0.0f, 0.0f, 0.0f, 0.7f)), 2.0f);
+
+	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 15.0f);
+
+	// Uncomment this to tweak the scene graph rendering.
+	/*ImGui::DragFloat("VerticalTreeLineXOffset", &VerticalTreeLineXOffset, 0.1f);
+	ImGui::DragFloat("VerticalTreeLineYOffset", &VerticalTreeLineYOffset, 0.1f);
+	ImGui::DragFloat("HorizontalTreeLineLenght", &HorizontalTreeLineLength, 0.1f);
+	ImGui::DragFloat("HorizontalTreeLineLenghtOffset", &HorizontalTreeLineLengthParentOffset, 0.1f);
+	ImGui::DragFloat("BackgroundColorYShift", &BackgroundColorYShift, 0.1f);
+	ImGui::DragFloat("BackgroundHeightModifier", &BackgroundHeightModifier, 0.1f);
+	ImGui::ColorEdit4("VerticalTreeLineColor", (float*)&VerticalTreeLineColor);
+	ImGui::ColorEdit4("EvenNodeBackgroundColor", (float*)&EvenNodeBackgroundColor);
+	ImGui::ColorEdit4("OddNodeBackgroundColor", (float*)&OddNodeBackgroundColor);
+	ImGui::Checkbox("Draw node background", &bUseNodeBackground);
+	ImGui::Checkbox("IndintationAwareNodeBackground", &bIndintationAwareNodeBackground);*/
+	
 	if (bSceneNodeTargetsDirty)
 		bSceneNodeTargetsDirty = false;
+
+	bLastFrameWasInvisible = false;
 }
 
 void FEEditorSceneGraphWindow::Render()
 {
 	if (!bVisible)
+	{
+		bLastFrameWasInvisible = true;
 		return;
+	}
 
 	FEScene* CurrentScene = EDITOR.GetFocusedScene();
 	if (CurrentScene == nullptr)
+	{
+		bLastFrameWasInvisible = true;
 		return;
+	}
 
-	static int SceneObjectHoveredIndex = -1;
+	if (!bShouldOpenContextMenu)
+		SceneGraphNodeHoveredID = "";
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 	ImGui::Begin("Scene Entities", nullptr, ImGuiWindowFlags_None);
@@ -338,93 +498,42 @@ void FEEditorSceneGraphWindow::Render()
 	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.7f, 0.21f, 0.21f));
 	ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.8f, 0.16f, 0.16f));
 
-	RenderNewSceneGraph();
-
-	/*if (ImGui::Button("Enter game mode", ImVec2(220, 0)))
-	{
-		FEEditor::getInstance().SetGameMode(true);
-	}*/
+	RenderSceneGraph();
 
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 
-	std::vector<std::string> SceneObjectsList;
-	// FIX ME!
-	//const std::vector<std::string> EntityList = SCENE.GetEntityList();
-	//for (size_t i = 0; i < EntityList.size(); i++)
+	//for (size_t i = 0; i < FilteredSceneObjectsList.size(); i++)
 	//{
-	//	if (EDITOR_INTERNAL_RESOURCES.IsInInternalEditorList(SCENE.GetEntity(EntityList[i])))
-	//		continue;
-	//	SceneObjectsList.push_back(EntityList[i]);
+	//	DrawCorrectIcon(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
+
+	//	ImGuiTreeNodeFlags NodeFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+	//	if (SELECTED.GetSelected(CurrentScene) != nullptr)
+	//	{
+	//		if (SELECTED.GetSelected(CurrentScene)->GetObjectID() == FilteredSceneObjectsList[i])
+	//		{
+	//			NodeFlags |= ImGuiTreeNodeFlags_Selected;
+	//		}
+	//	}
+
+	//	SetCorrectItemColor(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
+	//	ImGui::TreeNodeEx((void*)(intptr_t)i, NodeFlags, OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i])->GetName().c_str(), i);
+	//	PopCorrectItemColor(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
+
+	//	if (ImGui::IsItemClicked())
+	//	{
+	//		// FIX ME!
+	//		/*FEEntity* Entity = SCENE.GetEntity(FilteredSceneObjectsList[i]);
+	//		SELECTED.SetSelected(Entity);*/
+	//		//SELECTED.SetDirtyFlag(false);
+	//	}
+
+	//	if (ImGui::IsItemHovered())
+	//	{
+	//		SceneObjectHoveredIndex = int(i);
+	//	}
 	//}
-
-	/*const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWith<FETerrainComponent>();
-	for (size_t i = 0; i < TerrainList.size(); i++)
-	{
-		SceneObjectsList.push_back(TerrainList[i]);
-	}*/
-
-	//SceneObjectsList.push_back(ENGINE.GetCamera()->GetObjectID());
-
-	// Filtering.
-	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5.0f);
-	ImGui::Text("Filter: ");
-	ImGui::SameLine();
-
-	ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 5.0f);
-	ImGui::InputText("##selectFEObjectPopUpFilter", FilterForEntities, IM_ARRAYSIZE(FilterForEntities));
-
-	std::vector<std::string> FilteredSceneObjectsList;
-	if (strlen(FilterForEntities) == 0)
-	{
-		FilteredSceneObjectsList = SceneObjectsList;
-	}
-	else
-	{
-		FilteredSceneObjectsList.clear();
-		for (size_t i = 0; i < SceneObjectsList.size(); i++)
-		{
-			if (OBJECT_MANAGER.GetFEObject(SceneObjectsList[i])->GetName().find(FilterForEntities) != -1)
-			{
-				FilteredSceneObjectsList.push_back(SceneObjectsList[i]);
-			}
-		}
-	}
-
-	if (!bShouldOpenContextMenu)
-		SceneObjectHoveredIndex = -1;
-
-	for (size_t i = 0; i < FilteredSceneObjectsList.size(); i++)
-	{
-		DrawCorrectIcon(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
-
-		ImGuiTreeNodeFlags NodeFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-		if (SELECTED.GetSelected(CurrentScene) != nullptr)
-		{
-			if (SELECTED.GetSelected(CurrentScene)->GetObjectID() == FilteredSceneObjectsList[i])
-			{
-				NodeFlags |= ImGuiTreeNodeFlags_Selected;
-			}
-		}
-
-		SetCorrectItemColor(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
-		ImGui::TreeNodeEx((void*)(intptr_t)i, NodeFlags, OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i])->GetName().c_str(), i);
-		PopCorrectItemColor(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
-
-		if (ImGui::IsItemClicked())
-		{
-			// FIX ME!
-			/*FEEntity* Entity = SCENE.GetEntity(FilteredSceneObjectsList[i]);
-			SELECTED.SetSelected(Entity);*/
-			//SELECTED.SetDirtyFlag(false);
-		}
-
-		if (ImGui::IsItemHovered())
-		{
-			SceneObjectHoveredIndex = int(i);
-		}
-	}
 
 	bool bOpenContextMenu = false;
 	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(1))
@@ -439,7 +548,7 @@ void FEEditorSceneGraphWindow::Render()
 	{
 		bShouldOpenContextMenu = true;
 
-		if (SceneObjectHoveredIndex == -1)
+		if (SceneGraphNodeHoveredID.empty())
 		{
 			if (ImGui::BeginMenu("Add"))
 			{
@@ -453,23 +562,24 @@ void FEEditorSceneGraphWindow::Render()
 		}
 		else
 		{
-			if (ImGui::MenuItem("Rename"))
+			FENaiveSceneGraphNode* HoveredNode = CurrentScene->SceneGraph.GetNode(SceneGraphNodeHoveredID);
+			if (HoveredNode != nullptr)
 			{
-				if (CurrentScene->GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]) != nullptr)
+				FEEntity* HoveredEntity = CurrentScene->SceneGraph.GetNode(SceneGraphNodeHoveredID)->GetEntity();
+				if (HoveredEntity != nullptr)
 				{
-					RenamePopUp::getInstance().Show(CurrentScene->GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]));
-				}
-			}
+					if (ImGui::MenuItem("Rename"))
+					{
+						RenamePopUp::GetInstance().Show(HoveredNode);
+					}
 
-			if (ImGui::MenuItem("Delete"))
-			{
-				FEEntity* Entity = CurrentScene->GetEntity(FilteredSceneObjectsList[SceneObjectHoveredIndex]);
-				if (Entity != nullptr)
-				{
-					if (SELECTED.GetSelected(CurrentScene) == Entity)
-						SELECTED.Clear(CurrentScene);
+					if (ImGui::MenuItem("Delete"))
+					{
+						if (SELECTED.GetSelected(CurrentScene) == HoveredEntity)
+							SELECTED.Clear(CurrentScene);
 
-					CurrentScene->DeleteEntity(Entity);
+						CurrentScene->DeleteEntity(HoveredEntity);
+					}
 				}
 			}
 		}

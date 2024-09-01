@@ -1,7 +1,6 @@
 #include "InspectorWindow.h"
 #include "../FEEditor.h"
 
-FEEditorInspectorWindow* FEEditorInspectorWindow::Instance = nullptr;
 FEEntity* FEEditorInspectorWindow::EntityToModify = nullptr;
 FEEntity* FEEditorInspectorWindow::TerrainToWorkWith = nullptr;
 
@@ -14,6 +13,7 @@ FEEditorInspectorWindow::FEEditorInspectorWindow()
 	AddComponentHandlers[typeid(FEInstancedComponent)] = &FEEditorInspectorWindow::AddInstancedComponent;
 	AddComponentHandlers[typeid(FETerrainComponent)] = &FEEditorInspectorWindow::AddTerrainComponent;
 	AddComponentHandlers[typeid(FEVirtualUIComponent)] = &FEEditorInspectorWindow::AddVirtualUIComponent;
+	AddComponentHandlers[typeid(FENativeScriptComponent)] = &FEEditorInspectorWindow::AddNativeScriptComponent;
 
 	RemoveComponentHandlers[typeid(FECameraComponent)] = [](FEEntity* ParentEntity) -> void {
 		ParentEntity->RemoveComponent<FECameraComponent>();
@@ -38,6 +38,9 @@ FEEditorInspectorWindow::FEEditorInspectorWindow()
 	};
 	RemoveComponentHandlers[typeid(FEVirtualUIComponent)] = [](FEEntity* ParentEntity) -> void {
 		ParentEntity->RemoveComponent<FEVirtualUIComponent>();
+	};
+	RemoveComponentHandlers[typeid(FENativeScriptComponent)] = [](FEEntity* ParentEntity) -> void {
+		ParentEntity->RemoveComponent<FENativeScriptComponent>();
 	};
 }
 
@@ -454,13 +457,6 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	bool bIsMainCamera = CameraComponent.IsMainCamera();
 	if (ImGui::Checkbox("Main camera", &bIsMainCamera))
 		CAMERA_SYSTEM.SetMainCamera(CameraEntity);
-	
-	float CameraSpeed = CameraComponent.GetMovementSpeed();
-	ImGui::Text("Camera speed in m/s : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(70);
-	ImGui::DragFloat("##Camera_speed", &CameraSpeed, 0.01f, 0.01f, 100.0f);
-	CameraComponent.SetMovementSpeed(CameraSpeed);
 
 	float FOV = CameraComponent.GetFOV();
 	ImGui::Text("Field of view : ");
@@ -1191,7 +1187,7 @@ void FEEditorInspectorWindow::Render()
 				ImGui::Text("Snapped to: ");
 				ImGui::SameLine();
 
-				const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWith<FETerrainComponent>();
+				const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWithComponent<FETerrainComponent>();
 				static std::string CurrentTerrain = "none";
 
 				if (InstancedComponent.GetSnappedToTerrain() == nullptr)
@@ -1501,6 +1497,21 @@ void FEEditorInspectorWindow::Render()
 		if (ImGui::CollapsingHeader("Virtual UI", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			DisplayVirtualUIProperties(SELECTED.GetSelected(CurrentScene));
+		}
+	}
+
+	if (EntitySelected->HasComponent<FENativeScriptComponent>())
+	{
+		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FENativeScriptComponent>()))
+		{
+			ImGui::PopStyleVar();
+			ImGui::End();
+			return;
+		}
+
+		if (ImGui::CollapsingHeader("Native Script", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			DisplayNativeScriptProperties(SELECTED.GetSelected(CurrentScene));
 		}
 	}
 
@@ -1816,7 +1827,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 					if (!bLastFrameTerrainLayerRenameEditWasVisiable)
 					{
 						ImGui::SetKeyboardFocusHere(0);
-						ImGui::SetFocusID(ImGui::GetID("##newNameTerrainLayerEditor"), ImGui::GetCurrentWindow());
+						ImGui::SetFocusID(ImGui::GetID("##newNameTerrainLayerEditor"), FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl());
 						ImGui::SetItemDefaultFocus();
 						bLastFrameTerrainLayerRenameEditWasVisiable = true;
 					}
@@ -1824,7 +1835,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 					ImGui::SetNextItemWidth(350.0f);
 					ImGui::SetCursorPos(ImVec2(PostionBeforeDraw.x + 64.0f + (ImGui::GetContentRegionAvail().x - 64.0f) / 2.0f - 350.0f / 2.0f, PostionBeforeDraw.y + 12));
 					if (ImGui::InputText("##newNameTerrainLayerEditor", TerrainLayerRename, IM_ARRAYSIZE(TerrainLayerRename), ImGuiInputTextFlags_EnterReturnsTrue) ||
-						ImGui::IsMouseClicked(0) && !ImGui::IsItemHovered() || ImGui::GetFocusID() != ImGui::GetID("##newNameTerrainLayerEditor"))
+						ImGui::IsMouseClicked(0) && !ImGui::IsItemHovered() || ImGui::IsItemFocused()/*FE_IMGUI_WINDOW_MANAGER.GetCurrentFocusID() != ImGui::GetID("##newNameTerrainLayerEditor")*/)
 					{
 						PROJECT_MANAGER.GetCurrent()->SetModified(true);
 						Layer->SetName(TerrainLayerRename);
@@ -1890,7 +1901,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 					if (FinalMaterialList.empty())
 					{
-						MessagePopUp::getInstance().Show("No suitable material", "There are no materials with compack packing.");
+						MessagePopUp::GetInstance().Show("No suitable material", "There are no materials with compack packing.");
 					}
 					else
 					{
@@ -1951,7 +1962,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 							if (FinalMaterialList.empty())
 							{
-								MessagePopUp::getInstance().Show("No suitable material", "There are no materials with compack packing.");
+								MessagePopUp::GetInstance().Show("No suitable material", "There are no materials with compack packing.");
 							}
 							else
 							{
@@ -2001,6 +2012,8 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 void FEEditorInspectorWindow::AddVirtualUIComponent(FEEntity* Entity)
 {
 	Entity->AddComponent<FEVirtualUIComponent>();
+	FEVirtualUIComponent& VirtualUIComponent = Entity->GetComponent<FEVirtualUIComponent>();
+	VirtualUIComponent.SetWindowToListen(APPLICATION.GetMainWindow());
 }
 
 void FEEditorInspectorWindow::DisplayVirtualUIProperties(FEEntity* VirtualUIEntity) const
@@ -2086,4 +2099,122 @@ void FEEditorInspectorWindow::AddTerrainComponent(FEEntity* Entity)
 void FEEditorInspectorWindow::AddInstancedComponent(FEEntity* Entity)
 {
 	Entity->AddComponent<FEInstancedComponent>();
+}
+
+void FEEditorInspectorWindow::AddNativeScriptComponent(FEEntity* Entity)
+{
+	Entity->AddComponent<FENativeScriptComponent>();
+}
+
+void FEEditorInspectorWindow::DisplayNativeScriptProperties(FEEntity* NativeScriptEntity) const
+{
+	FENativeScriptComponent& NativeScriptComponent = NativeScriptEntity->GetComponent<FENativeScriptComponent>();
+
+	if (!NativeScriptComponent.IsInitialized())
+	{
+		std::vector<std::string> ModuleList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleIDList();
+
+		for (size_t i = 0; i < ModuleList.size(); i++)
+		{
+			ImGui::Text(("Module ID: " + ModuleList[i]).c_str());
+			ImGui::Text(("DLL Module ID: " + NATIVE_SCRIPT_SYSTEM.GetDLLMoudleIDByNativeScriptModuleID(ModuleList[i])).c_str());
+
+			ImGui::Text("Script list: ");
+			std::vector<std::string> ScriptList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleScriptNameList(ModuleList[i]);
+			for (size_t j = 0; j < ScriptList.size(); j++)
+			{
+				ImGui::Text(ScriptList[j].c_str());
+				ImGui::SameLine();
+				if (ImGui::Button(("Add##" + ModuleList[i] + "_" + ScriptList[j]).c_str()))
+				{
+					NATIVE_SCRIPT_SYSTEM.InitializeScriptComponent(NativeScriptEntity, ModuleList[i], ScriptList[j]);
+				}
+			}
+		}
+	}
+	else
+	{
+		std::string ModuleID = NativeScriptComponent.GetModuleID();
+		const FEScriptData* ScriptData = NativeScriptComponent.GetScriptData();
+
+		// Showing general information.
+		ImGui::Text(("Module: " + ModuleID).c_str());
+		ImGui::Text(("DLL Module ID: " + NATIVE_SCRIPT_SYSTEM.GetDLLMoudleIDByNativeScriptModuleID(ModuleID)).c_str());
+		ImGui::Text(("Script name: " + ScriptData->Name).c_str());
+		ImGui::Text((std::string("Run in editor: ") + std::string(ScriptData->bRunInEditor ? "Yes" : "No")).c_str());
+
+		// Showing script variables.
+		std::unordered_map<std::string, FEScriptVariableInfo> VariablesRegistry = ScriptData->VariablesRegistry;
+		auto VariablesIterator = VariablesRegistry.begin();
+		while (VariablesIterator != VariablesRegistry.end())
+		{
+			std::string VariableName = VariablesIterator->first;
+			std::string VariableType = VariablesIterator->second.Type;
+		
+			std::any VariableValue = VariablesIterator->second.Getter(NativeScriptComponent.GetCoreInstance());
+			if (VariableType == "int")
+			{
+				int Value = std::any_cast<int>(VariableValue);
+				ImGui::DragInt(VariableName.c_str(), &Value);
+				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
+			}
+			else if (VariableType == "float")
+			{
+				float Value = std::any_cast<float>(VariableValue);
+				ImGui::DragFloat(VariableName.c_str(), &Value);
+				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
+			}
+			else if (VariableType == "double")
+			{
+				double Value = std::any_cast<double>(VariableValue);
+				ImGui::DragFloat(VariableName.c_str(), (float*)&Value);
+				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
+			}
+			else if (VariableType == "bool")
+			{
+				bool Value = std::any_cast<bool>(VariableValue);
+				ImGui::Checkbox(VariableName.c_str(), &Value);
+				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
+			}
+			else if (VariableType == "glm::vec2")
+			{
+				glm::vec2 Value = std::any_cast<glm::vec2>(VariableValue);
+				ImGui::DragFloat2(VariableName.c_str(), &Value[0]);
+				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
+			}
+			else if (VariableType == "glm::vec3")
+			{
+				glm::vec3 Value = std::any_cast<glm::vec3>(VariableValue);
+				ImGui::DragFloat3(VariableName.c_str(), &Value[0]);
+				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
+			}
+			else if (VariableType == "glm::vec4")
+			{
+				glm::vec4 Value = std::any_cast<glm::vec4>(VariableValue);
+				ImGui::DragFloat4(VariableName.c_str(), &Value[0]);
+				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
+			}
+			else if (VariableType == "glm::quat")
+			{
+				glm::quat Value = std::any_cast<glm::quat>(VariableValue);
+				ImGui::DragFloat4(VariableName.c_str(), &Value[0]);
+				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
+			}
+			else if (VariableType == "std::string")
+			{
+				std::string Value = std::any_cast<std::string>(VariableValue);
+
+				char Buffer[1024];
+				memset(Buffer, 0, 1024);
+				strcpy_s(Buffer, Value.c_str());
+				if (ImGui::InputText(("##String_Variable_" + VariableName).c_str(), Buffer, 1024))
+				{
+					Value = Buffer;
+					VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
+				}
+			}
+
+			VariablesIterator++;
+		}
+	}
 }

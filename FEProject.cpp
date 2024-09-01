@@ -1,7 +1,6 @@
 #include "FEProject.h"
 #include "FEEditor.h"
 
-FEProjectManager* FEProjectManager::Instance = nullptr;
 FEProjectManager::FEProjectManager() {}
 FEProjectManager::~FEProjectManager() {}
 
@@ -28,7 +27,7 @@ std::vector<FEProject*> FEProjectManager::GetList()
 
 void FEProjectManager::LoadProjectList()
 {
-	if (!FILE_SYSTEM.CheckDirectory(PROJECTS_FOLDER))
+	if (!FILE_SYSTEM.DoesDirectoryExist(PROJECTS_FOLDER))
 		CustomProjectFolder = "";
 
 	const std::vector<std::string> ProjectNameList = FILE_SYSTEM.GetDirectoryList(PROJECTS_FOLDER);
@@ -43,8 +42,8 @@ void FEProjectManager::LoadProjectList()
 void FEProjectManager::CloseCurrentProject()
 {
 	//closing all windows or popups.
-	WindowsManager::getInstance().CloseAllWindows();
-	WindowsManager::getInstance().CloseAllPopups();
+	WindowsManager::GetInstance().CloseAllWindows();
+	WindowsManager::GetInstance().CloseAllPopups();
 
 	SELECTED.ClearAll();
 	PREVIEW_MANAGER.Clear();
@@ -64,11 +63,16 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 {
 	PROJECT_MANAGER.SetCurrent(List[ProjectIndex]);
 	PROJECT_MANAGER.GetCurrent()->LoadProject();
+	PROJECT_MANAGER.GetCurrent()->ProjectScene->SetFlag(FESceneFlag::Renderable, true);
+	PROJECT_MANAGER.GetCurrent()->ProjectScene->SetFlag(FESceneFlag::EditorMode, true);
 	EDITOR.AddEditorScene(PROJECT_MANAGER.GetCurrent()->ProjectScene, true);
 	EDITOR.FocusedEditorSceneID = PROJECT_MANAGER.GetCurrent()->ProjectScene->GetObjectID();
 	IndexChosen = -1;
 
-	// after loading project we should update our previews
+	// In each loaded project we need to inject editor camera.
+	InjectEditorCamera(PROJECT_MANAGER.GetCurrent()->ProjectScene);
+
+	// After loading project we should update our previews
 	PREVIEW_MANAGER.UpdateAll();
 	SELECTED.ClearAll();
 }
@@ -278,17 +282,8 @@ void FEProjectManager::CreateNewProject(std::string ProjectName, std::string Pro
 	std::ofstream ProjectFile;
 	Root["version"] = PROJECTS_FILE_VER;
 
-	FEScene* NewScene = SCENE_MANAGER.CreateScene(ProjectName, "", false);
+	FEScene* NewScene = SCENE_MANAGER.CreateScene(ProjectName, "", FESceneFlag::None);
 	
-	FEEntity* CameraEntity = NewScene->CreateEntity("Camera");
-	CameraEntity->AddComponent<FECameraComponent>();
-	FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
-	CameraComponent.SetRenderTargetSize(128, 128);
-	CameraComponent.SetDistanceFogEnabled(false);
-	CAMERA_SYSTEM.SetMainCamera(CameraEntity);
-	FETransformComponent& CameraTransform = CameraEntity->GetComponent<FETransformComponent>();
-	CameraTransform.SetPosition(glm::vec3(-4.2269f, 15.7178f, 19.6429f));
-
 	FEEntity* SunEntity = NewScene->CreateEntity("Sun");
 	SunEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
 	FELightComponent& LightComponent = SunEntity->GetComponent<FELightComponent>();
@@ -323,16 +318,15 @@ void FEProjectManager::CreateNewProject(std::string ProjectName, std::string Pro
 	ProjectFile << JsonFile;
 	ProjectFile.close();
 
-	SCENE_MANAGER.DeactivateScene(NewScene);
 	SCENE_MANAGER.DeleteScene(NewScene);
 }
 
 bool FEProjectManager::ContainProject(const std::string Path)
 {
-	if (!FILE_SYSTEM.CheckDirectory(Path.c_str()))
+	if (!FILE_SYSTEM.DoesDirectoryExist(Path.c_str()))
 		return false;
 
-	if (!FILE_SYSTEM.CheckFile((Path + "/scene.txt").c_str()))
+	if (!FILE_SYSTEM.DoesFileExist((Path + "/scene.txt").c_str()))
 		return false;
 
 	return true;
@@ -601,6 +595,43 @@ void FEProject::SaveProject(bool bFullSave)
 	bModified = false;
 }
 
+#include <dbghelp.h>
+#pragma comment(lib, "dbghelp.lib")
+std::string ListExportedFunctions(const std::string& dllPath) {
+	std::stringstream result;
+	HMODULE hModule = LoadLibraryA(dllPath.c_str());
+	if (hModule == NULL) {
+		return "Failed to load DLL.";
+	}
+
+	ULONG size;
+	PIMAGE_EXPORT_DIRECTORY exportDir;
+
+	exportDir = (PIMAGE_EXPORT_DIRECTORY)ImageDirectoryEntryToData(
+		hModule, TRUE, IMAGE_DIRECTORY_ENTRY_EXPORT, &size);
+
+	if (exportDir == NULL) {
+		FreeLibrary(hModule);
+		return "Failed to get export directory.";
+	}
+
+	DWORD* names = (DWORD*)((BYTE*)hModule + exportDir->AddressOfNames);
+	WORD* ordinals = (WORD*)((BYTE*)hModule + exportDir->AddressOfNameOrdinals);
+	DWORD* functions = (DWORD*)((BYTE*)hModule + exportDir->AddressOfFunctions);
+
+	for (DWORD i = 0; i < exportDir->NumberOfNames; i++) {
+		char* name = (char*)((BYTE*)hModule + names[i]);
+		WORD ordinal = ordinals[i];
+		DWORD rva = functions[ordinal];
+
+		result << "Function: " << name << ", Ordinal: " << ordinal << ", RVA: 0x"
+			<< std::hex << rva << std::dec << "\n";
+	}
+
+	FreeLibrary(hModule);
+	return result.str();
+}
+
 void FEProject::LoadProject()
 {
 	std::ifstream SceneFile;
@@ -778,7 +809,7 @@ void FEProject::LoadProject()
 		if (!bPrefabScene)
 			continue;
 
-		FEScene* NewScene = SCENE_MANAGER.CreateScene(LoadedObjectData.Name, LoadedObjectData.ID, false);
+		FEScene* NewScene = SCENE_MANAGER.CreateScene(LoadedObjectData.Name, LoadedObjectData.ID, FESceneFlag::None);
 		RESOURCE_MANAGER.SetTag(NewScene, LoadedObjectData.Tag);
 
 		NewScene->SceneGraph.FromJson(Root["Scenes"][SceneList[i]]["Scene hierarchy"]);
@@ -800,7 +831,7 @@ void FEProject::LoadProject()
 			continue;
 
 		bool bShouldBeActive = LoadedObjectData.ID == MainSceneID;
-		FEScene* NewScene = SCENE_MANAGER.CreateScene(LoadedObjectData.Name, LoadedObjectData.ID, bShouldBeActive);
+		FEScene* NewScene = SCENE_MANAGER.CreateScene(LoadedObjectData.Name, LoadedObjectData.ID, bShouldBeActive ? FESceneFlag::Active : FESceneFlag::None);
 		RESOURCE_MANAGER.SetTag(NewScene, LoadedObjectData.Tag);
 		
 		NewScene->SceneGraph.FromJson(Root["Scenes"][SceneList[i]]["Scene hierarchy"]);
@@ -809,7 +840,7 @@ void FEProject::LoadProject()
 	ProjectScene = SCENE_MANAGER.GetScene(MainSceneID);
 
 	// VFS
-	if (FILE_SYSTEM.CheckFile((ProjectFolder + "VFS.txt").c_str())) // _error
+	if (FILE_SYSTEM.DoesFileExist((ProjectFolder + "VFS.txt").c_str())) // _error
 	{
 		VIRTUAL_FILE_SYSTEM.LoadState(ProjectFolder + "VFS.txt");
 
@@ -924,7 +955,7 @@ void FEProject::AddUnSavedObject(FEObject* Object)
 
 void FEProject::SetProjectFolder(const std::string NewValue)
 {
-	if (!FILE_SYSTEM.CheckDirectory(NewValue.c_str()))
+	if (!FILE_SYSTEM.DoesDirectoryExist(NewValue.c_str()))
 		return;
 
 	ProjectFolder = NewValue;
@@ -932,7 +963,7 @@ void FEProject::SetProjectFolder(const std::string NewValue)
 
 void FEProject::SaveSceneTo(const std::string NewPath)
 {
-	if (!FILE_SYSTEM.CheckDirectory(NewPath.c_str()))
+	if (!FILE_SYSTEM.DoesDirectoryExist(NewPath.c_str()))
 		return;
 
 	SetProjectFolder(NewPath);
@@ -943,4 +974,49 @@ void FEProject::SaveSceneTo(const std::string NewPath)
 FEScene* FEProject::GetScene()
 {
 	return ProjectScene;
+}
+
+void FEProjectManager::InjectEditorCamera(FEScene* Scene)
+{
+	FEEntity* CameraEntity = nullptr;
+	std::vector<FEPrefab*> CameraPrefab = RESOURCE_MANAGER.GetPrefabByName("Free camera prefab");
+	if (CameraPrefab.size() == 0)
+	{
+		LOG.Add("FEProjectManager::InjectEditorCamera: Camera prefab not found! Inserting camera manually.", "FE_LOG_LOADING", FE_LOG_WARNING);
+
+		CameraEntity = Scene->CreateEntity("Camera");
+		CameraEntity->AddComponent<FECameraComponent>();
+	}
+	else
+	{
+		FEPrefab* CameraPrefabToUse = CameraPrefab[0];
+		std::vector<FEEntity*> AddedEntities = SCENE_MANAGER.InstantiatePrefab(CameraPrefabToUse, Scene, true);
+		if (AddedEntities.empty())
+		{
+			LOG.Add("FEProjectManager::InjectEditorCamera: Camera prefab was not instantiated correctly. Inserting camera manually.", "FE_LOG_LOADING", FE_LOG_WARNING);
+
+			CameraEntity = Scene->CreateEntity("Camera");
+			CameraEntity->AddComponent<FECameraComponent>();
+		}
+		else
+		{
+			CameraEntity = AddedEntities[0];
+		}
+
+		if (CameraEntity == nullptr)
+		{
+			LOG.Add("FEProjectManager::InjectEditorCamera: Camera prefab was not instantiated correctly. Inserting camera manually.", "FE_LOG_LOADING", FE_LOG_WARNING);
+
+			CameraEntity = Scene->CreateEntity("Camera");
+			CameraEntity->AddComponent<FECameraComponent>();
+		}
+	}
+
+	RESOURCE_MANAGER.SetTag(CameraEntity, EDITOR_RESOURCE_TAG);
+	FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
+	CameraComponent.SetRenderTargetSize(128, 128);
+	CameraComponent.SetDistanceFogEnabled(false);
+	CAMERA_SYSTEM.SetMainCamera(CameraEntity);
+	FETransformComponent& CameraTransform = CameraEntity->GetComponent<FETransformComponent>();
+	CameraTransform.SetPosition(glm::vec3(-4.2269f, 15.7178f, 19.6429f));
 }

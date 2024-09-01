@@ -1,7 +1,5 @@
 #include "ResizeTexturePopup.h"
 
-ResizeTexturePopup* ResizeTexturePopup::Instance = nullptr;
-
 ResizeTexturePopup::ResizeTexturePopup()
 {
 	PopupCaption = "Resize texture";

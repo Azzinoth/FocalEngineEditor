@@ -137,4 +137,4 @@ private:
 	FETransformComponent DummyTransformComponent;
 };
 
-#define GIZMO_MANAGER GizmoManager::getInstance()
+#define GIZMO_MANAGER GizmoManager::GetInstance()

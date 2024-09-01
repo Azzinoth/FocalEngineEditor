@@ -89,4 +89,4 @@ private:
 };
 
 #define VIRTUAL_FILE_SYSTEM_VERSION 0.01f
-#define VIRTUAL_FILE_SYSTEM FEVirtualFileSystem::getInstance()
+#define VIRTUAL_FILE_SYSTEM FEVirtualFileSystem::GetInstance()

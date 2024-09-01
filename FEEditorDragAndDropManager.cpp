@@ -1,7 +1,6 @@
 #include "FEEditorDragAndDropManager.h"
 using namespace FocalEngine;
 
-DragAndDropManager* DragAndDropManager::Instance = nullptr;
 DragAndDropManager::DragAndDropManager() {}
 DragAndDropManager::~DragAndDropManager() {}
 

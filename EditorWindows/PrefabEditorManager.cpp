@@ -1,7 +1,6 @@
 #include "PrefabEditorManager.h"
 #include "SceneGraphWindow.h"
 #include "../FEEditor.h"
-FEPrefabEditorManager* FEPrefabEditorManager::Instance = nullptr;
 
 FEPrefabSceneEditorWindow::FEPrefabSceneEditorWindow(FEScene* Scene) : FEEditorSceneWindow(Scene, false)
 {
@@ -56,8 +55,6 @@ void FEPrefabSceneEditorWindow::Render()
 	if (ApplyButton->IsClicked())
 	{
 		PREFAB_EDITOR_MANAGER.ApplyModificationsToPrefabScene(this);
-		//bWaitingForRemoval = true;
-		//Close();
 	}
 
 	CloseButton->SetSize(ApplyButton->GetSize());
@@ -133,6 +130,48 @@ void FEPrefabEditorManager::Clear()
 	bClearing = false;
 }
 
+FEEntity* FEPrefabEditorManager::InjectModelViewCamera(FEScene* Scene)
+{
+	FEEntity* CameraEntity = nullptr;
+	std::vector<FEPrefab*> CameraPrefab = RESOURCE_MANAGER.GetPrefabByName("Model view camera prefab");
+	if (CameraPrefab.size() == 0)
+	{
+		LOG.Add("FEPrefabEditorManager::InjectModelViewCamera: Camera prefab not found! Inserting camera manually.", "FE_LOG_LOADING", FE_LOG_WARNING);
+
+		CameraEntity = Scene->CreateEntity("Prefab scene camera");
+		CameraEntity->AddComponent<FECameraComponent>();
+	}
+	else
+	{
+		FEPrefab* CameraPrefabToUse = CameraPrefab[0];
+		std::vector<FEEntity*> AddedEntities = SCENE_MANAGER.InstantiatePrefab(CameraPrefabToUse, Scene, true);
+		if (AddedEntities.empty())
+		{
+			LOG.Add("FEPrefabEditorManager::InjectModelViewCamera: Camera prefab was not instantiated correctly. Inserting camera manually.", "FE_LOG_LOADING", FE_LOG_WARNING);
+
+			CameraEntity = Scene->CreateEntity("Prefab scene camera");
+			CameraEntity->AddComponent<FECameraComponent>();
+		}
+		else
+		{
+			CameraEntity = AddedEntities[0];
+		}
+
+		if (CameraEntity == nullptr)
+		{
+			LOG.Add("FEPrefabEditorManager::InjectModelViewCamera: Camera prefab was not instantiated correctly. Inserting camera manually.", "FE_LOG_LOADING", FE_LOG_WARNING);
+
+			CameraEntity = Scene->CreateEntity("Prefab scene camera");
+			CameraEntity->AddComponent<FECameraComponent>();
+		}
+	}
+
+	RESOURCE_MANAGER.SetTag(CameraEntity, EDITOR_RESOURCE_TAG);
+	CAMERA_SYSTEM.SetMainCamera(CameraEntity);
+
+	return CameraEntity;
+}
+
 void FEPrefabEditorManager::PrepareEditWinow(FEPrefab* Prefab)
 {
 	if (Prefab->GetScene() == nullptr)
@@ -143,6 +182,7 @@ void FEPrefabEditorManager::PrepareEditWinow(FEPrefab* Prefab)
 		return;
 
 	FEScene* CurrentPrefabScene = SCENE_MANAGER.DuplicateScene(Prefab->GetScene(), "Scene: " + Prefab->GetName());
+	CurrentPrefabScene->SetFlag(FESceneFlag::Active | FESceneFlag::EditorMode | FESceneFlag::Renderable, true);
 
 	// Because by default camera is looking at 0,0,0 we need to place "empty" entity at 0,0,0.
 	// To ensure that scene AABB would include some entity at 0,0,0.
@@ -163,20 +203,18 @@ void FEPrefabEditorManager::PrepareEditWinow(FEPrefab* Prefab)
 
 	CurrentPrefabScene->DeleteEntity(EmptyEntity);
 
-	FEEntity* Camera = CurrentPrefabScene->CreateEntity("Prefab scene camera");
-	RESOURCE_MANAGER.SetTag(Camera, EDITOR_RESOURCE_TAG);
-	Camera->AddComponent<FECameraComponent>();
+	FEEntity* Camera = InjectModelViewCamera(CurrentPrefabScene);
 	FECameraComponent& CameraComponent = Camera->GetComponent<FECameraComponent>();
-	CameraComponent.Type = 1;
-	// We want to make sure that distance to model is at least 1.0
-	double CalculatedDistance = SceneAABB.GetLongestAxisLength() * 2.5;
-	CameraComponent.DistanceToModel = CalculatedDistance > 1.0 ? SceneAABB.GetLongestAxisLength() * 2.5 : 1.0;
 	CameraComponent.SetSSAOEnabled(false);
-	CAMERA_SYSTEM.SetMainCamera(Camera);
-	FETransformComponent& CameraTransform = Camera->GetComponent<FETransformComponent>();
+	
+	// We want to make sure that distance to model is at least 1.0
+	float CalculatedDistance = SceneAABB.GetLongestAxisLength() * 2.5f;
+	FENativeScriptComponent& ScriptComponent = Camera->GetComponent<FENativeScriptComponent>();
+	ScriptComponent.SetVariableValue("DistanceToModel", CalculatedDistance > 1.0f ? SceneAABB.GetLongestAxisLength() * 2.5f : 1.0f);
+	
 	// To make sure that next scene FEAABB calculation will include correct camera position.
 	CAMERA_SYSTEM.IndividualUpdate(Camera, 0.0);
-
+	
 	FEEntity* SkyDomeEntity = CurrentPrefabScene->CreateEntity("Prefab scene skydome");
 	RESOURCE_MANAGER.SetTag(SkyDomeEntity, EDITOR_RESOURCE_TAG);
 	SkyDomeEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(100.0f));

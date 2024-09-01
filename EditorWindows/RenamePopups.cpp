@@ -1,7 +1,5 @@
 #include "RenamePopups.h"
 
-RenameFailedPopUp* RenameFailedPopUp::Instance = nullptr;
-
 RenameFailedPopUp::RenameFailedPopUp()
 {
 	PopupCaption = "Invalid name";
@@ -41,8 +39,6 @@ void RenameFailedPopUp::Render()
 		ImGui::PopStyleVar();
 	}
 }
-
-RenamePopUp* RenamePopUp::Instance = nullptr;
 
 RenamePopUp::RenamePopUp()
 {
@@ -88,6 +84,14 @@ void RenamePopUp::Render()
 
 				ObjToWorkWith->SetName(NewName);
 
+				if (ObjToWorkWith->GetType() == FE_SCENE_GRAPH_NODE)
+				{
+					FENaiveSceneGraphNode* Node = reinterpret_cast<FENaiveSceneGraphNode*>(ObjToWorkWith);
+					FEEntity* Entity = Node->GetEntity();
+					if (Entity != nullptr)
+						Entity->SetName(NewName);
+				}
+
 				ImGuiModalPopup::Close();
 				strcpy_s(NewName, "");
 			}
@@ -95,7 +99,7 @@ void RenamePopUp::Render()
 			{
 				ObjToWorkWith = nullptr;
 				ImGuiModalPopup::Close();
-				RenameFailedPopUp::getInstance().Show();
+				RenameFailedPopUp::GetInstance().Show();
 			}
 		}
 		ImGui::SetItemDefaultFocus();

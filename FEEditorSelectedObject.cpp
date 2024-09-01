@@ -3,7 +3,6 @@
 #include "FEEditor.h"
 using namespace FocalEngine;
 
-FEEditorSelectedObject* FEEditorSelectedObject::Instance = nullptr;
 FEEditorSelectedObject::FEEditorSelectedObject() {}
 FEEditorSelectedObject::~FEEditorSelectedObject() {}
 
@@ -89,6 +88,13 @@ void FEEditorSelectedObject::SetSelected(FEEntity* SelectedObject)
 	{
 		AddSceneData(CurrentScene->GetObjectID());
 		CurrentSelectionData = GetSceneData(CurrentScene->GetObjectID());
+
+		// If the data is still null log error and return
+		if (CurrentSelectionData == nullptr)
+		{
+			LOG.Add("FEEditorSelectedObject::SetSelected: Could not create selection data for scene: " + CurrentScene->GetObjectID(), "FE_LOG_ERROR", FE_LOG_ERROR);
+			return;
+		}
 	}
 
 	if (CurrentSelectionData->Container != nullptr && CurrentSelectionData->Container->HasComponent<FETerrainComponent>() && CurrentSelectionData->Container != SelectedObject)
@@ -116,7 +122,7 @@ void FEEditorSelectedObject::Clear(FEScene* Scene)
 	CurrentSelectionData->InstancedSubObjectIndexSelected = -1;
 	CurrentSelectionData->Container = nullptr;
 
-	if (!SCENE_MANAGER.GetActiveScenes().empty())
+	if (!SCENE_MANAGER.GetScenesByFlagMask(FESceneFlag::Active).empty())
 		if (OnUpdateFunction != nullptr)
 			OnUpdateFunction(Scene);
 }
@@ -693,10 +699,13 @@ void FEEditorSelectedObject::AddSceneData(const std::string& SceneID)
 	if (PerSceneData.find(SceneID) != PerSceneData.end())
 		return;
 
+	FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCameraEntity(CurrentScene);
+	if (MainCamera == nullptr)
+		return;
+
 	PerSceneData[SceneID] = new FESelectionData();
 	PerSceneData[SceneID]->SceneID = SceneID;
 
-	FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCameraEntity(CurrentScene);
 	FETransformComponent& CameraTransformComponent = MainCamera->GetComponent<FETransformComponent>();
 	FECameraComponent& CameraComponent = MainCamera->GetComponent<FECameraComponent>();
 

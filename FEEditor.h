@@ -31,6 +31,9 @@ public:
     void SetSceneEntityIDInClipboard(std::string NewValue);
 
     FEScene* GetFocusedScene() const;
+
+    bool IsInGameMode() const;
+    void SetGameMode(bool GameMode);
 private:
     SINGLETON_PRIVATE_PART(FEEditor)
 
@@ -41,9 +44,12 @@ private:
     std::string FocusedEditorSceneID = "";
     ImGuiID DockspaceID = 0;
 
+	FEEditorSceneWindow* GetEditorSceneWindow(std::string SceneID);
     void AddEditorScene(FEScene* Scene, bool bMain = false);
     void AddCustomEditorScene(FEEditorSceneWindow* SceneWindow);
     std::vector<FEEditorSceneWindow*> EditorSceneWindows;
+
+	void DeleteScene(std::string SceneID);
 
     // Clipboard
     std::string SceneEntityIDInClipboard;
@@ -75,8 +81,9 @@ private:
 
     // Game mode
     bool bGameMode = false;
-    bool IsInGameMode() const;
-    void SetGameMode(bool GameMode);
+	bool SetGameModeInternal(bool GameMode);
+	std::unordered_map<std::string, FEScene*> ParentIDToScenesInGameMode;
+	bool DuplicateScenesForGameMode();
 
     // Sub-windows
     void RenderAllSubWindows();
@@ -91,4 +98,4 @@ private:
     void BeforeChangeOfFocusedScene(FEScene* NewSceneInFocus);
 };
 
-#define EDITOR FEEditor::getInstance()
+#define EDITOR FEEditor::GetInstance()

@@ -56,6 +56,7 @@ class FEProjectManager
 	std::string CustomProjectFolder = "../FocalEngineProjects-master";
 
 	void CreateNewProject(std::string ProjectName, std::string ProjectPath);
+	void InjectEditorCamera(FEScene* Scene);
 public:
 	SINGLETON_PUBLIC_PART(FEProjectManager)
 	SINGLETON_PRIVATE_PART(FEProjectManager)
@@ -78,4 +79,4 @@ public:
 };
 
 #define PROJECTS_FOLDER PROJECT_MANAGER.CustomProjectFolder.c_str()
-#define PROJECT_MANAGER FEProjectManager::getInstance()
+#define PROJECT_MANAGER FEProjectManager::GetInstance()

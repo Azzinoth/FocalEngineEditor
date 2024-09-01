@@ -82,4 +82,4 @@ private:
 	void RenderEntityHaloEffectInternal(FEEntity* Entity, glm::vec3 Color, FEEntity* CameraEntity, FESelectionData* CurrentSelectionData);
 };
 
-#define SELECTED FEEditorSelectedObject::getInstance()
+#define SELECTED FEEditorSelectedObject::GetInstance()

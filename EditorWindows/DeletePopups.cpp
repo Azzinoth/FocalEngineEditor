@@ -1,8 +1,6 @@
 #include "DeletePopups.h"
 #include "../FEEditor.h"
 
-DeleteTexturePopup* DeleteTexturePopup::Instance = nullptr;
-
 DeleteTexturePopup::DeleteTexturePopup()
 {
 	PopupCaption = "Delete texture";
@@ -84,7 +82,7 @@ std::vector<FEMaterial*> DeleteTexturePopup::MaterialsThatUsesTexture(const FETe
 
 	if (EDITOR.GetFocusedScene() != nullptr)
 	{
-		const std::vector<std::string> TerrainList = EDITOR.GetFocusedScene()->GetEntityIDListWith<FETerrainComponent>();
+		const std::vector<std::string> TerrainList = EDITOR.GetFocusedScene()->GetEntityIDListWithComponent<FETerrainComponent>();
 		for (size_t i = 0; i < TerrainList.size(); i++)
 		{
 			/*FEEntity* CurrentTerrain = SCENE.GetEntity(TerrainList[i]);
@@ -133,8 +131,6 @@ void DeleteTexturePopup::DeleteTexture(FETexture* Texture)
 	for (size_t i = 0; i < GameModelListToUpdate.size(); i++)
 		PREVIEW_MANAGER.CreateGameModelPreview(GameModelListToUpdate[i]);
 }
-
-DeleteMeshPopup* DeleteMeshPopup::Instance = nullptr;
 
 DeleteMeshPopup::DeleteMeshPopup()
 {
@@ -240,8 +236,6 @@ void DeleteMeshPopup::DeleteMesh(FEMesh* Mesh)
 	PREVIEW_MANAGER.MeshPreviewTextures.erase(name);
 }
 
-DeleteGameModelPopup* DeleteGameModelPopup::Instance = nullptr;
-
 DeleteGameModelPopup::DeleteGameModelPopup()
 {
 	PopupCaption = "Delete game model";
@@ -334,9 +328,6 @@ void DeleteGameModelPopup::DeleteGameModel(FEGameModel* GameModel)
 	PROJECT_MANAGER.GetCurrent()->SetModified(true);
 }
 
-
-DeletePrefabPopup* DeletePrefabPopup::Instance = nullptr;
-
 DeletePrefabPopup::DeletePrefabPopup()
 {
 	PopupCaption = "Delete prefab";
@@ -425,8 +416,6 @@ void DeletePrefabPopup::DeletePrefab(FEPrefab* Prefab)
 	RESOURCE_MANAGER.DeletePrefab(Prefab);
 	PROJECT_MANAGER.GetCurrent()->SetModified(true);
 }
-
-DeleteMaterialPopup* DeleteMaterialPopup::Instance = nullptr;
 
 DeleteMaterialPopup::DeleteMaterialPopup()
 {
@@ -530,8 +519,6 @@ void DeleteMaterialPopup::DeleteMaterial(FEMaterial* Material)
 	delete PREVIEW_MANAGER.MaterialPreviewTextures[name];
 	PREVIEW_MANAGER.MaterialPreviewTextures.erase(name);
 }
-
-DeleteDirectoryPopup* DeleteDirectoryPopup::Instance = nullptr;
 
 DeleteDirectoryPopup::DeleteDirectoryPopup()
 {

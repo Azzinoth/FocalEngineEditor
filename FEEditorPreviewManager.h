@@ -72,4 +72,4 @@ private:
 	void Clear();
 };
 
-#define PREVIEW_MANAGER FEEditorPreviewManager::getInstance()
+#define PREVIEW_MANAGER FEEditorPreviewManager::GetInstance()

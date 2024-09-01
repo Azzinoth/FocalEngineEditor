@@ -12,16 +12,58 @@ project(FocalEngineEditor)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_FLAGS_DEBUG "/MP /ZI /W3 /Od /MTd /JMC /sdl /FC /D IMGUI_IMPL_OPENGL_LOADER_GLEW /D WIN32 /D _WINDOWS /D _DEBUG /D FE_DEBUG_ENABLED")
-set(CMAKE_CXX_FLAGS_RELEASE "/MP /W3 /O2 /Oi /MT /Gy /sdl /FC /GL /OPT:REF /OPT:ICF /D IMGUI_IMPL_OPENGL_LOADER_GLEW /D NDEBUG /D WIN32 /D _WINDOWS")
+# Set compiler flags based on USE_STATIC_RUNTIME
+if(MSVC)
+    # Disable C4251 warning
+    add_compile_options(/wd4251)
+
+    if(USE_STATIC_RUNTIME)
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+		set(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME ON CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" FORCE)
+    else()
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
+		set(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME OFF CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" FORCE)
+    endif()
+
+    # Always add /MP for multi-processor compilation
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+endif()
+
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /ZI /W3 /Od /JMC /sdl /FC /D IMGUI_IMPL_OPENGL_LOADER_GLEW /D WIN32 /D _WINDOWS /D _DEBUG /D FE_DEBUG_ENABLED")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W3 /O2 /Oi /Gy /sdl /FC /GL /OPT:REF /OPT:ICF /D IMGUI_IMPL_OPENGL_LOADER_GLEW /D NDEBUG /D WIN32 /D _WINDOWS")
 
 # Turn on the ability to create folders to organize projects (.vcproj)
 # It creates "CMakePredefinedTargets" folder by default and adds CMake
 # defined projects like INSTALL.vcproj and ZERO_CHECK.vcproj
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# Force your path to Dear ImGui
+# Set up Visual node system
 set(DEAR_IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/imgui CACHE PATH "Path to Dear ImGui directory." FORCE)
+if(BUILD_SHARED_LIBS)
+	set(VISUAL_NODE_SYSTEM_BUILD_SHARED_LIBS ON CACHE BOOL "Build VisualNodeSystem as a shared library" FORCE)
+	# Set options for VisualNodeSystem
+	set(VISUAL_NODE_SYSTEM_USE_EXTERNAL_IMGUI ON CACHE BOOL "Use external ImGui from FEBasicApplication" FORCE)
+	set(EXTERNAL_IMGUI_LIBRARY FEBasicApplication CACHE FILEPATH "Path to external ImGui library" FORCE)
+
+    if(USE_STATIC_RUNTIME)
+        message(WARNING "Building a shared library with static runtime is uncommon and may lead to issues.")
+        set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/GLFW/lib/x64/glfw3_mt.lib CACHE PATH "Path to GLFW library." FORCE)
+    else()
+        set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/GLFW/lib/x64/glfw3dll.lib CACHE PATH "Path to GLFW library." FORCE)
+    endif()
+
+    set(VISUAL_NODE_SYSTEM_GLFW_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/ CACHE PATH "Path to GLFW include directory.")
+else()
+	set(VISUAL_NODE_SYSTEM_BUILD_SHARED_LIBS OFF CACHE BOOL "Build VisualNodeSystem as a shared library" FORCE)
+	
+    if(USE_STATIC_RUNTIME)
+        set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/GLFW/lib/x64/glfw3_mt.lib CACHE PATH "Path to GLFW library." FORCE)
+    else()
+        set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/GLFW/lib/x64/glfw3.lib CACHE PATH "Path to GLFW library." FORCE)
+    endif()
+endif()
 
 if(NOT TARGET VisualNodeSystem)
 	add_subdirectory(SubSystems/NodeSystem/VisualNodeSystem)
@@ -56,6 +98,8 @@ file(GLOB Editor_SRC
 	"FEEditorSelectedObject.h"
 	"FEEditorVirtualFileSystem.cpp"
 	"FEEditorVirtualFileSystem.h"
+	"FEEditorScriptingSystem.cpp"
+	"FEEditorScriptingSystem.h"
 	"FEProject.cpp"
 	"FEProject.h"
 )
@@ -149,8 +193,15 @@ add_executable(FocalEngineEditor WIN32
 								 ${textEditor_SRC}
 )
 
-target_link_libraries(FocalEngineEditor PRIVATE VisualNodeSystem)
-target_link_libraries(FocalEngineEditor PRIVATE FocalEngine)
+target_link_libraries(FocalEngineEditor
+    PRIVATE
+        FEBasicApplication
+		VisualNodeSystem
+        FocalEngine
+        ${GLFW_LIBRARY}
+        ${GLEW_LIBRARY}
+        opengl32.lib
+)
 
 source_group("Source Files" FILES ${Application_SRC})
 # *************** EDITOR ***************
@@ -176,3 +227,33 @@ include_directories(
 	${FOCAL_ENGINE_INCLUDES}
 	${VISUAL_NODE_SYSTEM_DIR}
 )
+
+# If building as DLL, copy necessary DLLs to output directory
+if(BUILD_SHARED_LIBS)
+    add_custom_command(TARGET FocalEngineEditor POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE_DIR:FocalEngine>/glfw3.dll"
+            "$<TARGET_FILE_DIR:FocalEngineEditor>"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE_DIR:FocalEngine>/FEBasicApplication.dll"
+            "$<TARGET_FILE_DIR:FocalEngineEditor>"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE_DIR:VisualNodeSystem>/VisualNodeSystem.dll"
+            "$<TARGET_FILE_DIR:FocalEngineEditor>"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE_DIR:FocalEngine>/FocalEngine.dll"
+            "$<TARGET_FILE_DIR:FocalEngineEditor>"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${OpenXRLoader_DLL}
+            "$<TARGET_FILE_DIR:FocalEngineEditor>"
+    )
+endif()
+
+# If using dynamic runtime, copy necessary DLLs to output directory
+if(NOT USE_STATIC_RUNTIME)
+    add_custom_command(TARGET FocalEngineEditor POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${GLEW_LIB_DIR}/glew32.dll"
+            "$<TARGET_FILE_DIR:FocalEngineEditor>"
+    )
+endif()

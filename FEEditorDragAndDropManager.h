@@ -72,4 +72,4 @@ private:
 	bool ObjectCanBeDroped() const;
 };
 
-#define DRAG_AND_DROP_MANAGER DragAndDropManager::getInstance()
+#define DRAG_AND_DROP_MANAGER DragAndDropManager::GetInstance()

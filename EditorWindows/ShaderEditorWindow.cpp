@@ -1,8 +1,6 @@
 #include "ShaderEditorWindow.h"
 #include "../FEEditor.h"
 
-ShaderDebugWindow* ShaderDebugWindow::Instance = nullptr;
-
 ShaderDebugWindow::ShaderDebugWindow()
 {
 	Flags = ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar;
@@ -130,13 +128,9 @@ void ShaderDebugWindow::Render()
 		bUpdateNeeded = true;
 	}
 
-	//ImGui::GetCurrentWindow()->Size = ImVec2(ImGui::GetCurrentWindow()->Size.x, ImGui::GetCurrentWindow()->Size.y - 150);
-	Editor.Render("TextEditor", ImVec2(ImGui::GetCurrentWindow()->Size.x, 250));
-	//ImGui::GetCurrentWindow()->Size = ImVec2(ImGui::GetCurrentWindow()->Size.x, ImGui::GetCurrentWindow()->Size.y + 150);
+	Editor.Render("TextEditor", ImVec2(FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl()->Size.x, 250));
 	FEImGuiWindow::OnRenderEnd();
 }
-
-ShaderEditorWindow* ShaderEditorWindow::Instance = nullptr;
 
 ShaderEditorWindow::ShaderEditorWindow()
 {
@@ -384,7 +378,8 @@ void ShaderEditorWindow::Render()
 	}
 	ImGui::PopStyleColor();
 	
-	CurrentEditor->Render("Editor", ImVec2(ImGui::GetCurrentWindow()->Size.x - 40, ImGui::GetCurrentWindow()->Size.y - 190));
+	ImGuiWindow* CurrentWindow = FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl();
+	CurrentEditor->Render("Editor", ImVec2(CurrentWindow->Size.x - 40, CurrentWindow->Size.y - 190));
 
 	const float CurrentYPosition = ImGui::GetCursorPosY() + 15;
 	CompileButton->SetPosition(ImVec2(ImGui::GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 8.0f - 120.0f / 2.0f, CurrentYPosition));
@@ -430,7 +425,7 @@ void ShaderEditorWindow::Render()
 
 			if (ShaderToEdit->IsDebugRequest())
 			{
-				ShaderDebugWindow::getInstance().Show(ShaderToEdit, "Shader debug info");
+				ShaderDebugWindow::GetInstance().Show(ShaderToEdit, "Shader debug info");
 			}
 		}
 	}
@@ -470,7 +465,7 @@ void ShaderEditorWindow::ReplaceShader(FEShader* OldShader, FEShader* NewShader)
 	if (EDITOR.GetFocusedScene() != nullptr)
 	{
 		FEScene* CurrentScene = EDITOR.GetFocusedScene();
-		const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWith<FETerrainComponent>();
+		const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWithComponent<FETerrainComponent>();
 		for (size_t i = 0; i < TerrainList.size(); i++)
 		{
 			FEEntity* TempTerrain = CurrentScene->GetEntity(TerrainList[i]);

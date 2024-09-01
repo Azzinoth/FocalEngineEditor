@@ -137,6 +137,8 @@ class EditMaterialWindow : public FEImGuiWindow
 	// ************** Scene END **************
 
 	void Stop();
+
+	FEEntity* InjectModelViewCamera(FEScene* Scene);
 public:
 	SINGLETON_PUBLIC_PART(EditMaterialWindow)
 
@@ -145,4 +147,4 @@ public:
 	void Close();
 };
 
-#define EDITOR_MATERIAL_WINDOW EditMaterialWindow::getInstance()
+#define EDITOR_MATERIAL_WINDOW EditMaterialWindow::GetInstance()

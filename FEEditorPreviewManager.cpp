@@ -2,7 +2,6 @@
 #include "FEEditor.h"
 using namespace FocalEngine;
 
-FEEditorPreviewManager* FEEditorPreviewManager::Instance = nullptr;
 FEEditorPreviewManager::FEEditorPreviewManager() {}
 FEEditorPreviewManager::~FEEditorPreviewManager() {}
 
@@ -11,7 +10,7 @@ FETransformComponent FEEditorPreviewManager::OriginalTransform = FETransformComp
 
 void FEEditorPreviewManager::InitializeResources()
 {
-	PreviewScene = SCENE_MANAGER.CreateScene("EditorPreviewScene");
+	PreviewScene = SCENE_MANAGER.CreateScene("EditorPreviewScene", "", FESceneFlag::Active);
 	RESOURCE_MANAGER.SetTag(PreviewScene, EDITOR_RESOURCE_TAG);
 
 	PreviewGameModel = new FEGameModel(nullptr, nullptr, "editorPreviewGameModel");
@@ -50,7 +49,8 @@ void FEEditorPreviewManager::InitializeResources()
 	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
 	SkyDome->AddComponent<FESkyDomeComponent>();
 
-	SCENE_MANAGER.DeactivateScene(PreviewScene);
+	PreviewScene->SetFlag(FESceneFlag::Active | FESceneFlag::Renderable, false);
+	PreviewScene->SetFlag(FESceneFlag::EditorMode, true);
 }
 
 void FEEditorPreviewManager::UpdateAll()
@@ -82,6 +82,8 @@ void FEEditorPreviewManager::UpdateAll()
 
 void FEEditorPreviewManager::BeforePreviewActions()
 {
+	PreviewScene->SetFlag(FESceneFlag::Active | FESceneFlag::Renderable, true);
+
 	// The transform impacts the AABB. Therefore, the necessary values must be set prior to any calculations.
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, 0.0));
 	PreviewEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(1.0, 1.0, 1.0));
@@ -90,6 +92,8 @@ void FEEditorPreviewManager::BeforePreviewActions()
 
 void FEEditorPreviewManager::AfterPreviewActions()
 {
+	PreviewScene->SetFlag(FESceneFlag::Active | FESceneFlag::Renderable, false);
+
 	PreviewGameModel->Mesh = nullptr;
 	PreviewGameModel->Material = nullptr;
 }

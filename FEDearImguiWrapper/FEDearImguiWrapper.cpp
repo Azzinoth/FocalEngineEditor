@@ -1,7 +1,5 @@
 #include "FEDearImguiWrapper.h"
 
-WindowsManager* WindowsManager::Instance = nullptr;
-
 ImGuiModalPopup::ImGuiModalPopup()
 {
 	PopupCaption = "";
@@ -343,6 +341,15 @@ bool FEImGuiWindow::IsMouseHovered() const
 	return false;
 }
 
+ImGuiWindow* WindowsManager::GetCurrentWindowImpl()
+{
+	ImGuiContext* Context = ImGui::GetCurrentContext();
+	if (Context == nullptr)
+		return nullptr;
+
+	return Context->CurrentWindow;
+}
+
 void FEImGuiWindow::Render()
 {
 	if (bVisible)
@@ -362,7 +369,7 @@ void FEImGuiWindow::Render()
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(GetPadding().x, GetPadding().y));
 
 		ImGui::Begin(Caption, nullptr, Flags);
-		Window = ImGui::GetCurrentWindow();
+		Window = FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl();
 	}
 }
 
@@ -672,8 +679,9 @@ void FERangeConfigurator::NormalizeRanges()
 
 void FERangeConfigurator::InputCalculations()
 {
-	const float MouseXWindows = ImGui::GetIO().MousePos.x - ImGui::GetCurrentWindow()->Pos.x;
-	const float MouseYWindows = ImGui::GetIO().MousePos.y - ImGui::GetCurrentWindow()->Pos.y;
+	ImGuiWindow* CurrentWindow = FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl();
+	const float MouseXWindows = ImGui::GetIO().MousePos.x - CurrentWindow->Pos.x;
+	const float MouseYWindows = ImGui::GetIO().MousePos.y - CurrentWindow->Pos.y;
 
 	for (size_t i = 0; i < Ranges.size(); i++)
 	{
@@ -691,13 +699,13 @@ void FERangeConfigurator::InputCalculations()
 			break;
 	}
 
-	ImGui::GetCurrentWindow()->Flags = ImGuiWindowFlags_None;
+	CurrentWindow->Flags = ImGuiWindowFlags_None;
 	for (size_t i = 0; i < Ranges.size(); i++)
 	{
 		const float NeedToAdd = Ranges[i].Scroller.GetLastFrameDelta() / Size.x;
 		if (NeedToAdd != 0.0f)
 		{
-			ImGui::GetCurrentWindow()->Flags = ImGuiWindowFlags_NoMove;
+			CurrentWindow->Flags = ImGuiWindowFlags_NoMove;
 			if (Ranges[i + 1].RangeSpan - NeedToAdd < 0.001f || Ranges[i].RangeSpan + NeedToAdd < 0.001f)
 				break;
 			
@@ -715,8 +723,9 @@ void FERangeConfigurator::Render()
 	NormalizeRanges();
 	InputCalculations();
 
-	ScreenX = ImGui::GetCurrentWindow()->Pos.x + Position.x;
-	ScreenY = ImGui::GetCurrentWindow()->Pos.y + Position.y;
+	ImGuiWindow* CurrentWindow = FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl();
+	ScreenX = CurrentWindow->Pos.x + Position.x;
+	ScreenY = CurrentWindow->Pos.y + Position.y;
 
 	float BeginX = ScreenX;
 	for (size_t i = 0; i < Ranges.size(); i++)
@@ -796,8 +805,6 @@ void FERangeConfigurator::Clear()
 {
 	Ranges.clear();
 }
-
-MessagePopUp* MessagePopUp::Instance = nullptr;
 
 MessagePopUp::MessagePopUp() {};
 
@@ -888,8 +895,9 @@ void FEArrowScroller::SetSelected(const bool NewValue)
 
 void FEArrowScroller::Render()
 {
-	const float MouseXWindows = ImGui::GetIO().MousePos.x - ImGui::GetCurrentWindow()->Pos.x;
-	const float MouseYWindows = ImGui::GetIO().MousePos.y - ImGui::GetCurrentWindow()->Pos.y;
+	ImGuiWindow* CurrentWindow = FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl();
+	const float MouseXWindows = ImGui::GetIO().MousePos.x - CurrentWindow->Pos.x;
+	const float MouseYWindows = ImGui::GetIO().MousePos.y - CurrentWindow->Pos.y;
 
 	bMouseHover = false;
 	if (MouseXWindows >= Area.left && MouseXWindows < Area.right &&
@@ -901,14 +909,14 @@ void FEArrowScroller::Render()
 	if (!bMouseHover && bWindowFlagWasAdded)
 	{
 		bWindowFlagWasAdded = false;
-		ImGui::GetCurrentWindow()->Flags = OriginalWindowFlags;
+		CurrentWindow->Flags = OriginalWindowFlags;
 	}
 
-	if (!(ImGui::GetCurrentWindow()->Flags & ImGuiWindowFlags_NoMove) && bMouseHover)
+	if (!(CurrentWindow->Flags & ImGuiWindowFlags_NoMove) && bMouseHover)
 	{
 		bWindowFlagWasAdded = true;
-		OriginalWindowFlags = ImGui::GetCurrentWindow()->Flags;
-		ImGui::GetCurrentWindow()->Flags |= ImGuiWindowFlags_NoMove;
+		OriginalWindowFlags = CurrentWindow->Flags;
+		CurrentWindow->Flags |= ImGuiWindowFlags_NoMove;
 	}
 
 	if (ImGui::GetIO().MouseClicked[0])
@@ -949,21 +957,21 @@ void FEArrowScroller::Render()
 
 	if (bHorizontal)
 	{
-		P1 = ImVec2(ImGui::GetCurrentWindow()->Pos.x + Area.left,
-			ImGui::GetCurrentWindow()->Pos.y + Area.top);
-		P2 = ImVec2(ImGui::GetCurrentWindow()->Pos.x + Area.right,
-			ImGui::GetCurrentWindow()->Pos.y + Area.top);
-		P3 = ImVec2(ImGui::GetCurrentWindow()->Pos.x + Area.left + (Area.right - Area.left) / 2.0f,
-			ImGui::GetCurrentWindow()->Pos.y + Area.bottom);
+		P1 = ImVec2(CurrentWindow->Pos.x + Area.left,
+			CurrentWindow->Pos.y + Area.top);
+		P2 = ImVec2(CurrentWindow->Pos.x + Area.right,
+			CurrentWindow->Pos.y + Area.top);
+		P3 = ImVec2(CurrentWindow->Pos.x + Area.left + (Area.right - Area.left) / 2.0f,
+			CurrentWindow->Pos.y + Area.bottom);
 	}
 	else
 	{
-		P1 = ImVec2(ImGui::GetCurrentWindow()->Pos.x + Area.left,
-			ImGui::GetCurrentWindow()->Pos.y + Area.top);
-		P2 = ImVec2(ImGui::GetCurrentWindow()->Pos.x + Area.left,
-			ImGui::GetCurrentWindow()->Pos.y + Area.bottom);
-		P3 = ImVec2(ImGui::GetCurrentWindow()->Pos.x + Area.right,
-			ImGui::GetCurrentWindow()->Pos.y + Area.top + (Area.right - Area.left) / 2.0f);
+		P1 = ImVec2(CurrentWindow->Pos.x + Area.left,
+			CurrentWindow->Pos.y + Area.top);
+		P2 = ImVec2(CurrentWindow->Pos.x + Area.left,
+			CurrentWindow->Pos.y + Area.bottom);
+		P3 = ImVec2(CurrentWindow->Pos.x + Area.right,
+			CurrentWindow->Pos.y + Area.top + (Area.right - Area.left) / 2.0f);
 	}
 
 	if (IsSelected())

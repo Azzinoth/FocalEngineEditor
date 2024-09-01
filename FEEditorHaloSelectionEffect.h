@@ -42,4 +42,4 @@ private:
 	FEHaloSelectionData* GetSceneData(const std::string& SceneID);
 };
 
-#define HALO_SELECTION_EFFECT FEEditorHaloSelectionEffect::getInstance()
+#define HALO_SELECTION_EFFECT FEEditorHaloSelectionEffect::GetInstance()

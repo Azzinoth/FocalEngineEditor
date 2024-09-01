@@ -2,7 +2,6 @@
 #include "FEEditor.h"
 using namespace FocalEngine;
 
-FEEditorHaloSelectionEffect* FEEditorHaloSelectionEffect::Instance = nullptr;
 FEEditorHaloSelectionEffect::FEEditorHaloSelectionEffect() {}
 FEEditorHaloSelectionEffect::~FEEditorHaloSelectionEffect() {}
 

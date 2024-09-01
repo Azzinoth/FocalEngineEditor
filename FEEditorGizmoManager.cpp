@@ -2,7 +2,6 @@
 using namespace FocalEngine;
 #include "FEEditor.h"
 
-GizmoManager* GizmoManager::Instance = nullptr;
 GizmoManager::GizmoManager() {}
 GizmoManager::~GizmoManager() {}
 

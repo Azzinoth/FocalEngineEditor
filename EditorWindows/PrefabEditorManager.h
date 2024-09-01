@@ -29,6 +29,7 @@ class FEPrefabEditorManager
 	bool bClearing = false;
 
 	void ApplyModificationsToPrefabScene(FEPrefabSceneEditorWindow* Window);
+	FEEntity* InjectModelViewCamera(FEScene* Scene);
 public:
 	SINGLETON_PUBLIC_PART(FEPrefabEditorManager)
 
@@ -36,4 +37,4 @@ public:
 	void Clear();
 };
 
-#define PREFAB_EDITOR_MANAGER FEPrefabEditorManager::getInstance()
+#define PREFAB_EDITOR_MANAGER FEPrefabEditorManager::GetInstance()

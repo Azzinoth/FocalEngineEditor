@@ -68,23 +68,13 @@ bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
 		FEScene* PrefabScene = Prefab->GetScene();
 		FENaiveSceneGraphNode* RootNode = PrefabScene->SceneGraph.GetRoot();
 
-		FEEntity* NewEntity = EditorSceneWindow->GetScene()->CreateEntity(Object->GetName());
-		FENaiveSceneGraphNode* NewNode = EditorSceneWindow->GetScene()->SceneGraph.GetNodeByEntityID(NewEntity->GetObjectID());
-
-		std::vector<FENaiveSceneGraphNode*> NewNodes = SCENE_MANAGER.ImportSceneAsNode(PrefabScene, EditorSceneWindow->GetScene(), NewNode);
-		if (!NewNodes.empty())
+		std::vector<FEEntity*> AddedEntities = SCENE_MANAGER.InstantiatePrefab(Prefab, EditorSceneWindow->GetScene());
+		if (!AddedEntities.empty())
 		{
-			NewEntity->AddComponent<FEPrefabInstanceComponent>(Prefab);
-			SELECTED.SetSelected(NewEntity);
+			AddedEntities[0]->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
+			SELECTED.SetSelected(AddedEntities[0]);
 			PROJECT_MANAGER.GetCurrent()->SetModified(true);
-
-			NewEntity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
 			return true;
-		}
-		else
-		{
-			EditorSceneWindow->GetScene()->DeleteEntity(NewEntity);
-			return false;
 		}
 	}
 

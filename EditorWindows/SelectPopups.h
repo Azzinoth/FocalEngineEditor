@@ -41,4 +41,4 @@ public:
 	void SetOneObjectSelectonMode(bool NewValue);
 };
 
-#define SELECT_FEOBJECT_POPUP SelectFEObjectPopUp::getInstance()
+#define SELECT_FEOBJECT_POPUP SelectFEObjectPopUp::GetInstance()

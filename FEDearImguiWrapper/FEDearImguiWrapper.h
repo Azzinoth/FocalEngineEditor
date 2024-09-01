@@ -25,6 +25,9 @@ public:
 	void RenderAllWindows() const;
 
 	void UnRegisterWindow(FEImGuiWindow* Window);
+
+	// FIX ME! Here I am using internal ImGui functions. Need to find a way to avoid it.
+	ImGuiWindow* GetCurrentWindowImpl();
 private:
 	SINGLETON_PRIVATE_PART(WindowsManager)
 
@@ -32,7 +35,7 @@ private:
 	std::vector<FEImGuiWindow*> Windows;
 };
 
-#define FE_IMGUI_WINDOW_MANAGER WindowsManager::getInstance()
+#define FE_IMGUI_WINDOW_MANAGER WindowsManager::GetInstance()
 
 class ImGuiModalPopup
 {

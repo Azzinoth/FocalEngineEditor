@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ContentBrowserWindow.h"
+#include "../FEEditorScriptingSystem.h"
 
 class FEEditorInspectorWindow
 {
@@ -15,6 +16,7 @@ class FEEditorInspectorWindow
     void DisplayLightProperties(FEEntity* LightEntity) const;
     void DisplayCameraProperties(FEEntity* CameraEntity) const;
 	void DisplayVirtualUIProperties(FEEntity* VirtualUIEntity) const;
+	void DisplayNativeScriptProperties(FEEntity* NativeScriptEntity) const;
 
     // Terrain settings
     static FEEntity* TerrainToWorkWith;
@@ -76,8 +78,9 @@ class FEEditorInspectorWindow
 	static void AddTerrainComponent(FEEntity* Entity);
 	static void AddInstancedComponent(FEEntity* Entity);
     static void AddVirtualUIComponent(FEEntity* Entity);
+	static void AddNativeScriptComponent(FEEntity* Entity);
 public:
     SINGLETON_PUBLIC_PART(FEEditorInspectorWindow)
 };
 
-#define INSPECTOR_WINDOW FEEditorInspectorWindow::getInstance()
+#define INSPECTOR_WINDOW FEEditorInspectorWindow::GetInstance()

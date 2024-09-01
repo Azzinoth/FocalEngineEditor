@@ -2,14 +2,13 @@
 #include "../FEEditor.h"
 using namespace FocalEngine;
 
-FEEditorContentBrowserWindow* FEEditorContentBrowserWindow::Instance = nullptr;
 FEObject* FEEditorContentBrowserWindow::ItemInFocus = nullptr;
 
 FEEditorContentBrowserWindow::FEEditorContentBrowserWindow()
 {
 	strcpy_s(FilterForResources, "");
 
-	ENGINE.AddMouseButtonCallback(&FEEditorContentBrowserWindow::MouseButtonCallback);
+	INPUT.AddMouseButtonCallback(&FEEditorContentBrowserWindow::MouseButtonCallback);
 }
 
 static FETexture* TempTexture = nullptr;
@@ -197,7 +196,7 @@ void FEEditorContentBrowserWindow::Render()
 				if (ImGui::BeginMenu("Texture"))
 				{
 					if (ImGui::MenuItem("Combine channels..."))
-						CombineChannelsToTexturePopUp::getInstance().Show();
+						CombineChannelsToTexturePopUp::GetInstance().Show();
 
 					ImGui::EndMenu();
 				}
@@ -267,7 +266,7 @@ void FEEditorContentBrowserWindow::Render()
 			{
 				if (ImGui::MenuItem("Edit"))
 				{
-					EditGameModelPopup::getInstance().Show(RESOURCE_MANAGER.GetGameModel(FilteredResources[ItemUnderMouse]->GetObjectID()));
+					EditGameModelPopup::GetInstance().Show(RESOURCE_MANAGER.GetGameModel(FilteredResources[ItemUnderMouse]->GetObjectID()));
 				}
 
 				if (ImGui::MenuItem("Create Prefab out of this Game Model"))
@@ -291,7 +290,7 @@ void FEEditorContentBrowserWindow::Render()
 			{
 				if (ImGui::MenuItem("Edit"))
 				{
-					ShaderEditorWindow::getInstance().Show(RESOURCE_MANAGER.GetShader(FilteredResources[ItemUnderMouse]->GetObjectID()));
+					ShaderEditorWindow::GetInstance().Show(RESOURCE_MANAGER.GetShader(FilteredResources[ItemUnderMouse]->GetObjectID()));
 				}
 			}
 
@@ -301,27 +300,27 @@ void FEEditorContentBrowserWindow::Render()
 				{
 					if (FilteredResources[ItemUnderMouse]->GetType() == FE_NULL)
 					{
-						DeleteDirectoryPopup::getInstance().Show(FilteredResources[ItemUnderMouse]->GetName());
+						DeleteDirectoryPopup::GetInstance().Show(FilteredResources[ItemUnderMouse]->GetName());
 					}
 					else if (FilteredResources[ItemUnderMouse]->GetType() == FE_MESH)
 					{
-						DeleteMeshPopup::getInstance().Show(RESOURCE_MANAGER.GetMesh(FilteredResources[ItemUnderMouse]->GetObjectID()));
+						DeleteMeshPopup::GetInstance().Show(RESOURCE_MANAGER.GetMesh(FilteredResources[ItemUnderMouse]->GetObjectID()));
 					}
 					else if (FilteredResources[ItemUnderMouse]->GetType() == FE_TEXTURE)
 					{
-						DeleteTexturePopup::getInstance().Show(RESOURCE_MANAGER.GetTexture(FilteredResources[ItemUnderMouse]->GetObjectID()));
+						DeleteTexturePopup::GetInstance().Show(RESOURCE_MANAGER.GetTexture(FilteredResources[ItemUnderMouse]->GetObjectID()));
 					}
 					else if (FilteredResources[ItemUnderMouse]->GetType() == FE_MATERIAL)
 					{
-						DeleteMaterialPopup::getInstance().Show(RESOURCE_MANAGER.GetMaterial(FilteredResources[ItemUnderMouse]->GetObjectID()));
+						DeleteMaterialPopup::GetInstance().Show(RESOURCE_MANAGER.GetMaterial(FilteredResources[ItemUnderMouse]->GetObjectID()));
 					}
 					else if (FilteredResources[ItemUnderMouse]->GetType() == FE_GAMEMODEL)
 					{
-						DeleteGameModelPopup::getInstance().Show(RESOURCE_MANAGER.GetGameModel(FilteredResources[ItemUnderMouse]->GetObjectID()));
+						DeleteGameModelPopup::GetInstance().Show(RESOURCE_MANAGER.GetGameModel(FilteredResources[ItemUnderMouse]->GetObjectID()));
 					}
 					else if (FilteredResources[ItemUnderMouse]->GetType() == FE_PREFAB)
 					{
-						DeletePrefabPopup::getInstance().Show(RESOURCE_MANAGER.GetPrefab(FilteredResources[ItemUnderMouse]->GetObjectID()));
+						DeletePrefabPopup::GetInstance().Show(RESOURCE_MANAGER.GetPrefab(FilteredResources[ItemUnderMouse]->GetObjectID()));
 					}
 				}
 			}
@@ -350,7 +349,7 @@ void FEEditorContentBrowserWindow::Render()
 					if (ImGui::MenuItem("Resize"))
 					{
 						FETexture* TextureToResize = RESOURCE_MANAGER.GetTexture(FilteredResources[ItemUnderMouse]->GetObjectID());
-						ResizeTexturePopup::getInstance().Show(TextureToResize);
+						ResizeTexturePopup::GetInstance().Show(TextureToResize);
 					}
 
 					ImGui::EndMenu();
@@ -615,7 +614,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 	int DirectoryIndex = 0;
 	// ************** Drag&Drop END **************
 
-	int IconsPerWindowWidth = (int)(ImGui::GetCurrentContext()->CurrentWindow->Rect().GetWidth() / (ItemIconSize + 8 + 32));
+	int IconsPerWindowWidth = (int)(FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl()->Rect().GetWidth() / (ItemIconSize + 8 + 32));
 	// Possibly window is minimized anyway ImGui::Columns can't take 0 as columns count!
 	if (IconsPerWindowWidth == 0)
 		return;
@@ -704,14 +703,14 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 			if (!bLastFrameRenameEditWasVisiable)
 			{
 				ImGui::SetKeyboardFocusHere(0);
-				ImGui::SetFocusID(ImGui::GetID("##newNameEditor"), ImGui::GetCurrentWindow());
+				ImGui::SetFocusID(ImGui::GetID("##newNameEditor"), FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl());
 				ImGui::SetItemDefaultFocus();
 				bLastFrameRenameEditWasVisiable = true;
 			}
 
 			ImGui::SetNextItemWidth(ItemIconSize + 8.0f + 8.0f);
 			if (ImGui::InputText("##newNameEditor", RenameBuffer, IM_ARRAYSIZE(RenameBuffer), ImGuiInputTextFlags_EnterReturnsTrue) ||
-				ImGui::IsMouseClicked(0) && !ImGui::IsItemHovered() || ImGui::GetFocusID() != ImGui::GetID("##newNameEditor"))
+				ImGui::IsMouseClicked(0) && !ImGui::IsItemHovered() || !ImGui::IsItemFocused())
 			{
 				if (FilteredResources[RenameIndex]->GetType() == FE_NULL)
 				{
@@ -769,7 +768,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 			MeshInfo += "\n";
 			MeshInfo += "Sub material socket: ";
 			MeshInfo += RESOURCE_MANAGER.GetMesh(FilteredResources[ItemUnderMouse]->GetObjectID())->GetMaterialCount() == 2 ? "Yes" : "No";
-			MessagePopUp::getInstance().Show("Mesh info", MeshInfo.c_str());
+			MessagePopUp::GetInstance().Show("Mesh info", MeshInfo.c_str());
 		}
 		else if (FilteredResources[ItemUnderMouse]->GetType() == FE_MATERIAL)
 		{
@@ -777,9 +776,9 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		}
 		else if (FilteredResources[ItemUnderMouse]->GetType() == FE_GAMEMODEL)
 		{
-			if (!bShouldOpenContextMenu && !EditGameModelPopup::getInstance().IsVisible())
+			if (!bShouldOpenContextMenu && !EditGameModelPopup::GetInstance().IsVisible())
 			{
-				EditGameModelPopup::getInstance().Show(RESOURCE_MANAGER.GetGameModel(FilteredResources[ItemUnderMouse]->GetObjectID()));
+				EditGameModelPopup::GetInstance().Show(RESOURCE_MANAGER.GetGameModel(FilteredResources[ItemUnderMouse]->GetObjectID()));
 			}
 		}
 		else if (FilteredResources[ItemUnderMouse]->GetType() == FE_PREFAB)
