@@ -50,7 +50,7 @@ void FEEditorHaloSelectionEffect::UpdateResources(FEScene* Scene)
 	if (CurrentHaloSelectionData == nullptr)
 		return;
 
-	FECameraRenderingData* CameraData = RENDERER.GetCameraRenderingData(CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene()));
+	FECameraRenderingData* CameraData = RENDERER.GetCameraRenderingData(CAMERA_SYSTEM.GetMainCameraEntity(Scene));
 	if (CameraData == nullptr)
 		return;
 

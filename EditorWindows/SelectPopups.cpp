@@ -91,7 +91,7 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 			
 			case FE_PREFAB:
 			{
-				TempList = RESOURCE_MANAGER.GetPrefabList();
+				TempList = RESOURCE_MANAGER.GetPrefabIDList();
 				break;
 			}
 		}

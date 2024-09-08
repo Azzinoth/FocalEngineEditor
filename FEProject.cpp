@@ -535,7 +535,7 @@ void FEProject::SaveProject(bool bFullSave)
 	Root["GameModels"] = GameModelData;
 
 	// Saving Prefabs.
-	std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
+	std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
 	Json::Value PrefabData;
 	for (size_t i = 0; i < PrefabList.size(); i++)
 	{

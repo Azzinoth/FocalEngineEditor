@@ -35,6 +35,9 @@ public:
 
 	void PrepareEditWinow(FEPrefab* Prefab);
 	void Clear();
+
+	bool IsPrefabWindowOpen(FEPrefab* Prefab);
+	bool IsEditorWindowIsPrefabWindow(FEEditorSceneWindow* Window);
 };
 
 #define PREFAB_EDITOR_MANAGER FEPrefabEditorManager::GetInstance()

@@ -18,7 +18,8 @@ public:
 
 	std::vector<FEEntity*> SceneEntitiesUnderMouse;
 	FEEntity* PotentiallySelectedEntity = nullptr;
-	FEEntity* Container = nullptr;
+
+	std::string SelectedEntityID = "";
 	FEEntity* DummyEntity = nullptr;
 
 	bool CheckForSelectionisNeeded = false;

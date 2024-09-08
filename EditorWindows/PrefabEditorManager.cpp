@@ -178,11 +178,10 @@ void FEPrefabEditorManager::PrepareEditWinow(FEPrefab* Prefab)
 		return;
 
 	// We don't want to open the same prefab scene twice
-	if (PrefabWindows.find(Prefab) != PrefabWindows.end())
+	if (IsPrefabWindowOpen(Prefab))
 		return;
 
-	FEScene* CurrentPrefabScene = SCENE_MANAGER.DuplicateScene(Prefab->GetScene(), "Scene: " + Prefab->GetName());
-	CurrentPrefabScene->SetFlag(FESceneFlag::Active | FESceneFlag::EditorMode | FESceneFlag::Renderable, true);
+	FEScene* CurrentPrefabScene = SCENE_MANAGER.DuplicateScene(Prefab->GetScene(), "Scene: " + Prefab->GetName(), nullptr, FESceneFlag::Active | FESceneFlag::EditorMode | FESceneFlag::Renderable);
 
 	// Because by default camera is looking at 0,0,0 we need to place "empty" entity at 0,0,0.
 	// To ensure that scene AABB would include some entity at 0,0,0.
@@ -270,4 +269,23 @@ void FEPrefabEditorManager::ApplyModificationsToPrefabScene(FEPrefabSceneEditorW
 
 	Prefab->SetDirtyFlag(true);
 	PREVIEW_MANAGER.GetPrefabPreview(Prefab->GetObjectID());
+}
+
+bool FEPrefabEditorManager::IsPrefabWindowOpen(FEPrefab* Prefab)
+{
+	return PrefabWindows.find(Prefab) != PrefabWindows.end();
+}
+
+bool FEPrefabEditorManager::IsEditorWindowIsPrefabWindow(FEEditorSceneWindow* Window)
+{
+	auto WindowIterator = PrefabWindows.begin();
+	while (WindowIterator != PrefabWindows.end())
+	{
+		if (WindowIterator->second == Window)
+			return true;
+
+		WindowIterator++;
+	}
+
+	return false;
 }

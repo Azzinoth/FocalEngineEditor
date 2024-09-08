@@ -71,7 +71,7 @@ FEEntity* FEEditorSelectedObject::GetSelected(FEScene* Scene)
 	if (CurrentSelectionData == nullptr)
 		return nullptr;
 
-	return CurrentSelectionData->Container;
+	return Scene->GetEntity(CurrentSelectionData->SelectedEntityID);
 }
 
 void FEEditorSelectedObject::SetSelected(FEEntity* SelectedObject)
@@ -97,10 +97,12 @@ void FEEditorSelectedObject::SetSelected(FEEntity* SelectedObject)
 		}
 	}
 
-	if (CurrentSelectionData->Container != nullptr && CurrentSelectionData->Container->HasComponent<FETerrainComponent>() && CurrentSelectionData->Container != SelectedObject)
-		TERRAIN_SYSTEM.SetBrushMode(CurrentSelectionData->Container, FE_TERRAIN_BRUSH_NONE);
+	FEEntity* CurrentlySelectedEntity = CurrentScene->GetEntity(CurrentSelectionData->SelectedEntityID);
 
-	CurrentSelectionData->Container = SelectedObject;
+	if (CurrentlySelectedEntity != nullptr && CurrentlySelectedEntity->HasComponent<FETerrainComponent>() && CurrentlySelectedEntity != SelectedObject)
+		TERRAIN_SYSTEM.SetBrushMode(CurrentlySelectedEntity, FE_TERRAIN_BRUSH_NONE);
+
+	CurrentSelectionData->SelectedEntityID = SelectedObject->GetObjectID();
 	if (OnUpdateFunction != nullptr)
 		OnUpdateFunction(CurrentScene);
 }
@@ -114,13 +116,14 @@ void FEEditorSelectedObject::Clear(FEScene* Scene)
 	if (CurrentSelectionData == nullptr)
 		return;
 
-	if (CurrentSelectionData->InstancedSubObjectIndexSelected != -1 && CurrentSelectionData->Container->HasComponent<FEInstancedComponent>())
+	FEEntity* CurrentlySelectedEntity = Scene->GetEntity(CurrentSelectionData->SelectedEntityID);
+	if (CurrentSelectionData->InstancedSubObjectIndexSelected != -1 && CurrentlySelectedEntity->HasComponent<FEInstancedComponent>())
 	{
-		INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(CurrentSelectionData->Container, false);
+		INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(CurrentlySelectedEntity, false);
 	}
 
 	CurrentSelectionData->InstancedSubObjectIndexSelected = -1;
-	CurrentSelectionData->Container = nullptr;
+	CurrentSelectionData->SelectedEntityID = "";
 
 	if (!SCENE_MANAGER.GetScenesByFlagMask(FESceneFlag::Active).empty())
 		if (OnUpdateFunction != nullptr)
@@ -575,8 +578,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT));
 
-		FEEntity* SelectedEntity = CurrentSelectionData->Container;
-
+		FEEntity* SelectedEntity = CurrentScene->GetEntity(CurrentSelectionData->SelectedEntityID);
 		if (SelectedEntity == nullptr)
 		{
 			HaloSelectionData->HaloObjectsFB->UnBind();
@@ -651,19 +653,20 @@ void FEEditorSelectedObject::SetSelectedByIndex(const size_t Index, FEScene* Sce
 	if (Index < 0 || Index >= CurrentSelectionData->SceneEntitiesUnderMouse.size())
 		return;
 
-	if (CurrentSelectionData->Container != nullptr)
+	FEEntity* CurrentlySelectedEntity = Scene->GetEntity(CurrentSelectionData->SelectedEntityID);
+	if (CurrentlySelectedEntity != nullptr)
 	{
-		if (CurrentSelectionData->Container->HasComponent<FEInstancedComponent>())
+		if (CurrentlySelectedEntity->HasComponent<FEInstancedComponent>())
 		{
-			if (CurrentSelectionData->SceneEntitiesUnderMouse[Index]->GetObjectID() != CurrentSelectionData->Container->GetObjectID())
+			if (CurrentSelectionData->SceneEntitiesUnderMouse[Index]->GetObjectID() != CurrentlySelectedEntity->GetObjectID())
 			{
-				INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(CurrentSelectionData->Container, false);
+				INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(CurrentlySelectedEntity, false);
 				CurrentSelectionData->InstancedSubObjectIndexSelected = -1;
 			}
 		}
 	}
 
-	CurrentSelectionData->Container = CurrentSelectionData->SceneEntitiesUnderMouse[Index];
+	CurrentSelectionData->SelectedEntityID = CurrentSelectionData->SceneEntitiesUnderMouse[Index]->GetObjectID();
 	if (OnUpdateFunction != nullptr)
 		OnUpdateFunction(Scene);
 }

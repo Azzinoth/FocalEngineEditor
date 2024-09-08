@@ -76,10 +76,10 @@ void FEEditor::MouseButtonCallback(const int Button, const int Action, int Mods)
 			EDITOR.EditorSceneWindows[i]->bWindowHovered = ImGui::GetCurrentContext()->HoveredWindow->Name == EDITOR.EditorSceneWindows[i]->GetWindow()->Name;
 
 		FEEntity* CurrentMainCamera = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.EditorSceneWindows[i]->Scene);
-		
+
 		if (ImGui::GetIO().WantCaptureMouse && !EDITOR.EditorSceneWindows[i]->bWindowHovered)
 		{
-			if (EDITOR.EditorSceneWindows[i]->Scene != nullptr)
+			if (EDITOR.EditorSceneWindows[i]->Scene != nullptr && CurrentMainCamera != nullptr)
 			{
 				if (CurrentMainCamera != nullptr)
 					CurrentMainCamera->GetComponent<FECameraComponent>().SetActive(false);
@@ -90,11 +90,13 @@ void FEEditor::MouseButtonCallback(const int Button, const int Action, int Mods)
 
 		if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_PRESS)
 		{
-			CurrentMainCamera->GetComponent<FECameraComponent>().SetActive(true);
+			if (CurrentMainCamera != nullptr)
+				CurrentMainCamera->GetComponent<FECameraComponent>().SetActive(true);
 		}
 		else if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_RELEASE)
 		{
-			CurrentMainCamera->GetComponent<FECameraComponent>().SetActive(false);
+			if (CurrentMainCamera != nullptr)
+				CurrentMainCamera->GetComponent<FECameraComponent>().SetActive(false);
 		}
 
 		if (Button == GLFW_MOUSE_BUTTON_1 && Action == GLFW_PRESS)
@@ -226,7 +228,6 @@ void FEEditor::InitializeResources()
 	{
 		FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCameraEntity(PROJECT_MANAGER.GetCurrent()->ProjectScene);
 		MainCamera->GetComponent<FECameraComponent>().SetActive(false);
-		//CAMERA_SYSTEM.SetIsIndividualInputActive(MainCamera, false);
 	}
 	PROJECT_MANAGER.InitializeResources();
 	PREVIEW_MANAGER.InitializeResources();
@@ -430,13 +431,40 @@ void FEEditor::Render()
 		}
 		ImGui::PopStyleVar();
 
+		bool bFocusedSceneCouldBeUsedForGameMode = false;
+		if (EDITOR.GetFocusedScene() != nullptr)
+		{
+			FEEditorSceneWindow* SceneWindow = GetEditorSceneWindow(EDITOR.GetFocusedScene()->GetObjectID());
+			// Focused scene could be prefab scene
+			if (!PREFAB_EDITOR_MANAGER.IsEditorWindowIsPrefabWindow(SceneWindow))
+				bFocusedSceneCouldBeUsedForGameMode = true;
+		}
+
+
 		std::string ButtonText = "Run game mode";
+		
 		if (EDITOR.IsInGameMode())
+		{
 			ButtonText = "Exit game mode";
+		}
+		else
+		{
+			if (!bFocusedSceneCouldBeUsedForGameMode)
+			{
+				ButtonText = "Can not run game mode (focused scene is prefab scene).";
+			}
+		}
+
+		if (!bFocusedSceneCouldBeUsedForGameMode)
+			ImGui::BeginDisabled();
+
 		if (ImGui::Button(ButtonText.c_str(), ImVec2(220, 0)))
 		{
 			EDITOR.SetGameMode(!EDITOR.IsInGameMode());
 		}
+
+		if (!bFocusedSceneCouldBeUsedForGameMode)
+			ImGui::EndDisabled();
 
 		for (size_t i = 0; i < EditorSceneWindows.size(); i++)
 		{
@@ -824,9 +852,10 @@ bool FEEditor::DuplicateScenesForGameMode()
 		return false;
 	}
 
+	// Here we are setting flag right away, because we want to make sure that scripts are started.
 	FEScene* GameModeScene = SCENE_MANAGER.DuplicateScene(EDITOR.GetFocusedScene()->GetObjectID(), "GameMode", [](FEEntity* EntityToCheck) {
 		return !(EntityToCheck->GetTag() == EDITOR_RESOURCE_TAG);
-	});
+	}, FESceneFlag::Active | FESceneFlag::GameMode | FESceneFlag::Renderable);
 
 	if (GameModeScene == nullptr)
 	{
@@ -835,10 +864,6 @@ bool FEEditor::DuplicateScenesForGameMode()
 	}
 
 	ParentIDToScenesInGameMode[EDITOR.GetFocusedScene()->GetObjectID()] = GameModeScene;
-	GameModeScene->SetFlag(FESceneFlag::EditorMode, false);
-	GameModeScene->SetFlag(FESceneFlag::Active, true);
-	GameModeScene->SetFlag(FESceneFlag::Renderable, true);
-	GameModeScene->SetFlag(FESceneFlag::GameMode, true);
 
 	EDITOR.AddEditorScene(GameModeScene, false);
 

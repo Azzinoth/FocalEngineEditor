@@ -1040,10 +1040,10 @@ void FEEditorInspectorWindow::Render()
 		if (ImGui::CollapsingHeader("Tag", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			FETagComponent& TagComponent = EntitySelected->GetComponent<FETagComponent>();
-			char Buffer[256];
-			memset(Buffer, 0, 256);
+			char Buffer[1024];
+			memset(Buffer, 0, 1024);
 			strcpy_s(Buffer, TagComponent.GetTag().c_str());
-			if (ImGui::InputText("##Tag Edit", Buffer, 256))
+			if (ImGui::InputText("##Tag Edit", Buffer, 1024))
 			{
 				std::string NewTag = Buffer;
 				TagComponent.SetTag(NewTag);
@@ -2106,6 +2106,156 @@ void FEEditorInspectorWindow::AddNativeScriptComponent(FEEntity* Entity)
 	Entity->AddComponent<FENativeScriptComponent>();
 }
 
+// TO-DO: Make it more general with more templated magic.
+template<typename T>
+void HandleScriptVariable(FENativeScriptComponent& Component, const std::string VariableName)
+{
+	T Value;
+	if (Component.GetVariableValue(VariableName, Value))
+	{
+		if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>)
+		{
+			if (ImGui::InputScalar(VariableName.c_str(), ImGuiDataType_Float, &Value))
+				Component.SetVariableValue(VariableName, Value);
+		}
+		else if constexpr (std::is_same_v<T, int>)
+		{
+			if (ImGui::InputInt(VariableName.c_str(), &Value))
+				Component.SetVariableValue(VariableName, Value);
+		}
+		else if constexpr (std::is_same_v<T, bool>)
+		{
+			if (ImGui::Checkbox(VariableName.c_str(), &Value))
+				Component.SetVariableValue(VariableName, Value);
+		}
+		else if constexpr (std::is_same_v<T, std::string>)
+		{
+			char Buffer[1024];
+			strcpy_s(Buffer, sizeof(Buffer), Value.c_str());
+			if (ImGui::InputText(VariableName.c_str(), Buffer, sizeof(Buffer)))
+			{
+				Value = Buffer;
+				Component.SetVariableValue(VariableName, Value);
+			}
+		}
+		else if constexpr (std::is_same_v<T, glm::vec2> || std::is_same_v<T, glm::vec3> || std::is_same_v<T, glm::vec4>)
+		{
+			int VectorCardinality = std::is_same_v<T, glm::vec2> ? 2 : std::is_same_v<T, glm::vec3> ? 3 : 4;
+			if (ImGui::InputScalarN(VariableName.c_str(), ImGuiDataType_Float, glm::value_ptr(Value), VectorCardinality))
+				Component.SetVariableValue(VariableName, Value);
+		}
+		else if constexpr (std::is_same_v<T, FEPrefab*>)
+		{
+			std::string PrefabName = "";
+			if (Value != nullptr)
+				PrefabName = Value->GetName();
+			if (ImGui::BeginCombo(VariableName.c_str(), PrefabName.c_str()))
+			{
+				std::vector<std::string> PrefabIDList = RESOURCE_MANAGER.GetPrefabIDList();
+				for (size_t i = 0; i < PrefabIDList.size(); i++)
+				{
+					FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabIDList[i]);
+					bool bIsSelected = PrefabName == CurrentPrefab->GetName();
+					if (ImGui::Selectable(CurrentPrefab->GetName().c_str(), bIsSelected))
+					{
+						Value = RESOURCE_MANAGER.GetPrefab(PrefabIDList[i]);
+						Component.SetVariableValue(VariableName, Value);
+					}
+
+					if (bIsSelected)
+						ImGui::SetItemDefaultFocus();
+				}
+
+				ImGui::EndCombo();
+			}
+		}
+	}
+}
+
+// TO-DO: Make it more general with more templated magic.
+template<typename T>
+void HandleScriptArrayVariable(FENativeScriptComponent& Component, const std::string VariableName)
+{
+	std::vector<T> Value;
+	if (Component.GetVariableValue(VariableName, Value))
+	{
+		for (size_t i = 0; i < Value.size(); i++)
+		{
+			ImGui::Text((VariableName + "[" + std::to_string(i) + "]").c_str());
+			ImGui::SameLine();
+
+			std::string ElementName = "##" + VariableName + "[" + std::to_string(i) + "]";
+			if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>)
+			{
+				if (ImGui::InputScalar(ElementName.c_str(), ImGuiDataType_Float, &Value[i]))
+					Component.SetVariableValue(VariableName, Value);
+			}
+			else if constexpr (std::is_same_v<T, int>)
+			{
+				if (ImGui::InputInt(ElementName.c_str(), &Value[i]))
+					Component.SetVariableValue(VariableName, Value);
+			}
+			else if constexpr (std::is_same_v<T, bool>)
+			{
+				// std::vector<bool> is a special case.
+				bool bTemporaryValue = Value[i];
+				if (ImGui::Checkbox(ElementName.c_str(), &bTemporaryValue))
+				{
+					Value[i] = bTemporaryValue;
+					Component.SetVariableValue(VariableName, Value);
+				}
+			}
+			else if constexpr (std::is_same_v<T, std::string>)
+			{
+				char Buffer[1024];
+				strcpy_s(Buffer, sizeof(Buffer), Value[i].c_str());
+				if (ImGui::InputText(ElementName.c_str(), Buffer, sizeof(Buffer)))
+				{
+					Value[i] = Buffer;
+					Component.SetVariableValue(VariableName, Value);
+				}
+			}
+			else if constexpr (std::is_same_v<T, glm::vec2> || std::is_same_v<T, glm::vec3> || std::is_same_v<T, glm::vec4>)
+			{
+				int VectorCardinality = std::is_same_v<T, glm::vec2> ? 2 : std::is_same_v<T, glm::vec3> ? 3 : 4;
+				if (ImGui::InputScalarN(ElementName.c_str(), ImGuiDataType_Float, glm::value_ptr(Value[i]), VectorCardinality))
+					Component.SetVariableValue(VariableName, Value);
+			}
+			else if constexpr (std::is_same_v<T, FEPrefab*>)
+			{
+				std::string PrefabName = "";
+				if (Value[i] != nullptr)
+					PrefabName = Value[i]->GetName();
+				if (ImGui::BeginCombo((VariableName + "[" + std::to_string(i) + "]").c_str(), PrefabName.c_str()))
+				{
+					std::vector<std::string> PrefabIDList = RESOURCE_MANAGER.GetPrefabIDList();
+					for (size_t j = 0; j < PrefabIDList.size(); j++)
+					{
+						FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabIDList[j]);
+						bool bIsSelected = PrefabName == CurrentPrefab->GetName();
+						if (ImGui::Selectable(CurrentPrefab->GetName().c_str(), bIsSelected))
+						{
+							Value[i] = RESOURCE_MANAGER.GetPrefab(PrefabIDList[j]);
+							Component.SetVariableValue(VariableName, Value);
+						}
+
+						if (bIsSelected)
+							ImGui::SetItemDefaultFocus();
+					}
+
+					ImGui::EndCombo();
+				}
+			}
+		}
+
+		if (ImGui::Button(("Add##" + VariableName).c_str()))
+		{
+			Value.push_back(T());
+			Component.SetVariableValue(VariableName, Value);
+		}
+	}
+}
+
 void FEEditorInspectorWindow::DisplayNativeScriptProperties(FEEntity* NativeScriptEntity) const
 {
 	FENativeScriptComponent& NativeScriptComponent = NativeScriptEntity->GetComponent<FENativeScriptComponent>();
@@ -2117,7 +2267,7 @@ void FEEditorInspectorWindow::DisplayNativeScriptProperties(FEEntity* NativeScri
 		for (size_t i = 0; i < ModuleList.size(); i++)
 		{
 			ImGui::Text(("Module ID: " + ModuleList[i]).c_str());
-			ImGui::Text(("DLL Module ID: " + NATIVE_SCRIPT_SYSTEM.GetDLLMoudleIDByNativeScriptModuleID(ModuleList[i])).c_str());
+			ImGui::Text(("DLL Module ID: " + NATIVE_SCRIPT_SYSTEM.GetAssociatedDLLID(ModuleList[i])).c_str());
 
 			ImGui::Text("Script list: ");
 			std::vector<std::string> ScriptList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleScriptNameList(ModuleList[i]);
@@ -2139,7 +2289,7 @@ void FEEditorInspectorWindow::DisplayNativeScriptProperties(FEEntity* NativeScri
 
 		// Showing general information.
 		ImGui::Text(("Module: " + ModuleID).c_str());
-		ImGui::Text(("DLL Module ID: " + NATIVE_SCRIPT_SYSTEM.GetDLLMoudleIDByNativeScriptModuleID(ModuleID)).c_str());
+		ImGui::Text(("DLL Module ID: " + NATIVE_SCRIPT_SYSTEM.GetAssociatedDLLID(ModuleID)).c_str());
 		ImGui::Text(("Script name: " + ScriptData->Name).c_str());
 		ImGui::Text((std::string("Run in editor: ") + std::string(ScriptData->bRunInEditor ? "Yes" : "No")).c_str());
 
@@ -2150,68 +2300,55 @@ void FEEditorInspectorWindow::DisplayNativeScriptProperties(FEEntity* NativeScri
 		{
 			std::string VariableName = VariablesIterator->first;
 			std::string VariableType = VariablesIterator->second.Type;
-		
-			std::any VariableValue = VariablesIterator->second.Getter(NativeScriptComponent.GetCoreInstance());
-			if (VariableType == "int")
-			{
-				int Value = std::any_cast<int>(VariableValue);
-				ImGui::DragInt(VariableName.c_str(), &Value);
-				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
-			}
-			else if (VariableType == "float")
-			{
-				float Value = std::any_cast<float>(VariableValue);
-				ImGui::DragFloat(VariableName.c_str(), &Value);
-				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
-			}
-			else if (VariableType == "double")
-			{
-				double Value = std::any_cast<double>(VariableValue);
-				ImGui::DragFloat(VariableName.c_str(), (float*)&Value);
-				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
-			}
-			else if (VariableType == "bool")
-			{
-				bool Value = std::any_cast<bool>(VariableValue);
-				ImGui::Checkbox(VariableName.c_str(), &Value);
-				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
-			}
-			else if (VariableType == "glm::vec2")
-			{
-				glm::vec2 Value = std::any_cast<glm::vec2>(VariableValue);
-				ImGui::DragFloat2(VariableName.c_str(), &Value[0]);
-				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
-			}
-			else if (VariableType == "glm::vec3")
-			{
-				glm::vec3 Value = std::any_cast<glm::vec3>(VariableValue);
-				ImGui::DragFloat3(VariableName.c_str(), &Value[0]);
-				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
-			}
-			else if (VariableType == "glm::vec4")
-			{
-				glm::vec4 Value = std::any_cast<glm::vec4>(VariableValue);
-				ImGui::DragFloat4(VariableName.c_str(), &Value[0]);
-				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
-			}
-			else if (VariableType == "glm::quat")
-			{
-				glm::quat Value = std::any_cast<glm::quat>(VariableValue);
-				ImGui::DragFloat4(VariableName.c_str(), &Value[0]);
-				VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
-			}
-			else if (VariableType == "std::string")
-			{
-				std::string Value = std::any_cast<std::string>(VariableValue);
 
-				char Buffer[1024];
-				memset(Buffer, 0, 1024);
-				strcpy_s(Buffer, Value.c_str());
-				if (ImGui::InputText(("##String_Variable_" + VariableName).c_str(), Buffer, 1024))
-				{
-					Value = Buffer;
-					VariablesIterator->second.Setter(NativeScriptComponent.GetCoreInstance(), Value);
-				}
+			// TO-DO: Make it more general with more templated magic.
+			if (VariableType.find("vector<") != std::string::npos || VariableType.find("std::vector<") != std::string::npos)
+			{
+				if (VariableType.find("float>") != std::string::npos) HandleScriptArrayVariable<float>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("int>") != std::string::npos) HandleScriptArrayVariable<int>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("bool>") != std::string::npos) HandleScriptArrayVariable<bool>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("std::string>") != std::string::npos) HandleScriptArrayVariable<std::string>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("glm::vec2>") != std::string::npos) HandleScriptArrayVariable<glm::vec2>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("glm::vec3>") != std::string::npos) HandleScriptArrayVariable<glm::vec3>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("glm::vec4>") != std::string::npos) HandleScriptArrayVariable<glm::vec4>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("FEShader*>") != std::string::npos) HandleScriptArrayVariable<FEShader*>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("FEMesh*>") != std::string::npos) HandleScriptArrayVariable<FEMesh*>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("FETexture*>") != std::string::npos) HandleScriptArrayVariable<FETexture*>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("FEMaterial*>") != std::string::npos) HandleScriptArrayVariable<FEMaterial*>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("FEGameModel*>") != std::string::npos) HandleScriptArrayVariable<FEGameModel*>(NativeScriptComponent, VariableName);
+				// TO-DO: Think how to make it work with enitity. Right now it is not consistent between editor and game mode scenes.
+				//else if (VariableType.find("FEEntity*>") != std::string::npos) HandleScriptArrayVariable<FEEntity*>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("FEFramebuffer*>") != std::string::npos) HandleScriptArrayVariable<FEFramebuffer*>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("FEPostProcess*>") != std::string::npos) HandleScriptArrayVariable<FEPostProcess*>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("FEPrefab*>") != std::string::npos) HandleScriptArrayVariable<FEPrefab*>(NativeScriptComponent, VariableName);
+				// TO-DO: Check if it is working.
+				else if (VariableType.find("FEScene*>") != std::string::npos) HandleScriptArrayVariable<FEScene*>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("FEAssetPackage*>") != std::string::npos) HandleScriptArrayVariable<FEAssetPackage*>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("FENativeScriptModule*>") != std::string::npos) HandleScriptArrayVariable<FENativeScriptModule*>(NativeScriptComponent, VariableName);
+			}
+			else
+			{
+				if (VariableType == "float") HandleScriptVariable<float>(NativeScriptComponent, VariableName);
+				else if (VariableType == "int") HandleScriptVariable<int>(NativeScriptComponent, VariableName);
+				else if (VariableType == "bool") HandleScriptVariable<bool>(NativeScriptComponent, VariableName);
+				else if (VariableType == "std::string") HandleScriptVariable<std::string>(NativeScriptComponent, VariableName);
+				else if (VariableType == "glm::vec2") HandleScriptVariable<glm::vec2>(NativeScriptComponent, VariableName);
+				else if (VariableType == "glm::vec3") HandleScriptVariable<glm::vec3>(NativeScriptComponent, VariableName);
+				else if (VariableType == "glm::vec4") HandleScriptVariable<glm::vec4>(NativeScriptComponent, VariableName);
+				else if (VariableType == "FEShader*") HandleScriptVariable<FEShader*>(NativeScriptComponent, VariableName);
+				else if (VariableType == "FEMesh*") HandleScriptVariable<FEMesh*>(NativeScriptComponent, VariableName);
+				else if (VariableType == "FETexture*") HandleScriptVariable<FETexture*>(NativeScriptComponent, VariableName);
+				else if (VariableType == "FEMaterial*") HandleScriptVariable<FEMaterial*>(NativeScriptComponent, VariableName);
+				else if (VariableType == "FEGameModel*") HandleScriptVariable<FEGameModel*>(NativeScriptComponent, VariableName);
+				// TO-DO: Think how to make it work with enitity. Right now it is not consistent between editor and game mode scenes.
+				//else if (VariableType == "FEEntity*") HandleScriptVariable<FEEntity*>(NativeScriptComponent, VariableName);
+				else if (VariableType == "FEFramebuffer*") HandleScriptVariable<FEFramebuffer*>(NativeScriptComponent, VariableName);
+				else if (VariableType == "FEPostProcess*") HandleScriptVariable<FEPostProcess*>(NativeScriptComponent, VariableName);
+				else if (VariableType == "FEPrefab*") HandleScriptVariable<FEPrefab*>(NativeScriptComponent, VariableName);
+				// TO-DO: Check if it is working.
+				else if (VariableType == "FEScene*") HandleScriptVariable<FEScene*>(NativeScriptComponent, VariableName);
+				else if (VariableType == "FEAssetPackage*") HandleScriptVariable<FEAssetPackage*>(NativeScriptComponent, VariableName);
+				else if (VariableType == "FENativeScriptModule*") HandleScriptVariable<FENativeScriptModule*>(NativeScriptComponent, VariableName);
 			}
 
 			VariablesIterator++;

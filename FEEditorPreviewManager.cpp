@@ -205,7 +205,7 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 	}
 
 	// Looking for all prefabs that uses this material to also update them.
-	const std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
+	const std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
 	for (size_t i = 0; i < PrefabList.size(); i++)
 	{
 		FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[i]);
@@ -231,7 +231,7 @@ FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string Material
 				CreateGameModelPreview(CurrentGameModel->GetObjectID());
 
 				// If some Prefab uses this game model we should also update it's preview.
-				std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
+				std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
 				for (size_t j = 0; j < PrefabList.size(); j++)
 				{
 					FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[j]);
@@ -331,6 +331,12 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 
 FETexture* FEEditorPreviewManager::GetGameModelPreview(const std::string GameModelID)
 {
+	if (RESOURCE_MANAGER.GetGameModel(GameModelID) == nullptr)
+	{
+		LOG.Add("FEEditorPreviewManager::GetGameModelPreview could not find game model with ID: " + GameModelID, "FE_LOG_RENDERING", FE_LOG_ERROR);
+		return RESOURCE_MANAGER.NoTexture;
+	}
+
 	// if game model's dirty flag is set we need to update preview
 	if (RESOURCE_MANAGER.GetGameModel(GameModelID)->IsDirty())
 	{
@@ -375,7 +381,7 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 	if (Prefab == nullptr || Prefab->GetScene() == nullptr)
 		return;
 
-	FEScene* CurrentPrefabScene = SCENE_MANAGER.DuplicateScene(Prefab->GetScene(), "Scene: " + Prefab->GetName());
+	FEScene* CurrentPrefabScene = SCENE_MANAGER.DuplicateScene(Prefab->GetScene(), "Scene: " + Prefab->GetName(), nullptr, FESceneFlag::Active);
 
 	// Because by default camera is looking at 0,0,0 we need to place "empty" entity at 0,0,0.
 	// To ensure that scene AABB would include some entity at 0,0,0.
