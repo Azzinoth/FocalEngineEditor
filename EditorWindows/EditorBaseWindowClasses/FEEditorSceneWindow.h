@@ -10,14 +10,14 @@ class FEEditorSceneWindow : public FEImGuiWindow
 private:
 	static bool DragAndDropCallBack(FEObject* Object, void** UserData);
 protected:
-	FEEditorSceneWindow(FEScene* Scene, bool bMain = false);
+	FEEditorSceneWindow(FEScene* Scene);
 	~FEEditorSceneWindow();
 	
 	 FEScene* Scene = nullptr;
+	 std::string SceneID = "";
 	 DragAndDropTarget* SceneWindowTarget = nullptr;
 	 
 	 bool bJustAdded = true;
-	 bool bMain = false;
 	 bool bWindowHovered = false;
 
 	 bool bSelfContained = true;

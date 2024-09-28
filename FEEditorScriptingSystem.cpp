@@ -12,46 +12,77 @@ FEEditorScriptingSystem::~FEEditorScriptingSystem()
 
 void FEEditorScriptingSystem::Update()
 {
-	std::string StartOfPath = "D:/Script__09_03_2024/Debug/";
-	//std::string StartOfPath = "C:/Users/kberegovyi/Downloads/Script__09_02_2024/Debug/";
+	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+	if (CurrentProject == nullptr)
+		return;
 
-	uint64_t NewWriteTime = FILE_SYSTEM.GetFileLastWriteTime(StartOfPath + "UserScriptTest.dll");
-	if (NewWriteTime != LastWriteTime && NewWriteTime != 0)
+	if (CurrentProject->NativeScriptProject == nullptr)
+		return;
+
+	CurrentProject->NativeScriptProject->Update();
+}
+
+bool FEEditorScriptingSystem::IsCurrentProjectHaveVSProjectInitialized()
+{
+	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+	if (CurrentProject == nullptr)
 	{
-		// FIX ME! It is called 2 times.
-		uint64_t Differece = NewWriteTime >= LastWriteTime ? NewWriteTime - LastWriteTime : LastWriteTime - NewWriteTime;
-		LastWriteTime = NewWriteTime;
-
-		if (Differece > 1'000'000)
-		{
-			//std::string NewWriteTimeStr = TIME.NanosecondTimeStampToDate(FILE_SYSTEM.GetFileLastWriteTime(StartOfPath + "UserScriptTest.dll"));
-			//std::string OldWriteTimeStr = TIME.NanosecondTimeStampToDate(LastWriteTime);
-
-			LastWriteTime = NewWriteTime;
-
-			if (!FILE_SYSTEM.DoesDirectoryExist(FILE_SYSTEM.GetCurrentWorkingPath() + "/NativeScriptsTemp"))
-				FILE_SYSTEM.CreateDirectory(FILE_SYSTEM.GetCurrentWorkingPath() + "/NativeScriptsTemp");
-
-			FILE_SYSTEM.WaitForFileAccess(StartOfPath + "UserScriptTest.dll", 2000);
-			FILE_SYSTEM.WaitForFileAccess(StartOfPath + "UserScriptTest.pdb", 2000);
-
-			FENativeScriptModule* NewNativeScriptModule = RESOURCE_MANAGER.CreateNativeScriptModule(StartOfPath + "UserScriptTest.dll", StartOfPath + "UserScriptTest.pdb");
-			if (NewNativeScriptModule == nullptr)
-			{
-				LOG.Add("FEEditorScriptingSystem::Update: Error creating native script module after project files update", "FE_SCRIPT_SYSTEM", FE_LOG_ERROR);
-				return;
-			}
-			
-			if (ExternalEditorActiveModule != nullptr)
-			{
-				NATIVE_SCRIPT_SYSTEM.UpdateNativeScriptModule(ExternalEditorActiveModule->GetObjectID(), NewNativeScriptModule->GetObjectID());
-			}
-			else
-			{
-				NATIVE_SCRIPT_SYSTEM.ActivateNativeScriptModule(NewNativeScriptModule);
-			}
-
-			ExternalEditorActiveModule = NewNativeScriptModule;
-		}
+		LOG.Add("FEEditorScriptingSystem::IsCurrentProjectHaveVSProjectInitialized: Current project is nullptr", "FE_EDITOR_SCRIPT_SYSTEM", FE_LOG_WARNING);
+		return false;
 	}
+
+	std::string ProjectPath = CurrentProject->GetProjectFolder();
+	if (ProjectPath.empty())
+	{
+		LOG.Add("FEEditorScriptingSystem::IsCurrentProjectHaveVSProjectInitialized: Project path is empty", "FE_EDITOR_SCRIPT_SYSTEM", FE_LOG_WARNING);
+		return false;
+	}
+
+	if (CurrentProject->NativeScriptProject == nullptr)
+	{
+		LOG.Add("FEEditorScriptingSystem::IsCurrentProjectHaveVSProjectInitialized: Native script project data is nullptr", "FE_EDITOR_SCRIPT_SYSTEM", FE_LOG_WARNING);
+		return false;
+	}
+
+	return CurrentProject->NativeScriptProject->IsVSProjectValid();
+}
+
+bool FEEditorScriptingSystem::GenerateNewNativeScriptProject(std::string FirstScriptName)
+{
+	if (FirstScriptName.empty())
+	{
+		LOG.Add("FEEditorScriptingSystem::GenerateNewNativeScriptProject: First script name is empty", "FE_EDITOR_SCRIPT_SYSTEM", FE_LOG_WARNING);
+		return false;
+	}
+
+	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+	if (CurrentProject == nullptr)
+	{
+		LOG.Add("FEEditorScriptingSystem::GenerateNewNativeScriptProject: Current project is nullptr", "FE_EDITOR_SCRIPT_SYSTEM", FE_LOG_WARNING);
+		return false;
+	}
+
+	if (CurrentProject->NativeScriptProject != nullptr)
+	{
+		LOG.Add("FEEditorScriptingSystem::GenerateNewNativeScriptProject: Native script project already exists", "FE_EDITOR_SCRIPT_SYSTEM", FE_LOG_WARNING);
+		return false;
+	}
+
+	// Replace all spaces with underscores.
+	for (size_t i = 0; i < FirstScriptName.size(); i++)
+	{
+		if (FirstScriptName[i] == ' ')
+			FirstScriptName[i] = '_';
+	}
+
+	CurrentProject->NativeScriptProject = new FENativeScriptProject(CurrentProject);
+	if (!CurrentProject->NativeScriptProject->GenerateNewVSProject(FirstScriptName))
+	{
+		LOG.Add("FEEditorScriptingSystem::GenerateNewNativeScriptProject: Error initializing native script project", "FE_EDITOR_SCRIPT_SYSTEM", FE_LOG_ERROR);
+		delete CurrentProject->NativeScriptProject;
+		CurrentProject->NativeScriptProject = nullptr;
+		return false;
+	}
+
+	return true;
 }

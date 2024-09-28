@@ -380,8 +380,9 @@ void EditGameModelPopup::Render()
 	ImGui::Text("Preview of game model:");
 	ImGui::SetCursorPosX(Size.x / 2 - 128 / 2);
 	ImGui::SetCursorPosY(CurrentY + 50);
-	// FIX ME!
-	//ImGui::Image((void*)static_cast<intptr_t>(TempPreview->GetTextureID()), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+	
+	if (TempPreview != nullptr)
+		ImGui::Image((void*)static_cast<intptr_t>(TempPreview->GetTextureID()), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 
 	if (CurrentMode == NO_LOD_MODE)
 	{

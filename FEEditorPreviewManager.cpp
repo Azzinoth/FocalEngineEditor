@@ -294,7 +294,6 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 		GameModelPreviewTextures[GameModelID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
 }
 
-// FIX ME! Should not be needed as now there will be scene for new game model.
 void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel, FETexture** ResultingTexture)
 {
 	if (GameModel == nullptr)
@@ -303,10 +302,6 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 	PreviewGameModel->Mesh = GameModel->Mesh;
 	PreviewGameModel->Material = GameModel->Material;
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
-	//if (*ResultingTexture == nullptr)
-	//	*ResultingTexture = RESOURCE_MANAGER.CreateSameFormatTexture(PreviewFB->GetColorAttachment());
-	//FETexture* TempTexture = PreviewFB->GetColorAttachment();
-	//PreviewFB->SetColorAttachment(*ResultingTexture);
 
 	BeforePreviewActions();
 
@@ -319,7 +314,7 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 	const float YSize = sqrt((max.y - min.y) * (max.y - min.y));
 	const float ZSize = sqrt((max.z - min.z) * (max.z - min.z));
 
-	// invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
+	// Invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
 	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
@@ -327,6 +322,10 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 	RENDERER.Render(PreviewScene);
 
 	AfterPreviewActions();
+
+	FETexture* CameraResult = RENDERER.GetCameraResult(LocalCameraEntity);
+	if (CameraResult != nullptr)
+		*ResultingTexture = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
 }
 
 FETexture* FEEditorPreviewManager::GetGameModelPreview(const std::string GameModelID)

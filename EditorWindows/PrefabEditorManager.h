@@ -38,6 +38,8 @@ public:
 
 	bool IsPrefabWindowOpen(FEPrefab* Prefab);
 	bool IsEditorWindowIsPrefabWindow(FEEditorSceneWindow* Window);
+
+	FEPrefab* GetPrefabFromEditorWindow(FEEditorSceneWindow* Window);
 };
 
 #define PREFAB_EDITOR_MANAGER FEPrefabEditorManager::GetInstance()

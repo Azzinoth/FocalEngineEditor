@@ -100,8 +100,15 @@ file(GLOB Editor_SRC
 	"FEEditorVirtualFileSystem.h"
 	"FEEditorScriptingSystem.cpp"
 	"FEEditorScriptingSystem.h"
-	"FEProject.cpp"
-	"FEProject.h"
+)
+
+file(GLOB ProjectManagment_SRC
+	"SubSystems/ProjectManagment/FEProjectManager.cpp"
+	"SubSystems/ProjectManagment/FEProjectManager.h"
+	"SubSystems/ProjectManagment/FEProject.cpp"
+	"SubSystems/ProjectManagment/FEProject.h"
+	"SubSystems/ProjectManagment/FENativeScriptProject.cpp"
+	"SubSystems/ProjectManagment/FENativeScriptProject.h"
 )
 
 file(GLOB FEDearImguiWrapper_SRC
@@ -188,7 +195,7 @@ add_executable(FocalEngineEditor WIN32
 								 ${Editor_Materials_SRC}
 								 ${VisualNodeSystem_CustomNodes_SRC}
 								 # *************** SUB_SYSTEM ***************
-								 
+								 ${ProjectManagment_SRC}
 								 # *************** THIRD_PARTY ***************
 								 ${textEditor_SRC}
 )
@@ -212,7 +219,7 @@ source_group("Source Files/EditorWindows" FILES ${EditorWindows_SRC})
 source_group("Source Files/Materials" FILES ${Editor_Materials_SRC})
 source_group("Source Files/NodeSystem/CustomNodes" FILES ${VisualNodeSystem_CustomNodes_SRC})
 # *************** SUB_SYSTEM ***************
-
+source_group("Source Files/ProjectManagment" FILES ${ProjectManagment_SRC})
 # *************** THIRD_PARTY ***************
 source_group("Source Files/ThirdParty/textEditor" FILES ${textEditor_SRC})
 

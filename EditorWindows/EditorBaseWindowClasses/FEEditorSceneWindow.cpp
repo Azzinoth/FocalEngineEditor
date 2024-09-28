@@ -1,20 +1,18 @@
 #include "FEEditorSceneWindow.h"
 #include "../../FEEditor.h"
 
-FEEditorSceneWindow::FEEditorSceneWindow(FEScene* Scene, bool bMain)
+FEEditorSceneWindow::FEEditorSceneWindow(FEScene* Scene)
 {
 	if (Scene == nullptr)
 		return;
 
 	this->Scene = Scene;
-	this->bMain = bMain;
+	SceneID = Scene->GetObjectID();
 	Flags = ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
 	std::string WindowName = Scene->GetName();
 	// Window name must be unique.
 	WindowName += "##" + Scene->GetObjectID();
-	if (bMain)
-		WindowName = "Main Scene";
 
 	SetCaption(WindowName);
 	SetBorderSize(0.0f);

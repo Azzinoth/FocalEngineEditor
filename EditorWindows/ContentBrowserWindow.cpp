@@ -48,24 +48,16 @@ static void CreateNewPrefabCallBack(const std::vector<FEObject*> SelectionsResul
 {
 	if (!SelectionsResult.empty() && SelectionsResult[0]->GetType() == FE_GAMEMODEL)
 	{
-		// FIX ME!
 		FEPrefab* NewPrefab = RESOURCE_MANAGER.CreatePrefab();
-
-		if (SelectionsResult.size() > 1)
+		for (int i = 0; i < SelectionsResult.size(); i++)
 		{
-			for (int i = 1; i < SelectionsResult.size(); i++)
+			if (SelectionsResult[i]->GetType() == FE_GAMEMODEL)
 			{
-				// FIX ME! It should be here
-				if (SelectionsResult[i]->GetType() == FE_GAMEMODEL)
-				{
-					//FEGameModel* CurrentGameModel = reinterpret_cast<FEGameModel*>(SelectionsResult[i]);
-					//NewPrefab->GetScene()->CreateEntity();
-
-					//NewPrefab->AddComponent(reinterpret_cast<FEGameModel*>(SelectionsResult[i]));
-				}	
+				FEEntity* NewEntity = NewPrefab->GetScene()->CreateEntity(SelectionsResult[i]->GetName());
+				NewEntity->AddComponent<FEGameModelComponent>(reinterpret_cast<FEGameModel*>(SelectionsResult[i]));
 			}
 		}
-		
+
 		PROJECT_MANAGER.GetCurrent()->SetModified(true);
 		VIRTUAL_FILE_SYSTEM.CreateFile(NewPrefab, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 	}
@@ -271,10 +263,15 @@ void FEEditorContentBrowserWindow::Render()
 
 				if (ImGui::MenuItem("Create Prefab out of this Game Model"))
 				{
-					// FIX ME !
-					/*FEPrefab* NewPrefab = RESOURCE_MANAGER.CreatePrefab(RESOURCE_MANAGER.GetGameModel(FilteredResources[ItemUnderMouse]->GetObjectID()));
-					PROJECT_MANAGER.GetCurrent()->SetModified(true);
-					VIRTUAL_FILE_SYSTEM.CreateFile(NewPrefab, VIRTUAL_FILE_SYSTEM.GetCurrentPath());*/
+					FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(FilteredResources[ItemUnderMouse]->GetObjectID());
+					if (GameModel != nullptr)
+					{
+						FEPrefab* NewPrefab = RESOURCE_MANAGER.CreatePrefab();
+						FEEntity* NewEntity = NewPrefab->GetScene()->CreateEntity(GameModel->GetName());
+						NewEntity->AddComponent<FEGameModelComponent>(GameModel);
+						PROJECT_MANAGER.GetCurrent()->SetModified(true);
+						VIRTUAL_FILE_SYSTEM.CreateFile(NewPrefab, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
+					}
 				}
 			}
 

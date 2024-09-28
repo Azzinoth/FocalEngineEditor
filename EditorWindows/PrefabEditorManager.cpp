@@ -2,7 +2,7 @@
 #include "SceneGraphWindow.h"
 #include "../FEEditor.h"
 
-FEPrefabSceneEditorWindow::FEPrefabSceneEditorWindow(FEScene* Scene) : FEEditorSceneWindow(Scene, false)
+FEPrefabSceneEditorWindow::FEPrefabSceneEditorWindow(FEScene* Scene) : FEEditorSceneWindow(Scene)
 {
 	bSelfContained = false;
 
@@ -24,7 +24,8 @@ FEPrefabSceneEditorWindow::FEPrefabSceneEditorWindow(FEScene* Scene) : FEEditorS
 FEPrefabSceneEditorWindow::~FEPrefabSceneEditorWindow()
 {
 	delete CloseButton;
-	SCENE_MANAGER.DeleteScene(Scene);
+	// Using ID instead of Scene pointer because it's possible that scene was already deleted.
+	SCENE_MANAGER.DeleteScene(SceneID);
 
 	if (!PREFAB_EDITOR_MANAGER.bClearing)
 	{
@@ -182,6 +183,7 @@ void FEPrefabEditorManager::PrepareEditWinow(FEPrefab* Prefab)
 		return;
 
 	FEScene* CurrentPrefabScene = SCENE_MANAGER.DuplicateScene(Prefab->GetScene(), "Scene: " + Prefab->GetName(), nullptr, FESceneFlag::Active | FESceneFlag::EditorMode | FESceneFlag::Renderable);
+	RESOURCE_MANAGER.SetTag(CurrentPrefabScene, EDITOR_RESOURCE_TAG);
 
 	// Because by default camera is looking at 0,0,0 we need to place "empty" entity at 0,0,0.
 	// To ensure that scene AABB would include some entity at 0,0,0.
@@ -288,4 +290,18 @@ bool FEPrefabEditorManager::IsEditorWindowIsPrefabWindow(FEEditorSceneWindow* Wi
 	}
 
 	return false;
+}
+
+FEPrefab* FEPrefabEditorManager::GetPrefabFromEditorWindow(FEEditorSceneWindow* Window)
+{
+	auto WindowIterator = PrefabWindows.begin();
+	while (WindowIterator != PrefabWindows.end())
+	{
+		if (WindowIterator->second == Window)
+			return WindowIterator->first;
+
+		WindowIterator++;
+	}
+
+	return nullptr;
 }

@@ -30,6 +30,14 @@ public:
     std::string GetSceneEntityIDInClipboard();
     void SetSceneEntityIDInClipboard(std::string NewValue);
 
+    void AddEditorScene(FEScene* Scene);
+    void AddCustomEditorScene(FEEditorSceneWindow* SceneWindow);
+    FEEditorSceneWindow* GetEditorSceneWindow(std::string SceneID);
+
+    std::vector<std::string> GetEditorOpenedScenesIDs() const;
+
+    bool SetFocusedScene(FEScene* NewSceneInFocus);
+	bool SetFocusedScene(std::string NewSceneInFocusID);
     FEScene* GetFocusedScene() const;
 
     bool IsInGameMode() const;
@@ -44,9 +52,6 @@ private:
     std::string FocusedEditorSceneID = "";
     ImGuiID DockspaceID = 0;
 
-	FEEditorSceneWindow* GetEditorSceneWindow(std::string SceneID);
-    void AddEditorScene(FEScene* Scene, bool bMain = false);
-    void AddCustomEditorScene(FEEditorSceneWindow* SceneWindow);
     std::vector<FEEditorSceneWindow*> EditorSceneWindows;
 
 	void DeleteScene(std::string SceneID);
@@ -94,7 +99,6 @@ private:
 
     void OnProjectClose();
 
-    void SetFocusedScene(FEScene* NewSceneInFocus);
     void BeforeChangeOfFocusedScene(FEScene* NewSceneInFocus);
 };
 

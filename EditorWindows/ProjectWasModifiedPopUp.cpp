@@ -37,7 +37,7 @@ void ProjectWasModifiedPopUp::Render()
 		if (ImGui::Button("Save", ImVec2(140, 0)))
 		{
 			PROJECT_MANAGER.GetCurrent()->SaveProject();
-			ENGINE.SaveScreenshot((PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + "projectScreenShot.texture").c_str(), PROJECT_MANAGER.GetCurrent()->GetScene());
+			//ENGINE.SaveScreenshot((PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + "projectScreenShot.texture").c_str(), PROJECT_MANAGER.GetCurrent()->GetScene());
 			ObjToWorkWith = nullptr;
 			ImGuiModalPopup::Close();
 			ButtonPressed = true;

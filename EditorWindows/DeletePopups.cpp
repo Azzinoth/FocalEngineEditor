@@ -300,18 +300,20 @@ void DeleteGameModelPopup::Render()
 int DeleteGameModelPopup::TimesGameModelUsed(const FEGameModel* GameModel)
 {
 	int Result = 0;
-	// FIX ME!
-	/*const std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabList();
 
-	for (int i = 0; i < PrefabList.size(); i++)
+	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
+	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[i]);
-		for (int j = 0; j < CurrentPrefab->ComponentsCount(); j++)
+		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneList[i]);
+		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEGameModelComponent>();
+		for (size_t j = 0; j < EntitiesList.size(); j++)
 		{
-			if (CurrentPrefab->GetComponent(j)->GameModel == GameModel)
+			FEEntity* CurrentEntity = CurrentScene->GetEntity(EntitiesList[j]);
+			FEGameModelComponent& GameModelComponent = CurrentEntity->GetComponent<FEGameModelComponent>();
+			if (GameModelComponent.GetGameModel() == GameModel)
 				Result++;
 		}
-	}*/
+	}
 
 	return Result;
 }
@@ -392,15 +394,19 @@ void DeletePrefabPopup::Render()
 int DeletePrefabPopup::TimesPrefabUsed(const FEPrefab* Prefab)
 {
 	int Result = 0;
-	// FIX ME! Prefabs
-	/*const std::vector<std::string> EntitiesList = SCENE.GetEntityList();
-
-	for (size_t i = 0; i < EntitiesList.size(); i++)
+	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
+	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		const FEEntity* CurrentEntity = SCENE.GetEntity(EntitiesList[i]);
-		if (CurrentEntity->Prefab == Prefab)
-			Result++;
-	}*/
+		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneList[i]);
+		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEPrefabInstanceComponent>();
+		for (size_t j = 0; j < EntitiesList.size(); j++)
+		{
+			FEEntity* CurrentEntity = CurrentScene->GetEntity(EntitiesList[j]);
+			FEPrefabInstanceComponent& PrefabInstanceComponent = CurrentEntity->GetComponent<FEPrefabInstanceComponent>();
+			if (PrefabInstanceComponent.GetPrefab() == Prefab)
+				Result++;
+		}
+	}
 
 	return Result;
 }
