@@ -2262,22 +2262,40 @@ void FEEditorInspectorWindow::DisplayNativeScriptProperties(FEEntity* NativeScri
 
 	if (!NativeScriptComponent.IsInitialized())
 	{
-		std::vector<std::string> ModuleList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleIDList();
-
-		for (size_t i = 0; i < ModuleList.size(); i++)
+		if (NativeScriptComponent.IsFailedToLoad())
 		{
-			ImGui::Text(("Module ID: " + ModuleList[i]).c_str());
-			ImGui::Text(("DLL Module ID: " + NATIVE_SCRIPT_SYSTEM.GetAssociatedDLLID(ModuleList[i])).c_str());
+			ImGui::Text("Script failed to load.");
+			FENativeScriptFailedToLoadData* FailedToLoadData = NativeScriptComponent.GetFailedToLoadData();
+			ImGui::Text(("Module ID: " + FailedToLoadData->GetModuleID()).c_str());
+			// And show raw data in multiline text box.
+			Json::Value Data = FailedToLoadData->GetRawData();
+			std::string RawData = Data.toStyledString();
 
-			ImGui::Text("Script list: ");
-			std::vector<std::string> ScriptList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleScriptNameList(ModuleList[i]);
-			for (size_t j = 0; j < ScriptList.size(); j++)
+			static char buffer[10240] = {};
+
+			strncpy_s(buffer, RawData.c_str(), sizeof(buffer) - 1);
+
+			ImGui::InputTextMultiline("##FailedToLoadData", buffer, sizeof(buffer), ImVec2(500, 500), ImGuiInputTextFlags_ReadOnly);
+
+		}
+		else
+		{
+			std::vector<std::string> ModuleList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleIDList();
+
+			for (size_t i = 0; i < ModuleList.size(); i++)
 			{
-				ImGui::Text(ScriptList[j].c_str());
-				ImGui::SameLine();
-				if (ImGui::Button(("Add##" + ModuleList[i] + "_" + ScriptList[j]).c_str()))
+				ImGui::Text(("Module ID: " + ModuleList[i]).c_str());
+
+				ImGui::Text("Script list: ");
+				std::vector<std::string> ScriptList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleScriptNameList(ModuleList[i]);
+				for (size_t j = 0; j < ScriptList.size(); j++)
 				{
-					NATIVE_SCRIPT_SYSTEM.InitializeScriptComponent(NativeScriptEntity, ModuleList[i], ScriptList[j]);
+					ImGui::Text(ScriptList[j].c_str());
+					ImGui::SameLine();
+					if (ImGui::Button(("Add##" + ModuleList[i] + "_" + ScriptList[j]).c_str()))
+					{
+						NATIVE_SCRIPT_SYSTEM.InitializeScriptComponent(NativeScriptEntity, ModuleList[i], ScriptList[j]);
+					}
 				}
 			}
 		}
@@ -2289,7 +2307,6 @@ void FEEditorInspectorWindow::DisplayNativeScriptProperties(FEEntity* NativeScri
 
 		// Showing general information.
 		ImGui::Text(("Module: " + ModuleID).c_str());
-		ImGui::Text(("DLL Module ID: " + NATIVE_SCRIPT_SYSTEM.GetAssociatedDLLID(ModuleID)).c_str());
 		ImGui::Text(("Script name: " + ScriptData->Name).c_str());
 		ImGui::Text((std::string("Run in editor: ") + std::string(ScriptData->bRunInEditor ? "Yes" : "No")).c_str());
 

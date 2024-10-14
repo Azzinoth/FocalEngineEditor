@@ -3,8 +3,6 @@
 #include "../../FEEditorDragAndDropManager.h"
 #include "../../FEEditorVirtualFileSystem.h"
 
-#include "FENativeScriptProject.h"
-
 class FEProject
 {
 	friend class FEProjectManager;
@@ -50,12 +48,8 @@ private:
 	void LoadResources(std::string FilePath);
 	void SaveResourcesTo(std::string FilePath, bool bFullSave = false);
 
-	void LoadNativeScriptProjectData(Json::Value Root);
-
-	FENativeScriptProject* NativeScriptProject = nullptr;
-
 	bool LoadVFSData(std::string FilePath);
-	void GenerateVFSData();
+	void AddMissingVFSData();
 };
 
 #define PROJECTS_FILE_VER 0.05f

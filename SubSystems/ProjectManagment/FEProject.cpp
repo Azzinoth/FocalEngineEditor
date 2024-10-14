@@ -213,7 +213,24 @@ void FEProject::SaveResourcesTo(std::string FilePath, bool bFullSave)
 	}
 	Root["Prefabs"] = PrefabData;
 
-	// Saving scenes.
+	// Saving NativeScriptModules.
+	Json::Value NativeScriptModulesData;
+	std::vector<std::string> NativeScriptModulesList = RESOURCE_MANAGER.GetNativeScriptModuleIDList();
+	for (size_t i = 0; i < NativeScriptModulesList.size(); i++)
+	{
+		FENativeScriptModule* NativeScriptModule = RESOURCE_MANAGER.GetNativeScriptModule(NativeScriptModulesList[i]);
+		if (NativeScriptModule->GetTag() == ENGINE_RESOURCE_TAG ||
+			NativeScriptModule->GetTag() == EDITOR_RESOURCE_TAG)
+			continue;
+
+		NativeScriptModulesData[NativeScriptModule->GetObjectID()]["FEObjectData"] = RESOURCE_MANAGER.SaveFEObjectPart(NativeScriptModule);
+		NativeScriptModulesData[NativeScriptModule->GetObjectID()]["FileName"] = NativeScriptModule->GetObjectID() + ".nativescriptmodule";
+
+		RESOURCE_MANAGER.SaveFENativeScriptModule(NativeScriptModule, GetProjectFolder() + NativeScriptModule->GetObjectID() + ".nativescriptmodule");
+	}
+	Root["NativeScriptModules"] = NativeScriptModulesData;
+
+	// Saving Scenes.
 	std::vector<FEScene*> SceneList = SCENE_MANAGER.GetAllScenes();
 	Json::Value SceneData;
 	for (size_t i = 0; i < SceneList.size(); i++)
@@ -286,9 +303,6 @@ void FEProject::SaveProject(bool bFullSave)
 	Root["Version"] = PROJECTS_FILE_VER;
 	Root["ID"] = ID;
 	Root["Name"] = Name;
-
-	if (NativeScriptProject != nullptr)
-		NativeScriptProject->Save(Root["NativeScriptProject"], ProjectFolder);
 
 	FEScene* SceneForScreenshot = EDITOR.GetFocusedScene();
 	if (SceneForScreenshot != nullptr)
@@ -539,6 +553,17 @@ void FEProject::LoadResources(std::string FilePath)
 		}
 	}
 
+	// Loading NativeScriptModules.
+	std::vector<Json::String> NativeScriptModulesList = Root["NativeScriptModules"].getMemberNames();
+	for (size_t i = 0; i < NativeScriptModulesList.size(); i++)
+	{
+		FENativeScriptModule* LoadedNativeScriptModule = RESOURCE_MANAGER.LoadFENativeScriptModule((ProjectFolder + Root["NativeScriptModules"][NativeScriptModulesList[i]]["FileName"].asCString()).c_str());
+		if (LoadedNativeScriptModule == nullptr)
+			continue;
+		
+		NATIVE_SCRIPT_SYSTEM.ActivateNativeScriptModule(LoadedNativeScriptModule);
+	}
+
 	// Prefabs and Scenes are interconnected so we need to load them in two steps.
 	// Currently Prefabs can not contain other Prefabs or Scenes, if it will change we need to change this code.
 	// First load all prefab scenes.
@@ -595,44 +620,6 @@ void FEProject::LoadResources(std::string FilePath)
 	}
 }
 
-void FEProject::LoadNativeScriptProjectData(Json::Value Root)
-{
-	if (Root.isMember("NativeScriptProject"))
-	{
-		NativeScriptProject = new FENativeScriptProject(this);
-		if (NativeScriptProject->Load(Root["NativeScriptProject"], ProjectFolder))
-		{
-			// Check if VS Project is valid.
-			if (NativeScriptProject->IsVSProjectValid())
-			{
-				NativeScriptProject->GenerateScriptModule();
-			}
-			else
-			{
-				std::string VSProjectPath = ProjectFolder + "NativeScriptProject/";
-				if (FILE_SYSTEM.DoesDirectoryExist(VSProjectPath))
-				{
-					if (!FILE_SYSTEM.DeleteDirectory(VSProjectPath))
-					{
-						LOG.Add("FEProject::LoadNativeScriptProjectData: Failed to delete old Visual Studio project!", "FE_LOG_LOADING", FE_LOG_ERROR);
-						return;
-					}
-				}
-
-				if (NativeScriptProject->RegenerateVSProject())
-				{
-					NativeScriptProject->GenerateScriptModule();
-				}
-				else
-				{
-					LOG.Add("FEProject::LoadNativeScriptProjectData: Failed to regenerate Visual Studio project!", "FE_LOG_LOADING", FE_LOG_ERROR);
-					return;
-				}
-			}
-		}
-	}
-}
-
 void FEProject::LoadProject()
 {
 	std::ifstream ProjectFile;
@@ -660,7 +647,6 @@ void FEProject::LoadProject()
 	ID = Root["ID"].asCString();
 	Name = Root["Name"].asCString();
 
-	LoadNativeScriptProjectData(Root);
 	LoadResources(ProjectFolder + "Resources.txt");
 
 	// After we loaded all resources we can load editor cameras.
@@ -721,10 +707,9 @@ void FEProject::LoadProject()
 	}
 
 	if (!LoadVFSData(ProjectFolder + "VFS.txt"))
-	{
-		LOG.Add("Can't find VIRTUAL_FILE_SYSTEM file in project folder. Creating basic VIRTUAL_FILE_SYSTEM layout.", "FE_LOG_LOADING", FE_LOG_WARNING);
-		GenerateVFSData();
-	}
+		LOG.Add("Can't find VIRTUAL_FILE_SYSTEM file in project folder.", "FE_LOG_LOADING", FE_LOG_WARNING);
+	
+	AddMissingVFSData();
 }
 
 bool FEProject::LoadVFSData(std::string FilePath)
@@ -765,24 +750,25 @@ bool FEProject::LoadVFSData(std::string FilePath)
 	return true;
 }
 
-void FEProject::GenerateVFSData()
+void FEProject::AddMissingVFSData()
 {
-	VIRTUAL_FILE_SYSTEM.CreateDirectory("Shaders", "/");
-
 	std::vector<std::string> ShaderList = RESOURCE_MANAGER.GetShadersList();
 	for (size_t i = 0; i < ShaderList.size(); i++)
 	{
-		if (OBJECT_MANAGER.GetFEObject(ShaderList[i]) == nullptr)
+		if (VIRTUAL_FILE_SYSTEM.DoesFileExistAnywhere(OBJECT_MANAGER.GetFEObject(ShaderList[i])))
 			continue;
+
 		VIRTUAL_FILE_SYSTEM.CreateFile(OBJECT_MANAGER.GetFEObject(ShaderList[i]), "/Shaders");
 	}
 
 	std::vector<std::string> StandardShaderList = RESOURCE_MANAGER.GetEnginePrivateShadersList();
 	for (size_t i = 0; i < StandardShaderList.size(); i++)
 	{
-		if (OBJECT_MANAGER.GetFEObject(StandardShaderList[i]) == nullptr)
+		if (VIRTUAL_FILE_SYSTEM.DoesFileExistAnywhere(OBJECT_MANAGER.GetFEObject(StandardShaderList[i])))
 			continue;
+
 		VIRTUAL_FILE_SYSTEM.CreateFile(OBJECT_MANAGER.GetFEObject(StandardShaderList[i]), "/Shaders");
+		VIRTUAL_FILE_SYSTEM.SetFileReadOnly(true, OBJECT_MANAGER.GetFEObject(StandardShaderList[i]), "/Shaders");
 	}
 
 	std::vector<std::string> OtherResourceList = RESOURCE_MANAGER.GetMeshList();
@@ -792,14 +778,33 @@ void FEProject::GenerateVFSData()
 	OtherResourceList.insert(OtherResourceList.end(), MaterialList.begin(), MaterialList.end());
 	std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
 	OtherResourceList.insert(OtherResourceList.end(), GameModelList.begin(), GameModelList.end());
+	std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
+	OtherResourceList.insert(OtherResourceList.end(), PrefabList.begin(), PrefabList.end());
+	std::vector<std::string> NativeScriptModuleList = RESOURCE_MANAGER.GetNativeScriptModuleIDList();
+	OtherResourceList.insert(OtherResourceList.end(), NativeScriptModuleList.begin(), NativeScriptModuleList.end());
+	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
+	// Filter prefab scenes.
+	for (size_t i = 0; i < SceneList.size(); i++)
+	{
+		FEScene* Scene = SCENE_MANAGER.GetScene(SceneList[i]);
+		if (Scene->GetTag() == PREFAB_SCENE_DESCRIPTION_TAG)
+			continue;
+
+		OtherResourceList.push_back(SceneList[i]);
+	}
 
 	for (size_t i = 0; i < OtherResourceList.size(); i++)
 	{
-		if (OBJECT_MANAGER.GetFEObject(OtherResourceList[i])->GetTag() == ENGINE_RESOURCE_TAG ||
-			OBJECT_MANAGER.GetFEObject(OtherResourceList[i])->GetTag() == EDITOR_RESOURCE_TAG)
+		if (VIRTUAL_FILE_SYSTEM.DoesFileExistAnywhere(OBJECT_MANAGER.GetFEObject(OtherResourceList[i])))
 			continue;
 
 		VIRTUAL_FILE_SYSTEM.CreateFile(OBJECT_MANAGER.GetFEObject(OtherResourceList[i]), "/");
+
+		if (OBJECT_MANAGER.GetFEObject(OtherResourceList[i])->GetTag() == ENGINE_RESOURCE_TAG ||
+			OBJECT_MANAGER.GetFEObject(OtherResourceList[i])->GetTag() == EDITOR_RESOURCE_TAG)
+		{
+			VIRTUAL_FILE_SYSTEM.SetFileReadOnly(true, OBJECT_MANAGER.GetFEObject(OtherResourceList[i]), "/");
+		}
 	}
 }
 

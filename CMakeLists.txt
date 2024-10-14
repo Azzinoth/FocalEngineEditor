@@ -107,8 +107,6 @@ file(GLOB ProjectManagment_SRC
 	"SubSystems/ProjectManagment/FEProjectManager.h"
 	"SubSystems/ProjectManagment/FEProject.cpp"
 	"SubSystems/ProjectManagment/FEProject.h"
-	"SubSystems/ProjectManagment/FENativeScriptProject.cpp"
-	"SubSystems/ProjectManagment/FENativeScriptProject.h"
 )
 
 file(GLOB FEDearImguiWrapper_SRC

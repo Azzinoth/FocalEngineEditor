@@ -292,7 +292,7 @@ void FEProjectManager::CreateNewProject(std::string ProjectName, std::string Pro
 
 	EDITOR.AddEditorScene(NewScene);
 	NewProject->InjectEditorCamera(NewScene);
-	NewProject->GenerateVFSData();
+	NewProject->AddMissingVFSData();
 	NewProject->SaveProject(true);
 
 	CloseCurrentProject();

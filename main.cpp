@@ -57,23 +57,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			bPutThisFrameToTimeline = true;
 		}
 
-		if (PROJECT_MANAGER.GetCurrent() != nullptr)
-		{
-			bool bIsVSProjectPresent = EDITOR_SCRIPTING_SYSTEM.IsCurrentProjectHaveVSProjectInitialized();
-			std::string Text = "Is VS project present: ";
-			Text += bIsVSProjectPresent ? "true" : "false";
-			ImGui::Text(Text.c_str());
-
-			if (!bIsVSProjectPresent)
-			{
-				if (ImGui::Button("Initialize VS Project"))
-				{
-					EDITOR_SCRIPTING_SYSTEM.GenerateNewNativeScriptProject("FirstScript");
-				}
-			}
-		}
-		
-
 		//ImGui::ShowDemoWindow();
 		EDITOR.Render();
 		ENGINE.EndFrame();

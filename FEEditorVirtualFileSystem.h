@@ -51,6 +51,10 @@ public:
 	bool MoveFile(FEObject* Data, std::string OldPath, std::string NewPath);
 	bool DeleteFile(const FEObject* Data, std::string Path);
 	void SetFileReadOnly(bool NewValue, const FEObject* Data, std::string Path);
+	std::string LocateFile(FEObject* File);
+	void LocateAndDeleteFile(FEObject* File);
+	bool DoesFileExist(FEObject* Data, std::string Path);
+	bool DoesFileExistAnywhere(FEObject* Data);
 
 	bool CreateDirectory(std::string Name, std::string Path);
 	std::string CreateDirectory(std::string Path);
@@ -67,9 +71,6 @@ public:
 
 	std::string GetCurrentPath();
 	bool SetCurrentPath(std::string Path);
-
-	std::string LocateFile(FEObject* File);
-	void LocateAndDeleteFile(FEObject* File);
 
 	void SaveState(std::string FileName);
 	void LoadState(std::string FileName);
