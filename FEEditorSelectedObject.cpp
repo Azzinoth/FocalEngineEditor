@@ -48,7 +48,7 @@ void FEEditorSelectedObject::UpdateResources(FEScene* Scene)
 	if (CurrentSelectionData == nullptr)
 		return;
 
-	FEEntity* CurrentCamera = CAMERA_SYSTEM.GetMainCameraEntity(Scene);
+	FEEntity* CurrentCamera = CAMERA_SYSTEM.GetMainCamera(Scene);
 	FECameraComponent& CameraComponent = CurrentCamera->GetComponent<FECameraComponent>();
 
 	delete CurrentSelectionData->PixelAccurateSelectionFB;
@@ -139,7 +139,7 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 	CurrentSelectionData->SceneEntitiesUnderMouse.clear();
 	CurrentSelectionData->InstancedSubObjectsInfo.clear();
 
-	FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCameraEntity(Scene);
+	FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCamera(Scene);
 	FETransformComponent& CameraTransformComponent = MainCamera->GetComponent<FETransformComponent>();
 	FECameraComponent& CameraComponent = MainCamera->GetComponent<FECameraComponent>();
 
@@ -323,7 +323,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-	FEEntity* CurrentCamera = CAMERA_SYSTEM.GetMainCameraEntity(Scene);
+	FEEntity* CurrentCamera = CAMERA_SYSTEM.GetMainCamera(Scene);
 
 	for (size_t i = 0; i < CurrentSelectionData->SceneEntitiesUnderMouse.size(); i++)
 	{
@@ -562,7 +562,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 		}
 
 		FEHaloSelectionData* HaloSelectionData = HALO_SELECTION_EFFECT.GetSceneData(CurrentScene->GetObjectID());
-		FEEntity* CurrentCamera = CAMERA_SYSTEM.GetMainCameraEntity(CurrentScene);
+		FEEntity* CurrentCamera = CAMERA_SYSTEM.GetMainCamera(CurrentScene);
 		if (CurrentCamera == nullptr || HaloSelectionData->PostProcess == nullptr)
 		{
 			SceneIterator++;
@@ -702,7 +702,7 @@ void FEEditorSelectedObject::AddSceneData(const std::string& SceneID)
 	if (PerSceneData.find(SceneID) != PerSceneData.end())
 		return;
 
-	FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCameraEntity(CurrentScene);
+	FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCamera(CurrentScene);
 	if (MainCamera == nullptr)
 		return;
 

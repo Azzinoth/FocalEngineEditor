@@ -75,7 +75,7 @@ void FEEditor::MouseButtonCallback(const int Button, const int Action, int Mods)
 		if (ImGui::GetCurrentContext()->HoveredWindow != nullptr && EDITOR.EditorSceneWindows[i]->GetWindow() != nullptr)
 			EDITOR.EditorSceneWindows[i]->bWindowHovered = ImGui::GetCurrentContext()->HoveredWindow->Name == EDITOR.EditorSceneWindows[i]->GetWindow()->Name;
 
-		FEEntity* CurrentMainCamera = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.EditorSceneWindows[i]->Scene);
+		FEEntity* CurrentMainCamera = CAMERA_SYSTEM.GetMainCamera(EDITOR.EditorSceneWindows[i]->Scene);
 
 		if (ImGui::GetIO().WantCaptureMouse && !EDITOR.EditorSceneWindows[i]->bWindowHovered)
 		{
@@ -548,7 +548,21 @@ void FEEditor::OnViewportResize(std::string ViewportID)
 
 	for (size_t i = 0; i < EDITOR.EditorSceneWindows.size(); i++)
 	{
-		FEEntity* CameraEntity = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.EditorSceneWindows[i]->Scene);
+		FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+		if (CurrentProject == nullptr)
+			return;
+
+		FEEntity* CameraEntity = nullptr;
+		if (EDITOR.EditorSceneWindows[i]->Scene->HasFlag(FESceneFlag::EditorMode))
+		{
+			std::string EditorCameraID = CurrentProject->GetEditorCameraIDBySceneID(EDITOR.EditorSceneWindows[i]->Scene->GetObjectID());
+			CameraEntity = EDITOR.EditorSceneWindows[i]->Scene->GetEntity(EditorCameraID);
+		}
+		else if (EDITOR.EditorSceneWindows[i]->Scene->HasFlag(FESceneFlag::GameMode))
+		{
+			CameraEntity = CAMERA_SYSTEM.GetMainCamera(EDITOR.EditorSceneWindows[i]->Scene);
+		}
+
 		if (CameraEntity == nullptr)
 			continue;
 
@@ -958,4 +972,28 @@ bool FEEditor::SetFocusedScene(std::string NewSceneInFocusID)
 
 	FocusedEditorSceneID = NewSceneInFocusID;
 	return true;
+}
+
+void FEEditor::UpdateBeforeRender()
+{
+	// Before rendering, we need to ensure that if scene is in editor mode, it's main camera would be editor camera.
+	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+	if (CurrentProject != nullptr)
+	{
+		std::vector<FEScene*> Scenes = SCENE_MANAGER.GetScenesByFlagMask(FESceneFlag::Active | FESceneFlag::Renderable | FESceneFlag::EditorMode);
+		for (size_t i = 0; i < Scenes.size(); i++)
+		{
+			FEEntity* CurrentMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(Scenes[i]);
+			std::string EditorCameraID = CurrentProject->GetEditorCameraIDBySceneID(Scenes[i]->GetObjectID());
+			if (!EditorCameraID.empty())
+			{
+				if (CurrentMainCameraEntity != nullptr && CurrentMainCameraEntity->GetObjectID() != EditorCameraID)
+				{
+					//SceneIDToOldMainCameraID[Scenes[i]->GetObjectID()] = CurrentMainCameraEntity->GetObjectID();
+					//CurrentProject->SceneIDToProperMainCameraID[Scenes[i]->GetObjectID()] = EditorCameraID;
+					CAMERA_SYSTEM.SetMainCamera(Scenes[i]->GetEntity(EditorCameraID));
+				}
+			}
+		}
+	}
 }

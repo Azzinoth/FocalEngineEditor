@@ -545,7 +545,7 @@ void EditGameModelPopup::Render()
 					{
 						UpdatedBillboardMaterial = TempModel->GetBillboardMaterial();
 
-						const std::vector<std::string> TempMaterialList = RESOURCE_MANAGER.GetMaterialList();
+						const std::vector<std::string> TempMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 						std::vector<FEObject*> FinalMaterialList;
 						for (size_t j = 0; j < TempMaterialList.size(); j++)
 						{

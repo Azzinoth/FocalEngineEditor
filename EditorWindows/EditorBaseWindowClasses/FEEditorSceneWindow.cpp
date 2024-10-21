@@ -30,7 +30,7 @@ bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
 	if (EDITOR.GetFocusedScene() == nullptr)
 		return false;
 
-	if (CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene()) == nullptr)
+	if (CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene()) == nullptr)
 		return false;
 
 	if (UserData == nullptr)
@@ -44,8 +44,8 @@ bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
 	{
 		FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Object->GetObjectID());
 
-		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
-		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
+		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
+		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
 
 		FEEntity* Entity = EditorSceneWindow->GetScene()->CreateEntity(Object->GetName());
 		Entity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
@@ -59,8 +59,8 @@ bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
 	}
 	else if (Object->GetType() == FE_PREFAB)
 	{
-		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
-		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
+		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
+		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
 
 		FEPrefab* Prefab = RESOURCE_MANAGER.GetPrefab(Object->GetObjectID());
 		FEScene* PrefabScene = Prefab->GetScene();
@@ -109,7 +109,22 @@ void FEEditorSceneWindow::Render()
 	if (ImGui::IsWindowFocused())
 		EDITOR.SetFocusedScene(Scene);
 
-	FEEntity* CameraEntity = CAMERA_SYSTEM.GetMainCameraEntity(Scene);
+
+	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+	if (CurrentProject == nullptr)
+		return;
+
+	FEEntity* CameraEntity = nullptr;
+	if (Scene->HasFlag(FESceneFlag::EditorMode))
+	{
+		std::string EditorCameraID = CurrentProject->GetEditorCameraIDBySceneID(Scene->GetObjectID());
+		CameraEntity = Scene->GetEntity(EditorCameraID);
+	}
+	else if (Scene->HasFlag(FESceneFlag::GameMode))
+	{
+		CameraEntity = CAMERA_SYSTEM.GetMainCamera(Scene);
+	}
+
 	if (CameraEntity != nullptr)
 	{
 		FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
@@ -130,7 +145,7 @@ void FEEditorSceneWindow::Render()
 		Style.WindowBorderSize = 0.0f;
 		Style.WindowPadding = ImVec2(0.0f, 0.0f);
 
-		FETexture* CameraResult = RENDERER.GetCameraResult(CAMERA_SYSTEM.GetMainCameraEntity(Scene));
+		FETexture* CameraResult = RENDERER.GetCameraResult(CAMERA_SYSTEM.GetMainCamera(Scene));
 		if (CameraResult != nullptr)
 		{
 			ImGui::Image((void*)(intptr_t)CameraResult->GetTextureID(), ImVec2(GetWindow()->ContentRegionRect.GetWidth(), GetWindow()->ContentRegionRect.GetHeight()), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));

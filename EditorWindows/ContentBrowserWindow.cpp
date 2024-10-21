@@ -457,6 +457,25 @@ void FEEditorContentBrowserWindow::Render()
 					ImGui::EndMenu();
 				}
 			}
+
+			if (FilteredResources[ItemUnderMouse]->GetType() == FE_SCENE)
+			{
+				if (ImGui::MenuItem("Open"))
+				{
+					//EDITOR.LoadScene(RESOURCE_MANAGER.GetScene(FilteredResources[ItemUnderMouse]->GetObjectID()));
+				}
+
+				FEScene* StartingScene = SCENE_MANAGER.GetStartingScene();
+				bool bIsSceneStarting = false;
+				if (StartingScene != nullptr)
+					bIsSceneStarting = StartingScene->GetObjectID() == FilteredResources[ItemUnderMouse]->GetObjectID();
+				
+				if (ImGui::MenuItem("Starting scene", NULL, &bIsSceneStarting))
+				{
+					if (bIsSceneStarting)
+						SCENE_MANAGER.SetStartingScene(FilteredResources[ItemUnderMouse]->GetObjectID());
+				}
+			}
 		}
 
 		ImGui::EndPopup();
@@ -942,6 +961,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		ObjectTagNegativeFilters.push_back(ENGINE_RESOURCE_TAG);
 		ObjectTagNegativeFilters.push_back(EDITOR_RESOURCE_TAG);
 		ObjectTagNegativeFilters.push_back(PREFAB_SCENE_DESCRIPTION_TAG);
+		ObjectTagNegativeFilters.push_back(TERRAIN_SYSTEM_RESOURCE_TAG);
 	}
 
 	if (ImGui::Checkbox("Hide private tags", &bIsPrivateTagsInFilters))
@@ -952,6 +972,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 			ObjectTagNegativeFilters.push_back(ENGINE_RESOURCE_TAG);
 			ObjectTagNegativeFilters.push_back(EDITOR_RESOURCE_TAG);
 			ObjectTagNegativeFilters.push_back(PREFAB_SCENE_DESCRIPTION_TAG);
+			ObjectTagNegativeFilters.push_back(TERRAIN_SYSTEM_RESOURCE_TAG);
 		}
 	}
 

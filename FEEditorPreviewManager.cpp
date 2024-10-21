@@ -57,13 +57,13 @@ void FEEditorPreviewManager::UpdateAll()
 {
 	Clear();
 
-	const std::vector<std::string> MeshList = RESOURCE_MANAGER.GetMeshList();
+	const std::vector<std::string> MeshList = RESOURCE_MANAGER.GetMeshIDList();
 	for (size_t i = 0; i < MeshList.size(); i++)
 	{
 		CreateMeshPreview(MeshList[i]);
 	}
 
-	const std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialList();
+	const std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 	for (size_t i = 0; i < MaterialList.size(); i++)
 	{
 		FEObject* CurrentMaterial = OBJECT_MANAGER.GetFEObject(MaterialList[i]);
@@ -71,7 +71,7 @@ void FEEditorPreviewManager::UpdateAll()
 			CreateMaterialPreview(MaterialList[i]);
 	}
 
-	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
+	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
 		FEObject* CurrentGameModel = OBJECT_MANAGER.GetFEObject(GameModelList[i]);
@@ -143,7 +143,7 @@ FETexture* FEEditorPreviewManager::GetMeshPreview(const std::string MeshID)
 	{
 		CreateMeshPreview(MeshID);
 		// if some game model uses this mesh we should also update it's preview
-		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
+		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 
 		for (size_t i = 0; i < GameModelList.size(); i++)
 		{
@@ -196,7 +196,7 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 	}
 
 	// Looking for all gameModels that uses this material to also update them.
-	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
+	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
 		const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
@@ -221,7 +221,7 @@ FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string Material
 	{
 		CreateMaterialPreview(MaterialID);
 		// if some game model uses this material we should also update it's preview
-		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
+		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 		for (size_t i = 0; i < GameModelList.size(); i++)
 		{
 			const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
@@ -367,7 +367,7 @@ FETexture* FEEditorPreviewManager::GetGameModelPreview(const std::string GameMod
 void FEEditorPreviewManager::UpdateAllGameModelPreviews()
 {
 	// Getting list of all game models.
-	const auto GameModelsList = RESOURCE_MANAGER.GetGameModelList();
+	const auto GameModelsList = RESOURCE_MANAGER.GetGameModelIDList();
 	for (size_t i = 0; i < GameModelsList.size(); i++)
 	{
 		CreateGameModelPreview(GameModelsList[i]);

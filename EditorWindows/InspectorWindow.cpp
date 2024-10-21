@@ -454,9 +454,20 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 {
 	FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
 
-	bool bIsMainCamera = CameraComponent.IsMainCamera();
+	// Because of editor camera system, we need to check if it is main camera in a different way.
+	std::string MainCameraID = PROJECT_MANAGER.GetCurrent()->GetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetObjectID());
+	bool bIsMainCamera = MainCameraID == CameraEntity->GetObjectID();
 	if (ImGui::Checkbox("Main camera", &bIsMainCamera))
-		CAMERA_SYSTEM.SetMainCamera(CameraEntity);
+	{
+		if (bIsMainCamera)
+		{
+			PROJECT_MANAGER.GetCurrent()->SetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetObjectID(), CameraEntity->GetObjectID());
+		}
+		else
+		{
+			PROJECT_MANAGER.GetCurrent()->SetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetObjectID(), "");
+		}
+	}
 
 	float FOV = CameraComponent.GetFOV();
 	ImGui::Text("Field of view : ");
@@ -1009,7 +1020,7 @@ void FEEditorInspectorWindow::Render()
 		return;
 
 	FEScene* CurrentScene = EDITOR.GetFocusedScene();
-	FEEntity* MainCameraEntity = CAMERA_SYSTEM.GetMainCameraEntity(CurrentScene);
+	FEEntity* MainCameraEntity = CAMERA_SYSTEM.GetMainCamera(CurrentScene);
 	if (MainCameraEntity == nullptr)
 		return;
 
@@ -1889,7 +1900,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 				if (ImGui::MenuItem("Add layer..."))
 				{
-					std::vector<std::string> TempMaterialList = RESOURCE_MANAGER.GetMaterialList();
+					std::vector<std::string> TempMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 					std::vector<FEObject*> FinalMaterialList;
 					for (size_t i = 0; i < TempMaterialList.size(); i++)
 					{
@@ -1950,7 +1961,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 						if (ImGui::MenuItem("Change material..."))
 						{
-							std::vector<std::string> TempMaterialList = RESOURCE_MANAGER.GetMaterialList();
+							std::vector<std::string> TempMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 							std::vector<FEObject*> FinalMaterialList;
 							for (size_t i = 0; i < TempMaterialList.size(); i++)
 							{

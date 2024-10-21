@@ -2,6 +2,7 @@
 
 #include "ContentBrowserWindow.h"
 #include "../FEEditorScriptingSystem.h"
+#include "../FEProjectBuildSystem.h"
 
 class FEEditorInspectorWindow
 {

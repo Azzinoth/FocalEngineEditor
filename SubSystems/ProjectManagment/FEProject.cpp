@@ -45,7 +45,7 @@ std::string FEProject::GetProjectFolder()
 	return ProjectFolder;
 }
 
-void FEProject::SaveResourcesTo(std::string FilePath, bool bFullSave)
+void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 {
 	Json::Value Root;
 	std::ofstream ResourcesFile;
@@ -64,7 +64,7 @@ void FEProject::SaveResourcesTo(std::string FilePath, bool bFullSave)
 			{
 				FEMesh* MeshToSave = RESOURCE_MANAGER.GetMesh(UnSavedObjects[i]->GetObjectID());
 				if (MeshToSave != nullptr)
-					RESOURCE_MANAGER.SaveFEMesh(MeshToSave, (GetProjectFolder() + MeshToSave->GetObjectID() + std::string(".model")).c_str());
+					RESOURCE_MANAGER.SaveFEMesh(MeshToSave, (DirectoryPath + MeshToSave->GetObjectID() + std::string(".model")).c_str());
 				break;
 			}
 
@@ -72,7 +72,7 @@ void FEProject::SaveResourcesTo(std::string FilePath, bool bFullSave)
 			{
 				FETexture* TextureToSave = RESOURCE_MANAGER.GetTexture(UnSavedObjects[i]->GetObjectID());
 				if (TextureToSave != nullptr)
-					RESOURCE_MANAGER.SaveFETexture(TextureToSave, (GetProjectFolder() + TextureToSave->GetObjectID() + std::string(".texture")).c_str());
+					RESOURCE_MANAGER.SaveFETexture(TextureToSave, (DirectoryPath + TextureToSave->GetObjectID() + std::string(".texture")).c_str());
 				break;
 			}
 			}
@@ -80,7 +80,7 @@ void FEProject::SaveResourcesTo(std::string FilePath, bool bFullSave)
 	}
 
 	// Saving Meshes.
-	std::vector<std::string> MeshList = RESOURCE_MANAGER.GetMeshList();
+	std::vector<std::string> MeshList = RESOURCE_MANAGER.GetMeshIDList();
 	Json::Value MeshData;
 	for (size_t i = 0; i < MeshList.size(); i++)
 	{
@@ -93,14 +93,14 @@ void FEProject::SaveResourcesTo(std::string FilePath, bool bFullSave)
 		MeshData[Mesh->GetObjectID()]["FileName"] = Mesh->GetObjectID() + ".model";
 
 		if (bFullSave)
-			RESOURCE_MANAGER.SaveFEMesh(Mesh, (GetProjectFolder() + Mesh->GetObjectID() + std::string(".model")).c_str());
+			RESOURCE_MANAGER.SaveFEMesh(Mesh, (DirectoryPath + Mesh->GetObjectID() + std::string(".model")).c_str());
 
 		Mesh->SetDirtyFlag(false);
 	}
 	Root["Meshes"] = MeshData;
 
 	// Saving Textures.
-	std::vector<std::string> TexturesList = RESOURCE_MANAGER.GetTextureList();
+	std::vector<std::string> TexturesList = RESOURCE_MANAGER.GetTextureIDList();
 	Json::Value TexturesData;
 	for (size_t i = 0; i < TexturesList.size(); i++)
 	{
@@ -113,14 +113,14 @@ void FEProject::SaveResourcesTo(std::string FilePath, bool bFullSave)
 		TexturesData[Texture->GetObjectID()]["FileName"] = Texture->GetObjectID() + ".texture";
 
 		if (bFullSave)
-			RESOURCE_MANAGER.SaveFETexture(Texture, (GetProjectFolder() + Texture->GetObjectID() + std::string(".texture")).c_str());
+			RESOURCE_MANAGER.SaveFETexture(Texture, (DirectoryPath + Texture->GetObjectID() + std::string(".texture")).c_str());
 
 		Texture->SetDirtyFlag(false);
 	}
 	Root["Textures"] = TexturesData;
 
 	// Saving Materials.
-	std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialList();
+	std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 	Json::Value MaterialData;
 	for (size_t i = 0; i < MaterialList.size(); i++)
 	{
@@ -129,35 +129,13 @@ void FEProject::SaveResourcesTo(std::string FilePath, bool bFullSave)
 			Material->GetTag() == EDITOR_RESOURCE_TAG)
 			continue;
 
-		for (size_t j = 0; j < FE_MAX_TEXTURES_PER_MATERIAL; j++)
-		{
-			if (Material->Textures[j] != nullptr)
-				MaterialData[Material->GetObjectID()]["Textures"][std::to_string(j).c_str()] = Material->Textures[j]->GetObjectID();
-
-			if (Material->TextureBindings[j] != -1)
-				MaterialData[Material->GetObjectID()]["Texture bindings"][std::to_string(j).c_str()] = Material->TextureBindings[j];
-
-			if (Material->TextureChannels[j] != -1)
-				MaterialData[Material->GetObjectID()]["Texture channels"][std::to_string(j).c_str()] = Material->TextureChannels[j];
-		}
-
-		MaterialData[Material->GetObjectID()]["FEObjectData"] = RESOURCE_MANAGER.SaveFEObjectPart(Material);
-		MaterialData[Material->GetObjectID()]["Metalness"] = Material->GetMetalness();
-		MaterialData[Material->GetObjectID()]["Roughness"] = Material->GetRoughness();
-		MaterialData[Material->GetObjectID()]["NormalMap intensity"] = Material->GetNormalMapIntensity();
-		MaterialData[Material->GetObjectID()]["AmbientOcclusion intensity"] = Material->GetAmbientOcclusionIntensity();
-		MaterialData[Material->GetObjectID()]["AmbientOcclusionMap intensity"] = Material->GetAmbientOcclusionMapIntensity();
-		MaterialData[Material->GetObjectID()]["RoughnessMap intensity"] = Material->GetRoughnessMapIntensity();
-		MaterialData[Material->GetObjectID()]["MetalnessMap intensity"] = Material->GetMetalnessMapIntensity();
-		MaterialData[Material->GetObjectID()]["Tiling"] = Material->GetTiling();
-		MaterialData[Material->GetObjectID()]["Compack packing"] = Material->IsCompackPacking();
-
+		MaterialData[Material->GetObjectID()] = RESOURCE_MANAGER.SaveMaterialToJSON(Material);
 		Material->SetDirtyFlag(false);
 	}
 	Root["Materials"] = MaterialData;
 
 	// Saving GameModels.
-	std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
+	std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 	Json::Value GameModelData;
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
@@ -166,27 +144,7 @@ void FEProject::SaveResourcesTo(std::string FilePath, bool bFullSave)
 			GameModel->GetTag() == EDITOR_RESOURCE_TAG)
 			continue;
 
-		GameModelData[GameModel->GetObjectID()]["FEObjectData"] = RESOURCE_MANAGER.SaveFEObjectPart(GameModel);
-		GameModelData[GameModel->GetObjectID()]["Mesh"] = GameModel->Mesh->GetObjectID();
-		GameModelData[GameModel->GetObjectID()]["Material"] = GameModel->Material->GetObjectID();
-		GameModelData[GameModel->GetObjectID()]["ScaleFactor"] = GameModel->GetScaleFactor();
-
-		GameModelData[GameModel->GetObjectID()]["LODs"]["HaveLODlevels"] = GameModel->IsUsingLOD();
-		if (GameModel->IsUsingLOD())
-		{
-			GameModelData[GameModel->GetObjectID()]["LODs"]["CullDistance"] = GameModel->GetCullDistance();
-			GameModelData[GameModel->GetObjectID()]["LODs"]["Billboard zero rotaion"] = GameModel->GetBillboardZeroRotaion();
-			GameModelData[GameModel->GetObjectID()]["LODs"]["LODCount"] = GameModel->GetLODCount();
-			for (size_t j = 0; j < GameModel->GetLODCount(); j++)
-			{
-				GameModelData[GameModel->GetObjectID()]["LODs"][std::to_string(j)]["Mesh"] = GameModel->GetLODMesh(j)->GetObjectID();
-				GameModelData[GameModel->GetObjectID()]["LODs"][std::to_string(j)]["Max draw distance"] = GameModel->GetLODMaxDrawDistance(j);
-				GameModelData[GameModel->GetObjectID()]["LODs"][std::to_string(j)]["IsBillboard"] = GameModel->IsLODBillboard(j);
-				if (GameModel->IsLODBillboard(j))
-					GameModelData[GameModel->GetObjectID()]["LODs"][std::to_string(j)]["Billboard material"] = GameModel->GetBillboardMaterial()->GetObjectID();
-			}
-		}
-
+		GameModelData[GameModel->GetObjectID()] = RESOURCE_MANAGER.SaveGameModelToJSON(GameModel);
 		GameModel->SetDirtyFlag(false);
 	}
 	Root["GameModels"] = GameModelData;
@@ -201,15 +159,7 @@ void FEProject::SaveResourcesTo(std::string FilePath, bool bFullSave)
 			Prefab->GetTag() == EDITOR_RESOURCE_TAG)
 			continue;
 
-		PrefabData[Prefab->GetObjectID()]["FEObjectData"] = RESOURCE_MANAGER.SaveFEObjectPart(Prefab);
-		if (Prefab->GetScene() == nullptr)
-		{
-			LOG.Add("FEProject::SaveResourcesTo: Prefab scene is nullptr!", "FE_LOG_LOADING", FE_LOG_ERROR);
-			PrefabData[Prefab->GetObjectID()]["SceneID"] = "";
-			continue;
-		}
-
-		PrefabData[Prefab->GetObjectID()]["SceneID"] = Prefab->GetScene()->GetObjectID();
+		PrefabData[Prefab->GetObjectID()] = RESOURCE_MANAGER.SavePrefabToJSON(Prefab);
 	}
 	Root["Prefabs"] = PrefabData;
 
@@ -226,7 +176,7 @@ void FEProject::SaveResourcesTo(std::string FilePath, bool bFullSave)
 		NativeScriptModulesData[NativeScriptModule->GetObjectID()]["FEObjectData"] = RESOURCE_MANAGER.SaveFEObjectPart(NativeScriptModule);
 		NativeScriptModulesData[NativeScriptModule->GetObjectID()]["FileName"] = NativeScriptModule->GetObjectID() + ".nativescriptmodule";
 
-		RESOURCE_MANAGER.SaveFENativeScriptModule(NativeScriptModule, GetProjectFolder() + NativeScriptModule->GetObjectID() + ".nativescriptmodule");
+		RESOURCE_MANAGER.SaveFENativeScriptModule(NativeScriptModule, DirectoryPath + NativeScriptModule->GetObjectID() + ".nativescriptmodule");
 	}
 	Root["NativeScriptModules"] = NativeScriptModulesData;
 
@@ -272,17 +222,12 @@ void FEProject::SaveResourcesTo(std::string FilePath, bool bFullSave)
 		if (!bShouldProceed)
 			continue;
 
-		Json::Value SceneDataNode;
-		SceneDataNode["FEObjectData"] = RESOURCE_MANAGER.SaveFEObjectPart(SceneList[i]);
-		Json::Value SceneHierarchy = SceneList[i]->SceneGraph.ToJson([](FEEntity* Entity) -> bool {
+		SceneData[SceneList[i]->GetObjectID()] = SCENE_MANAGER.SaveSceneToJSON(SceneList[i], [](FEEntity* Entity) -> bool {
 			if (Entity->GetTag() == EDITOR_RESOURCE_TAG)
 				return false;
 
 			return true;
 		});
-		SceneDataNode["Scene hierarchy"] = SceneHierarchy;
-
-		SceneData[SceneList[i]->GetObjectID()] = SceneDataNode;
 	}
 	Root["Scenes"] = SceneData;
 
@@ -290,9 +235,104 @@ void FEProject::SaveResourcesTo(std::string FilePath, bool bFullSave)
 	Json::StreamWriterBuilder Builder;
 	const std::string JsonFile = Json::writeString(Builder, Root);
 
-	ResourcesFile.open(FilePath);
+	ResourcesFile.open(DirectoryPath + "Resources.txt");
 	ResourcesFile << JsonFile;
 	ResourcesFile.close();
+}
+
+// TO-DO: Make that process in memory, not involving creating temporary files.
+FEAssetPackage* FEProject::SaveResourcesToAssetPackage()
+{
+	FEAssetPackage* Result = new FEAssetPackage();
+
+	std::string TemporaryFolder = FILE_SYSTEM.GetCurrentWorkingPath() + "/Temporary_Project_Resources/";
+	if (FILE_SYSTEM.DoesDirectoryExist(TemporaryFolder))
+	{
+		LOG.Add("FEProject::SaveResourcesToAssetPackage: Temporary_Project_Resources directory already exist, trying to delete it.", "FE_LOG_LOADING", FE_LOG_WARNING);
+
+		if (!FILE_SYSTEM.DeleteDirectory(TemporaryFolder))
+		{
+			LOG.Add("FEProject::SaveResourcesToAssetPackage: Error deleting Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
+			return nullptr;
+		}
+	}
+
+	if (!FILE_SYSTEM.CreateDirectory(TemporaryFolder))
+	{
+		LOG.Add("FEProject::SaveResourcesToAssetPackage: Error creating Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
+		return nullptr;
+	}
+
+	// Because of editor camera system, we need to adjust main camera for each scene before saving.
+	SetProperMainCamerasInsteadOfEditorCameras();
+
+	// Saving resources.
+	SaveResources(TemporaryFolder, true);
+
+	// After saving resources we restore editor cameras as main cameras.
+	SetEditorCamerasInsteadOfProperMainCameras();
+	
+	// Saving all files to package.
+	std::vector<std::string> Files = FILE_SYSTEM.GetFileNamesInDirectory(TemporaryFolder);
+	for (size_t i = 0; i < Files.size(); i++)
+	{
+		if (Result->ImportAssetFromFile(TemporaryFolder + Files[i]).empty())
+		{
+			LOG.Add("FEProject::SaveResourcesToAssetPackage: Error importing asset " + Files[i] + " to package", "FE_LOG_LOADING", FE_LOG_WARNING);
+			//return nullptr;
+		}
+	}
+
+	if (!FILE_SYSTEM.DeleteDirectory(TemporaryFolder))
+		LOG.Add("FEProject::SaveResourcesToAssetPackage: Error deleting Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_WARNING);
+		
+	return Result;
+}
+
+void FEProject::LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage)
+{
+	if (AssetPackage == nullptr)
+	{
+		LOG.Add("FEProject::LoadResourcesFromAssetPackage: AssetPackage is nullptr!", "FE_LOG_LOADING", FE_LOG_ERROR);
+		return;
+	}
+
+	std::string TemporaryFolder = FILE_SYSTEM.GetCurrentWorkingPath() + "/Temporary_Project_Resources/";
+	if (FILE_SYSTEM.DoesDirectoryExist(TemporaryFolder))
+	{
+		LOG.Add("FEProject::LoadResourcesFromAssetPackage: Temporary_Project_Resources directory already exist, trying to delete it.", "FE_LOG_LOADING", FE_LOG_WARNING);
+
+		if (!FILE_SYSTEM.DeleteDirectory(TemporaryFolder))
+		{
+			LOG.Add("FEProject::LoadResourcesFromAssetPackage: Error deleting Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
+			return;
+		}
+	}
+
+	if (!FILE_SYSTEM.CreateDirectory(TemporaryFolder))
+	{
+		LOG.Add("FEProject::LoadResourcesFromAssetPackage: Error creating Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
+		return;
+	}
+
+	// Exporting all assets to files.
+	std::vector<FEAssetPackageAssetInfo> AssetList = AssetPackage->GetEntryList();
+	for (size_t i = 0; i < AssetList.size(); i++)
+	{
+		if (!AssetPackage->ExportAssetToFile(AssetList[i].ID, TemporaryFolder + AssetList[i].Name))
+		{
+			LOG.Add("FEProject::LoadResourcesFromAssetPackage: Error exporting asset " + AssetList[i].Name + " to file", "FE_LOG_LOADING", FE_LOG_WARNING);
+			continue;
+		}
+	}
+
+	LoadResources(TemporaryFolder);
+
+	// Because of editor camera system, we need to save proper main camera for each scene.
+	SaveProperMainCameras();
+
+	if (!FILE_SYSTEM.DeleteDirectory(TemporaryFolder))
+		LOG.Add("FEProject::LoadResourcesFromAssetPackage: Error deleting Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_WARNING);
 }
 
 void FEProject::SaveProject(bool bFullSave)
@@ -313,6 +353,11 @@ void FEProject::SaveProject(bool bFullSave)
 	{
 		CreateDummyScreenshot();
 	}
+
+	// Save starting scene.
+	FEScene* StartingScene = SCENE_MANAGER.GetStartingScene();
+	if (StartingScene != nullptr)
+		Root["StartingScene"] = StartingScene->GetObjectID();
 	
 	// Saving editor scenes information.
 	std::vector<std::string> EditorSceneIDs = EDITOR.GetEditorOpenedScenesIDs();
@@ -351,8 +396,14 @@ void FEProject::SaveProject(bool bFullSave)
 	
 	Root["EditorScenes"]["FocusedSceneID"] = FocusedSceneID;
 	
+	// Because of editor camera system, we need to adjust main camera for each scene before saving.
+	SetProperMainCamerasInsteadOfEditorCameras();
+
 	// Saving resources.
-	SaveResourcesTo(ProjectFolder + "Resources.txt", bFullSave);
+	SaveResources(ProjectFolder, bFullSave);
+
+	// After saving resources we restore editor cameras as main cameras.
+	SetEditorCamerasInsteadOfProperMainCameras();
 
 	// All of editor cameras would not be saved because of editor only tag.
 	// But we need to save their state.
@@ -406,10 +457,10 @@ void FEProject::SaveProject(bool bFullSave)
 	bModified = false;
 }
 
-void FEProject::LoadResources(std::string FilePath)
+void FEProject::LoadResources(std::string DirectoryPath)
 {
 	std::ifstream ResourcesFile;
-	ResourcesFile.open(FilePath);
+	ResourcesFile.open(DirectoryPath + "Resources.txt");
 
 	std::string FileData((std::istreambuf_iterator<char>(ResourcesFile)), std::istreambuf_iterator<char>());
 	ResourcesFile.close();
@@ -435,7 +486,7 @@ void FEProject::LoadResources(std::string FilePath)
 	for (size_t i = 0; i < MeshList.size(); i++)
 	{
 		FEObjectLoadedData LoadedObjectData = RESOURCE_MANAGER.LoadFEObjectPart(Root["Meshes"][MeshList[i]]["FEObjectData"]);
-		RESOURCE_MANAGER.LoadFEMesh((ProjectFolder + Root["Meshes"][MeshList[i]]["FileName"].asCString()).c_str(), LoadedObjectData.Name);
+		RESOURCE_MANAGER.LoadFEMesh((DirectoryPath + Root["Meshes"][MeshList[i]]["FileName"].asCString()).c_str(), LoadedObjectData.Name);
 	}
 
 	// Loading textures.
@@ -446,11 +497,11 @@ void FEProject::LoadResources(std::string FilePath)
 		// Terrain textures should be loaded right away, not async.
 		if (LoadedObjectData.Tag == TERRAIN_SYSTEM_RESOURCE_TAG)
 		{
-			RESOURCE_MANAGER.LoadFETexture((ProjectFolder + Root["Textures"][TexturesList[i]]["FileName"].asCString()).c_str());
+			RESOURCE_MANAGER.LoadFETexture((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()).c_str());
 		}
 		else
 		{
-			RESOURCE_MANAGER.LoadFETextureAsync((ProjectFolder + Root["Textures"][TexturesList[i]]["FileName"].asCString()).c_str(), LoadedObjectData.Name, nullptr, LoadedObjectData.ID);
+			RESOURCE_MANAGER.LoadFETextureAsync((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()).c_str(), LoadedObjectData.Name, nullptr, LoadedObjectData.ID);
 		}
 	}
 
@@ -458,106 +509,23 @@ void FEProject::LoadResources(std::string FilePath)
 	std::vector<Json::String> MaterialsList = Root["Materials"].getMemberNames();
 	for (size_t i = 0; i < MaterialsList.size(); i++)
 	{
-		FEObjectLoadedData LoadedObjectData = RESOURCE_MANAGER.LoadFEObjectPart(Root["Materials"][MaterialsList[i]]["FEObjectData"]);
-
-		FEMaterial* NewMaterial = RESOURCE_MANAGER.CreateMaterial(LoadedObjectData.Name, LoadedObjectData.ID);
-		RESOURCE_MANAGER.SetTag(NewMaterial, LoadedObjectData.Tag);
-		NewMaterial->Shader = RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/);
-
-		std::vector<Json::String> MembersList = Root["Materials"][MaterialsList[i]].getMemberNames();
-		for (size_t j = 0; j < MembersList.size(); j++)
-		{
-			if (MembersList[j] == "Textures")
-			{
-				for (size_t k = 0; k < FE_MAX_TEXTURES_PER_MATERIAL; k++)
-				{
-					if (Root["Materials"][MaterialsList[i]]["Textures"].isMember(std::to_string(k).c_str()))
-					{
-						std::string TextureID = Root["Materials"][MaterialsList[i]]["Textures"][std::to_string(k).c_str()].asCString();
-						NewMaterial->Textures[k] = RESOURCE_MANAGER.GetTexture(TextureID);
-						if (NewMaterial->Textures[k] == nullptr)
-							NewMaterial->Textures[k] = RESOURCE_MANAGER.NoTexture;
-					}
-				}
-			}
-
-			if (MembersList[j] == "Texture bindings")
-			{
-				for (size_t k = 0; k < FE_MAX_TEXTURES_PER_MATERIAL; k++)
-				{
-					if (Root["Materials"][MaterialsList[i]]["Texture bindings"].isMember(std::to_string(k).c_str()))
-					{
-						int Binding = Root["Materials"][MaterialsList[i]]["Texture bindings"][std::to_string(k).c_str()].asInt();
-						NewMaterial->TextureBindings[k] = Binding;
-					}
-				}
-			}
-
-			if (MembersList[j] == "Texture channels")
-			{
-				for (size_t k = 0; k < FE_MAX_TEXTURES_PER_MATERIAL; k++)
-				{
-					if (Root["Materials"][MaterialsList[i]]["Texture channels"].isMember(std::to_string(k).c_str()))
-					{
-						int binding = Root["Materials"][MaterialsList[i]]["Texture channels"][std::to_string(k).c_str()].asInt();
-						NewMaterial->TextureChannels[k] = binding;
-					}
-				}
-			}
-		}
-
-		NewMaterial->SetMetalness(Root["Materials"][MaterialsList[i]]["Metalness"].asFloat());
-		NewMaterial->SetRoughness(Root["Materials"][MaterialsList[i]]["Roughness"].asFloat());
-		NewMaterial->SetNormalMapIntensity(Root["Materials"][MaterialsList[i]]["NormalMap intensity"].asFloat());
-		NewMaterial->SetAmbientOcclusionIntensity(Root["Materials"][MaterialsList[i]]["AmbientOcclusion intensity"].asFloat());
-		NewMaterial->SetAmbientOcclusionMapIntensity(Root["Materials"][MaterialsList[i]]["AmbientOcclusionMap intensity"].asFloat());
-		NewMaterial->SetRoughnessMapIntensity(Root["Materials"][MaterialsList[i]]["RoughnessMap intensity"].asFloat());
-		NewMaterial->SetMetalnessMapIntensity(Root["Materials"][MaterialsList[i]]["MetalnessMap intensity"].asFloat());
-
-		if (Root["Materials"][MaterialsList[i]].isMember("Tiling"))
-			NewMaterial->SetTiling(Root["Materials"][MaterialsList[i]]["Tiling"].asFloat());
-		NewMaterial->SetCompackPacking(Root["Materials"][MaterialsList[i]]["Compack packing"].asBool());
+		if (RESOURCE_MANAGER.LoadMaterialFromJSON(Root["Materials"][MaterialsList[i]]) == nullptr)
+			LOG.Add("FEProject::LoadResources: Error loading material " + MaterialsList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
 	}
 
 	// Loading game models.
 	std::vector<Json::String> GameModelList = Root["GameModels"].getMemberNames();
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
-		FEObjectLoadedData LoadedObjectData = RESOURCE_MANAGER.LoadFEObjectPart(Root["GameModels"][GameModelList[i]]["FEObjectData"]);
-
-		FEGameModel* NewGameModel = RESOURCE_MANAGER.CreateGameModel(RESOURCE_MANAGER.GetMesh(Root["GameModels"][GameModelList[i]]["Mesh"].asCString()),
-			RESOURCE_MANAGER.GetMaterial(Root["GameModels"][GameModelList[i]]["Material"].asCString()),
-			LoadedObjectData.Name, LoadedObjectData.ID);
-		RESOURCE_MANAGER.SetTag(NewGameModel, LoadedObjectData.Tag);
-
-		NewGameModel->SetScaleFactor(Root["GameModels"][GameModelList[i]]["ScaleFactor"].asFloat());
-
-		bool bHaveLODLevels = Root["GameModels"][GameModelList[i]]["LODs"]["HaveLODlevels"].asBool();
-		NewGameModel->SetUsingLOD(bHaveLODLevels);
-		if (bHaveLODLevels)
-		{
-			NewGameModel->SetCullDistance(Root["GameModels"][GameModelList[i]]["LODs"]["CullDistance"].asFloat());
-			NewGameModel->SetBillboardZeroRotaion(Root["GameModels"][GameModelList[i]]["LODs"]["Billboard zero rotaion"].asFloat());
-
-			size_t LODCount = Root["GameModels"][GameModelList[i]]["LODs"]["LODCount"].asInt();
-			for (size_t j = 0; j < LODCount; j++)
-			{
-				NewGameModel->SetLODMesh(j, RESOURCE_MANAGER.GetMesh(Root["GameModels"][GameModelList[i]]["LODs"][std::to_string(j)]["Mesh"].asString()));
-				NewGameModel->SetLODMaxDrawDistance(j, Root["GameModels"][GameModelList[i]]["LODs"][std::to_string(j)]["Max draw distance"].asFloat());
-
-				bool bLODBillboard = Root["GameModels"][GameModelList[i]]["LODs"][std::to_string(j)]["IsBillboard"].asBool();
-				NewGameModel->SetIsLODBillboard(j, bLODBillboard);
-				if (bLODBillboard)
-					NewGameModel->SetBillboardMaterial(RESOURCE_MANAGER.GetMaterial(Root["GameModels"][GameModelList[i]]["LODs"][std::to_string(j)]["Billboard material"].asString()));
-			}
-		}
+		if (RESOURCE_MANAGER.LoadGameModelFromJSON(Root["GameModels"][GameModelList[i]]) == nullptr)
+			LOG.Add("FEProject::LoadResources: Error loading game model " + GameModelList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
 	}
 
 	// Loading NativeScriptModules.
 	std::vector<Json::String> NativeScriptModulesList = Root["NativeScriptModules"].getMemberNames();
 	for (size_t i = 0; i < NativeScriptModulesList.size(); i++)
 	{
-		FENativeScriptModule* LoadedNativeScriptModule = RESOURCE_MANAGER.LoadFENativeScriptModule((ProjectFolder + Root["NativeScriptModules"][NativeScriptModulesList[i]]["FileName"].asCString()).c_str());
+		FENativeScriptModule* LoadedNativeScriptModule = RESOURCE_MANAGER.LoadFENativeScriptModule((DirectoryPath + Root["NativeScriptModules"][NativeScriptModulesList[i]]["FileName"].asCString()).c_str());
 		if (LoadedNativeScriptModule == nullptr)
 			continue;
 		
@@ -574,37 +542,16 @@ void FEProject::LoadResources(std::string FilePath)
 		if (LoadedObjectData.Tag != PREFAB_SCENE_DESCRIPTION_TAG)
 			continue;
 
-		FEScene* NewScene = SCENE_MANAGER.CreateScene(LoadedObjectData.Name, LoadedObjectData.ID, FESceneFlag::PrefabDescription);
-		RESOURCE_MANAGER.SetTag(NewScene, LoadedObjectData.Tag);
-
-		NewScene->SceneGraph.FromJson(Root["Scenes"][SceneList[i]]["Scene hierarchy"]);
+		if (SCENE_MANAGER.LoadSceneFromJSON(Root["Scenes"][SceneList[i]], FESceneFlag::PrefabDescription) == nullptr)
+			LOG.Add("FEProject::LoadResources: Error loading scene " + SceneList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
 	}
 
 	// Then load Prefabs and initialize them with corresponding scenes.
 	std::vector<Json::String> PrefabList = Root["Prefabs"].getMemberNames();
 	for (size_t i = 0; i < PrefabList.size(); i++)
 	{
-		FEObjectLoadedData LoadedObjectData = RESOURCE_MANAGER.LoadFEObjectPart(Root["Prefabs"][PrefabList[i]]["FEObjectData"]);
-
-		std::string SceneID;
-		if (Root["Prefabs"][PrefabList[i]].isMember("Scene"))
-		{
-			SceneID = Root["Prefabs"][PrefabList[i]]["Scene"]["ID"].asCString();
-		}
-		else
-		{
-			SceneID = Root["Prefabs"][PrefabList[i]]["SceneID"].asCString();
-		}
-			
-		FEScene* Scene = SCENE_MANAGER.GetScene(SceneID);
-		if (Scene == nullptr)
-		{
-			LOG.Add("FEProject::LoadResources: Prefab scene is missing!", "FE_LOG_LOADING", FE_LOG_ERROR);
-			continue;
-		}
-
-		FEPrefab* NewPrefab = RESOURCE_MANAGER.CreatePrefab(LoadedObjectData.Name, LoadedObjectData.ID, Scene);
-		RESOURCE_MANAGER.SetTag(NewPrefab, LoadedObjectData.Tag);
+		if (RESOURCE_MANAGER.LoadPrefabFromJSON(Root["Prefabs"][PrefabList[i]]) == nullptr)
+			LOG.Add("FEProject::LoadResources: Error loading prefab " + PrefabList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
 	}
 
 	for (size_t i = 0; i < SceneList.size(); i++)
@@ -613,10 +560,8 @@ void FEProject::LoadResources(std::string FilePath)
 		if (LoadedObjectData.Tag == PREFAB_SCENE_DESCRIPTION_TAG)
 			continue;
 
-		FEScene* NewScene = SCENE_MANAGER.CreateScene(LoadedObjectData.Name, LoadedObjectData.ID, FESceneFlag::Active);
-		RESOURCE_MANAGER.SetTag(NewScene, LoadedObjectData.Tag);
-
-		NewScene->SceneGraph.FromJson(Root["Scenes"][SceneList[i]]["Scene hierarchy"]);
+		if (SCENE_MANAGER.LoadSceneFromJSON(Root["Scenes"][SceneList[i]], FESceneFlag::Active) == nullptr)
+			LOG.Add("FEProject::LoadResources: Error loading scene " + SceneList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
 	}
 }
 
@@ -647,7 +592,10 @@ void FEProject::LoadProject()
 	ID = Root["ID"].asCString();
 	Name = Root["Name"].asCString();
 
-	LoadResources(ProjectFolder + "Resources.txt");
+	LoadResources(ProjectFolder);
+
+	// Because of editor camera system, we need to save proper main camera for each scene.
+	SaveProperMainCameras();
 
 	// After we loaded all resources we can load editor cameras.
 	Json::Value EditorCamerasData = Root["EditorCameras"];
@@ -661,6 +609,13 @@ void FEProject::LoadProject()
 		FEEntity* EditorCameraEntity = Scene->CreateEntityFromJson(EditorCamerasData[static_cast<int>(i)]["EntityData"]);
 		SceneIDToEditorCameraID[SceneID] = EditorCameraEntity->GetObjectID();
 		CAMERA_SYSTEM.SetMainCamera(EditorCameraEntity);
+	}
+
+	// Set starting scene.
+	if (Root.isMember("StartingScene"))
+	{
+		std::string StartingSceneID = Root["StartingScene"].asCString();
+		SCENE_MANAGER.SetStartingScene(StartingSceneID);
 	}
 
 	// Now we can restore editor scenes.
@@ -729,7 +684,7 @@ bool FEProject::LoadVFSData(std::string FilePath)
 		VIRTUAL_FILE_SYSTEM.DeleteFile(Files[i], "/Shaders");
 	}
 
-	std::vector<std::string> ShaderList = RESOURCE_MANAGER.GetShadersList();
+	std::vector<std::string> ShaderList = RESOURCE_MANAGER.GetShaderIDList();
 	for (size_t i = 0; i < ShaderList.size(); i++)
 	{
 		if (OBJECT_MANAGER.GetFEObject(ShaderList[i]) == nullptr)
@@ -737,7 +692,7 @@ bool FEProject::LoadVFSData(std::string FilePath)
 		VIRTUAL_FILE_SYSTEM.CreateFile(OBJECT_MANAGER.GetFEObject(ShaderList[i]), "/Shaders");
 	}
 
-	std::vector<std::string> StandardShaderList = RESOURCE_MANAGER.GetEnginePrivateShadersList();
+	std::vector<std::string> StandardShaderList = RESOURCE_MANAGER.GetEnginePrivateShaderIDList();
 	for (size_t i = 0; i < StandardShaderList.size(); i++)
 	{
 		if (OBJECT_MANAGER.GetFEObject(StandardShaderList[i]) == nullptr)
@@ -752,7 +707,7 @@ bool FEProject::LoadVFSData(std::string FilePath)
 
 void FEProject::AddMissingVFSData()
 {
-	std::vector<std::string> ShaderList = RESOURCE_MANAGER.GetShadersList();
+	std::vector<std::string> ShaderList = RESOURCE_MANAGER.GetShaderIDList();
 	for (size_t i = 0; i < ShaderList.size(); i++)
 	{
 		if (VIRTUAL_FILE_SYSTEM.DoesFileExistAnywhere(OBJECT_MANAGER.GetFEObject(ShaderList[i])))
@@ -761,7 +716,7 @@ void FEProject::AddMissingVFSData()
 		VIRTUAL_FILE_SYSTEM.CreateFile(OBJECT_MANAGER.GetFEObject(ShaderList[i]), "/Shaders");
 	}
 
-	std::vector<std::string> StandardShaderList = RESOURCE_MANAGER.GetEnginePrivateShadersList();
+	std::vector<std::string> StandardShaderList = RESOURCE_MANAGER.GetEnginePrivateShaderIDList();
 	for (size_t i = 0; i < StandardShaderList.size(); i++)
 	{
 		if (VIRTUAL_FILE_SYSTEM.DoesFileExistAnywhere(OBJECT_MANAGER.GetFEObject(StandardShaderList[i])))
@@ -771,12 +726,12 @@ void FEProject::AddMissingVFSData()
 		VIRTUAL_FILE_SYSTEM.SetFileReadOnly(true, OBJECT_MANAGER.GetFEObject(StandardShaderList[i]), "/Shaders");
 	}
 
-	std::vector<std::string> OtherResourceList = RESOURCE_MANAGER.GetMeshList();
-	std::vector<std::string> TextureList = RESOURCE_MANAGER.GetTextureList();
+	std::vector<std::string> OtherResourceList = RESOURCE_MANAGER.GetMeshIDList();
+	std::vector<std::string> TextureList = RESOURCE_MANAGER.GetTextureIDList();
 	OtherResourceList.insert(OtherResourceList.end(), TextureList.begin(), TextureList.end());
-	std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialList();
+	std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 	OtherResourceList.insert(OtherResourceList.end(), MaterialList.begin(), MaterialList.end());
-	std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
+	std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 	OtherResourceList.insert(OtherResourceList.end(), GameModelList.begin(), GameModelList.end());
 	std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
 	OtherResourceList.insert(OtherResourceList.end(), PrefabList.begin(), PrefabList.end());
@@ -939,4 +894,111 @@ void FEProject::InjectEditorCamera(FEScene* Scene)
 	CameraTransform.SetPosition(glm::vec3(-4.2269f, 15.7178f, 19.6429f));
 
 	SceneIDToEditorCameraID[Scene->GetObjectID()] = CameraEntity->GetObjectID();
+}
+
+std::string FEProject::GetEditorCameraIDBySceneID(std::string SceneID)
+{
+	if (SceneIDToEditorCameraID.find(SceneID) == SceneIDToEditorCameraID.end())
+	{
+		LOG.Add("FEProject::GetEditorCameraIDBySceneID: Editor camera not found for scene " + SceneID, "FE_LOG_LOADING", FE_LOG_WARNING);
+		return "";
+	}
+
+	return SceneIDToEditorCameraID[SceneID];
+}
+
+std::string FEProject::GetProperMainCameraIDBySceneID(std::string SceneID)
+{
+	if (SceneIDToProperMainCameraID.find(SceneID) == SceneIDToProperMainCameraID.end())
+	{
+		LOG.Add("FEProject::GetProperMainCameraIDBySceneID: Editor camera not found for scene " + SceneID, "FE_LOG_LOADING", FE_LOG_WARNING);
+		return "";
+	}
+
+	return SceneIDToProperMainCameraID[SceneID];
+}
+
+bool FEProject::SetProperMainCameraIDBySceneID(std::string SceneID, std::string CameraID)
+{
+	FEScene* Scene = SCENE_MANAGER.GetScene(SceneID);
+	if (Scene == nullptr)
+	{
+		LOG.Add("FEProject::SetProperMainCameraIDBySceneID: Scene " + SceneID + " not found!", "FE_LOG_LOADING", FE_LOG_WARNING);
+		return false;
+	}
+
+	if (!CameraID.empty())
+	{
+		FEEntity* CameraEntity = Scene->GetEntity(CameraID);
+		if (CameraEntity == nullptr)
+		{
+			LOG.Add("FEProject::SetProperMainCameraIDBySceneID: Camera " + CameraID + " not found in scene " + SceneID, "FE_LOG_LOADING", FE_LOG_WARNING);
+			return false;
+		}
+
+		if (!CameraEntity->HasComponent<FECameraComponent>())
+		{
+			LOG.Add("FEProject::SetProperMainCameraIDBySceneID: Entity " + CameraID + " in scene " + SceneID + " does not have camera component!", "FE_LOG_LOADING", FE_LOG_WARNING);
+			return false;
+		}
+	}
+
+	SceneIDToProperMainCameraID[SceneID] = CameraID;
+	return true;
+}
+
+void FEProject::SetProperMainCamerasInsteadOfEditorCameras()
+{
+	auto Iterator = SceneIDToProperMainCameraID.begin();
+	while (Iterator != SceneIDToProperMainCameraID.end())
+	{
+		FEScene* Scene = SCENE_MANAGER.GetScene(Iterator->first);
+		if (Scene != nullptr)
+		{
+			FEEntity* CurrentMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(Scene);
+			if (CurrentMainCameraEntity != nullptr && CurrentMainCameraEntity->GetObjectID() != SceneIDToProperMainCameraID[Scene->GetObjectID()])
+			{
+				CAMERA_SYSTEM.SetMainCamera(Scene->GetEntity(Iterator->second));
+			}
+		}
+		Iterator++;
+	}
+}
+
+void FEProject::SetEditorCamerasInsteadOfProperMainCameras()
+{
+	auto Iterator = SceneIDToEditorCameraID.begin();
+	while (Iterator != SceneIDToEditorCameraID.end())
+	{
+		FEScene* Scene = SCENE_MANAGER.GetScene(Iterator->first);
+		if (Scene != nullptr)
+		{
+			FEEntity* CurrentMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(Scene);
+			if (CurrentMainCameraEntity != nullptr && CurrentMainCameraEntity->GetObjectID() != SceneIDToEditorCameraID[Scene->GetObjectID()])
+			{
+				CAMERA_SYSTEM.SetMainCamera(Scene->GetEntity(Iterator->second));
+			}
+		}
+		Iterator++;
+	}
+}
+
+void FEProject::SaveProperMainCameras()
+{
+	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
+	for (size_t i = 0; i < SceneList.size(); i++)
+	{
+		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneList[i]);
+		if (CurrentScene == nullptr)
+			continue;
+
+		FEEntity* MainCameraEntity = CAMERA_SYSTEM.GetMainCamera(CurrentScene);
+		if (MainCameraEntity != nullptr)
+			SceneIDToProperMainCameraID[CurrentScene->GetObjectID()] = MainCameraEntity->GetObjectID();
+	}
+}
+
+std::string FEProject::GetID()
+{
+	return ID;
 }

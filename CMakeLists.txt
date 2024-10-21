@@ -100,6 +100,8 @@ file(GLOB Editor_SRC
 	"FEEditorVirtualFileSystem.h"
 	"FEEditorScriptingSystem.cpp"
 	"FEEditorScriptingSystem.h"
+	"FEProjectBuildSystem.cpp"
+	"FEProjectBuildSystem.h"
 )
 
 file(GLOB ProjectManagment_SRC

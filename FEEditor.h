@@ -42,6 +42,8 @@ public:
 
     bool IsInGameMode() const;
     void SetGameMode(bool GameMode);
+
+    void UpdateBeforeRender();
 private:
     SINGLETON_PRIVATE_PART(FEEditor)
 
@@ -100,6 +102,8 @@ private:
     void OnProjectClose();
 
     void BeforeChangeOfFocusedScene(FEScene* NewSceneInFocus);
+
+    std::unordered_map<std::string, std::string> SceneIDToOldMainCameraID;
 };
 
 #define EDITOR FEEditor::GetInstance()

@@ -23,6 +23,10 @@ void FEEditorScriptingSystem::Update()
 		if (CurrentModule == nullptr)
 			continue;
 
+		if (CurrentModule->GetTag() == ENGINE_RESOURCE_TAG ||
+			CurrentModule->GetTag() == EDITOR_RESOURCE_TAG)
+			continue;
+
 		if (CurrentModule->GetProject() != nullptr)
 			CurrentModule->GetProject()->Update();
 	}

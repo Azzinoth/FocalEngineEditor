@@ -67,25 +67,25 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 		{
 			case FE_TEXTURE:
 			{
-				TempList = RESOURCE_MANAGER.GetTextureList();
+				TempList = RESOURCE_MANAGER.GetTextureIDList();
 				break;
 			}
 
 			case FE_MESH:
 			{
-				TempList = RESOURCE_MANAGER.GetMeshList();
+				TempList = RESOURCE_MANAGER.GetMeshIDList();
 				break;
 			}
 			
 			case FE_MATERIAL:
 			{
-				TempList = RESOURCE_MANAGER.GetMaterialList();
+				TempList = RESOURCE_MANAGER.GetMaterialIDList();
 				break;
 			}
 			
 			case FE_GAMEMODEL:
 			{
-				TempList = RESOURCE_MANAGER.GetGameModelList();
+				TempList = RESOURCE_MANAGER.GetGameModelIDList();
 				break;
 			}
 			

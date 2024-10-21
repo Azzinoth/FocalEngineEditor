@@ -50,7 +50,7 @@ void FEEditorHaloSelectionEffect::UpdateResources(FEScene* Scene)
 	if (CurrentHaloSelectionData == nullptr)
 		return;
 
-	FECameraRenderingData* CameraData = RENDERER.GetCameraRenderingData(CAMERA_SYSTEM.GetMainCameraEntity(Scene));
+	FECameraRenderingData* CameraData = RENDERER.GetCameraRenderingData(CAMERA_SYSTEM.GetMainCamera(Scene));
 	if (CameraData == nullptr)
 		return;
 
@@ -132,7 +132,7 @@ void FEEditorHaloSelectionEffect::AddSceneData(const std::string& SceneID)
 	PerSceneData[SceneID] = new FEHaloSelectionData();
 	PerSceneData[SceneID]->SceneID = SceneID;
 
-	FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCameraEntity(CurrentScene);
+	FEEntity* MainCamera = CAMERA_SYSTEM.GetMainCamera(CurrentScene);
 	FECameraRenderingData* CameraData = RENDERER.GetCameraRenderingData(MainCamera);
 	if (CameraData == nullptr)
 		return;

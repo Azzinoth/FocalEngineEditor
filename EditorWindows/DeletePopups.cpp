@@ -64,7 +64,7 @@ void DeleteTexturePopup::Render()
 std::vector<FEMaterial*> DeleteTexturePopup::MaterialsThatUsesTexture(const FETexture* Texture)
 {
 	std::vector<FEMaterial*> Result;
-	const std::vector<std::string> MateriasList = RESOURCE_MANAGER.GetMaterialList();
+	const std::vector<std::string> MateriasList = RESOURCE_MANAGER.GetMaterialIDList();
 
 	for (size_t i = 0; i < MateriasList.size(); i++)
 	{
@@ -110,7 +110,7 @@ void DeleteTexturePopup::DeleteTexture(FETexture* Texture)
 	// re-create game model preview that was using material that uses this texture
 	if (!MaterialsThatUseTexture.empty())
 	{
-		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
+		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 		for (size_t i = 0; i < GameModelList.size(); i++)
 		{
 			const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
@@ -195,7 +195,7 @@ void DeleteMeshPopup::Render()
 int DeleteMeshPopup::TimesMeshUsed(const FEMesh* Mesh)
 {
 	int Result = 0;
-	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
+	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
@@ -215,7 +215,7 @@ void DeleteMeshPopup::DeleteMesh(FEMesh* Mesh)
 
 	// re-create game model preview
 	std::vector<std::string> GameModelListToUpdate;
-	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
+	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
 		const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
@@ -487,7 +487,7 @@ void DeleteMaterialPopup::Render()
 int DeleteMaterialPopup::TimesMaterialUsed(const FEMaterial* Material)
 {
 	int Result = 0;
-	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
+	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
@@ -506,7 +506,7 @@ void DeleteMaterialPopup::DeleteMaterial(FEMaterial* Material)
 	const std::string name = Material->GetName();
 	// re-create game model preview
 	std::vector<std::string> GameModelListToUpdate;
-	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelList();
+	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
 		const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);

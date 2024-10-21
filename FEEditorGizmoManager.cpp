@@ -291,14 +291,14 @@ void GizmoManager::Update()
 		}
 		
 		FEScene* Scene = SCENE_MANAGER.GetScene(GizmoSceneData->SceneID);
-		if (SELECTED.GetSelected(Scene) == nullptr || CAMERA_SYSTEM.GetMainCameraEntity(Scene) == nullptr)
+		if (SELECTED.GetSelected(Scene) == nullptr || CAMERA_SYSTEM.GetMainCamera(Scene) == nullptr)
 		{
 			HideAllGizmo(Scene);
 			PerSceneIterator++;
 			continue;
 		}
 
-		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(Scene)->GetComponent<FETransformComponent>();
+		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCamera(Scene)->GetComponent<FETransformComponent>();
 		FETransformComponent& ObjTransform = GetTransformComponentOfSelectedObject(Scene);
 		const glm::vec3 ObjectSpaceOriginInWorldSpace = glm::vec3(ObjTransform.GetWorldMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		glm::vec3 ToObject = ObjectSpaceOriginInWorldSpace - CameraTransformComponent.GetPosition(FE_WORLD_SPACE);
@@ -499,8 +499,8 @@ glm::vec3 GizmoManager::GetMousePositionDifferenceOnPlane(glm::vec3 PlaneNormal,
 	if (GizmoSceneData == nullptr)
 		return glm::vec3();
 
-	FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(Scene)->GetComponent<FETransformComponent>();
-	FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(Scene)->GetComponent<FECameraComponent>();
+	FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCamera(Scene)->GetComponent<FETransformComponent>();
+	FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCamera(Scene)->GetComponent<FECameraComponent>();
 	FEViewport* CurrentViewport = CAMERA_SYSTEM.GetMainCameraViewport(Scene);
 	glm::ivec2 ViewportPosition = glm::ivec2(CurrentViewport->GetX(), CurrentViewport->GetY());
 	glm::ivec2 ViewportSize = glm::ivec2(CurrentViewport->GetWidth(), CurrentViewport->GetHeight());
@@ -544,8 +544,8 @@ glm::vec3 GizmoManager::GetMousePositionDifferenceOnPlane(glm::vec3 PlaneNormal,
 	if (GizmoSceneData == nullptr)
 		return glm::vec3();
 
-	FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(Scene)->GetComponent<FETransformComponent>();
-	FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(Scene)->GetComponent<FECameraComponent>();
+	FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCamera(Scene)->GetComponent<FETransformComponent>();
+	FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCamera(Scene)->GetComponent<FECameraComponent>();
 	FEViewport* CurrentViewport = CAMERA_SYSTEM.GetMainCameraViewport(Scene);
 	glm::ivec2 ViewportPosition = glm::ivec2(CurrentViewport->GetX(), CurrentViewport->GetY());
 	glm::ivec2 ViewportSize = glm::ivec2(CurrentViewport->GetWidth(), CurrentViewport->GetHeight());
@@ -590,11 +590,11 @@ void GizmoManager::MouseMoveTransformationGizmos(FEScene* Scene)
 	if (GizmoSceneData == nullptr)
 		return;
 
-	if (CAMERA_SYSTEM.GetMainCameraEntity(Scene) == nullptr)
+	if (CAMERA_SYSTEM.GetMainCamera(Scene) == nullptr)
 		return;
 
-	FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCameraEntity(Scene)->GetComponent<FETransformComponent>();
-	FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(Scene)->GetComponent<FECameraComponent>();
+	FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCamera(Scene)->GetComponent<FETransformComponent>();
+	FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCamera(Scene)->GetComponent<FECameraComponent>();
 	FEViewport* CurrentViewport = CAMERA_SYSTEM.GetMainCameraViewport(Scene);
 	glm::ivec2 ViewportPosition = glm::ivec2(CurrentViewport->GetX(), CurrentViewport->GetY());
 	glm::ivec2 ViewportSize = glm::ivec2(CurrentViewport->GetWidth(), CurrentViewport->GetHeight());
@@ -713,7 +713,7 @@ void GizmoManager::MouseMoveScaleGizmos(FEScene* Scene)
 	if (GizmoSceneData == nullptr)
 		return;
 
-	FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCameraEntity(Scene)->GetComponent<FECameraComponent>();
+	FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCamera(Scene)->GetComponent<FECameraComponent>();
 	FETransformComponent& ObjTransform = GetTransformComponentOfSelectedObject(Scene);
 
 	if (GizmoSceneData->bScaleXGizmoActive && GizmoSceneData->bScaleYGizmoActive && GizmoSceneData->bScaleZGizmoActive)

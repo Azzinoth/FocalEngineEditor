@@ -22,6 +22,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		PROFILING.StartProfiling();
 
 		ENGINE.BeginFrame();
+		EDITOR.UpdateBeforeRender();
 		ENGINE.Render();
 
 #ifdef EDITOR_SELECTION_DEBUG_MODE
@@ -55,6 +56,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		if (ImGui::Button("Put This Frame To Timeline"))
 		{
 			bPutThisFrameToTimeline = true;
+		}
+
+		if (PROJECT_MANAGER.GetCurrent() != nullptr)
+		{
+			if (ImGui::Button("Build"))
+			{
+				EDITOR_PROJECT_BUILD_SYSTEM.BuildExecutable(PROJECT_MANAGER.GetCurrent());
+			}
 		}
 
 		//ImGui::ShowDemoWindow();
