@@ -39,6 +39,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W3 /O2 /Oi /Gy /sdl /FC
 # defined projects like INSTALL.vcproj and ZERO_CHECK.vcproj
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+# Editor should be built with these options
+set(BUILD_SHARED_LIBS ON CACHE BOOL "Build FEBasicApplication as a shared library" FORCE)
+set(USE_STATIC_RUNTIME OFF CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD)" FORCE)
+
 # Set up Visual node system
 set(DEAR_IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/imgui CACHE PATH "Path to Dear ImGui directory." FORCE)
 if(BUILD_SHARED_LIBS)
@@ -73,6 +77,15 @@ if(NOT TARGET FocalEngine)
 	add_subdirectory(SubSystems/FocalEngine)
 endif()
 
+if(USE_STATIC_RUNTIME)
+    # Add standard FocalEngine native scripts
+    # TODO: This should be done in the FocalEngine project, or make it simpler to add it user projects
+    file(GLOB Unpacked_NativeScript_2B7956623302254F620A675F_SRC
+	    "SubSystems/FocalEngine/Resources/UserScriptsData/ExtractedScriptModules/2B7956623302254F620A675F/FirstScript.h"
+	    "SubSystems/FocalEngine/Resources/UserScriptsData/ExtractedScriptModules/2B7956623302254F620A675F/FirstScript.cpp"
+    )
+endif()
+
 # Extract the relative path of the engine folder
 file(RELATIVE_PATH RELATIVE_PATH_TO_ENGINE_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}" "${ENGINE_FOLDER}")
 # We need to re-configure the Config.h file for the engine
@@ -82,8 +95,10 @@ set(ENGINE_FOLDER "${RELATIVE_PATH_TO_ENGINE_FOLDER}")
 configure_file(${ENGINE_FOLDER}/ResourceManager/Config.h.in ${ENGINE_FOLDER}/ResourceManager/Config.h @ONLY)
 
 # *************** EDITOR ***************
-file(GLOB Editor_SRC
-	"main.cpp"
+
+set(EDITOR_SOURCE_FILES "")
+list(APPEND EDITOR_SOURCE_FILES
+    "main.cpp"
 	"FEEditor.cpp"
 	"FEEditor.h"
 	"FEEditorDragAndDropManager.cpp"
@@ -103,6 +118,12 @@ file(GLOB Editor_SRC
 	"FEProjectBuildSystem.cpp"
 	"FEProjectBuildSystem.h"
 )
+
+if(USE_STATIC_RUNTIME)
+	list(APPEND EDITOR_SOURCE_FILES
+		${Unpacked_NativeScript_2B7956623302254F620A675F_SRC}
+	)
+endif()
 
 file(GLOB ProjectManagment_SRC
 	"SubSystems/ProjectManagment/FEProjectManager.cpp"
@@ -188,7 +209,7 @@ link_directories(${GLFW_LIB_DIR})
 
 # add the executable
 add_executable(FocalEngineEditor WIN32
-								 ${Editor_SRC}
+								 ${EDITOR_SOURCE_FILES}
 								 ${FEDearImguiWrapper_SRC}
 								 ${EditorWindows_BaseWindowClasses_SRC}
 								 ${EditorWindows_SRC}
@@ -210,9 +231,11 @@ target_link_libraries(FocalEngineEditor
         opengl32.lib
 )
 
-source_group("Source Files" FILES ${Application_SRC})
 # *************** EDITOR ***************
-source_group("Source Files/" FILES ${Editor_SRC})
+source_group("Source Files/" FILES ${EDITOR_SOURCE_FILES})
+if(USE_STATIC_RUNTIME)
+	source_group("Source Files/FocalEngine/2B7956623302254F620A675F" FILES ${Unpacked_NativeScript_2B7956623302254F620A675F_SRC})
+endif()
 source_group("Source Files/FEDearImguiWrapper" FILES ${FEDearImguiWrapper_SRC})
 source_group("Source Files/EditorWindows/BaseWindowClasses" FILES ${EditorWindows_BaseWindowClasses_SRC})
 source_group("Source Files/EditorWindows" FILES ${EditorWindows_SRC})

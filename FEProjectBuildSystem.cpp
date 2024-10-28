@@ -31,54 +31,6 @@ std::string FEProjectBuildSystem::GetVSProjectName(FEProject* ProjectToBuild)
 	return AppropriateProjectName;
 }
 
-bool FEProjectBuildSystem::ReplaceInFile(std::string Path, std::vector<InstructionWhatToReplaceInFile> Instructions)
-{
-	if (Path.empty())
-	{
-		LOG.Add("FEProjectBuildSystem::ReplaceInFile: File path is empty", "FE_BUILD_EXECUTABLE", FE_LOG_WARNING);
-		return false;
-	}
-
-	std::fstream File(Path, std::ios::in);
-	if (!File.is_open())
-	{
-		LOG.Add("FEProjectBuildSystem::ReplaceInFile: Error opening file " + Path, "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
-		return false;
-	}
-
-	std::vector<std::string> FileContent;
-	std::string Line;
-	while (std::getline(File, Line))
-		FileContent.push_back(Line);
-
-	File.close();
-
-	for (size_t i = 0; i < FileContent.size(); i++)
-	{
-		for (size_t j = 0; j < Instructions.size(); j++)
-		{
-			if (FileContent[i].find(Instructions[j].SubStringInLineToTrigger) != std::string::npos)
-			{
-				FileContent[i].replace(FileContent[i].find(Instructions[j].What), Instructions[j].What.size(), Instructions[j].ReplaceWith);
-			}
-		}
-	}
-
-	File.open(Path, std::ios::out | std::ios::trunc);
-	if (!File.is_open())
-	{
-		LOG.Add("FEProjectBuildSystem::ReplaceInFile: Error opening file " + Path, "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
-		return false;
-	}
-
-	// Write the modified content back to the file
-	for (size_t i = 0; i < FileContent.size(); i++)
-		File << FileContent[i] + "\n";
-
-	File.close();
-	return true;
-}
-
 bool FEProjectBuildSystem::CopyVisualNodeSystemSubProjectFiles(const std::string& OutputPath)
 {
 	if (!FILE_SYSTEM.DoesDirectoryExist(OutputPath))
@@ -283,7 +235,7 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 		return false;
 	}
 
-	if (!CreateFinalExecutableDirectory(ProjectToBuild/*, VSProjectDirectory*/))
+	if (!CreateFinalExecutableDirectory(ProjectToBuild))
 	{
 		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error creating final executable directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;
@@ -317,11 +269,11 @@ bool FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles(FEProject* ProjectT
 
 	std::string CMakeFilePath = VSProjectDirectory + "CMakeLists.txt";
 
-	std::vector<InstructionWhatToReplaceInFile> Instructions;
-	InstructionWhatToReplaceInFile CurrentInstruction;
-	CurrentInstruction.SubStringInLineToTrigger = "set(PROJECT_NAME PLACE_HOLDER)";
-	CurrentInstruction.What = "PLACE_HOLDER";
-	CurrentInstruction.ReplaceWith = GetVSProjectName(ProjectToBuild);
+	std::vector<FEFileSystem::TextReplacementRule> Instructions;
+	FEFileSystem::TextReplacementRule CurrentInstruction;
+	CurrentInstruction.ContextPattern = "set(PROJECT_NAME PLACE_HOLDER)";
+	CurrentInstruction.TargetText = "PLACE_HOLDER";
+	CurrentInstruction.ReplacementText = GetVSProjectName(ProjectToBuild);
 	Instructions.push_back(CurrentInstruction);
 
 	std::string SourceFileListString = "";
@@ -389,23 +341,22 @@ bool FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles(FEProject* ProjectT
 		}
 	}
 
-	CurrentInstruction.SubStringInLineToTrigger = "#(PLACE_HOLDER) Here should be list of all script modules sources.";
-	CurrentInstruction.What = "#(PLACE_HOLDER) Here should be list of all script modules sources.";
-	CurrentInstruction.ReplaceWith = SourceFileListString;
+	CurrentInstruction.ContextPattern = "#(PLACE_HOLDER) Here should be list of all script modules sources.";
+	CurrentInstruction.TargetText = "#(PLACE_HOLDER) Here should be list of all script modules sources.";
+	CurrentInstruction.ReplacementText = SourceFileListString;
 	Instructions.push_back(CurrentInstruction);
 
-
-	CurrentInstruction.SubStringInLineToTrigger = "		#(PLACE_HOLDER) Here should be list of all script modules.";
-	CurrentInstruction.What = "		#(PLACE_HOLDER) Here should be list of all script modules.";
-	CurrentInstruction.ReplaceWith = ExecutableListString;
+	CurrentInstruction.ContextPattern = "		#(PLACE_HOLDER) Here should be list of all script modules.";
+	CurrentInstruction.TargetText = "		#(PLACE_HOLDER) Here should be list of all script modules.";
+	CurrentInstruction.ReplacementText = ExecutableListString;
 	Instructions.push_back(CurrentInstruction);
 
-	CurrentInstruction.SubStringInLineToTrigger = "#(PLACE_HOLDER) Here should be list of all script modules and where to place them in VS project.";
-	CurrentInstruction.What = "#(PLACE_HOLDER) Here should be list of all script modules and where to place them in VS project.";
-	CurrentInstruction.ReplaceWith = FolderListInVSProjectString;
+	CurrentInstruction.ContextPattern = "#(PLACE_HOLDER) Here should be list of all script modules and where to place them in VS project.";
+	CurrentInstruction.TargetText = "#(PLACE_HOLDER) Here should be list of all script modules and where to place them in VS project.";
+	CurrentInstruction.ReplacementText = FolderListInVSProjectString;
 	Instructions.push_back(CurrentInstruction);
 
-	if (!ReplaceInFile(CMakeFilePath, Instructions))
+	if (!FILE_SYSTEM.PerformTextReplacements(CMakeFilePath, Instructions))
 	{
 		LOG.Add("FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles: Error initializing CMakeLists.txt", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;

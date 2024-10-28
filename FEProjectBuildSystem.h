@@ -8,16 +8,6 @@ class FEProjectBuildSystem
 public:
 	SINGLETON_PUBLIC_PART(FEProjectBuildSystem)
 
-	// Redundant functions(FENativeScriptProject). It should be unified ?
-	struct InstructionWhatToReplaceInFile
-	{
-		std::string SubStringInLineToTrigger;
-		std::string What;
-		std::string ReplaceWith;
-	};
-
-	bool ReplaceInFile(std::string FilePath, std::vector<InstructionWhatToReplaceInFile> Instructions);
-
 	bool BuildExecutable(FEProject* ProjectToBuild);
 	bool CopyVisualNodeSystemSubProjectFiles(const std::string& OutputPath);
 	bool InitializeCMakeFileAndScriptFiles(FEProject* ProjectToBuild, const std::string& VSProjectDirectory);

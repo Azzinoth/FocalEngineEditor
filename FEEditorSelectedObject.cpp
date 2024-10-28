@@ -318,8 +318,8 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 		return -1;
 
 	CurrentSelectionData->PixelAccurateSelectionFB->Bind();
-	glm::ivec4 OriginalViewport = RENDERER.GetViewport();
-	RENDERER.SetViewport(0, 0, CurrentSelectionData->PixelAccurateSelectionFB->GetWidth(), CurrentSelectionData->PixelAccurateSelectionFB->GetHeight());
+	glm::ivec4 OriginalViewport = RENDERER.GetGLViewport();
+	RENDERER.SetGLViewport(0, 0, CurrentSelectionData->PixelAccurateSelectionFB->GetWidth(), CurrentSelectionData->PixelAccurateSelectionFB->GetHeight());
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
@@ -388,7 +388,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 
 	FE_GL_ERROR(glReadPixels(static_cast<GLint>(LocalMouseX), GLint(CameraComponent.GetRenderTargetHeight() - LocalMouseY), 1, 1, GL_RGB, GL_UNSIGNED_BYTE, CurrentSelectionData->ColorUnderMouse));
 	CurrentSelectionData->PixelAccurateSelectionFB->UnBind();
-	RENDERER.SetViewport(OriginalViewport);
+	RENDERER.SetGLViewport(OriginalViewport);
 
 #ifndef EDITOR_SELECTION_DEBUG_MODE
 	if (!CurrentSelectionData->SceneEntitiesUnderMouse.empty())
@@ -573,7 +573,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 		HALO_SELECTION_EFFECT.HaloMaterial->ClearAllTexturesInfo();
 
 		FECameraComponent& CameraComponent = CurrentCamera->GetComponent<FECameraComponent>();
-		RENDERER.SetViewport(0, 0, CameraComponent.GetRenderTargetWidth(), CameraComponent.GetRenderTargetHeight());
+		RENDERER.SetGLViewport(0, 0, CameraComponent.GetRenderTargetWidth(), CameraComponent.GetRenderTargetHeight());
 
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT));
