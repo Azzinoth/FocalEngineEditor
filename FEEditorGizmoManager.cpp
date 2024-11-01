@@ -15,7 +15,7 @@ void GizmoManager::InitializeResources()
 	FEMaterial* CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationXGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
-	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.9f, 0.1f, 0.1f), "baseColor"));
+	CurrentMaterial->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
 	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
 	TransformationXGizmoGM = RESOURCE_MANAGER.CreateGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationXGizmoGM");
@@ -25,7 +25,7 @@ void GizmoManager::InitializeResources()
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationYGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
-	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.1f, 0.9f, 0.1f), "baseColor"));
+	CurrentMaterial->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
 	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
 	TransformationYGizmoGM = RESOURCE_MANAGER.CreateGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationYGizmoGM");
@@ -35,7 +35,7 @@ void GizmoManager::InitializeResources()
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
-	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.1f, 0.1f, 0.9f), "baseColor"));
+	CurrentMaterial->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
 	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
 	TransformationZGizmoGM = RESOURCE_MANAGER.CreateGameModel(TransformationGizmoMesh, CurrentMaterial, "TransformationZGizmoGM");
@@ -45,7 +45,7 @@ void GizmoManager::InitializeResources()
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationXYGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
-	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(1.0f, 1.0f, 1.0f), "baseColor"));
+	CurrentMaterial->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
 	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
 	TransformationXYGizmoGM = RESOURCE_MANAGER.CreateGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXYGizmoGM");
@@ -54,7 +54,7 @@ void GizmoManager::InitializeResources()
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationYZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
-	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(1.0f, 1.0f, 1.0f), "baseColor"));
+	CurrentMaterial->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
 	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
 	TransformationYZGizmoGM = RESOURCE_MANAGER.CreateGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationYZGizmoGM");
@@ -63,7 +63,7 @@ void GizmoManager::InitializeResources()
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("transformationXZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
-	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(1.0f, 1.0f, 1.0f), "baseColor"));
+	CurrentMaterial->SetBaseColor(glm::vec3(1.0f, 1.0f, 1.0f));
 	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
 	TransformationXZGizmoGM = RESOURCE_MANAGER.CreateGameModel(RESOURCE_MANAGER.GetMesh("84251E6E0D0801363579317R"/*"cube"*/), CurrentMaterial, "TransformationXZGizmoGM");
@@ -77,7 +77,7 @@ void GizmoManager::InitializeResources()
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("scaleXGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
-	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.9f, 0.1f, 0.1f), "baseColor"));
+	CurrentMaterial->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
 	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
 	ScaleXGizmoGM = RESOURCE_MANAGER.CreateGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleXGizmoGM");
@@ -87,7 +87,7 @@ void GizmoManager::InitializeResources()
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("scaleYGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
-	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.1f, 0.9f, 0.1f), "baseColor"));
+	CurrentMaterial->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
 	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
 	ScaleYGizmoGM = RESOURCE_MANAGER.CreateGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleYGizmoGM");
@@ -97,7 +97,7 @@ void GizmoManager::InitializeResources()
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("scaleZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
-	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.1f, 0.1f, 0.9f), "baseColor"));
+	CurrentMaterial->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
 	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
 	ScaleZGizmoGM = RESOURCE_MANAGER.CreateGameModel(ScaleGizmoMesh, CurrentMaterial, "ScaleZGizmoGM");
@@ -111,7 +111,7 @@ void GizmoManager::InitializeResources()
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("rotateXGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
-	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.9f, 0.1f, 0.1f), "baseColor"));
+	CurrentMaterial->SetBaseColor(glm::vec3(0.9f, 0.1f, 0.1f));
 	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
 	RotateXGizmoGM = RESOURCE_MANAGER.CreateGameModel(RotateGizmoMesh, CurrentMaterial, "RotateXGizmoGM");
@@ -121,7 +121,7 @@ void GizmoManager::InitializeResources()
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("rotateYGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
-	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.1f, 0.9f, 0.1f), "baseColor"));
+	CurrentMaterial->SetBaseColor(glm::vec3(0.1f, 0.9f, 0.1f));
 	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
 	RotateYGizmoGM = RESOURCE_MANAGER.CreateGameModel(RotateGizmoMesh, CurrentMaterial, "RotateYGizmoGM");
@@ -131,7 +131,7 @@ void GizmoManager::InitializeResources()
 	CurrentMaterial = RESOURCE_MANAGER.CreateMaterial("rotateZGizmoMaterial");
 	CurrentMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 	CurrentMaterial->Shader = RESOURCE_MANAGER.GetShader("6917497A5E0C05454876186F"/*"FESolidColorShader"*/);
-	CurrentMaterial->AddParameter(FEShaderParam(glm::vec3(0.1f, 0.1f, 0.9f), "baseColor"));
+	CurrentMaterial->SetBaseColor(glm::vec3(0.1f, 0.1f, 0.9f));
 	RESOURCE_MANAGER.SetTag(CurrentMaterial, EDITOR_RESOURCE_TAG);
 
 	RotateZGizmoGM = RESOURCE_MANAGER.CreateGameModel(RotateGizmoMesh, CurrentMaterial, "RotateZGizmoGM");

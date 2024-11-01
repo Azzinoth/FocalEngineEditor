@@ -32,9 +32,7 @@ void FEEditorSelectedObject::InitializeResources()
 																										   "0E213D3542135C15471F0D6B"/*"FEPixelAccurateInstancedSelection"*/);
 
 	RESOURCE_MANAGER.SetTag(FEPixelAccurateInstancedSelection, EDITOR_RESOURCE_TAG);
-
-	const FEShaderParam ColorParam(glm::vec3(0.0f, 0.0f, 0.0f), "baseColor");
-	PixelAccurateSelectionMaterial->AddParameter(ColorParam);
+	PixelAccurateSelectionMaterial->SetBaseColor(glm::vec3(0.0f, 0.0f, 0.0f));
 }
 
 void FEEditorSelectedObject::UpdateResources(FEScene* Scene)
@@ -234,9 +232,9 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 			return;
 
 		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
-		TerrainComponent.Shader->UpdateParameterData("baseColor", ColorID);
+		TerrainComponent.Shader->UpdateUniformData("baseColor", ColorID);
 		RENDERER.RenderTerrainComponent(Entity, CameraEntity);
-		TerrainComponent.Shader->UpdateParameterData("baseColor", glm::vec3(1.0f));
+		TerrainComponent.Shader->UpdateUniformData("baseColor", glm::vec3(1.0f));
 		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("5A3E4F5C13115856401F1D1C"/*"FETerrainShader"*/);
 	}
 	else if (Entity->HasComponent<FEInstancedComponent>() && Entity->HasComponent<FEPrefabInstanceComponent>())
@@ -495,14 +493,14 @@ void FEEditorSelectedObject::RenderEntityHaloEffectInternal(FEEntity* Entity, gl
 	{
 		FETerrainComponent& TerrainComponent = Entity->GetComponent<FETerrainComponent>();
 		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
-		TerrainComponent.Shader->UpdateParameterData("baseColor", Color);
+		TerrainComponent.Shader->UpdateUniformData("baseColor", Color);
 		const float RegularLODLevel = TerrainComponent.GetLODLevel();
 		TerrainComponent.SetLODLevel(0.0f);
 
 		RENDERER.RenderTerrainComponent(Entity, CameraEntity);
 
 		TerrainComponent.SetLODLevel(RegularLODLevel);
-		TerrainComponent.Shader->UpdateParameterData("baseColor", glm::vec3(1.0f));
+		TerrainComponent.Shader->UpdateUniformData("baseColor", glm::vec3(1.0f));
 		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("5A3E4F5C13115856401F1D1C"/*"FETerrainShader"*/);
 	}
 	else if (Entity->HasComponent<FEInstancedComponent>() && Entity->HasComponent<FEPrefabInstanceComponent>())

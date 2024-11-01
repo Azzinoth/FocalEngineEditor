@@ -755,6 +755,11 @@ FEEntity* EditMaterialWindow::InjectModelViewCamera(FEScene* Scene)
 	}
 
 	RESOURCE_MANAGER.SetTag(CameraEntity, EDITOR_RESOURCE_TAG);
+	FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
+	CameraComponent.SetRenderTargetSize(512, 1020);
+	CameraComponent.SetDistanceFogEnabled(false);
+	FENativeScriptComponent& CameraScript = CameraEntity->GetComponent<FENativeScriptComponent>();
+	CameraScript.SetVariableValue("DistanceToModel", 10.0f);
 	CAMERA_SYSTEM.SetMainCamera(CameraEntity);
 
 	return CameraEntity;
@@ -771,7 +776,7 @@ EditMaterialWindow::EditMaterialWindow()
 	CancelButton->SetActiveColor(ImVec4(0.1f, 1.0f, 0.1f, 1.0f));
 	NodeAreaTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_TEXTURE, DragAndDropnodeAreaTargetCallback, reinterpret_cast<void**>(&DragAndDropCallbackInfo), "Drop to add texture");
 
-	PreviewScene = SCENE_MANAGER.CreateScene("MaterialEditor_Scene", "", FESceneFlag::Active);
+	PreviewScene = SCENE_MANAGER.CreateScene("MaterialEditor_Scene", "", FESceneFlag::Active | FESceneFlag::EditorMode);
 	RESOURCE_MANAGER.SetTag(PreviewScene, EDITOR_RESOURCE_TAG);
 
 	PreviewGameModel = new FEGameModel(nullptr, nullptr, "MaterialEditor_Preview_GameModel");
@@ -785,14 +790,6 @@ EditMaterialWindow::EditMaterialWindow()
 
 	PreviewCameraEntity = InjectModelViewCamera(PreviewScene);
 	PreviewCameraEntity->SetName("MaterialEditor_Scene_CameraEntity");
-	//PreviewCameraEntity = PreviewScene->CreateEntity("MaterialEditor_Scene_CameraEntity");
-	//PreviewCameraEntity->AddComponent<FECameraComponent>();
-	FECameraComponent& CameraComponent = PreviewCameraEntity->GetComponent<FECameraComponent>();
-	//CameraComponent.Type = 1;
-	//CameraComponent.DistanceToModel = 10.0;
-	CameraComponent.SetRenderTargetSize(512, 1020);
-	CameraComponent.SetDistanceFogEnabled(false);
-	CAMERA_SYSTEM.SetMainCamera(PreviewCameraEntity);
 
 	PreviewLightEntity = PreviewScene->CreateEntity("MaterialEditor_Scene_LightEntity");
 	PreviewLightEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
@@ -819,18 +816,15 @@ void EditMaterialWindow::MouseButtonCallback(const int Button, const int Action,
 	if (ImGui::GetIO().WantCaptureMouse && (!EDITOR_MATERIAL_WINDOW.bWindowHovered || !EDITOR_MATERIAL_WINDOW.bCameraOutputHovered))
 	{
 		EDITOR_MATERIAL_WINDOW.PreviewCameraEntity->GetComponent<FECameraComponent>().SetActive(false);
-		//CAMERA_SYSTEM.SetIsIndividualInputActive(EDITOR_MATERIAL_WINDOW.PreviewCameraEntity, false);
 	}
 
 	if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_PRESS && EDITOR_MATERIAL_WINDOW.bWindowHovered && EDITOR_MATERIAL_WINDOW.bCameraOutputHovered)
 	{
 		EDITOR_MATERIAL_WINDOW.PreviewCameraEntity->GetComponent<FECameraComponent>().SetActive(true);
-		//CAMERA_SYSTEM.SetIsIndividualInputActive(EDITOR_MATERIAL_WINDOW.PreviewCameraEntity, true);
 	}
 	else if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_RELEASE)
 	{
 		EDITOR_MATERIAL_WINDOW.PreviewCameraEntity->GetComponent<FECameraComponent>().SetActive(false);
-		//CAMERA_SYSTEM.SetIsIndividualInputActive(EDITOR_MATERIAL_WINDOW.PreviewCameraEntity, false);
 	}
 }
 

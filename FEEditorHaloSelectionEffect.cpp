@@ -62,27 +62,27 @@ void FEEditorHaloSelectionEffect::UpdateResources(FEScene* Scene)
 
 	FEShader* BlurShader = RESOURCE_MANAGER.GetShader("7F3E4F5C130B537F0846274F"/*"FEBloomBlur"*/);
 	CurrentHaloSelectionData->PostProcess->AddStage(new FEPostProcessStage(FE_POST_PROCESS_OWN_TEXTURE, BlurShader));
-	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(glm::vec2(1.0f, 0.0f), "FEBlurDirection"));
+	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("FEBlurDirection", glm::vec2(1.0f, 0.0f)));
 	// because input texture at first stage is full resolution, we should blur harder to get simular blur on both sides.
-	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(1.5f * 4.0f, "BloomSize"));
+	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("BloomSize", 1.5f * 4.0f));
 	CurrentHaloSelectionData->PostProcess->Stages.back()->InTexture.push_back(CurrentHaloSelectionData->HaloObjectsFB->GetColorAttachment());
 	CurrentHaloSelectionData->PostProcess->ReplaceOutTexture(0, RESOURCE_MANAGER.CreateSameFormatTexture(CameraData->SceneToTextureFB->GetColorAttachment(), CameraData->SceneToTextureFB->GetWidth() / 4, CameraData->SceneToTextureFB->GetHeight() / 4));
 
 	CurrentHaloSelectionData->PostProcess->AddStage(new FEPostProcessStage(FE_POST_PROCESS_PREVIOUS_STAGE_RESULT0, BlurShader));
-	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(glm::vec2(0.0f, 1.0f), "FEBlurDirection"));
-	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(1.5f, "BloomSize"));
+	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("FEBlurDirection", glm::vec2(0.0f, 1.0f)));
+	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("BloomSize", 1.5f));
 	CurrentHaloSelectionData->PostProcess->Stages.back()->InTexture.push_back(CurrentHaloSelectionData->PostProcess->Stages[0]->OutTexture);
 	CurrentHaloSelectionData->PostProcess->ReplaceOutTexture(1, RESOURCE_MANAGER.CreateSameFormatTexture(CameraData->SceneToTextureFB->GetColorAttachment(), CameraData->SceneToTextureFB->GetWidth() / 4, CameraData->SceneToTextureFB->GetHeight() / 4));
 
 	CurrentHaloSelectionData->PostProcess->AddStage(new FEPostProcessStage(FE_POST_PROCESS_PREVIOUS_STAGE_RESULT0, BlurShader));
-	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(glm::vec2(1.0f, 0.0f), "FEBlurDirection"));
-	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(1.0f, "BloomSize"));
+	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("FEBlurDirection", glm::vec2(1.0f, 0.0f)));
+	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("BloomSize", 1.0f));
 	CurrentHaloSelectionData->PostProcess->Stages.back()->InTexture.push_back(CurrentHaloSelectionData->PostProcess->Stages[0]->OutTexture);
 	CurrentHaloSelectionData->PostProcess->ReplaceOutTexture(2, RESOURCE_MANAGER.CreateSameFormatTexture(CameraData->SceneToTextureFB->GetColorAttachment(), CameraData->SceneToTextureFB->GetWidth() / 4, CameraData->SceneToTextureFB->GetHeight() / 4));
 
 	CurrentHaloSelectionData->PostProcess->AddStage(new FEPostProcessStage(FE_POST_PROCESS_PREVIOUS_STAGE_RESULT0, BlurShader));
-	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(glm::vec2(0.0f, 1.0f), "FEBlurDirection"));
-	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(1.0f, "BloomSize"));
+	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("FEBlurDirection", glm::vec2(0.0f, 1.0f)));
+	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("BloomSize", 1.0f));
 	CurrentHaloSelectionData->PostProcess->Stages.back()->InTexture.push_back(CurrentHaloSelectionData->PostProcess->Stages[0]->OutTexture);
 	CurrentHaloSelectionData->PostProcess->ReplaceOutTexture(3, RESOURCE_MANAGER.CreateSameFormatTexture(CameraData->SceneToTextureFB->GetColorAttachment(), CameraData->SceneToTextureFB->GetWidth() / 4, CameraData->SceneToTextureFB->GetHeight() / 4));
 
@@ -143,27 +143,27 @@ void FEEditorHaloSelectionEffect::AddSceneData(const std::string& SceneID)
 
 	FEShader* BlurShader = RESOURCE_MANAGER.GetShader("7F3E4F5C130B537F0846274F"/*"FEBloomBlur"*/);
 	PerSceneData[SceneID]->PostProcess->AddStage(new FEPostProcessStage(FE_POST_PROCESS_OWN_TEXTURE, BlurShader));
-	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(glm::vec2(1.0f, 0.0f), "FEBlurDirection"));
+	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("FEBlurDirection", glm::vec2(1.0f, 0.0f)));
 	// because input texture at first stage is full resolution, we should blur harder to get simular blur on both sides.
-	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(1.5f * 4.0f, "BloomSize"));
+	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("BloomSize", 1.5f * 4.0f));
 	PerSceneData[SceneID]->PostProcess->Stages.back()->InTexture.push_back(PerSceneData[SceneID]->HaloObjectsFB->GetColorAttachment());
 	PerSceneData[SceneID]->PostProcess->ReplaceOutTexture(0, RESOURCE_MANAGER.CreateSameFormatTexture(CameraData->SceneToTextureFB->GetColorAttachment(), CameraData->SceneToTextureFB->GetWidth() / 4, CameraData->SceneToTextureFB->GetHeight() / 4));
 
 	PerSceneData[SceneID]->PostProcess->AddStage(new FEPostProcessStage(FE_POST_PROCESS_PREVIOUS_STAGE_RESULT0, BlurShader));
-	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(glm::vec2(0.0f, 1.0f), "FEBlurDirection"));
-	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(1.5f, "BloomSize"));
+	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("FEBlurDirection", glm::vec2(0.0f, 1.0f)));
+	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("BloomSize", 1.5f));
 	PerSceneData[SceneID]->PostProcess->Stages.back()->InTexture.push_back(PerSceneData[SceneID]->PostProcess->Stages[0]->OutTexture);
 	PerSceneData[SceneID]->PostProcess->ReplaceOutTexture(1, RESOURCE_MANAGER.CreateSameFormatTexture(CameraData->SceneToTextureFB->GetColorAttachment(), CameraData->SceneToTextureFB->GetWidth() / 4, CameraData->SceneToTextureFB->GetHeight() / 4));
 
 	PerSceneData[SceneID]->PostProcess->AddStage(new FEPostProcessStage(FE_POST_PROCESS_PREVIOUS_STAGE_RESULT0, BlurShader));
-	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(glm::vec2(1.0f, 0.0f), "FEBlurDirection"));
-	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(1.0f, "BloomSize"));
+	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("FEBlurDirection", glm::vec2(1.0f, 0.0f)));
+	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("BloomSize", 1.0f));
 	PerSceneData[SceneID]->PostProcess->Stages.back()->InTexture.push_back(PerSceneData[SceneID]->PostProcess->Stages[0]->OutTexture);
 	PerSceneData[SceneID]->PostProcess->ReplaceOutTexture(2, RESOURCE_MANAGER.CreateSameFormatTexture(CameraData->SceneToTextureFB->GetColorAttachment(), CameraData->SceneToTextureFB->GetWidth() / 4, CameraData->SceneToTextureFB->GetHeight() / 4));
 
 	PerSceneData[SceneID]->PostProcess->AddStage(new FEPostProcessStage(FE_POST_PROCESS_PREVIOUS_STAGE_RESULT0, BlurShader));
-	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(glm::vec2(0.0f, 1.0f), "FEBlurDirection"));
-	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniforms.push_back(FEShaderParam(1.0f, "BloomSize"));
+	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("FEBlurDirection", glm::vec2(0.0f, 1.0f)));
+	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("BloomSize", 1.0f));
 	PerSceneData[SceneID]->PostProcess->Stages.back()->InTexture.push_back(PerSceneData[SceneID]->PostProcess->Stages[0]->OutTexture);
 	PerSceneData[SceneID]->PostProcess->ReplaceOutTexture(3, RESOURCE_MANAGER.CreateSameFormatTexture(CameraData->SceneToTextureFB->GetColorAttachment(), CameraData->SceneToTextureFB->GetWidth() / 4, CameraData->SceneToTextureFB->GetHeight() / 4));
 

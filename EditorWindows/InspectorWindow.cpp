@@ -1614,9 +1614,14 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 			ImGui::Checkbox("WireframeMode", &bActive);
 			TerrainComponent.SetWireframeMode(bActive);
 
-			int IData = *(int*)RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/)->GetParameterData("debugFlag");
-			ImGui::SliderInt("debugFlag", &IData, 0, 10);
-			RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/)->UpdateParameterData("debugFlag", IData);
+			FEShaderUniformValue CurrentValue;
+			if (RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/)->GetUniformData("debugFlag", CurrentValue))
+			{
+
+				int IData = CurrentValue.GetValue<int>();
+				ImGui::SliderInt("debugFlag", &IData, 0, 10);
+				RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/)->UpdateUniformData("debugFlag", IData);
+			}
 
 			float DisplacementScale = TerrainComponent.GetDisplacementScale();
 			ImGui::DragFloat("displacementScale", &DisplacementScale, 0.02f, -10.0f, 10.0f);
