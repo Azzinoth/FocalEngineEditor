@@ -609,7 +609,7 @@ void DeleteDirectoryPopup::Render()
 			PROJECT_MANAGER.GetCurrent()->SetModified(true);
 
 			// I should do it in a way as windows FS is doing it.
-			// You can't delete non empty folder
+			// You can't delete non-empty folder
 			// Firstly you recursively have to delete all files and folders in it
 
 

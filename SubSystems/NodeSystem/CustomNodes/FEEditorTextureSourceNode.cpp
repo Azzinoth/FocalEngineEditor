@@ -2,7 +2,7 @@
 using namespace FocalEngine;
 using namespace VisNodeSys;
 
-bool FEEditorTextureSourceNode::isRegistered = []()
+bool FEEditorTextureSourceNode::IsRegistered = []()
 {
 	NODE_FACTORY.RegisterNodeType("FEEditorTextureSourceNode",
 		[]() -> Node* {

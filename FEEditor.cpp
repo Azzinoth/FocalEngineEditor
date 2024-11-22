@@ -189,8 +189,7 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 			if (EDITOR.GetFocusedScene() != nullptr)
 			{
 				FEEntity* EntityToDuplicate = EDITOR.GetFocusedScene()->GetEntity(EDITOR.GetSceneEntityIDInClipboard());
-				// Enitity could be deleted in the meantime
-				// or it could be from another scene
+				// Skip if entity was deleted or belongs to another scene
 				if (EntityToDuplicate != nullptr)
 				{
 					FENaiveSceneGraphNode* NodeToDuplicate = EDITOR.GetFocusedScene()->SceneGraph.GetNodeByEntityID(EntityToDuplicate->GetObjectID());

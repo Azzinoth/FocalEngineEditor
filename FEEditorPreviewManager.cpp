@@ -118,7 +118,7 @@ void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 	const float YSize = sqrt((Max.y - Min.y) * (Max.y - Min.y));
 	const float ZSize = sqrt((Max.z - Min.z) * (Max.z - Min.z));
 
-	// invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
+	// Invert center point to get required translation vector for centering mesh at origin
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(Max.x - XSize / 2.0f, Max.y - YSize / 2.0f, Max.z - ZSize / 2.0f));
 	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
@@ -142,7 +142,7 @@ FETexture* FEEditorPreviewManager::GetMeshPreview(const std::string MeshID)
 	if (RESOURCE_MANAGER.GetMesh(MeshID)->IsDirty())
 	{
 		CreateMeshPreview(MeshID);
-		// if some game model uses this mesh we should also update it's preview
+		// if some game model uses this mesh we should also update its preview
 		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 
 		for (size_t i = 0; i < GameModelList.size(); i++)
@@ -220,7 +220,7 @@ FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string Material
 	if (RESOURCE_MANAGER.GetMaterial(MaterialID)->IsDirty())
 	{
 		CreateMaterialPreview(MaterialID);
-		// if some game model uses this material we should also update it's preview
+		// if some game model uses this material we should also update its preview
 		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 		for (size_t i = 0; i < GameModelList.size(); i++)
 		{
@@ -230,7 +230,7 @@ FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string Material
 			{
 				CreateGameModelPreview(CurrentGameModel->GetObjectID());
 
-				// If some Prefab uses this game model we should also update it's preview.
+				// If some Prefab uses this game model we should also update its preview.
 				std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
 				for (size_t j = 0; j < PrefabList.size(); j++)
 				{
@@ -276,7 +276,7 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 	const float YSize = sqrt((max.y - min.y) * (max.y - min.y));
 	const float ZSize = sqrt((max.z - min.z) * (max.z - min.z));
 
-	// invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
+	// Invert center point to get required translation vector for centering mesh at origin
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
 	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
@@ -314,7 +314,7 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 	const float YSize = sqrt((max.y - min.y) * (max.y - min.y));
 	const float ZSize = sqrt((max.z - min.z) * (max.z - min.z));
 
-	// Invert center point and it will be exactly how much we need to translate mesh in order to place it in origin.
+	// Invert center point to get required translation vector for centering mesh at origin
 	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
 	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);

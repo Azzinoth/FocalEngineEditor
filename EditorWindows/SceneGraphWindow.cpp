@@ -396,16 +396,16 @@ int FEEditorSceneGraphWindow::FilterInputTextCallback(ImGuiInputTextCallbackData
 
 void FEEditorSceneGraphWindow::RenderFilterInput()
 {
-	bool bIsPlaceHolderTextUsedWasOn = bIsPlaceHolderTextUsed;
+	const bool bIsPlaceHolderTextUsedWasOn = bIsPlaceHolderTextUsed;
 
 	if (bIsPlaceHolderTextUsedWasOn)
 		ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 150));
 
 	// Setting up the callback for the input text.
 	std::function<int(ImGuiInputTextCallbackData*)> Callback = std::bind(&FEEditorSceneGraphWindow::FilterInputTextCallback, std::placeholders::_1);
-	auto StaticCallback = [](ImGuiInputTextCallbackData* data) -> int {
-		auto& callback = *static_cast<std::function<int(ImGuiInputTextCallbackData*)>*>(data->UserData);
-		return callback(data);
+	auto StaticCallback = [](ImGuiInputTextCallbackData* Data) -> int {
+		const auto& Callback = *static_cast<std::function<int(ImGuiInputTextCallbackData*)>*>(Data->UserData);
+		return Callback(Data);
 	};
 
 	if (ImGui::InputText("##SceneGraphWindowFilter", FilterForEntities, FilterInputBufferSize, ImGuiInputTextFlags_CallbackAlways, StaticCallback, &Callback))
