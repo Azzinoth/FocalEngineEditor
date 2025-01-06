@@ -363,9 +363,9 @@ void FEEditor::Render()
 					CONTENT_BROWSER_WINDOW.bVisible = !CONTENT_BROWSER_WINDOW.bVisible;
 				}
 
-				if (ImGui::MenuItem("Effects", nullptr, bEffectsWindowVisible))
+				if (ImGui::MenuItem("Effects", nullptr, bEditorCamerasWindowVisible))
 				{
-					bEffectsWindowVisible = !bEffectsWindowVisible;
+					bEditorCamerasWindowVisible = !bEditorCamerasWindowVisible;
 				}
 
 				if (ImGui::MenuItem("Log", nullptr, bLogWindowVisible))
@@ -490,7 +490,7 @@ void FEEditor::Render()
 		SCENE_GRAPH_WINDOW.Render();
 		CONTENT_BROWSER_WINDOW.Render();
 		INSPECTOR_WINDOW.Render();
-		DisplayEffectsWindow();
+		DisplayEditorCamerasWindow();
 		DisplayLogWindow();
 		if (!GyzmosSettingsWindowObject.IsVisible())
 			GyzmosSettingsWindowObject.Show();
@@ -611,48 +611,43 @@ void FEEditor::DropCallback(const int Count, const char** Paths)
 	}
 }
 
-void FEEditor::DisplayEffectsWindow() const
+void FEEditor::DisplayEditorCamerasWindow() const
 {
-	if (!bEffectsWindowVisible)
+	if (!bEditorCamerasWindowVisible)
 		return;
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-	ImGui::Begin("Effects settings", nullptr, ImGuiWindowFlags_None);
+	ImGui::Begin("Editor Cameras", nullptr, ImGuiWindowFlags_None);
 
-	int GUIID = 0;
-	static float ButtonWidth = 80.0f;
-	static float FieldWidth = 250.0f;
-
-	static ImGuiButton* ResetButton = new ImGuiButton("Reset");
-	static bool bFirstCall = true;
-	if (bFirstCall)
+	auto EditorCameraIterator = PROJECT_MANAGER.GetCurrent()->SceneIDToEditorCameraID.begin();
+	while (EditorCameraIterator != PROJECT_MANAGER.GetCurrent()->SceneIDToEditorCameraID.end())
 	{
-		ResetButton->SetSize(ImVec2(ButtonWidth, 28.0f));
-		bFirstCall = false;
-	}
-
-	if (ImGui::CollapsingHeader("Sky", 0))
-	{
-		bool bEnabledSky = SKY_DOME_SYSTEM.IsEnabled();
-		if (ImGui::Checkbox("enable sky", &bEnabledSky))
+		FEScene* Scene = SCENE_MANAGER.GetScene(EditorCameraIterator->first);
+		if (Scene == nullptr)
 		{
-			SKY_DOME_SYSTEM.SetEnabled(bEnabledSky);
+			EditorCameraIterator++;
+			continue;
 		}
 
-		/*ImGui::Text("Sphere size:");
-		ImGui::SetNextItemWidth(FieldWidth);
-		float size = RENDERER.GetDistanceToSky();
-		ImGui::DragFloat("##Sphere size", &size, 0.01f, 0.0f, 200.0f);
-		RENDERER.SetDistanceToSky(size);
-
-		ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Update();
-		if (ResetButton->IsClicked())
+		FEEntity* CameraEntity = Scene->GetEntity(EditorCameraIterator->second);
+		if (CameraEntity == nullptr)
 		{
-			RENDERER.SetDistanceToSky(50.0f);
+			EditorCameraIterator++;
+			continue;
 		}
-		ImGui::PopID();*/
+
+		if (!CameraEntity->HasComponent<FECameraComponent>())
+		{
+			EditorCameraIterator++;
+			continue;
+		}
+
+		if (ImGui::CollapsingHeader(CameraEntity->GetObjectID().c_str(), 0))
+		{
+			INSPECTOR_WINDOW.DisplayCameraProperties(CameraEntity);
+		}
+
+		EditorCameraIterator++;
 	}
 
 	ImGui::PopStyleVar();

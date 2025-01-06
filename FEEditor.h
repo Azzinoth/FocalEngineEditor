@@ -71,8 +71,8 @@ private:
     static void CloseWindowCallBack();
 
     // Effects window
-    bool bEffectsWindowVisible = true;
-    void DisplayEffectsWindow() const;
+    bool bEditorCamerasWindowVisible = true;
+    void DisplayEditorCamerasWindow() const;
 
     // Log window
     bool bLogWindowVisible = true;

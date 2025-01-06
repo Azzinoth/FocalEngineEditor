@@ -454,6 +454,9 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 {
 	FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
 
+	if (EDITOR.GetFocusedScene() == nullptr)
+		return;
+
 	// Because of editor camera system, we need to check if it is main camera in a different way.
 	std::string MainCameraID = PROJECT_MANAGER.GetCurrent()->GetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetObjectID());
 	bool bIsMainCamera = MainCameraID == CameraEntity->GetObjectID();
@@ -467,6 +470,43 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 		{
 			PROJECT_MANAGER.GetCurrent()->SetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetObjectID(), "");
 		}
+	}
+
+	// Camera Preview
+	ImGui::Text("Camera Preview:");
+
+	FEScene* CurrentScene = CameraEntity->GetParentScene();
+	FEEntity* OldMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene());
+	CAMERA_SYSTEM.SetMainCamera(CameraEntity);
+
+	CameraComponent.SetRenderTargetSize(452, 256);
+
+	// It would not render, because it does not have proper FEViewPort
+	RENDERER.Render(CurrentScene);
+	FETexture* PreviewTexture = RENDERER.GetCameraResult(CameraEntity);
+	if (PreviewTexture != nullptr)
+		ImGui::Image((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(452, 256), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+
+	CAMERA_SYSTEM.SetMainCamera(OldMainCameraEntity);
+
+	// Rendering pipeline settings
+	ImGui::Text("Rendering pipeline:");
+	static const char* RenderingPipelineOptions[2] = { "Deferred", "Forward_Simplified" };
+	FERenderingPipeline SelectedRenderingPipeline = CameraComponent.GetRenderingPipeline();
+	static int CurrentIndex = 0;
+	if (SelectedRenderingPipeline == FERenderingPipeline::Deferred)
+	{
+		CurrentIndex = 0;
+	}
+	else if (SelectedRenderingPipeline == FERenderingPipeline::Forward_Simplified)
+	{
+		CurrentIndex = 1;
+	}
+
+	ImGui::SetNextItemWidth(200);
+	if (ImGui::Combo("##RenderingPipeline", &CurrentIndex, RenderingPipelineOptions, 2))
+	{
+		CAMERA_SYSTEM.SetCameraRenderingPipeline(CameraEntity, CurrentIndex == 0 ? FERenderingPipeline::Deferred : FERenderingPipeline::Forward_Simplified);
 	}
 
 	float FOV = CameraComponent.GetFOV();
