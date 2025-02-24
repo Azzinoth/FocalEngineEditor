@@ -644,7 +644,18 @@ void FEEditor::DisplayEditorCamerasWindow() const
 
 		if (ImGui::CollapsingHeader(CameraEntity->GetObjectID().c_str(), 0))
 		{
-			INSPECTOR_WINDOW.DisplayCameraProperties(CameraEntity);
+			ImGui::Indent();
+
+			if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				FETransformComponent& Transform = CameraEntity->GetComponent<FETransformComponent>();
+				INSPECTOR_WINDOW.ShowTransformConfiguration(CameraEntity->GetName(), &Transform);
+			}
+			
+			if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				INSPECTOR_WINDOW.DisplayCameraProperties(CameraEntity);
+			}
 		}
 
 		EditorCameraIterator++;

@@ -129,9 +129,9 @@ void FEEditorSceneWindow::Render()
 	{
 		FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
 
-		if (CameraComponent.GetViewport() == nullptr)
+		if (CameraComponent.GetViewport() == nullptr || CameraComponent.GetViewport()->GetType() == FE_VIEWPORT_VIRTUAL)
 		{
-			std::string NewViewportID = ENGINE.AddViewport(GetWindow());
+			std::string NewViewportID = ENGINE.CreateViewport(GetWindow());
 			CAMERA_SYSTEM.SetCameraViewport(CameraEntity, NewViewportID);
 			SELECTED.AddSceneData(Scene->GetObjectID());
 			GIZMO_MANAGER.AddSceneData(Scene->GetObjectID());

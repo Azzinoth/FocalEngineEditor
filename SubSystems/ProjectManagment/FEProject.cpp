@@ -887,7 +887,7 @@ void FEProject::InjectEditorCamera(FEScene* Scene)
 
 	RESOURCE_MANAGER.SetTag(CameraEntity, EDITOR_RESOURCE_TAG);
 	FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
-	CameraComponent.SetRenderTargetSize(128, 128);
+	CameraComponent.TryToSetViewportSize(128, 128);
 	CameraComponent.SetDistanceFogEnabled(false);
 	CAMERA_SYSTEM.SetMainCamera(CameraEntity);
 	FETransformComponent& CameraTransform = CameraEntity->GetComponent<FETransformComponent>();

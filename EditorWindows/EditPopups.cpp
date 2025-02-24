@@ -756,7 +756,7 @@ FEEntity* EditMaterialWindow::InjectModelViewCamera(FEScene* Scene)
 
 	RESOURCE_MANAGER.SetTag(CameraEntity, EDITOR_RESOURCE_TAG);
 	FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
-	CameraComponent.SetRenderTargetSize(512, 1020);
+	CameraComponent.TryToSetViewportSize(512, 1020);
 	CameraComponent.SetDistanceFogEnabled(false);
 	FENativeScriptComponent& CameraScript = CameraEntity->GetComponent<FENativeScriptComponent>();
 	CameraScript.SetVariableValue("DistanceToModel", 10.0f);

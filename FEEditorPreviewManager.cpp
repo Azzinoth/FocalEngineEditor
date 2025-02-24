@@ -34,7 +34,7 @@ void FEEditorPreviewManager::InitializeResources()
 	LocalCameraEntity = PreviewScene->CreateEntity("EditorPreview CameraEntity");
 	LocalCameraEntity->AddComponent<FECameraComponent>();
 	FECameraComponent& CameraComponent = LocalCameraEntity->GetComponent<FECameraComponent>();
-	CameraComponent.SetRenderTargetSize(128, 128);
+	CameraComponent.TryToSetViewportSize(128, 128);
 	CameraComponent.SetDistanceFogEnabled(false);
 	CAMERA_SYSTEM.SetMainCamera(LocalCameraEntity);
 
@@ -404,7 +404,7 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 	Camera->AddComponent<FECameraComponent>();
 	Camera->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, SceneAABB.GetLongestAxisLength() * 2));
 	FECameraComponent& CameraComponent = Camera->GetComponent<FECameraComponent>();
-	CameraComponent.SetRenderTargetSize(128, 128);
+	CameraComponent.TryToSetViewportSize(128, 128);
 	CameraComponent.SetDistanceFogEnabled(false);
 	CameraComponent.SetSSAOEnabled(false);
 	CAMERA_SYSTEM.SetMainCamera(Camera);

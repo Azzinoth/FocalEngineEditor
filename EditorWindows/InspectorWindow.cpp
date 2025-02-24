@@ -472,22 +472,39 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 		}
 	}
 
+	// Rendering scale
+	ImGui::Text("Rendering scale:");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(200);
+	float RenderScale = CameraComponent.GetRenderScale();
+	ImGui::DragFloat("##RenderScale", &RenderScale, 0.01f, 0.05f, 2.0f);
+	CAMERA_SYSTEM.SetCameraRenderScale(CameraEntity, RenderScale);
+
 	// Camera Preview
 	ImGui::Text("Camera Preview:");
 
 	FEScene* CurrentScene = CameraEntity->GetParentScene();
-	FEEntity* OldMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene());
-	CAMERA_SYSTEM.SetMainCamera(CameraEntity);
+	FETexture* CameraPreviewTexture = nullptr;
 
-	CameraComponent.SetRenderTargetSize(452, 256);
+	// If it is an editor camera, we do not need to render scene again.
+	if (CameraEntity->GetObjectID() == PROJECT_MANAGER.GetCurrent()->GetEditorCameraIDBySceneID(CurrentScene->GetObjectID()))
+	{
+		CameraPreviewTexture = RENDERER.GetCameraResult(CameraEntity);
+	}
+	else
+	{
+		FEEntity* OldMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene());
+		CAMERA_SYSTEM.SetMainCamera(CameraEntity);
 
-	// It would not render, because it does not have proper FEViewPort
-	RENDERER.Render(CurrentScene);
-	FETexture* PreviewTexture = RENDERER.GetCameraResult(CameraEntity);
-	if (PreviewTexture != nullptr)
-		ImGui::Image((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(452, 256), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		CameraComponent.TryToSetViewportSize(452, 256);
+		RENDERER.Render(CurrentScene);
+		CameraPreviewTexture = RENDERER.GetCameraResult(CameraEntity);
+		
+		CAMERA_SYSTEM.SetMainCamera(OldMainCameraEntity);
+	}
 
-	CAMERA_SYSTEM.SetMainCamera(OldMainCameraEntity);
+	if (CameraPreviewTexture != nullptr)
+		ImGui::Image((void*)(intptr_t)CameraPreviewTexture->GetTextureID(), ImVec2(452, 256), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 
 	// Rendering pipeline settings
 	ImGui::Text("Rendering pipeline:");
@@ -583,6 +600,28 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 
 	// *********** Anti-Aliasing(FXAA) ***********
 	ImGui::Separator();
+
+	bool bTemporalJitterEnabled = CameraComponent.IsTemporalJitterEnabled();
+	ImGui::Checkbox("Sub pixel jitter", &bTemporalJitterEnabled);
+	CameraComponent.SetTemporalJitterEnabled(bTemporalJitterEnabled);
+
+	const std::vector<size_t> SEQUENCE_OPTIONS = { 72, 32, 24, 18, 8 };
+	static size_t TemporalJitterSequenceLength = 64;
+
+	if (ImGui::BeginCombo("Jitter phase sequence Count", std::to_string(TemporalJitterSequenceLength).c_str()))
+	{
+		for (const auto& count : SEQUENCE_OPTIONS)
+		{
+			bool is_selected = (TemporalJitterSequenceLength == count);
+			if (ImGui::Selectable(std::to_string(count).c_str(), is_selected))
+				TemporalJitterSequenceLength = count;
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
+	}
+	CameraComponent.SetTemporalJitterSequenceLength(TemporalJitterSequenceLength);
+
 	ImGui::Text("Anti-Aliasing(FXAA)");
 	static const char* options[5] = { "none", "1x", "2x", "4x", "8x" };
 	static std::string SelectedOption = "1x";

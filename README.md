@@ -28,6 +28,7 @@ In the Editor, the following key windows are available:
 ![Editor](https://github.com/Azzinoth/FocalEngineEditor/blob/media/Editor.png)
 
 5. **Effects Settings**: Allows adjustments of different effects available in the engine.
+⚠️ This part needs to be updated due to ECS.
 
 ![Effects Settings](https://github.com/Azzinoth/FocalEngineEditor/blob/media/Effects%20Settings.png)
 
