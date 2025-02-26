@@ -29,10 +29,10 @@ class FEEditorInspectorWindow
     ImGuiImageButton* LevelBrushButton = nullptr;
     ImGuiImageButton* SmoothBrushButton = nullptr;
     ImGuiImageButton* LayerBrushButton = nullptr;
-    static bool EntityChangePrefabTargetCallBack(FEObject* Object, void** EntityPointer);
+    static bool EntityChangeGameModelTargetCallBack(FEObject* Object, void** EntityPointer);
     static bool TerrainChangeMaterialTargetCallBack(FEObject* Object, void** LayerIndex);
-    static void ChangePrefabOfEntityCallBack(std::vector<FEObject*> SelectionsResult);
-    DragAndDropTarget* EntityChangePrefabTarget = nullptr;
+    static void ChangeGameModelOfEntityCallBack(std::vector<FEObject*> SelectionsResult);
+    DragAndDropTarget* EntityChangeGameModelTarget = nullptr;
     std::vector<int> TerrainChangeMaterialIndecies;
     std::vector<DragAndDropTarget*> TerrainChangeLayerMaterialTargets;
     int HoveredTerrainLayerItem = -1;

@@ -397,7 +397,7 @@ void ShaderEditorWindow::Render()
 			bComputeShaderUsed ? ComputeShaderEditor.GetText().c_str() : nullptr,
 			true);
 
-		// FIX ME! Should it be here?
+		// TODO: Verify if this is needed.
 		DummyShader->AddUniformsFromShader(ShaderToEdit);
 
 		std::string Errors = DummyShader->GetCompilationErrors();
@@ -420,7 +420,7 @@ void ShaderEditorWindow::Render()
 				bGeometryShaderUsed ? GeometryShaderEditor.GetText().c_str() : nullptr,
 				bComputeShaderUsed ? ComputeShaderEditor.GetText().c_str() : nullptr);
 
-			// FIX ME! Should it be here?
+			// TODO: Verify if this is needed.
 			ReCompiledShader->AddUniformsFromShader(ShaderToEdit);
 
 			RESOURCE_MANAGER.ReplaceShader(ShaderToEdit->GetObjectID(), ReCompiledShader);

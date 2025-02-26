@@ -1,8 +1,6 @@
 #include "SceneGraphWindow.h"
 #include "../FEEditor.h"
 
-FEEntity* FEEditorSceneGraphWindow::EntityToModify = nullptr;
-
 FEEditorSceneGraphWindow::FEEditorSceneGraphWindow()
 {
 	strcpy_s(FilterForEntities, "Filter entities...");
@@ -33,48 +31,6 @@ void FEEditorSceneGraphWindow::Clear()
 {
 	strcpy_s(FilterForEntities, "");
 	bLastFrameWasInvisible = true;
-}
-
-void FEEditorSceneGraphWindow::SetCorrectItemColor(FEObject* SceneObject) const
-{
-	if (SceneObject->GetType() == FE_DIRECTIONAL_LIGHT ||
-		SceneObject->GetType() == FE_SPOT_LIGHT ||
-		SceneObject->GetType() == FE_POINT_LIGHT)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, LightItemColor);
-	}
-	// FIX ME !
-	/*else if (SceneObject->GetType() == FE_CAMERA_DEPRECATED)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, CameraItemColor);
-	}
-	else if (SceneObject->GetType() == FE_TERRAIN_DEPRECATED)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, TerrainItemColor);
-	}*/
-	else if (SceneObject->GetType() == FE_ENTITY)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, EntityItemColor);
-	}
-	/*else if (SceneObject->GetType() == FE_ENTITY_INSTANCED_DEPRECATED)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, InstancedEntityItemColor);
-	}*/
-}
-
-void FEEditorSceneGraphWindow::PopCorrectItemColor(FEObject* SceneObject)
-{
-	// FIX ME !
-	/*if (SceneObject->GetType() == FE_DIRECTIONAL_LIGHT ||
-		SceneObject->GetType() == FE_SPOT_LIGHT ||
-		SceneObject->GetType() == FE_POINT_LIGHT ||
-		SceneObject->GetType() == FE_CAMERA_DEPRECATED ||
-		SceneObject->GetType() == FE_TERRAIN_DEPRECATED ||
-		SceneObject->GetType() == FE_ENTITY ||
-		SceneObject->GetType() == FE_ENTITY_INSTANCED_DEPRECATED)
-	{*/
-		ImGui::PopStyleColor();
-	//}
 }
 
 static void CreateInstancedEntityCallBack(const std::vector<FEObject*> SelectionsResult)
@@ -121,75 +77,48 @@ static void CreateEntityCallBack(const std::vector<FEObject*> SelectionsResult)
 	}
 }
 
-// FIX ME!
-void FEEditorSceneGraphWindow::ChangePrefabOfEntityCallBack(const std::vector<FEObject*> SelectionsResult)
+// FIXME: Make icons colored and place them in the right place.
+// Currently this function is not working properly.
+void FEEditorSceneGraphWindow::DrawCorrectIcon(FEEntity* SceneEntity) const
 {
-	/*if (EntityToModify == nullptr)
+	if (SceneEntity == nullptr)
 		return;
 
-	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_PREFAB)
+	float CurrentCursorPosX = ImGui::GetCursorPosX();
+	ImGui::SameLine();
+
+	if (SceneEntity->HasComponent<FEInstancedComponent>())
 	{
-		FEPrefab* SelectedPrefab = RESOURCE_MANAGER.GetPrefab(SelectionsResult[0]->GetObjectID());
-		if (SelectedPrefab == nullptr)
-			return;
+		ImGui::Image((void*)(intptr_t)InstancedEntityIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+	}
 
-		EntityToModify->Prefab = SelectedPrefab;
-	}*/
-}
-
-void FEEditorSceneGraphWindow::DrawCorrectIcon(const FEObject* SceneObject) const
-{
-	ImGui::SetCursorPosX(20);
-
-	// FIX ME!
-	/*if (SceneObject->GetType() == FE_ENTITY || SceneObject->GetType() == FE_ENTITY_INSTANCED_DEPRECATED)
+	if (SceneEntity->HasComponent<FELightComponent>())
 	{
-		const FEEntity* entity = SCENE.GetEntity(SceneObject->GetObjectID());
-
-		if (EDITOR_INTERNAL_RESOURCES.IsInInternalEditorList(entity))
-			return;
-
-		if (entity->GetType() == FE_ENTITY_INSTANCED_DEPRECATED)
+		if (SceneEntity->GetComponent<FELightComponent>().GetType() == FE_DIRECTIONAL_LIGHT)
 		{
-
-			ImGui::Image((void*)(intptr_t)InstancedEntityIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+			ImGui::Image((void*)(intptr_t)DirectionalLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 		}
-		else
+		if (SceneEntity->GetComponent<FELightComponent>().GetType() == FE_SPOT_LIGHT)
 		{
-			ImGui::Image((void*)(intptr_t)EntityIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+			ImGui::Image((void*)(intptr_t)SpotLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 		}
-	}*/
-
-	/*if (SceneObject->GetType() == FE_DIRECTIONAL_LIGHT)
-	{
-		ImGui::Image((void*)(intptr_t)DirectionalLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-
+		if (SceneEntity->GetComponent<FELightComponent>().GetType() == FE_POINT_LIGHT)
+		{
+			ImGui::Image((void*)(intptr_t)PointLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+		}
 	}
 
-	if (SceneObject->GetType() == FE_SPOT_LIGHT)
-	{
-		ImGui::Image((void*)(intptr_t)SpotLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-
-	}
-
-	if (SceneObject->GetType() == FE_POINT_LIGHT)
-	{
-		ImGui::Image((void*)(intptr_t)PointLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-
-	}
-
-	if (SceneObject->GetType() == FE_TERRAIN_DEPRECATED)
+	if (SceneEntity->HasComponent<FETerrainComponent>())
 	{
 		ImGui::Image((void*)(intptr_t)TerrainIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 	}
 
-	if (SceneObject->GetType() == FE_CAMERA_DEPRECATED)
+	if (SceneEntity->HasComponent<FECameraComponent>())
 	{
 		ImGui::Image((void*)(intptr_t)CameraIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-	}*/
+	}
 
-	ImGui::SameLine();
-	return;
+	ImGui::SetCursorPosX(CurrentCursorPosX);
 }
 
 DragAndDropTarget* FEEditorSceneGraphWindow::GetSceneNodeDragAndDropTarget(FENaiveSceneGraphNode* NodeToFind)
@@ -280,6 +209,7 @@ ImRect FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoo
 	bool bOpened = ImGui::TreeNodeEx((void*)UniqueID, NodeFlags, Name.c_str(), 0);
 	GetSceneNodeDragAndDropTarget(SubTreeRoot)->StickToItem();
 	const ImRect NodeRect = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+	//DrawCorrectIcon(SubTreeRoot->GetEntity());
 
 	ImVec2 VerticalLineStart = ImGui::GetCursorScreenPos();
 	VerticalLineStart.x += VerticalTreeLineXOffset;
@@ -504,37 +434,6 @@ void FEEditorSceneGraphWindow::Render()
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 
-	//for (size_t i = 0; i < FilteredSceneObjectsList.size(); i++)
-	//{
-	//	DrawCorrectIcon(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
-
-	//	ImGuiTreeNodeFlags NodeFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-	//	if (SELECTED.GetSelected(CurrentScene) != nullptr)
-	//	{
-	//		if (SELECTED.GetSelected(CurrentScene)->GetObjectID() == FilteredSceneObjectsList[i])
-	//		{
-	//			NodeFlags |= ImGuiTreeNodeFlags_Selected;
-	//		}
-	//	}
-
-	//	SetCorrectItemColor(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
-	//	ImGui::TreeNodeEx((void*)(intptr_t)i, NodeFlags, OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i])->GetName().c_str(), i);
-	//	PopCorrectItemColor(OBJECT_MANAGER.GetFEObject(FilteredSceneObjectsList[i]));
-
-	//	if (ImGui::IsItemClicked())
-	//	{
-	//		// FIX ME!
-	//		/*FEEntity* Entity = SCENE.GetEntity(FilteredSceneObjectsList[i]);
-	//		SELECTED.SetSelected(Entity);*/
-	//		//SELECTED.SetDirtyFlag(false);
-	//	}
-
-	//	if (ImGui::IsItemHovered())
-	//	{
-	//		SceneObjectHoveredIndex = int(i);
-	//	}
-	//}
-
 	bool bOpenContextMenu = false;
 	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(1))
 		bOpenContextMenu = true;
@@ -587,7 +486,7 @@ void FEEditorSceneGraphWindow::Render()
 		ImGui::EndPopup();
 	}
 
-	//// FIX ME! It should not be here.
+	// FIXME: Grid settings should be moved to other window, not scene graph window.
 	//static bool bDisplayGrid = true;
 	//ImGui::Checkbox("Display grid", &bDisplayGrid);
 

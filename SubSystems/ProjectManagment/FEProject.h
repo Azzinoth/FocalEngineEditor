@@ -55,14 +55,13 @@ private:
 
 	std::unordered_map<std::string, std::string> SceneIDToProperMainCameraID;
 
-	// FIX ME! Move that to a RESOURCE_MANAGER
+	// FIXME: Consider moving this to RESOURCE_MANAGER
 	void LoadResources(std::string DirectoryPath);
 	void SaveResources(std::string DirectoryPath, bool bFullSave = false);
-
-	// TO-DO: Make that process in memory, not involving creating temporary files.
+	// TODO: Implement in-memory processing instead of creating temporary files.
+	// FIXME: Consider moving this to RESOURCE_MANAGER
 	FEAssetPackage* SaveResourcesToAssetPackage();
 	void LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage);
-	// FIX ME! Move that to a RESOURCE_MANAGER
 
 	bool LoadVFSData(std::string FilePath);
 	void AddMissingVFSData();

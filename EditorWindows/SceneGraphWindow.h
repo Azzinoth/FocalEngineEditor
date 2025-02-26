@@ -10,17 +10,8 @@ class FEEditorSceneGraphWindow
     // Visibility
     bool bVisible = true;
 
-    // Item color management
-    void SetCorrectItemColor(FEObject* SceneObject) const;
-    void PopCorrectItemColor(FEObject* SceneObject);
-    ImVec4 TerrainItemColor = ImVec4(67.0f / 255.0f, 155.0f / 255.0f, 60.0f / 255.0f, 1.0f);
-    ImVec4 EntityItemColor = ImVec4(141.0f / 255.0f, 141.0f / 255.0f, 233.0f / 255.0f, 1.0f);
-    ImVec4 InstancedEntityItemColor = ImVec4(80.0f / 255.0f, 72.0f / 255.0f, 1.0f, 1.0f);
-    ImVec4 CameraItemColor = ImVec4(0.0f, 215.0f / 255.0f, 201.0f / 255.0f, 1.0f);
-    ImVec4 LightItemColor = ImVec4(243.0f / 255.0f, 230.0f / 255.0f, 31.0f / 255.0f, 1.0f);
-
     // Icon management
-    void DrawCorrectIcon(const FEObject* SceneObject) const;
+    void DrawCorrectIcon(FEEntity* SceneEntity) const;
     FETexture* EntityIcon = nullptr;
     FETexture* InstancedEntityIcon = nullptr;
     FETexture* DirectionalLightIcon = nullptr;
@@ -41,10 +32,6 @@ class FEEditorSceneGraphWindow
     // Context menu
     bool bShouldOpenContextMenu = false;
 	bool bLastFrameWasInvisible = true;
-
-    // Entity modification
-    static FEEntity* EntityToModify;
-    static void ChangePrefabOfEntityCallBack(std::vector<FEObject*> SelectionsResult);
 
     // Drag and drop
     int64_t ItemUnderMouse = 0;

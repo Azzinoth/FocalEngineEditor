@@ -73,7 +73,7 @@ void FEEditorInspectorWindow::InitializeResources()
 	LayerBrushButton = new ImGuiImageButton(DrawBrushIcon);
 	LayerBrushButton->SetSize(ImVec2(48, 48));
 
-	EntityChangePrefabTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_PREFAB, EntityChangePrefabTargetCallBack, nullptr, "Drop to assign prefab");
+	EntityChangeGameModelTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_GAMEMODEL, EntityChangeGameModelTargetCallBack, nullptr, "Drop to assign game model");
 	// ************** Terrain Settings END **************
 
 	MouseCursorIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/mouseCursorIcon.png", "mouseCursorIcon");
@@ -92,16 +92,19 @@ void FEEditorInspectorWindow::ShowTransformConfiguration(FEObject* Object, FETra
 	ShowTransformConfiguration(Object->GetName(), Transform);
 }
 
-bool FEEditorInspectorWindow::EntityChangePrefabTargetCallBack(FEObject* Object, void** EntityPointer)
+bool FEEditorInspectorWindow::EntityChangeGameModelTargetCallBack(FEObject* Object, void** EntityPointer)
 {
-	// FIX ME! Prefabs
-	/*FEEntity* Entity = SELECTED.GetEntity();
+	if (EDITOR.GetFocusedScene() == nullptr)
+		return false;
+
+	FEEntity* Entity = SELECTED.GetSelected(EDITOR.GetFocusedScene());
 	if (Entity == nullptr)
 		return false;
 
-	Entity->Prefab = (RESOURCE_MANAGER.GetPrefab(Object->GetObjectID()));
-	return true;*/
-	return false;
+	FEGameModelComponent& GameModelComponent = Entity->GetComponent<FEGameModelComponent>();
+	GameModelComponent.SetGameModel(RESOURCE_MANAGER.GetGameModel(Object->GetObjectID()));
+
+	return true;
 }
 
 bool FEEditorInspectorWindow::TerrainChangeMaterialTargetCallBack(FEObject* Object, void** LayerIndex)
@@ -626,39 +629,33 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	static const char* options[5] = { "none", "1x", "2x", "4x", "8x" };
 	static std::string SelectedOption = "1x";
 
-	// FIX ME! Was used with one camera only.
-	static bool bFirstLook = true;
-	if (bFirstLook)
+	const float FXAASpanMax = CameraComponent.GetFXAASpanMax();
+	if (FXAASpanMax == 0.0f)
 	{
-		const float FXAASpanMax = CameraComponent.GetFXAASpanMax();
-		if (FXAASpanMax == 0.0f)
-		{
-			SelectedOption = options[0];
-		}
-		else if (FXAASpanMax > 0.1f && FXAASpanMax < 1.1f)
-		{
-			SelectedOption = options[1];
-		}
-		else if (FXAASpanMax > 1.1f && FXAASpanMax < 2.1f)
-		{
-			SelectedOption = options[2];
-		}
-		else if (FXAASpanMax > 2.1f && FXAASpanMax < 4.1f)
-		{
-			SelectedOption = options[3];
-		}
-		else if (FXAASpanMax > 4.1f && FXAASpanMax < 8.1f)
-		{
-			SelectedOption = options[4];
-		}
-		else
-		{
-			SelectedOption = options[5];
-		}
-
-		bFirstLook = false;
+		SelectedOption = options[0];
+	}
+	else if (FXAASpanMax > 0.1f && FXAASpanMax < 1.1f)
+	{
+		SelectedOption = options[1];
+	}
+	else if (FXAASpanMax > 1.1f && FXAASpanMax < 2.1f)
+	{
+		SelectedOption = options[2];
+	}
+	else if (FXAASpanMax > 2.1f && FXAASpanMax < 4.1f)
+	{
+		SelectedOption = options[3];
+	}
+	else if (FXAASpanMax > 4.1f && FXAASpanMax < 8.1f)
+	{
+		SelectedOption = options[4];
+	}
+	else
+	{
+		SelectedOption = options[5];
 	}
 
+	// TO-DO: it should be per camera.
 	static bool bDebugSettings = false;
 	if (ImGui::Checkbox("debug view", &bDebugSettings))
 	{
@@ -808,35 +805,27 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	// *********** SSAO ***********
 	static const char* SSAO_Options[5] = { "Off", "Low", "Medium", "High", "Custom" };
 	static std::string SSAO_SelectedOption = "Medium";
+	const int SampleCount = CameraComponent.GetSSAOSampleCount();
 
-	// FIX ME! Was used with one camera only.
-	static bool bSSAO_FirstLook = true;
-	if (bFirstLook)
+	if (!CameraComponent.IsSSAOEnabled())
 	{
-		const int SampleCount = CameraComponent.GetSSAOSampleCount();
-
-		if (!CameraComponent.IsSSAOEnabled())
-		{
-			SSAO_SelectedOption = SSAO_Options[0];
-		}
-		else if (SampleCount == 4)
-		{
-			SSAO_SelectedOption = SSAO_Options[1];
-		}
-		else if (SampleCount == 16 && CameraComponent.GetSSAORadiusSmallDetails())
-		{
-			SSAO_SelectedOption = SSAO_Options[2];
-		}
-		else if (SampleCount == 32 && CameraComponent.GetSSAORadiusSmallDetails())
-		{
-			SSAO_SelectedOption = SSAO_Options[3];
-		}
-		else
-		{
-			SSAO_SelectedOption = SSAO_Options[4];
-		}
-
-		//bFirstLook = false;
+		SSAO_SelectedOption = SSAO_Options[0];
+	}
+	else if (SampleCount == 4)
+	{
+		SSAO_SelectedOption = SSAO_Options[1];
+	}
+	else if (SampleCount == 16 && CameraComponent.GetSSAORadiusSmallDetails())
+	{
+		SSAO_SelectedOption = SSAO_Options[2];
+	}
+	else if (SampleCount == 32 && CameraComponent.GetSSAORadiusSmallDetails())
+	{
+		SSAO_SelectedOption = SSAO_Options[3];
+	}
+	else
+	{
+		SSAO_SelectedOption = SSAO_Options[4];
 	}
 
 	static bool bSSAO_DebugSettings = false;
@@ -980,20 +969,20 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	}
 }
 
-// FIX ME!
-void FEEditorInspectorWindow::ChangePrefabOfEntityCallBack(const std::vector<FEObject*> SelectionsResult)
+void FEEditorInspectorWindow::ChangeGameModelOfEntityCallBack(const std::vector<FEObject*> SelectionsResult)
 {
-	/*if (EntityToModify == nullptr)
+	if (EntityToModify == nullptr)
 		return;
 
-	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_PREFAB)
+	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_GAMEMODEL)
 	{
-		FEPrefab* SelectedPrefab = RESOURCE_MANAGER.GetPrefab(SelectionsResult[0]->GetObjectID());
-		if (SelectedPrefab == nullptr)
+		FEGameModel* SelectedGameModel = RESOURCE_MANAGER.GetGameModel(SelectionsResult[0]->GetObjectID());
+		if (SelectedGameModel == nullptr)
 			return;
 
-		EntityToModify->Prefab = SelectedPrefab;
-	}*/
+		FEGameModelComponent& GameModelComponent = EntityToModify->GetComponent<FEGameModelComponent>();
+		GameModelComponent.SetGameModel(SelectedGameModel);
+	}
 }
 
 void FEEditorInspectorWindow::AddLightComponent(FEEntity* Entity)
@@ -1182,10 +1171,11 @@ void FEEditorInspectorWindow::Render()
 
 			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
-				//EntityToModify = EntitySelected;
-				//SELECT_FEOBJECT_POPUP.Show(FE_PREFAB, ChangePrefabOfEntityCallBack, Entity->Prefab);
+				EntityToModify = EntitySelected;
+				FEGameModelComponent& GameModelComponent = EntityToModify->GetComponent<FEGameModelComponent>();
+				SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, ChangeGameModelOfEntityCallBack, GameModelComponent.GetGameModel());
 			}
-			//EntityChangePrefabTarget->StickToItem();
+			EntityChangeGameModelTarget->StickToItem();
 
 			bool bOpenContextMenu = false;
 			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))

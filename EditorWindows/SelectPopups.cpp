@@ -223,7 +223,6 @@ void SelectFEObjectPopUp::Render()
 		SelectButton->Render();
 		if (SelectButton->IsClicked())
 		{
-			AddToSelected(OBJECT_MANAGER.GetFEObject(FilteredItemsList[IndexUnderMouse]->GetObjectID()));
 			OnSelectAction();
 
 			Close();

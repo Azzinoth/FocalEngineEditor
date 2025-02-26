@@ -26,7 +26,7 @@ public:
 
 	void UnRegisterWindow(FEImGuiWindow* Window);
 
-	// FIX ME! Here I am using internal ImGui functions. Need to find a way to avoid it.
+	// FIXME: Currently using internal ImGui functions. Need to find an alternative approach.
 	ImGuiWindow* GetCurrentWindowImpl();
 private:
 	SINGLETON_PRIVATE_PART(WindowsManager)

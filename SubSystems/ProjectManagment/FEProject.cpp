@@ -240,7 +240,7 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 	ResourcesFile.close();
 }
 
-// TO-DO: Make that process in memory, not involving creating temporary files.
+// TODO: Make that process in memory, not involving creating temporary files.
 FEAssetPackage* FEProject::SaveResourcesToAssetPackage()
 {
 	FEAssetPackage* Result = new FEAssetPackage();
