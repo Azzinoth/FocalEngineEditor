@@ -397,6 +397,28 @@ void FEEditorContentBrowserWindow::Render()
 				}
 			}
 
+			if (FilteredResources[ItemUnderMouse]->GetType() == FE_MESH)
+			{
+				if (ImGui::BeginMenu("Export"))
+				{
+					FEMesh* MeshToExport = RESOURCE_MANAGER.GetMesh(FilteredResources[ItemUnderMouse]->GetObjectID());
+
+					if (ImGui::MenuItem("as OBJ"))
+					{
+						std::string FilePath;
+						FILE_SYSTEM.ShowFileSaveDialog(FilePath, TEXTURE_LOAD_FILTER, 1);
+
+						if (!FilePath.empty())
+						{
+							FilePath += ".obj";
+							RESOURCE_MANAGER.ExportFEMeshToOBJ(MeshToExport, FilePath.c_str());
+						}
+					}
+
+					ImGui::EndMenu();
+				}
+			}
+
 			if (FilteredResources[ItemUnderMouse]->GetType() == FE_TEXTURE)
 			{
 				if (ImGui::BeginMenu("Convert"))
