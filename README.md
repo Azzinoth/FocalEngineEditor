@@ -2,35 +2,122 @@
 
 ![build](https://github.com/Azzinoth/FocalEngineEditor/actions/workflows/Build.yml/badge.svg?branch=master)
 
-The Focal Engine Editor is a comprehensive tool for the [Focal Engine](https://github.com/Azzinoth/FocalEngine/), providing a variety of utilities for creating and managing your scene. The engine has been designed to function independently from the editor, ensuring modularity. For this reason, the engine and editor are separate projects.
+The Focal Engine Editor is a creation environment for the [Focal Engine](https://github.com/Azzinoth/FocalEngine/), providing an suite of tools for developing 3D application/games. With an intuitive interface for scene design, entity management, and asset organization, the editor streamlines the entire development workflow from concept to deployment. It features a comprehensive project system, real-time shader editing, terrain creation tools and material editor. Importantly, the editor includes build functionality that allows developers to compile their projects into standalone executable applications with packaged resources.
 
-Here are some images from scene created using the Focal Engine Editor:
-
+⚠️ Important to note that a part of functionality is still in development and will be improved over time. ⚠️
+ 
 ![3D scene in the Focal Engine](https://github.com/Azzinoth/FocalEngine/blob/media/1.png)
 ![3D scene in the Focal Engine](https://github.com/Azzinoth/FocalEngine/blob/media/2.png)
-![3D scene in the Focal Engine](https://github.com/Azzinoth/FocalEngine/blob/media/3.png)
 ![3D scene in the Focal Engine](https://github.com/Azzinoth/FocalEngine/blob/media/4.png)
-![3D scene in the Focal Engine](https://github.com/Azzinoth/FocalEngine/blob/media/5.png)
+![3D scene in the Focal Engine](https://github.com/Azzinoth/FocalEngine/blob/media/6.png)
 
-## Features
+## Focal Engine Ecosystem
 
-The Focal Engine Editor provides the ability to load, save, create new projects, and delete existing ones through the Project Browser window:
+The Focal Engine project consists of four modular components that work together to provide a complete development environment:
+
+[Basic Application Module](https://github.com/Azzinoth/FEBasicApplication) - A foundation layer for OpenGL and ImGui applications that provides essential utilities including time measurement, thread pooling, logging, TCP networking, and profiling capabilities.
+
+[Visual Node System](https://github.com/Azzinoth/VisualNodeSystem) - A framework for creating visual node-based interfaces with features like zoom, reroute nodes, group comments, and JSON serialization, ideal for material editors and visual scripting.
+
+[Focal Engine](https://github.com/Azzinoth/FocalEngine) - The engine with all core functionality.
+
+Focal Engine Editor (this repository) - A comprehensive editor for the engine.
+
+This modularity makes it easier to include just the engine in applications that don't need the editor's complexity. It also simplifies the implementation of export functionality in the editor, allowing users to compile their projects into standalone executable applications with all necessary resources.
+
+## Projects Using Focal Engine
+
+[HabiCAT 3D](https://github.com/Azzinoth/HabiCAT3D) - An open-source software that implements novel algorithms for generating multi-scale complexity metrics maps(like rugosity, fractal dimension, vector dispersion and others) for complex 3D habitat models.
+
+## Graphical Features
+
+- Physically-based rendering
+- High dynamic range (HDR) rendering internally
+- Gamma correction
+- Deferred shading
+- Screen-Space Ambient Occlusion (SSAO)
+- Cascaded soft shadows
+- Sky with atmospheric scattering
+- Compressed textures support with multi-threaded loading
+- Fast Approximate Anti-Aliasing (FXAA)
+- Dynamic render scale adjustment
+- Camera temporal jitter and partial motion vector calculations, needed for future TAA and third-party upscalers
+- Each camera has its own unique rendering pipeline with customizable settings
+
+## Advanced Point Cloud Handling
+
+The Focal Engine provides specialized capabilities for working with large-scale point cloud data:
+
+- LAS/LAZ File Format Support
+
+  ⚠️ Work in progress ⚠️
+
+- High-Performance Rendering: Support for real-time visualization of massive point clouds (hundreds of millions to billions of points)  
+  ⚠️ Work in progress ⚠️
+
+- GPU-Accelerated Editing: Tools for manipulating and editing huge point clouds directly in GPU memory  
+  ⚠️ Work in progress ⚠️
+
+## Terrain
+
+- Chunked terrain with tessellation for LOD
+- Frustum culling of sub chunks
+- Up to 8 terrain layer materials
+- Each layer can define foliage spawn rules
+
+## Performance
+
+Focal Engine features a GPU-driven rendering pipeline (⚠️ Work in progress ⚠️: currently not working with all entity components) that includes GPU Frustum Culling and GPU Occlusion Culling. The latter utilizes a custom Hierarchical Z-Buffer (HZB). Both culling techniques are implemented using compute shaders. These advanced optimization techniques enable the Focal Engine to render a substantial number of objects per scene (up to millions, depending on object types).
+
+### Profiling
+
+Engine submodule includes a profiling system that provides detailed analysis of CPU utilization across threads. This system is  designed to handle complex, highly multithreaded workloads, allowing to identify and address performance bottlenecks.
+
+![3D scene in the Focal Engine](https://github.com/Azzinoth/FocalEngine/blob/media/7.png)
+
+## VR Support
+
+The Focal Engine leverages OpenXR integration to provide support for a wide range of VR headsets and controllers. The engine has a virtual UI system specifically designed for comfortable and intuitive interaction in VR space.
+  
+![3D scene in the Focal Engine](https://github.com/Azzinoth/FocalEngine/blob/media/8.png)
+
+## Entity Component System (ECS)
+
+Engine uses EnTT library (also used in Minecraft) to implement an Entity Component System architecture. This approach helps to:
+- Separate data from logic for better code organization
+- Enable better performance through data-oriented design
+- Provide flexible component-based object composition
+
+Additionally, Prefabs were introduced to make it easy to predefine an entity or group of entities along with all their components. A Prefab (internally implemented as a scene) can be instantiated multiple times, allowing for efficient reuse of complex entity configurations.
+
+## C++ Scripting System
+
+Native script component gives ability to attach custom C++ code to entities, allowing for runtime behavior definition or custom game logic implementation.
+
+As a practical example, the default cameras are organized as Prefabs containing both a camera component and a script component that defines the interaction logic.
+
+This demonstrates how the scripting system can be used to create reusable, modular gameplay elements.
+
+## Editor Overview
+
+The Focal Engine Editor provides project management capabilities through its project browser window:
 
 ![Project Browser](https://github.com/Azzinoth/FocalEngineEditor/blob/media/Project%20Browser.png)
 
-In the Editor, the following key windows are available:
+The editor interface includes several key windows:
 
-1. **Scene Entities**: Displays all objects, cameras, light sources, and terrains in the scene.
-2. **Scene**: Presents the main in-game camera view.
-3. **Inspector**: Provides the properties of the selected object.
-4. **Content Browser**: Serves as an explorer window for the current project's virtual file system with all resources structured.
+1. **Scene Entities**: Displays entities in a hierarchical graph structure.
+2. **Scene/Scenes**: Supports multiple scene windows simultaneously. Prefabs are handled as simplified scenes for modular design.
+3. **Inspector**: Provides list of components of the selected entity for viewing and editing.
+4. **Content Browser**: Serves as an explorer for the project's virtual file system with structured access to all resources.
+5. **Editor Cameras**: Provides settings for editor-specific cameras. While game cameras (entities with camera components) are only functional in game mode, editor cameras allow navigation through scenes even when no game camera is present.
+6. **Log Window**: Displays filtered categories of warnings, errors, and informational messages for debugging.
+
+![Log window](https://github.com/Azzinoth/FocalEngineEditor/blob/media/Log%20window.png)
+
+Standard editor layout:
 
 ![Editor](https://github.com/Azzinoth/FocalEngineEditor/blob/media/Editor.png)
-
-5. **Effects Settings**: Allows adjustments of different effects available in the engine.
-⚠️ This part needs to be updated due to ECS.
-
-![Effects Settings](https://github.com/Azzinoth/FocalEngineEditor/blob/media/Effects%20Settings.png)
 
 The Material Editor employs the [Visual Node System](https://github.com/Azzinoth/VisualNodeSystem) to enhance editing intuitiveness.
 
@@ -40,23 +127,36 @@ Terrain editing is facilitated with different brushes (sculpt, smooth, paint lay
 
 ![Terrain](https://github.com/Azzinoth/FocalEngineEditor/blob/media/Terrain.png)
 
-## Debugging
+## Build System
 
-Multiple additional debugging windows are available for users to toggle:
+⚠️ Work in progress ⚠️
 
-![Debug Render Targets](https://github.com/Azzinoth/FocalEngineEditor/blob/media/Debug%20Render%20Targets.png)
+The Focal Engine Editor includes functionality to compile projects into standalone executable (.exe) files, along with packaged resource files containing all necessary scripts, assets, and resources. This allows for easy distribution of completed applications without requiring the editor or engine development environment.
+
+
+## Shader debugging
 
 Users can edit shaders on-the-fly in the built-in shader editor and debug compilation errors:
 
 ![Shader Compilation errors](https://github.com/Azzinoth/FocalEngineEditor/blob/media/Shader%20Compilation%20errors.png)
 
+⚠️ Work in progress ⚠️
+
 In addition, the editor supports real-time retrieval of shader variable values from the GPU. (Please note that not all variables are supported and further testing is needed for this feature.)
 
 ![Shader values read back](https://github.com/Azzinoth/FocalEngineEditor/blob/media/Shader%20values%20read%20back.png)
 
-The Log window will display chosen categories of warnings, errors, and info.
+## Testing
 
-![Log window](https://github.com/Azzinoth/FocalEngineEditor/blob/media/Log%20window.png)
+During the development of the engine and its tools, inadequate testing was identified as a source of setbacks. To address this, a multi-layered testing approach has been implemented:
+
+1. **Continuous Integration** - GitHub Actions run on every push as a sanity check to ensure the engine compiles successfully.
+
+2. **Unit Testing** - Using Google Test framework to verify individual components. Currently limited to scene graph testing, with plans to expand coverage to more subsystems over time.
+
+3. **Visual Testing Platform** - Due to the graphical nature of the engine, unit tests and GitHub Actions are insufficient for comprehensive testing. A specialized testing platform is being developed that will evaluate the engine's visual output and UI functionality.
+
+This comprehensive testing strategy will enable more confident feature iteration and establish a proper regression testing pipeline.
 
 ## Building the Project for Visual Studio (Windows)
 

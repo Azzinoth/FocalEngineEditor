@@ -15,6 +15,7 @@ void FEEditor::DisplayLogWindow() const
 	ImGui::Text("Channel:");
 	ImGui::SameLine();
 	ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 5);
+	ImGui::SetNextItemWidth(200);
 	if (ImGui::BeginCombo("##Channel", (SelectedChannel.empty() ? "ALL" : SelectedChannel).c_str(), ImGuiWindowFlags_None))
 	{
 		for (int i = -1; i < int(TopicList.size()); i++)
