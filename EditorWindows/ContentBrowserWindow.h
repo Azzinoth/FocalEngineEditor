@@ -42,12 +42,18 @@
         void InitializeResources();
         FETexture* FolderIcon = nullptr;
         FETexture* ShaderIcon = nullptr;
+		FETexture* ShaderSmallIcon = nullptr;
         FETexture* VFSBackIcon = nullptr;
         FETexture* TextureIcon = nullptr;
         FETexture* MeshIcon = nullptr;
         FETexture* MaterialIcon = nullptr;
         FETexture* GameModelIcon = nullptr;
         FETexture* PrefabIcon = nullptr;
+		FETexture* SceneIcon = nullptr;
+		FETexture* AssetPackageIcon = nullptr;
+        FETexture* AssetPackageSmallIcon = nullptr;
+		FETexture* NativeScriptModuleIcon = nullptr;
+		FETexture* NativeScriptModuleSmallIcon = nullptr;
         FETexture* AllIcon = nullptr;
 
         // Item selection and manipulation
@@ -65,17 +71,24 @@
         // Resource filtering
         std::vector<FEObject*> AllResources;
         std::vector<FEObject*> FilteredResources;
-        char FilterForResources[512];
-        std::string ObjTypeFilterForResources;
+        char NameFilter[1024];
+        std::vector<std::string> ObjectTypeFilters;
+		std::vector<std::string> ObjectTagNegativeFilters;
+        bool AnyFilterActive();
+		bool ShouldPassVisibilityFilter(FEObject* Object);
         void UpdateFilterForResources();
 
         // Filter buttons
         ImGuiImageButton* FilterAllTypesButton = nullptr;
+		ImGuiImageButton* FilterShaderTypeButton = nullptr;
         ImGuiImageButton* FilterTextureTypeButton = nullptr;
         ImGuiImageButton* FilterMeshTypeButton = nullptr;
         ImGuiImageButton* FilterMaterialTypeButton = nullptr;
         ImGuiImageButton* FilterGameModelTypeButton = nullptr;
         ImGuiImageButton* FilterPrefabTypeButton = nullptr;
+		ImGuiImageButton* FilterSceneTypeButton = nullptr;
+		ImGuiImageButton* FilterAssetPackageTypeButton = nullptr;
+		ImGuiImageButton* FilterNativeScriptModuleTypeButton = nullptr;
 
         // Drag and drop
         struct DirectoryDragAndDropCallbackInfo
@@ -110,4 +123,4 @@
         SINGLETON_PUBLIC_PART(FEEditorContentBrowserWindow)
     };
 
-#define CONTENT_BROWSER_WINDOW FEEditorContentBrowserWindow::getInstance()
+#define CONTENT_BROWSER_WINDOW FEEditorContentBrowserWindow::GetInstance()

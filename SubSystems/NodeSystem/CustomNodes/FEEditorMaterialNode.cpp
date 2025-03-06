@@ -46,20 +46,20 @@ void FEEditorMaterialNode::Draw()
 	ImGui::Text("Compact packing");
 	Data->SetCompackPacking(bCompactFlag);
 
-	FEShaderParam* DebugFlag = Data->GetParameter("debugFlag");
-	if (DebugFlag != nullptr)
+	FEShaderUniformValue CurrentValue;
+	if (Data->Shader->GetUniformData("debugFlag", CurrentValue))
 	{
 		CurrentPosition.y += FieldStep;
 		ImGui::SetCursorScreenPos(CurrentPosition);
 		ImGui::Text("Debug flag:");
-		int IData = *static_cast<int*>(DebugFlag->Data);
+		int IData = CurrentValue.GetValue<int>();
 
 		CurrentPosition.y += FieldStep;
 		ImGui::SetCursorScreenPos(CurrentPosition);
 		ImGui::SetNextItemWidth(FieldWidth);
 		ImGui::SliderInt("##Debug flag", &IData, 0, 10);
 
-		Data->Shader->UpdateParameterData("debugFlag", &IData);
+		Data->Shader->UpdateUniformData("debugFlag", IData);
 	}
 
 	// ************* Normal *************

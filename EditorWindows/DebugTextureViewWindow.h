@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PrefabEditorWindow.h"
+#include "PrefabEditorManager.h"
 
 class DebugTextureViewWindow : public FEImGuiWindow
 {

@@ -15,7 +15,8 @@ void FEEditor::DisplayLogWindow() const
 	ImGui::Text("Channel:");
 	ImGui::SameLine();
 	ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 5);
-	if (ImGui::BeginCombo("##Channel", (SelectedChannel == "" ? "ALL" : SelectedChannel).c_str(), ImGuiWindowFlags_None))
+	ImGui::SetNextItemWidth(200);
+	if (ImGui::BeginCombo("##Channel", (SelectedChannel.empty() ? "ALL" : SelectedChannel).c_str(), ImGuiWindowFlags_None))
 	{
 		for (int i = -1; i < int(TopicList.size()); i++)
 		{
@@ -23,25 +24,25 @@ void FEEditor::DisplayLogWindow() const
 
 			if (i == -1)
 			{
-				const bool is_selected = (SelectedChannel == "");
+				const bool bIsSelected = (SelectedChannel.empty());
 
-				if (ImGui::Selectable("ALL", is_selected))
+				if (ImGui::Selectable("ALL", bIsSelected))
 				{
 					SelectedChannel = "";
 				}
 
-				if (is_selected)
+				if (bIsSelected)
 					ImGui::SetItemDefaultFocus();
 			}
 			else
 			{
-				const bool is_selected = (SelectedChannel == TopicList[i]);
-				if (ImGui::Selectable(TopicList[i].c_str(), is_selected))
+				const bool bIsSelected = (SelectedChannel == TopicList[i]);
+				if (ImGui::Selectable(TopicList[i].c_str(), bIsSelected))
 				{
 					SelectedChannel = TopicList[i];
 				}
 
-				if (is_selected)
+				if (bIsSelected)
 					ImGui::SetItemDefaultFocus();
 			}
 			
@@ -53,7 +54,7 @@ void FEEditor::DisplayLogWindow() const
 	std::string LogMessages;
 	std::vector<LogItem> LogItems;
 
-	if (SelectedChannel == "")
+	if (SelectedChannel.empty())
 	{
 		std::vector<LogItem> TempItems;
 		for (int i = 0; i < int(TopicList.size()); i++)
@@ -91,7 +92,7 @@ void FEEditor::DisplayLogWindow() const
 
 		LogMessages += " | SEVERITY: " + LOG.SeverityLevelToString(LogItems[i].Severity);
 
-		if (SelectedChannel == "")
+		if (SelectedChannel.empty())
 		{
 			LogMessages += " | CHANNEL: " + LogItems[i].Topic;
 		}
@@ -104,7 +105,7 @@ void FEEditor::DisplayLogWindow() const
 	LogEditor.SetReadOnly(true);
 	LogEditor.SetShowWhitespaces(false);
 	LogEditor.SetText(LogMessages);
-	LogEditor.Render("Log messages");*/
+	LogEditor.Update("Log messages");*/
 
 	static char LogMessages_[1000000];
 	strcpy_s(LogMessages_, LogMessages.c_str());

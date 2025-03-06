@@ -1,31 +1,11 @@
 #include "FEEditor.h"
 
-FEEditor* FEEditor::Instance = nullptr;
-ImGuiWindow* FEEditor::SceneWindow = nullptr;
-
-bool SceneWindowDragAndDropCallBack(FEObject* Object, void** UserData)
-{
-	if (Object->GetType() == FE_PREFAB)
-	{
-		FEEntity* NewEntity = SCENE.AddEntity(RESOURCE_MANAGER.GetPrefab(Object->GetObjectID()));
-		NewEntity->Transform.SetPosition(ENGINE.GetCamera()->GetPosition() + ENGINE.GetCamera()->GetForward() * 10.0f);
-		SELECTED.SetSelected(NewEntity);
-		PROJECT_MANAGER.GetCurrent()->SetModified(true);
-
-		return true;
-	}
-
-	return false;
-}
-
 FEEditor::FEEditor()
 {
-	ENGINE.SetRenderTargetMode(FE_CUSTOM_MODE);
-	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigWindowsMoveFromTitleBarOnly = true;
-
-	if (ENGINE.GetCamera()->GetCameraType() == 1)
-		ENGINE.RenderTargetCenterForCamera(reinterpret_cast<FEFreeCamera*>(ENGINE.GetCamera()));
+	ImGuiIO& IO = ImGui::GetIO();
+	IO.ConfigWindowsMoveFromTitleBarOnly = true;
+	ENGINE.SetVsyncEnabled(true);
+	RESOURCE_MANAGER.AddTagThatWillPreventDeletion(EDITOR_RESOURCE_TAG);
 }
 
 FEEditor::~FEEditor() {}
@@ -70,72 +50,83 @@ void FEEditor::SetMouseY(const double NewValue)
 	MouseY = NewValue;
 }
 
-std::string FEEditor::GetObjectNameInClipboard()
+std::string FEEditor::GetSceneEntityIDInClipboard()
 {
-	return ObjectNameInClipboard;
+	return SceneEntityIDInClipboard;
 }
 
-void FEEditor::SetObjectNameInClipboard(const std::string NewValue)
+void FEEditor::SetSceneEntityIDInClipboard(const std::string NewValue)
 {
-	ObjectNameInClipboard = NewValue;
+	SceneEntityIDInClipboard = NewValue;
 }
 
 void FEEditor::MouseButtonCallback(const int Button, const int Action, int Mods)
 {
-	if (ImGui::GetCurrentContext()->HoveredWindow != nullptr && FEEditor::SceneWindow != nullptr)
-	{
-		EDITOR.bSceneWindowHovered = ImGui::GetCurrentContext()->HoveredWindow->Name == EDITOR.SceneWindow->Name;
-	}
-	else
-	{
-		EDITOR.bSceneWindowHovered = false;
-	}
-	
-	if (FEEditor::SceneWindow == nullptr || !FEEditor::SceneWindow->Active)
-		EDITOR.bSceneWindowHovered = false;
-
 	if (Button == GLFW_MOUSE_BUTTON_1 && Action == GLFW_RELEASE)
 		DRAG_AND_DROP_MANAGER.DropAction();
 
-	if (ImGui::GetIO().WantCaptureMouse && !EDITOR.bSceneWindowHovered)
+	for (size_t i = 0; i < EDITOR.EditorSceneWindows.size(); i++)
 	{
-		EDITOR.bIsCameraInputActive = false;
-		ENGINE.GetCamera()->SetIsInputActive(false);
+		EDITOR.EditorSceneWindows[i]->bWindowHovered = false;
 
-		return;
-	}
+		if (EDITOR.EditorSceneWindows[i]->Scene != EDITOR.GetFocusedScene())
+			continue;
 
-	if (Button == GLFW_MOUSE_BUTTON_1 && Action == GLFW_PRESS)
-	{
-		bool bEditingTerrain = false;
-		if (SELECTED.GetTerrain() != nullptr)
+		if (ImGui::GetCurrentContext()->HoveredWindow != nullptr && EDITOR.EditorSceneWindows[i]->GetWindow() != nullptr)
+			EDITOR.EditorSceneWindows[i]->bWindowHovered = ImGui::GetCurrentContext()->HoveredWindow->Name == EDITOR.EditorSceneWindows[i]->GetWindow()->Name;
+
+		FEEntity* CurrentMainCamera = CAMERA_SYSTEM.GetMainCamera(EDITOR.EditorSceneWindows[i]->Scene);
+
+		if (ImGui::GetIO().WantCaptureMouse && !EDITOR.EditorSceneWindows[i]->bWindowHovered)
 		{
-			bEditingTerrain = SELECTED.GetTerrain()->GetBrushMode() != FE_TERRAIN_BRUSH_NONE;
-		}
-		
-		if (!bEditingTerrain)
-		{
-			SELECTED.DetermineEntityUnderMouse(EDITOR.GetMouseX(), EDITOR.GetMouseY());
-			SELECTED.CheckForSelectionisNeeded = true;
-		}
-		
-		INSPECTOR_WINDOW.bLeftMousePressed = true;
-	}
-	else if (Button == GLFW_MOUSE_BUTTON_1 && Action == GLFW_RELEASE)
-	{
-		INSPECTOR_WINDOW.bLeftMousePressed = false;
-		GIZMO_MANAGER.DeactivateAllGizmo();
-	}
+			if (EDITOR.EditorSceneWindows[i]->Scene != nullptr && CurrentMainCamera != nullptr)
+			{
+				if (CurrentMainCamera != nullptr)
+					CurrentMainCamera->GetComponent<FECameraComponent>().SetActive(false);
+			}
 
-	if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_PRESS)
-	{
-		EDITOR.bIsCameraInputActive = true;
-		ENGINE.GetCamera()->SetIsInputActive(true);
-	}
-	else if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_RELEASE)
-	{
-		EDITOR.bIsCameraInputActive = false;
-		ENGINE.GetCamera()->SetIsInputActive(false);
+			continue;
+		}
+
+		if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_PRESS)
+		{
+			if (CurrentMainCamera != nullptr)
+				CurrentMainCamera->GetComponent<FECameraComponent>().SetActive(true);
+		}
+		else if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_RELEASE)
+		{
+			if (CurrentMainCamera != nullptr)
+				CurrentMainCamera->GetComponent<FECameraComponent>().SetActive(false);
+		}
+
+		if (Button == GLFW_MOUSE_BUTTON_1 && Action == GLFW_PRESS)
+		{
+			if (EDITOR.EditorSceneWindows[i]->bWindowHovered)
+			{
+				bool bEditingTerrain = false;
+				if (SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene) != nullptr && SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene)->HasComponent<FETerrainComponent>())
+				{
+					bEditingTerrain = TERRAIN_SYSTEM.GetBrushMode() != FE_TERRAIN_BRUSH_NONE;
+				}
+
+				if (!bEditingTerrain)
+				{
+					FESelectionData* CurrentSelectionData = SELECTED.GetSceneData(EDITOR.EditorSceneWindows[i]->Scene->GetObjectID());
+					if (CurrentSelectionData != nullptr)
+					{
+						SELECTED.DetermineEntityUnderMouse(EDITOR.GetMouseX(), EDITOR.GetMouseY(), EDITOR.EditorSceneWindows[i]->Scene);
+						CurrentSelectionData->CheckForSelectionisNeeded = true;
+					}
+				}
+			}
+
+			INSPECTOR_WINDOW.bLeftMousePressed = true;
+		}
+		else if (Button == GLFW_MOUSE_BUTTON_1 && Action == GLFW_RELEASE)
+		{
+			INSPECTOR_WINDOW.bLeftMousePressed = false;
+			GIZMO_MANAGER.DeactivateAllGizmo(EDITOR.EditorSceneWindows[i]->Scene);
+		}
 	}
 }
 
@@ -143,68 +134,74 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 {
 	if (Key == GLFW_KEY_ESCAPE && Action == GLFW_PRESS)
 	{
-		if (FEEditor::getInstance().IsInGameMode())
-		{
-			FEEditor::getInstance().SetGameMode(false);
-		}
-		else
-		{
-			if (PROJECT_MANAGER.GetCurrent() == nullptr)
-				ENGINE.Terminate();
-			ProjectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
-		}
+		if (PROJECT_MANAGER.GetCurrent() == nullptr)
+			ENGINE.Terminate();
+		ProjectWasModifiedPopUp::GetInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
 	}
 
-	if (!ImGui::GetIO().WantCaptureKeyboard && Key == GLFW_KEY_DELETE)
+	for (size_t i = 0; i < EDITOR.EditorSceneWindows.size(); i++)
 	{
-		if (SELECTED.GetSelected() != nullptr && SELECTED.GetSelected()->GetType() == FE_ENTITY_INSTANCED)
+		if (EDITOR.EditorSceneWindows[i]->Scene != EDITOR.GetFocusedScene())
+			continue;
+
+		FESelectionData* CurrentSelectionData = SELECTED.GetSceneData(EDITOR.EditorSceneWindows[i]->Scene->GetObjectID());
+		if (!ImGui::GetIO().WantCaptureKeyboard && Key == GLFW_KEY_DELETE)
 		{
-			if (SELECTED.InstancedSubObjectIndexSelected != -1)
+			if (SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene) != nullptr)
 			{
-				FEEntityInstanced* SelectedEntityInstanced = SCENE.GetEntityInstanced(SELECTED.GetSelected()->GetObjectID());
-				SelectedEntityInstanced->DeleteInstance(SELECTED.InstancedSubObjectIndexSelected);
-				SELECTED.Clear();
+				if (CurrentSelectionData->InstancedSubObjectIndexSelected != -1 && SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene)->HasComponent<FEInstancedComponent>())
+				{
+					INSTANCED_RENDERING_SYSTEM.DeleteIndividualInstance(SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene), CurrentSelectionData->InstancedSubObjectIndexSelected);
+				}
+				else
+				{
+					if (EDITOR.GetFocusedScene() != nullptr)
+					{
+						EDITOR.GetFocusedScene()->DeleteEntity(SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene));
+					}
+				}
+
+				SELECTED.Clear(EDITOR.EditorSceneWindows[i]->Scene);
 				PROJECT_MANAGER.GetCurrent()->SetModified(true);
 			}
 		}
 
-		if (SELECTED.GetEntity() != nullptr)
+		if (!ImGui::GetIO().WantCaptureKeyboard && Mods == GLFW_MOD_CONTROL && Key == GLFW_KEY_C && Action == GLFW_RELEASE)
 		{
-			SCENE.DeleteEntity(SELECTED.GetEntity()->GetObjectID());
-			SELECTED.Clear();
-			PROJECT_MANAGER.GetCurrent()->SetModified(true);
+			if (SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene) != nullptr)
+				EDITOR.SetSceneEntityIDInClipboard(SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene)->GetObjectID());
 		}
-		else if (SELECTED.GetTerrain() != nullptr)
-		{
-			SCENE.DeleteTerrain(SELECTED.GetTerrain()->GetObjectID());
-			SELECTED.Clear();
-			PROJECT_MANAGER.GetCurrent()->SetModified(true);
-		}
-	}
 
-	if (!ImGui::GetIO().WantCaptureKeyboard && Mods == GLFW_MOD_CONTROL && Key == GLFW_KEY_C && Action == GLFW_RELEASE)
-	{
-		if (SELECTED.GetEntity() != nullptr)
-			EDITOR.SetObjectNameInClipboard(SELECTED.GetEntity()->GetObjectID());
+		if (!ImGui::GetIO().WantCaptureKeyboard && (Key == GLFW_KEY_RIGHT_SHIFT || Key == GLFW_KEY_LEFT_SHIFT) && Action == GLFW_RELEASE)
+		{
+			FEGizmoSceneData* GizmoSceneData = GIZMO_MANAGER.GetSceneData(EDITOR.EditorSceneWindows[i]->Scene->GetObjectID());
+			int NewState = GizmoSceneData->GizmosState + 1;
+			if (NewState > 2)
+				NewState = 0;
+			GIZMO_MANAGER.UpdateGizmoState(NewState, EDITOR.EditorSceneWindows[i]->Scene);
+		}
 	}
 
 	if (!ImGui::GetIO().WantCaptureKeyboard && Mods == GLFW_MOD_CONTROL && Key == GLFW_KEY_V && Action == GLFW_RELEASE)
 	{
-		if (!EDITOR.GetObjectNameInClipboard().empty())
+		if (!EDITOR.GetSceneEntityIDInClipboard().empty())
 		{
-			FEEntity* NewEntity = SCENE.AddEntity(SCENE.GetEntity(EDITOR.GetObjectNameInClipboard())->Prefab, "");
-			NewEntity->Transform = SCENE.GetEntity(EDITOR.GetObjectNameInClipboard())->Transform;
-			NewEntity->Transform.SetPosition(NewEntity->Transform.GetPosition() * 1.1f);
-			SELECTED.SetSelected(NewEntity);
+			if (EDITOR.GetFocusedScene() != nullptr)
+			{
+				FEEntity* EntityToDuplicate = EDITOR.GetFocusedScene()->GetEntity(EDITOR.GetSceneEntityIDInClipboard());
+				// Skip if entity was deleted or belongs to another scene
+				if (EntityToDuplicate != nullptr)
+				{
+					FENaiveSceneGraphNode* NodeToDuplicate = EDITOR.GetFocusedScene()->SceneGraph.GetNodeByEntityID(EntityToDuplicate->GetObjectID());
+					FENaiveSceneGraphNode* DuplicatedNode = EDITOR.GetFocusedScene()->SceneGraph.DuplicateNode(NodeToDuplicate->GetObjectID(), NodeToDuplicate->GetParent()->GetObjectID());
+					if (DuplicatedNode != nullptr)
+					{
+						FEEntity* DuplicatedEntity = DuplicatedNode->GetEntity();
+						SELECTED.SetSelected(DuplicatedEntity);
+					}
+				}
+			}
 		}
-	}
-
-	if (!ImGui::GetIO().WantCaptureKeyboard && (Key == GLFW_KEY_RIGHT_SHIFT || Key == GLFW_KEY_LEFT_SHIFT) && Action == GLFW_RELEASE)
-	{
-		int NewState = GIZMO_MANAGER.GizmosState + 1;
-		if (NewState > 2)
-			NewState = 0;
-		GIZMO_MANAGER.UpdateGizmoState(NewState);
 	}
 
 	if (!ImGui::GetIO().WantCaptureKeyboard && (Key == GLFW_KEY_RIGHT_SHIFT || Key == GLFW_KEY_LEFT_SHIFT) && Action == GLFW_RELEASE)
@@ -219,61 +216,23 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 
 void FEEditor::InitializeResources()
 {
-	ENGINE.AddKeyCallback(KeyButtonCallback);
-	ENGINE.AddMouseButtonCallback(MouseButtonCallback);
-	ENGINE.AddMouseMoveCallback(MouseMoveCallback);
-	ENGINE.AddRenderTargetResizeCallback(RenderTargetResizeCallback);
+	INPUT.AddKeyCallback(KeyButtonCallback);
+	INPUT.AddMouseButtonCallback(MouseButtonCallback);
+	INPUT.AddMouseMoveCallback(MouseMoveCallback);
+	ENGINE.AddOnViewportResizeCallback(OnViewportResize);
 	ENGINE.AddDropCallback(DropCallback);
 	
 	SELECTED.InitializeResources();
-	ENGINE.GetCamera()->SetIsInputActive(bIsCameraInputActive);
 	PROJECT_MANAGER.InitializeResources();
 	PREVIEW_MANAGER.InitializeResources();
 	DRAG_AND_DROP_MANAGER.InitializeResources();
-	SceneWindowTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_PREFAB, SceneWindowDragAndDropCallBack, nullptr, "Drop to add to scene");
 	
-	// **************************** Gizmos ****************************
 	GIZMO_MANAGER.InitializeResources();
-
-	// hide all resources for gizmos from content browser
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("45191B6F172E3B531978692E"/*"transformationGizmoMesh"*/));
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("637C784B2E5E5C6548190E1B"/*"scaleGizmoMesh"*/));
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(RESOURCE_MANAGER.GetMesh("19622421516E5B317E1B5360"/*"rotateGizmoMesh"*/));
-
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationZGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationYZGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.TransformationXZGizmoEntity);
-
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.ScaleZGizmoEntity);
-
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateXGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateYGizmoEntity);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity->Prefab->GetComponent(0)->GameModel);
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(GIZMO_MANAGER.RotateZGizmoEntity);
-
-	EDITOR_INTERNAL_RESOURCES.AddResourceToInternalEditorList(PREVIEW_MANAGER.PreviewEntity);
-
 	SCENE_GRAPH_WINDOW.InitializeResources();
 	CONTENT_BROWSER_WINDOW.InitializeResources();
 	INSPECTOR_WINDOW.InitializeResources();
 	
-	ENGINE.GetCamera()->SetOnUpdate(OnCameraUpdate);
+	ENGINE.AddOnAfterUpdateCallback(AfterEngineUpdate);
 	ENGINE.AddWindowCloseCallback(CloseWindowCallBack);
 
 	SetUpImgui();
@@ -289,34 +248,47 @@ void FEEditor::MouseMoveCallback(double Xpos, double Ypos)
 
 	DRAG_AND_DROP_MANAGER.MouseMove();
 
-	if (SELECTED.GetSelected() != nullptr)
+	for (size_t i = 0; i < EDITOR.EditorSceneWindows.size(); i++)
 	{
-		if (SELECTED.GetTerrain() != nullptr)
-		{
-			if (SELECTED.GetTerrain()->GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
-				return;
-		}
+		if (EDITOR.EditorSceneWindows[i]->Scene != EDITOR.GetFocusedScene())
+			continue;
 
-		GIZMO_MANAGER.MouseMove(EDITOR.GetLastMouseX(), EDITOR.GetLastMouseY(), EDITOR.GetMouseX(), EDITOR.GetMouseY());
+		if (SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene) != nullptr)
+		{
+			if (SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene) != nullptr && SELECTED.GetSelected(EDITOR.EditorSceneWindows[i]->Scene)->HasComponent<FETerrainComponent>())
+			{
+				if (TERRAIN_SYSTEM.GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
+					return;
+			}
+
+			GIZMO_MANAGER.MouseMove(EDITOR.GetLastMouseX(), EDITOR.GetLastMouseY(), EDITOR.GetMouseX(), EDITOR.GetMouseY(), EDITOR.EditorSceneWindows[i]->Scene);
+		}
 	}
 }
 
-void FEEditor::OnCameraUpdate(FEBasicCamera* Camera)
+void FEEditor::AfterEngineUpdate()
 {
 	SELECTED.OnCameraUpdate();
-	GIZMO_MANAGER.Render();
+	GIZMO_MANAGER.Update();
 }
 
 void FEEditor::Render()
 {
+	EDITOR_SCRIPTING_SYSTEM.Update();
+
+	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetScenesByFlagMask(FESceneFlag::Active | FESceneFlag::Renderable);
+	if (ActiveScenes.empty())
+	{
+		EditorSceneWindows.clear();
+		SetFocusedScene(nullptr);
+	}
+
 	DRAG_AND_DROP_MANAGER.Render();
 
 	if (PROJECT_MANAGER.GetCurrent())
 	{
-		if (bGameMode)
-			return;
-
 		ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+		DockspaceID = ImGui::GetMainViewport()->ID;
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 		if (ImGui::BeginMainMenuBar())
@@ -325,17 +297,16 @@ void FEEditor::Render()
 			{
 				if (ImGui::MenuItem("Save project"))
 				{
-					PROJECT_MANAGER.GetCurrent()->SaveScene();
-					ENGINE.TakeScreenshot((PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + "projectScreenShot.texture").c_str());
+					PROJECT_MANAGER.GetCurrent()->SaveProject();
 				}
 
 				if (ImGui::MenuItem("Save project as..."))
 				{
-					std::string path;
-					FILE_SYSTEM.ShowFolderOpenDialog(path);
-					if (!path.empty())
+					std::string Path;
+					FILE_SYSTEM.ShowFolderOpenDialog(Path);
+					if (!Path.empty())
 					{
-						PROJECT_MANAGER.GetCurrent()->SaveSceneTo(path + "\\");
+						PROJECT_MANAGER.GetCurrent()->SaveProjectTo(Path + "\\");
 					}
 				}
 
@@ -343,13 +314,11 @@ void FEEditor::Render()
 				{
 					if (PROJECT_MANAGER.GetCurrent()->IsModified())
 					{
-						ProjectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), false);
+						ProjectWasModifiedPopUp::GetInstance().Show(PROJECT_MANAGER.GetCurrent(), false);
 					}
 					else
 					{
-						PROJECT_MANAGER.CloseCurrentProject();
-						CONTENT_BROWSER_WINDOW.Clear();
-						SCENE_GRAPH_WINDOW.Clear();
+						OnProjectClose();
 
 						ImGui::PopStyleVar();
 						ImGui::EndMenu();
@@ -364,11 +333,11 @@ void FEEditor::Render()
 					if (PROJECT_MANAGER.GetCurrent()->IsModified())
 					{
 						APPLICATION.GetMainWindow()->CancelClose();
-						ProjectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
+						ProjectWasModifiedPopUp::GetInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
 					}
 					else
 					{
-						PROJECT_MANAGER.CloseCurrentProject();
+						OnProjectClose();
 						ENGINE.Terminate();
 						return;
 					}
@@ -394,9 +363,9 @@ void FEEditor::Render()
 					CONTENT_BROWSER_WINDOW.bVisible = !CONTENT_BROWSER_WINDOW.bVisible;
 				}
 
-				if (ImGui::MenuItem("Effects", nullptr, bEffectsWindowVisible))
+				if (ImGui::MenuItem("Effects", nullptr, bEditorCamerasWindowVisible))
 				{
-					bEffectsWindowVisible = !bEffectsWindowVisible;
+					bEditorCamerasWindowVisible = !bEditorCamerasWindowVisible;
 				}
 
 				if (ImGui::MenuItem("Log", nullptr, bLogWindowVisible))
@@ -455,54 +424,90 @@ void FEEditor::Render()
 		}
 		ImGui::PopStyleVar();
 
-		ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollbar);
-		
-		SceneWindow = ImGui::GetCurrentWindow();
-		SceneWindowTarget->StickToCurrentWindow();
-		
-		ENGINE.SetRenderTargetSize((size_t)SceneWindow->ContentRegionRect.GetWidth(), (size_t)SceneWindow->ContentRegionRect.GetHeight());
-
-		ENGINE.SetRenderTargetXShift((int)SceneWindow->ContentRegionRect.GetTL().x);
-		ENGINE.SetRenderTargetYShift((int)SceneWindow->ContentRegionRect.GetTL().y);
-
-		if (ENGINE.GetCamera()->GetCameraType() == 1)
-			ENGINE.RenderTargetCenterForCamera(reinterpret_cast<FEFreeCamera*>(ENGINE.GetCamera()));
-
-		ImGuiStyle& style = ImGui::GetStyle();
-		style.WindowBorderSize = 0.0f;
-		style.WindowPadding = ImVec2(0.0f, 0.0f);
-
-		if (RENDERER.FinalScene != nullptr)
+		bool bFocusedSceneCouldBeUsedForGameMode = false;
+		if (EDITOR.GetFocusedScene() != nullptr)
 		{
-			ImGui::Image((void*)(intptr_t)RENDERER.FinalScene->GetTextureID(), ImVec2(ImGui::GetCurrentWindow()->ContentRegionRect.GetWidth(), ImGui::GetCurrentWindow()->ContentRegionRect.GetHeight()), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+			FEEditorSceneWindow* SceneWindow = GetEditorSceneWindow(EDITOR.GetFocusedScene()->GetObjectID());
+			// Focused scene could be prefab scene
+			if (!PREFAB_EDITOR_MANAGER.IsEditorWindowIsPrefabWindow(SceneWindow))
+				bFocusedSceneCouldBeUsedForGameMode = true;
 		}
-		else if (RENDERER.SceneToTextureFB->GetColorAttachment() != nullptr)
+
+
+		std::string ButtonText = "Run game mode";
+		
+		if (EDITOR.IsInGameMode())
 		{
-			ImGui::Image((void*)(intptr_t)RENDERER.SceneToTextureFB->GetColorAttachment()->GetTextureID(), ImVec2(ImGui::GetCurrentWindow()->ContentRegionRect.GetWidth(), ImGui::GetCurrentWindow()->ContentRegionRect.GetHeight()), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+			ButtonText = "Exit game mode";
 		}
-		// Something went terribly wrong!
 		else
 		{
-
+			if (!bFocusedSceneCouldBeUsedForGameMode)
+			{
+				ButtonText = "Can not run game mode (focused scene is prefab scene).";
+			}
 		}
 
-		ImGui::End();
+		if (!bFocusedSceneCouldBeUsedForGameMode)
+			ImGui::BeginDisabled();
+
+		if (ImGui::Button(ButtonText.c_str(), ImVec2(220, 0)))
+		{
+			EDITOR.SetGameMode(!EDITOR.IsInGameMode());
+		}
+
+		if (!bFocusedSceneCouldBeUsedForGameMode)
+			ImGui::EndDisabled();
+
+		for (size_t i = 0; i < EditorSceneWindows.size(); i++)
+		{
+			// Rendeting would be done by RenderAllSubWindows().
+			// 
+			// Check if some window is waiting for removal
+			if (EditorSceneWindows[i]->bWaitingForRemoval)
+			{
+				if (FocusedEditorSceneID == EditorSceneWindows[i]->Scene->GetObjectID())
+				{
+					FocusedEditorSceneID = "";
+					for (size_t j = 0; j < EditorSceneWindows.size(); j++)
+					{
+						if (EditorSceneWindows[j] != EditorSceneWindows[i])
+						{
+							SetFocusedScene(EditorSceneWindows[j]->Scene->GetObjectID());
+							break;
+						}
+					}
+				}
+				
+				FEScene* Scene = EditorSceneWindows[i]->Scene;
+				delete EditorSceneWindows[i];
+				EditorSceneWindows.erase(EditorSceneWindows.begin() + i);
+				i--;
+				continue;
+			}
+		}
 
 		SCENE_GRAPH_WINDOW.Render();
 		CONTENT_BROWSER_WINDOW.Render();
 		INSPECTOR_WINDOW.Render();
-		DisplayEffectsWindow();
+		DisplayEditorCamerasWindow();
 		DisplayLogWindow();
 		if (!GyzmosSettingsWindowObject.IsVisible())
 			GyzmosSettingsWindowObject.Show();
 		GyzmosSettingsWindowObject.Render();
 
-		const int index = SELECTED.GetIndexOfObjectUnderMouse(EDITOR.GetMouseX(), EDITOR.GetMouseY());
-		if (index >= 0)
+		for (size_t i = 0; i < EditorSceneWindows.size(); i++)
 		{
-			if (!GIZMO_MANAGER.WasSelected(index))
+			if (EditorSceneWindows[i]->Scene != EDITOR.GetFocusedScene())
+				continue;
+
+			const int ObjectIndex = SELECTED.GetIndexOfObjectUnderMouse(EDITOR.GetMouseX(), EDITOR.GetMouseY(), EditorSceneWindows[i]->Scene);
+			if (ObjectIndex >= 0)
 			{
-				SELECTED.SetSelectedByIndex(index);
+				if (!GIZMO_MANAGER.WasSelected(ObjectIndex, EditorSceneWindows[i]->Scene))
+				{
+					SELECTED.SetSelectedByIndex(ObjectIndex, EditorSceneWindows[i]->Scene);
+				}
 			}
 		}
 
@@ -525,28 +530,54 @@ void FEEditor::CloseWindowCallBack()
 	if (PROJECT_MANAGER.GetCurrent()->IsModified())
 	{
 		APPLICATION.GetMainWindow()->CancelClose();
-		ProjectWasModifiedPopUp::getInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
+		ProjectWasModifiedPopUp::GetInstance().Show(PROJECT_MANAGER.GetCurrent(), true);
 	}
 	else
 	{
-		PROJECT_MANAGER.CloseCurrentProject();
+		EDITOR.OnProjectClose();
 		ENGINE.Terminate();
 		return;
 	}
 }
 
-void FEEditor::RenderTargetResizeCallback(int NewW, int NewH)
+void FEEditor::OnViewportResize(std::string ViewportID)
 {
-	if (ENGINE.GetCamera()->GetCameraType() == 1)
-		ENGINE.RenderTargetCenterForCamera(reinterpret_cast<FEFreeCamera*>(ENGINE.GetCamera()));
-	SELECTED.ReInitializeResources();
+	if (PROJECT_MANAGER.GetCurrent() == nullptr)
+		return;
+
+	for (size_t i = 0; i < EDITOR.EditorSceneWindows.size(); i++)
+	{
+		FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+		if (CurrentProject == nullptr)
+			return;
+
+		FEEntity* CameraEntity = nullptr;
+		if (EDITOR.EditorSceneWindows[i]->Scene->HasFlag(FESceneFlag::EditorMode))
+		{
+			std::string EditorCameraID = CurrentProject->GetEditorCameraIDBySceneID(EDITOR.EditorSceneWindows[i]->Scene->GetObjectID());
+			CameraEntity = EDITOR.EditorSceneWindows[i]->Scene->GetEntity(EditorCameraID);
+		}
+		else if (EDITOR.EditorSceneWindows[i]->Scene->HasFlag(FESceneFlag::GameMode))
+		{
+			CameraEntity = CAMERA_SYSTEM.GetMainCamera(EDITOR.EditorSceneWindows[i]->Scene);
+		}
+
+		if (CameraEntity == nullptr)
+			continue;
+
+		FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
+		if (CameraComponent.GetViewport()->GetID() == ViewportID)
+		{
+			SELECTED.UpdateResources(EDITOR.EditorSceneWindows[i]->Scene);
+		}
+	}
 }
 
 void FEEditor::DropCallback(const int Count, const char** Paths)
 {
 	for (size_t i = 0; i < size_t(Count); i++)
 	{
-		if (FILE_SYSTEM.CheckDirectory(Paths[i]) && Count == 1)
+		if (FILE_SYSTEM.DoesDirectoryExist(Paths[i]) && Count == 1)
 		{
 			if (PROJECT_MANAGER.GetCurrent() == nullptr)
 			{
@@ -556,20 +587,23 @@ void FEEditor::DropCallback(const int Count, const char** Paths)
 
 		if (PROJECT_MANAGER.GetCurrent() != nullptr)
 		{
-			std::vector<FEObject*> LoadedObjects = SCENE.ImportAsset(Paths[i]);
-			for (size_t j = 0; j < LoadedObjects.size(); j++)
+			if (EDITOR.GetFocusedScene() != nullptr)
 			{
-				if (LoadedObjects[j] != nullptr)
+				std::vector<FEObject*> LoadedObjects = EDITOR.GetFocusedScene()->ImportAsset(Paths[i]);
+				for (size_t j = 0; j < LoadedObjects.size(); j++)
 				{
-					if (LoadedObjects[j]->GetType() == FE_ENTITY)
+					if (LoadedObjects[j] != nullptr)
 					{
-						//SCENE.AddEntity(reinterpret_cast<FEEntity*>(LoadedObjects[j]));
-					}
-					else
-					{
-						VIRTUAL_FILE_SYSTEM.CreateFile(LoadedObjects[j], VIRTUAL_FILE_SYSTEM.GetCurrentPath());
-						PROJECT_MANAGER.GetCurrent()->SetModified(true);
-						PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(LoadedObjects[j]);
+						if (LoadedObjects[j]->GetType() == FE_ENTITY)
+						{
+							//SCENE.CreateEntity(reinterpret_cast<FEEntity*>(LoadedObjects[j]));
+						}
+						else
+						{
+							VIRTUAL_FILE_SYSTEM.CreateFile(LoadedObjects[j], VIRTUAL_FILE_SYSTEM.GetCurrentPath());
+							PROJECT_MANAGER.GetCurrent()->SetModified(true);
+							PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(LoadedObjects[j]);
+						}
 					}
 				}
 			}
@@ -577,515 +611,54 @@ void FEEditor::DropCallback(const int Count, const char** Paths)
 	}
 }
 
-bool FEEditor::IsInGameMode() const
+void FEEditor::DisplayEditorCamerasWindow() const
 {
-	return bGameMode;
-}
-
-void FEEditor::SetGameMode(const bool GameMode)
-{
-	this->bGameMode = GameMode;
-	if (this->bGameMode)
-	{
-		ENGINE.SetRenderTargetMode(FE_GLFW_MODE);
-		if (ENGINE.GetCamera()->GetCameraType() == 1)
-			ENGINE.RenderTargetCenterForCamera(reinterpret_cast<FEFreeCamera*>(ENGINE.GetCamera()));
-	}
-	else
-	{
-		ENGINE.SetRenderTargetMode(FE_CUSTOM_MODE);
-		if (ENGINE.GetCamera()->GetCameraType() == 1)
-			ENGINE.RenderTargetCenterForCamera(reinterpret_cast<FEFreeCamera*>(ENGINE.GetCamera()));
-	}
-}
-
-void FEEditor::DisplayEffectsWindow() const
-{
-	if (!bEffectsWindowVisible)
+	if (!bEditorCamerasWindowVisible)
 		return;
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-	ImGui::Begin("Effects settings", nullptr, ImGuiWindowFlags_None);
+	ImGui::Begin("Editor Cameras", nullptr, ImGuiWindowFlags_None);
 
-	int GUIID = 0;
-	static float ButtonWidth = 80.0f;
-	static float FieldWidth = 250.0f;
-
-	static ImGuiButton* ResetButton = new ImGuiButton("Reset");
-	static bool bFirstCall = true;
-	if (bFirstCall)
+	auto EditorCameraIterator = PROJECT_MANAGER.GetCurrent()->SceneIDToEditorCameraID.begin();
+	while (EditorCameraIterator != PROJECT_MANAGER.GetCurrent()->SceneIDToEditorCameraID.end())
 	{
-		ResetButton->SetSize(ImVec2(ButtonWidth, 28.0f));
-		bFirstCall = false;
-	}
-
-	if (ImGui::CollapsingHeader("Gamma Correction & Exposure", 0))
-	{
-		ImGui::Text("Gamma Correction:");
-		float Gamma = ENGINE.GetCamera()->GetGamma();
-		ImGui::SetNextItemWidth(FieldWidth);
-		ImGui::DragFloat("##Gamma Correction", &Gamma, 0.01f, 0.001f, 10.0f);
-		ENGINE.GetCamera()->SetGamma(Gamma);
-
-		ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
+		FEScene* Scene = SCENE_MANAGER.GetScene(EditorCameraIterator->first);
+		if (Scene == nullptr)
 		{
-			ENGINE.GetCamera()->SetGamma(2.2f);
-		}
-		ImGui::PopID();
-
-		ImGui::Text("Exposure:");
-		float Exposure = ENGINE.GetCamera()->GetExposure();
-		ImGui::SetNextItemWidth(FieldWidth);
-		ImGui::DragFloat("##Exposure", &Exposure, 0.01f, 0.001f, 100.0f);
-		ENGINE.GetCamera()->SetExposure(Exposure);
-
-		ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
-		{
-			ENGINE.GetCamera()->SetExposure(1.0f);
-		}
-		ImGui::PopID();
-	}
-
-	if (ImGui::CollapsingHeader("Anti-Aliasing(FXAA)", 0))
-	{
-		static const char* options[5] = { "none", "1x", "2x", "4x", "8x" };
-		static std::string SelectedOption = "1x";
-
-		static bool bFirstLook = true;
-		if (bFirstLook)
-		{
-			const float FXAASpanMax = RENDERER.GetFXAASpanMax();
-			if (FXAASpanMax == 0.0f)
-			{
-				SelectedOption = options[0];
-			}
-			else if (FXAASpanMax > 0.1f && FXAASpanMax < 1.1f)
-			{
-				SelectedOption = options[1];
-			}
-			else if (FXAASpanMax > 1.1f && FXAASpanMax < 2.1f)
-			{
-				SelectedOption = options[2];
-			}
-			else if (FXAASpanMax > 2.1f && FXAASpanMax < 4.1f)
-			{
-				SelectedOption = options[3];
-			}
-			else if (FXAASpanMax > 4.1f && FXAASpanMax < 8.1f)
-			{
-				SelectedOption = options[4];
-			}
-			else
-			{
-				SelectedOption = options[5];
-			}
-
-			bFirstLook = false;
+			EditorCameraIterator++;
+			continue;
 		}
 
-		static bool bDebugSettings = false;
-		if (ImGui::Checkbox("debug view", &bDebugSettings))
+		FEEntity* CameraEntity = Scene->GetEntity(EditorCameraIterator->second);
+		if (CameraEntity == nullptr)
 		{
-			const float FXAASpanMax = RENDERER.GetFXAASpanMax();
-			if (FXAASpanMax == 0.0f)
+			EditorCameraIterator++;
+			continue;
+		}
+
+		if (!CameraEntity->HasComponent<FECameraComponent>())
+		{
+			EditorCameraIterator++;
+			continue;
+		}
+
+		if (ImGui::CollapsingHeader(CameraEntity->GetObjectID().c_str(), 0))
+		{
+			ImGui::Indent();
+
+			if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				SelectedOption = options[0];
+				FETransformComponent& Transform = CameraEntity->GetComponent<FETransformComponent>();
+				INSPECTOR_WINDOW.ShowTransformConfiguration(CameraEntity->GetName(), &Transform);
 			}
-			else if (FXAASpanMax > 0.1f && FXAASpanMax < 1.1f)
+			
+			if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				SelectedOption = options[1];
-			}
-			else if (FXAASpanMax > 1.1f && FXAASpanMax < 2.1f)
-			{
-				SelectedOption = options[2];
-			}
-			else if (FXAASpanMax > 2.1f && FXAASpanMax < 4.1f)
-			{
-				SelectedOption = options[3];
-			}
-			else if (FXAASpanMax > 4.1f && FXAASpanMax < 8.1f)
-			{
-				SelectedOption = options[4];
-			}
-			else
-			{
-				SelectedOption = options[5];
+				INSPECTOR_WINDOW.DisplayCameraProperties(CameraEntity);
 			}
 		}
 
-		if (!bDebugSettings)
-		{
-			ImGui::Text("Anti Aliasing Strength:");
-			if (ImGui::BeginCombo("##Anti Aliasing Strength", SelectedOption.c_str(), ImGuiWindowFlags_None))
-			{
-				for (size_t i = 0; i < 5; i++)
-				{
-					const bool is_selected = (SelectedOption == options[i]);
-					if (ImGui::Selectable(options[i], is_selected))
-					{
-						RENDERER.SetFXAASpanMax(float(pow(2.0, (i - 1))));
-						if (i == 0)
-							RENDERER.SetFXAASpanMax(0.0f);
-						SelectedOption = options[i];
-					}
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-		}
-		else
-		{
-			ImGui::Text("FXAASpanMax:");
-			ImGui::SetNextItemWidth(FieldWidth);
-			float FXAASpanMax = RENDERER.GetFXAASpanMax();
-			ImGui::DragFloat("##FXAASpanMax", &FXAASpanMax, 0.0f, 0.001f, 32.0f);
-			RENDERER.SetFXAASpanMax(FXAASpanMax);
-
-			ImGui::PushID(GUIID++);
-			ImGui::SameLine();
-			ResetButton->Render();
-			if (ResetButton->IsClicked())
-			{
-				RENDERER.SetFXAASpanMax(8.0f);
-			}
-			ImGui::PopID();
-
-			ImGui::Text("FXAAReduceMin:");
-			ImGui::SetNextItemWidth(FieldWidth);
-			float FXAAReduceMin = RENDERER.GetFXAAReduceMin();
-			ImGui::DragFloat("##FXAAReduceMin", &FXAAReduceMin, 0.01f, 0.001f, 100.0f);
-			RENDERER.SetFXAAReduceMin(FXAAReduceMin);
-
-			ImGui::PushID(GUIID++);
-			ImGui::SameLine();
-			ResetButton->Render();
-			if (ResetButton->IsClicked())
-			{
-				RENDERER.SetFXAAReduceMin(0.008f);
-			}
-			ImGui::PopID();
-
-			ImGui::Text("FXAAReduceMul:");
-			ImGui::SetNextItemWidth(FieldWidth);
-			float FXAAReduceMul = RENDERER.GetFXAAReduceMul();
-			ImGui::DragFloat("##FXAAReduceMul", &FXAAReduceMul, 0.01f, 0.001f, 100.0f);
-			RENDERER.SetFXAAReduceMul(FXAAReduceMul);
-
-			ImGui::PushID(GUIID++);
-			ImGui::SameLine();
-			ResetButton->Render();
-			if (ResetButton->IsClicked())
-			{
-				RENDERER.SetFXAAReduceMul(0.400f);
-			}
-			ImGui::PopID();
-		}
-	}
-
-	if (ImGui::CollapsingHeader("Bloom", 0))
-	{
-		ImGui::Text("Threshold:");
-		float Threshold = RENDERER.GetBloomThreshold();
-		ImGui::SetNextItemWidth(FieldWidth);
-		ImGui::DragFloat("##Threshold", &Threshold, 0.01f, 0.001f, 30.0f);
-		RENDERER.SetBloomThreshold(Threshold);
-
-		ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
-		{
-			RENDERER.SetBloomThreshold(1.5f);
-		}
-		ImGui::PopID();
-
-		ImGui::Text("Size:");
-		float Size = RENDERER.GetBloomSize();
-		ImGui::SetNextItemWidth(FieldWidth);
-		ImGui::DragFloat("##BloomSize", &Size, 0.01f, 0.001f, 100.0f);
-		RENDERER.SetBloomSize(Size);
-
-		ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
-		{
-			RENDERER.SetBloomSize(5.0f);
-		}
-		ImGui::PopID();
-	}
-
-	if (ImGui::CollapsingHeader("Depth of Field", 0))
-	{
-		ImGui::Text("Near distance:");
-		ImGui::SetNextItemWidth(FieldWidth);
-		float DepthThreshold = RENDERER.GetDOFNearDistance();
-		ImGui::DragFloat("##depthThreshold", &DepthThreshold, 0.0f, 0.001f, 100.0f);
-		RENDERER.SetDOFNearDistance(DepthThreshold);
-
-		ImGui::Text("Far distance:");
-		ImGui::SetNextItemWidth(FieldWidth);
-		float DepthThresholdFar = RENDERER.GetDOFFarDistance();
-		ImGui::DragFloat("##depthThresholdFar", &DepthThresholdFar, 0.0f, 0.001f, 100.0f);
-		RENDERER.SetDOFFarDistance(DepthThresholdFar);
-
-		ImGui::Text("Strength:");
-		ImGui::SetNextItemWidth(FieldWidth);
-		float Strength = RENDERER.GetDOFStrength();
-		ImGui::DragFloat("##Strength", &Strength, 0.0f, 0.001f, 10.0f);
-		RENDERER.SetDOFStrength(Strength);
-
-		ImGui::Text("Distance dependent strength:");
-		ImGui::SetNextItemWidth(FieldWidth);
-		float IntMult = RENDERER.GetDOFDistanceDependentStrength();
-		ImGui::DragFloat("##Distance dependent strength", &IntMult, 0.0f, 0.001f, 100.0f);
-		RENDERER.SetDOFDistanceDependentStrength(IntMult);
-	}
-
-	if (ImGui::CollapsingHeader("Distance fog", 0))
-	{
-		bool bEnabledFog = RENDERER.IsDistanceFogEnabled();
-		if (ImGui::Checkbox("Enable fog", &bEnabledFog))
-		{
-			RENDERER.SetDistanceFogEnabled(bEnabledFog);
-		}
-
-		if (bEnabledFog)
-		{
-			ImGui::Text("Density:");
-			ImGui::SetNextItemWidth(FieldWidth);
-			float FogDensity = RENDERER.GetDistanceFogDensity();
-			ImGui::DragFloat("##fogDensity", &FogDensity, 0.0001f, 0.0f, 5.0f);
-			RENDERER.SetDistanceFogDensity(FogDensity);
-
-			ImGui::PushID(GUIID++);
-			ImGui::SameLine();
-			ResetButton->Render();
-			if (ResetButton->IsClicked())
-			{
-				RENDERER.SetDistanceFogDensity(0.007f);
-			}
-			ImGui::PopID();
-
-			ImGui::Text("Gradient:");
-			ImGui::SetNextItemWidth(FieldWidth);
-			float FogGradient = RENDERER.GetDistanceFogGradient();
-			ImGui::DragFloat("##fogGradient", &FogGradient, 0.001f, 0.0f, 5.0f);
-			RENDERER.SetDistanceFogGradient(FogGradient);
-
-			ImGui::PushID(GUIID++);
-			ImGui::SameLine();
-			ResetButton->Render();
-			if (ResetButton->IsClicked())
-			{
-				RENDERER.SetDistanceFogGradient(2.5f);
-			}
-			ImGui::PopID();
-		}
-	}
-
-	if (ImGui::CollapsingHeader("Chromatic Aberration", 0))
-	{
-		ImGui::Text("Shift strength:");
-		ImGui::SetNextItemWidth(FieldWidth);
-		float intensity = RENDERER.GetChromaticAberrationIntensity();
-		ImGui::DragFloat("##intensity", &intensity, 0.01f, 0.0f, 30.0f);
-		RENDERER.SetChromaticAberrationIntensity(intensity);
-
-		ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
-		{
-			RENDERER.SetChromaticAberrationIntensity(1.0f);
-		}
-		ImGui::PopID();
-	}
-
-	if (ImGui::CollapsingHeader("Sky", 0))
-	{
-		bool bEnabledSky = RENDERER.IsSkyEnabled();
-		if (ImGui::Checkbox("enable sky", &bEnabledSky))
-		{
-			RENDERER.SetSkyEnabled(bEnabledSky);
-		}
-
-		ImGui::Text("Sphere size:");
-		ImGui::SetNextItemWidth(FieldWidth);
-		float size = RENDERER.GetDistanceToSky();
-		ImGui::DragFloat("##Sphere size", &size, 0.01f, 0.0f, 200.0f);
-		RENDERER.SetDistanceToSky(size);
-
-		ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
-		{
-			RENDERER.SetDistanceToSky(50.0f);
-		}
-		ImGui::PopID();
-	}
-
-	if (ImGui::CollapsingHeader("SSAO", 0))
-	{
-		static const char* options[5] = { "Off", "Low", "Medium", "High", "Custom"};
-		static std::string SelectedOption = "Medium";
-
-		static bool bFirstLook = true;
-		if (bFirstLook)
-		{
-			const int SampleCount = RENDERER.GetSSAOSampleCount();
-
-			if (!RENDERER.IsSSAOEnabled())
-			{
-				SelectedOption = options[0];
-			}
-			else if (SampleCount == 4)
-			{
-				SelectedOption = options[1];
-			}
-			else if (SampleCount == 16 && RENDERER.GetSSAORadiusSmallDetails())
-			{
-				SelectedOption = options[2];
-			}
-			else if (SampleCount == 32 && RENDERER.GetSSAORadiusSmallDetails())
-			{
-				SelectedOption = options[3];
-			}
-			else
-			{
-				SelectedOption = options[4];
-			}
-
-			//bFirstLook = false;
-		}
-
-		static bool bDebugSettings = false;
-		if (ImGui::Checkbox("Debug view", &bDebugSettings))
-		{
-
-		}
-		
-		if (!bDebugSettings)
-		{
-			ImGui::Text("SSAO Quality:");
-			ImGui::SetNextItemWidth(150);
-			if (ImGui::BeginCombo("##SSAO Quality", SelectedOption.c_str(), ImGuiWindowFlags_None))
-			{
-				for (size_t i = 0; i < 5; i++)
-				{
-					const bool is_selected = (SelectedOption == options[i]);
-					if (ImGui::Selectable(options[i], is_selected))
-					{
-						RENDERER.SetSSAOResultBlured(true);
-						RENDERER.SetSSAOBias(0.013f);
-						RENDERER.SetSSAORadius(10.0f);
-						RENDERER.SetSSAORadiusSmallDetails(0.4f);
-						RENDERER.SetSSAOSmallDetailsWeight(0.2f);
-
-						if (i == 0)
-						{
-							RENDERER.SetSSAOEnabled(false);
-						}
-						else if (i == 1)
-						{
-							RENDERER.SetSSAOEnabled(true);
-
-							RENDERER.SetSSAOSampleCount(4);
-							RENDERER.SetSSAOSmallDetailsEnabled(false);
-						}
-						else if (i == 2)
-						{
-							RENDERER.SetSSAOEnabled(true);
-
-							RENDERER.SetSSAOSampleCount(16);
-							RENDERER.SetSSAOSmallDetailsEnabled(true);
-						}
-						else if (i == 3)
-						{
-							RENDERER.SetSSAOEnabled(true);
-
-							RENDERER.SetSSAOSampleCount(32);
-							RENDERER.SetSSAOSmallDetailsEnabled(true);
-						}
-
-						SelectedOption = options[i];
-					}
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-		}
-		else
-		{
-			bool TempBool = RENDERER.IsSSAOEnabled();
-			ImGui::Checkbox("SSAO active", &TempBool);
-			RENDERER.SetSSAOEnabled(TempBool);
-
-			TempBool = RENDERER.IsSSAOSmallDetailsEnabled();
-			ImGui::Checkbox("SSAO small details", &TempBool);
-			RENDERER.SetSSAOSmallDetailsEnabled(TempBool);
-
-			TempBool = RENDERER.IsSSAOResultBlured();
-			ImGui::Checkbox("SSAO blured", &TempBool);
-			RENDERER.SetSSAOResultBlured(TempBool);
-
-			int TempInt = RENDERER.GetSSAOSampleCount();
-			ImGui::SetNextItemWidth(100);
-			ImGui::DragInt("SSAO sample count", &TempInt);
-			RENDERER.SetSSAOSampleCount(TempInt);
-
-			float TempFloat = RENDERER.GetSSAOBias();
-			ImGui::SetNextItemWidth(100);
-			ImGui::DragFloat("SSAO bias", &TempFloat, 0.1f);
-			RENDERER.SetSSAOBias(TempFloat);
-
-			TempFloat = RENDERER.GetSSAORadius();
-			ImGui::SetNextItemWidth(100);
-			ImGui::DragFloat("SSAO radius", &TempFloat, 0.1f);
-			RENDERER.SetSSAORadius(TempFloat);
-
-			TempFloat = RENDERER.GetSSAORadiusSmallDetails();
-			ImGui::SetNextItemWidth(100);
-			ImGui::DragFloat("SSAO radius small details", &TempFloat, 0.1f);
-			RENDERER.SetSSAORadiusSmallDetails(TempFloat);
-
-			TempFloat = RENDERER.GetSSAOSmallDetailsWeight();
-			ImGui::SetNextItemWidth(100);
-			ImGui::DragFloat("SSAO small details weight", &TempFloat, 0.01f);
-			RENDERER.SetSSAOSmallDetailsWeight(TempFloat);
-		}
-
-		/*bool bEnabledSky = RENDERER.IsSkyEnabled();
-		if (ImGui::Checkbox("enable sky", &bEnabledSky))
-		{
-			RENDERER.SetSkyEnabld(bEnabledSky);
-		}
-
-		ImGui::Text("Sphere size:");
-		ImGui::SetNextItemWidth(FieldWidth);
-		float size = RENDERER.GetDistanceToSky();
-		ImGui::DragFloat("##Sphere size", &size, 0.01f, 0.0f, 200.0f);
-		RENDERER.SetDistanceToSky(size);
-
-		ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
-		{
-			RENDERER.SetDistanceToSky(50.0f);
-		}
-		ImGui::PopID();*/
+		EditorCameraIterator++;
 	}
 
 	ImGui::PopStyleVar();
@@ -1094,23 +667,23 @@ void FEEditor::DisplayEffectsWindow() const
 
 void FEEditor::RenderAllSubWindows()
 {
-	SelectFEObjectPopUp::getInstance().Render();
+	SELECT_FEOBJECT_POPUP.Render();
 
-	DeleteTexturePopup::getInstance().Render();
-	DeleteMeshPopup::getInstance().Render();
-	DeleteGameModelPopup::getInstance().Render();
-	DeleteMaterialPopup::getInstance().Render();
-	DeletePrefabPopup::getInstance().Render();
-	DeleteDirectoryPopup::getInstance().Render();
+	DeleteTexturePopup::GetInstance().Render();
+	DeleteMeshPopup::GetInstance().Render();
+	DeleteGameModelPopup::GetInstance().Render();
+	DeleteMaterialPopup::GetInstance().Render();
+	DeletePrefabPopup::GetInstance().Render();
+	DeleteDirectoryPopup::GetInstance().Render();
 
-	ResizeTexturePopup::getInstance().Render();
+	ResizeTexturePopup::GetInstance().Render();
 	JustTextWindowObj.Render();
 
-	RenamePopUp::getInstance().Render();
-	RenameFailedPopUp::getInstance().Render();
-	MessagePopUp::getInstance().Render();
+	RenamePopUp::GetInstance().Render();
+	RenameFailedPopUp::GetInstance().Render();
+	MessagePopUp::GetInstance().Render();
 	
-	ProjectWasModifiedPopUp::getInstance().Render();
+	ProjectWasModifiedPopUp::GetInstance().Render();
 
 	FE_IMGUI_WINDOW_MANAGER.RenderAllWindows();
 }
@@ -1201,8 +774,231 @@ void FEEditor::SetUpImgui()
 	int TexW, TexH;
 	io.Fonts->GetTexDataAsRGBA32(&TexPixels, &TexW, &TexH);
 
-	io.DisplaySize = ImVec2(static_cast<float>(ENGINE.GetWindowWidth()), static_cast<float>(ENGINE.GetWindowHeight()));
+	io.DisplaySize = ImVec2(static_cast<float>(APPLICATION.GetMainWindow()->GetWidth()), static_cast<float>(APPLICATION.GetMainWindow()->GetHeight()));
 	ImGui::StyleColorsDark();
 
 	SetImguiStyle();
+}
+
+void FEEditor::OnProjectClose()
+{
+	EDITOR_MATERIAL_WINDOW.Stop();
+	EditorSceneWindows.clear();
+	SetFocusedScene(nullptr);
+
+	PROJECT_MANAGER.CloseCurrentProject();
+	CONTENT_BROWSER_WINDOW.Clear();
+	SCENE_GRAPH_WINDOW.Clear();
+	PREFAB_EDITOR_MANAGER.Clear();
+}
+
+FEEditorSceneWindow* FEEditor::GetEditorSceneWindow(std::string SceneID)
+{
+	for (size_t i = 0; i < EditorSceneWindows.size(); i++)
+	{
+		if (EditorSceneWindows[i]->Scene->GetObjectID() == SceneID)
+			return EditorSceneWindows[i];
+	}
+
+	return nullptr;
+}
+
+void FEEditor::AddEditorScene(FEScene* Scene)
+{
+	FEEditorSceneWindow* NewSceneWindow = new FEEditorSceneWindow(Scene);
+	NewSceneWindow->SetVisible(true);
+	EditorSceneWindows.push_back(NewSceneWindow);
+}
+
+void FEEditor::AddCustomEditorScene(FEEditorSceneWindow* SceneWindow)
+{
+	if (SceneWindow == nullptr)
+		return;
+
+	SceneWindow->SetVisible(true);
+	EditorSceneWindows.push_back(SceneWindow);
+}
+
+void FEEditor::BeforeChangeOfFocusedScene(FEScene* NewSceneInFocus)
+{
+	if (!FocusedEditorSceneID.empty() && NewSceneInFocus != EDITOR.GetFocusedScene())
+	{
+		SELECTED.Clear(EDITOR.GetFocusedScene());
+		GIZMO_MANAGER.HideAllGizmo(EDITOR.GetFocusedScene());
+	}
+}
+
+bool FEEditor::IsInGameMode() const
+{
+	return bGameMode;
+}
+
+void FEEditor::SetGameMode(const bool GameMode)
+{
+	if (SetGameModeInternal(GameMode))
+		bGameMode = GameMode;
+}
+
+bool FEEditor::DuplicateScenesForGameMode()
+{
+	if (EDITOR.GetFocusedScene() == nullptr)
+	{
+		LOG.Add("FEEditor::DuplicateScenesForGameMode: No scene to duplicate for game mode.", "FE_EDITOR_GAME_MODE", FE_LOG_ERROR);
+		return false;
+	}
+
+	// Here we are setting flag right away, because we want to make sure that scripts are started.
+	FEScene* GameModeScene = SCENE_MANAGER.DuplicateScene(EDITOR.GetFocusedScene()->GetObjectID(), "GameMode", [](FEEntity* EntityToCheck) {
+		return !(EntityToCheck->GetTag() == EDITOR_RESOURCE_TAG);
+	}, FESceneFlag::Active | FESceneFlag::GameMode | FESceneFlag::Renderable);
+
+	if (GameModeScene == nullptr)
+	{
+		LOG.Add("FEEditor::DuplicateScenesForGameMode: Failed to duplicate scene for game mode.", "FE_EDITOR_GAME_MODE", FE_LOG_ERROR);
+		return false;
+	}
+
+	ParentIDToScenesInGameMode[EDITOR.GetFocusedScene()->GetObjectID()] = GameModeScene;
+
+	EDITOR.AddEditorScene(GameModeScene);
+
+	return true;
+}
+
+bool FEEditor::SetGameModeInternal(bool GameMode)
+{
+	if (EDITOR.IsInGameMode() == GameMode)
+		return false;
+
+	if (EDITOR.GetFocusedScene() == nullptr)
+	{
+		LOG.Add("FEEditor::SetGameModeInternal: No scene to duplicate for game mode.", "FE_EDITOR_GAME_MODE", FE_LOG_ERROR);
+		return false;
+	}
+
+	if (GameMode)
+	{
+		if (!DuplicateScenesForGameMode())
+		{
+			LOG.Add("FEEditor::SetGameModeInternal: Failed to set game mode.", "FE_EDITOR_GAME_MODE", FE_LOG_ERROR);
+			return false;
+		}
+	}
+	else
+	{
+		auto SceneIterator = ParentIDToScenesInGameMode.begin();
+		while (SceneIterator != ParentIDToScenesInGameMode.end())
+		{
+			DeleteScene(SceneIterator->second->GetObjectID());
+			SceneIterator = ParentIDToScenesInGameMode.erase(SceneIterator);
+		}
+	}
+
+	return true;
+}
+
+void FEEditor::DeleteScene(std::string SceneID)
+{
+	FEScene* SceneToDelete = SCENE_MANAGER.GetScene(SceneID);
+	if (SceneToDelete == nullptr)
+	{
+		LOG.Add("FEEditor::DeleteScene: Scene to delete not found.", "FE_EDITOR", FE_LOG_ERROR);
+		return;
+	}
+
+	FEEditorSceneWindow* SceneWindow = GetEditorSceneWindow(SceneToDelete->GetObjectID());
+	if (SceneWindow != nullptr)
+	{
+		if (EDITOR.FocusedEditorSceneID == SceneToDelete->GetObjectID())
+			EDITOR.FocusedEditorSceneID = "";
+
+		for (size_t i = 0; i < EditorSceneWindows.size(); i++)
+		{
+			if (EditorSceneWindows[i] == SceneWindow)
+			{
+				EditorSceneWindows.erase(EditorSceneWindows.begin() + i);
+				delete SceneWindow;
+				break;
+			}
+		}
+	}
+
+	if (SELECTED.PerSceneData.find(SceneToDelete->GetObjectID()) != SELECTED.PerSceneData.end())
+		SELECTED.PerSceneData.erase(SceneToDelete->GetObjectID());
+
+	if (GIZMO_MANAGER.PerSceneData.find(SceneToDelete->GetObjectID()) != GIZMO_MANAGER.PerSceneData.end())
+		GIZMO_MANAGER.PerSceneData.erase(SceneToDelete->GetObjectID());
+
+	SCENE_MANAGER.DeleteScene(SceneToDelete->GetObjectID());
+}
+
+std::vector<std::string> FEEditor::GetEditorOpenedScenesIDs() const
+{
+	std::vector<std::string> OpenedScenesIDs;
+	for (size_t i = 0; i < EditorSceneWindows.size(); i++)
+	{
+		OpenedScenesIDs.push_back(EditorSceneWindows[i]->Scene->GetObjectID());
+	}
+
+	return OpenedScenesIDs;
+}
+
+FEScene* FEEditor::GetFocusedScene() const
+{
+	return SCENE_MANAGER.GetScene(FocusedEditorSceneID);
+}
+
+bool FEEditor::SetFocusedScene(FEScene* NewSceneInFocus)
+{
+	if (NewSceneInFocus == nullptr)
+	{
+		FocusedEditorSceneID = "";
+		return true;
+	}
+
+	BeforeChangeOfFocusedScene(NewSceneInFocus);
+
+	return SetFocusedScene(NewSceneInFocus->GetObjectID());
+}
+
+bool FEEditor::SetFocusedScene(std::string NewSceneInFocusID)
+{
+	if (SCENE_MANAGER.GetScene(NewSceneInFocusID) == nullptr)
+	{
+		LOG.Add("FEEditor::SetFocusedEditorScene: Scene not found.", "FE_EDITOR", FE_LOG_ERROR);
+		return false;
+	}
+
+	if (GetEditorSceneWindow(NewSceneInFocusID) == nullptr)
+	{
+		LOG.Add("FEEditor::SetFocusedEditorScene: Scene window not found.", "FE_EDITOR", FE_LOG_ERROR);
+		return false;
+	}
+
+	FocusedEditorSceneID = NewSceneInFocusID;
+	return true;
+}
+
+void FEEditor::UpdateBeforeRender()
+{
+	// Before rendering, we need to ensure that if scene is in editor mode, it's main camera would be editor camera.
+	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+	if (CurrentProject != nullptr)
+	{
+		std::vector<FEScene*> Scenes = SCENE_MANAGER.GetScenesByFlagMask(FESceneFlag::Active | FESceneFlag::Renderable | FESceneFlag::EditorMode);
+		for (size_t i = 0; i < Scenes.size(); i++)
+		{
+			FEEntity* CurrentMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(Scenes[i]);
+			std::string EditorCameraID = CurrentProject->GetEditorCameraIDBySceneID(Scenes[i]->GetObjectID());
+			if (!EditorCameraID.empty())
+			{
+				if (CurrentMainCameraEntity != nullptr && CurrentMainCameraEntity->GetObjectID() != EditorCameraID)
+				{
+					//SceneIDToOldMainCameraID[Scenes[i]->GetObjectID()] = CurrentMainCameraEntity->GetObjectID();
+					//CurrentProject->SceneIDToProperMainCameraID[Scenes[i]->GetObjectID()] = EditorCameraID;
+					CAMERA_SYSTEM.SetMainCamera(Scenes[i]->GetEntity(EditorCameraID));
+				}
+			}
+		}
+	}
 }

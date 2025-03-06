@@ -1,11 +1,14 @@
 ﻿#pragma once
 
 #include "EditorWindows/InspectorWindow.h"
+#include "EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.h"
 #include <functional>
 
-class DragAndDropTarget;
 class FEEditor
 {
+    friend class FEEditorSceneWindow;
+    friend class FEProjectManager;
+    friend class FEPrefabEditorManager;
 public:
     SINGLETON_PUBLIC_PART(FEEditor)
 
@@ -24,38 +27,52 @@ public:
     void SetMouseY(double NewValue);
 
     // Clipboard
-    std::string GetObjectNameInClipboard();
-    void SetObjectNameInClipboard(std::string NewValue);
+    std::string GetSceneEntityIDInClipboard();
+    void SetSceneEntityIDInClipboard(std::string NewValue);
+
+    void AddEditorScene(FEScene* Scene);
+    void AddCustomEditorScene(FEEditorSceneWindow* SceneWindow);
+    FEEditorSceneWindow* GetEditorSceneWindow(std::string SceneID);
+
+    std::vector<std::string> GetEditorOpenedScenesIDs() const;
+
+    bool SetFocusedScene(FEScene* NewSceneInFocus);
+	bool SetFocusedScene(std::string NewSceneInFocusID);
+    FEScene* GetFocusedScene() const;
+
+    bool IsInGameMode() const;
+    void SetGameMode(bool GameMode);
+
+    void UpdateBeforeRender();
 private:
     SINGLETON_PRIVATE_PART(FEEditor)
 
     // Mouse and input
     double LastMouseX, LastMouseY;
     double MouseX, MouseY;
-    bool bSceneWindowHovered;
-    bool bIsCameraInputActive = false;
+
+    std::string FocusedEditorSceneID = "";
+    ImGuiID DockspaceID = 0;
+
+    std::vector<FEEditorSceneWindow*> EditorSceneWindows;
+
+	void DeleteScene(std::string SceneID);
 
     // Clipboard
-    std::string ObjectNameInClipboard;
-
-    // Scene window
-    static ImGuiWindow* SceneWindow;
-
-    // Drag and drop
-    DragAndDropTarget* SceneWindowTarget = nullptr;
+    std::string SceneEntityIDInClipboard;
 
     // Callbacks
-    static void OnCameraUpdate(FEBasicCamera* Camera);
+    static void AfterEngineUpdate();
     static void MouseButtonCallback(int Button, int Action, int Mods);
     static void MouseMoveCallback(double Xpos, double Ypos);
     static void KeyButtonCallback(int Key, int Scancode, int Action, int Mods);
-    static void RenderTargetResizeCallback(int NewW, int NewH);
+    static void OnViewportResize(std::string ViewportID);
     static void DropCallback(int Count, const char** Paths);
     static void CloseWindowCallBack();
 
     // Effects window
-    bool bEffectsWindowVisible = true;
-    void DisplayEffectsWindow() const;
+    bool bEditorCamerasWindowVisible = true;
+    void DisplayEditorCamerasWindow() const;
 
     // Log window
     bool bLogWindowVisible = true;
@@ -71,8 +88,9 @@ private:
 
     // Game mode
     bool bGameMode = false;
-    bool IsInGameMode() const;
-    void SetGameMode(bool GameMode);
+	bool SetGameModeInternal(bool GameMode);
+	std::unordered_map<std::string, FEScene*> ParentIDToScenesInGameMode;
+	bool DuplicateScenesForGameMode();
 
     // Sub-windows
     void RenderAllSubWindows();
@@ -80,6 +98,12 @@ private:
     // ImGui setup
     void SetUpImgui();
     void SetImguiStyle();
+
+    void OnProjectClose();
+
+    void BeforeChangeOfFocusedScene(FEScene* NewSceneInFocus);
+
+    std::unordered_map<std::string, std::string> SceneIDToOldMainCameraID;
 };
 
-#define EDITOR FEEditor::getInstance()
+#define EDITOR FEEditor::GetInstance()

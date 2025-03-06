@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../FEProject.h"
+#include "../SubSystems/ProjectManagment/FEProjectManager.h"
 #include "VisualNodeSystem.h"  
 #include "../SubSystems/NodeSystem/CustomNodes/FEEditorStandardNodes.h"
 

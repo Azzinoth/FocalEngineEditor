@@ -1,7 +1,5 @@
 #include "RenamePopups.h"
 
-RenameFailedPopUp* RenameFailedPopUp::Instance = nullptr;
-
 RenameFailedPopUp::RenameFailedPopUp()
 {
 	PopupCaption = "Invalid name";
@@ -23,7 +21,7 @@ void RenameFailedPopUp::Render()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 	if (ImGui::BeginPopupModal(PopupCaption.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
 	{
-		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		ImGui::Text("Entered name is incorrect !");
 
 		OkButton->SetPosition(ImVec2(ImGui::GetWindowWidth() / 2.0f - 120.0f / 2.0f, ImGui::GetCursorPosY() + 10.0f));
@@ -41,8 +39,6 @@ void RenameFailedPopUp::Render()
 		ImGui::PopStyleVar();
 	}
 }
-
-RenamePopUp* RenamePopUp::Instance = nullptr;
 
 RenamePopUp::RenamePopUp()
 {
@@ -71,7 +67,7 @@ void RenamePopUp::Render()
 			return;
 		}
 
-		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		ImGui::Text("New object name :");
 		ImGui::InputText("##New object name", NewName, IM_ARRAYSIZE(NewName));
 
@@ -88,6 +84,14 @@ void RenamePopUp::Render()
 
 				ObjToWorkWith->SetName(NewName);
 
+				if (ObjToWorkWith->GetType() == FE_SCENE_GRAPH_NODE)
+				{
+					FENaiveSceneGraphNode* Node = reinterpret_cast<FENaiveSceneGraphNode*>(ObjToWorkWith);
+					FEEntity* Entity = Node->GetEntity();
+					if (Entity != nullptr)
+						Entity->SetName(NewName);
+				}
+
 				ImGuiModalPopup::Close();
 				strcpy_s(NewName, "");
 			}
@@ -95,7 +99,7 @@ void RenamePopUp::Render()
 			{
 				ObjToWorkWith = nullptr;
 				ImGuiModalPopup::Close();
-				RenameFailedPopUp::getInstance().Show();
+				RenameFailedPopUp::GetInstance().Show();
 			}
 		}
 		ImGui::SetItemDefaultFocus();

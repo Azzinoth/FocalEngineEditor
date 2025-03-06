@@ -4,19 +4,22 @@
 #include <any>
 using namespace FocalEngine;
 
+#define EDITOR_RESOURCE_TAG "EDITOR_PRIVATE_RESOURCE"
+
 class DragAndDropTarget
 {
 	friend class DragAndDropManager;
 private:
 	std::vector<FE_OBJECT_TYPE> AcceptedTypes;
 	std::vector<std::string> ToolTipTexts;
-	bool (*Callback)(FEObject*, void**);
+	std::function<bool(FEObject*, void**)> Callback;
+
 	void** UserData = nullptr;
 	bool bActive = false;
 public:
 	DragAndDropTarget();
-	DragAndDropTarget(FE_OBJECT_TYPE AcceptedType, bool (*Callback)(FEObject*, void**), void** UserData = nullptr, std::string ToolTipText = "");
-	DragAndDropTarget(std::vector<FE_OBJECT_TYPE>& AcceptedTypes, bool (*Callback)(FEObject*, void**), void** UserData, std::vector<std::string>& ToolTipTexts);
+	DragAndDropTarget(FE_OBJECT_TYPE AcceptedType, std::function<bool(FEObject*, void**)> Callback, void** UserData = nullptr, std::string ToolTipText = "");
+	DragAndDropTarget(std::vector<FE_OBJECT_TYPE>& AcceptedTypes, std::function<bool(FEObject*, void**)> Callback, void** UserData, std::vector<std::string>& ToolTipTexts);
 	~DragAndDropTarget();
 
 	void SetActive(bool Active);
@@ -38,8 +41,8 @@ public:
 	SINGLETON_PUBLIC_PART(DragAndDropManager)
 
 	void InitializeResources();
-	DragAndDropTarget* AddTarget(FE_OBJECT_TYPE AcceptedType, bool (*Callback)(FEObject*, void**), void** UserData = nullptr, std::string ToolTipText = "");
-	DragAndDropTarget* AddTarget(std::vector<FE_OBJECT_TYPE>& AcceptedTypes, bool (*Callback)(FEObject*, void**), void** UserData, std::vector<std::string>& ToolTipTexts);
+	DragAndDropTarget* AddTarget(FE_OBJECT_TYPE AcceptedType, std::function<bool(FEObject*, void**)> Callback, void** UserData = nullptr, std::string ToolTipText = "");
+	DragAndDropTarget* AddTarget(std::vector<FE_OBJECT_TYPE>& AcceptedTypes, std::function<bool(FEObject*, void**)> Callback, void** UserData, std::vector<std::string>& ToolTipTexts);
 	DragAndDropTarget* AddTarget(DragAndDropTarget* NewTarget);
 
 	void Render() const;
@@ -69,4 +72,4 @@ private:
 	bool ObjectCanBeDroped() const;
 };
 
-#define DRAG_AND_DROP_MANAGER DragAndDropManager::getInstance()
+#define DRAG_AND_DROP_MANAGER DragAndDropManager::GetInstance()

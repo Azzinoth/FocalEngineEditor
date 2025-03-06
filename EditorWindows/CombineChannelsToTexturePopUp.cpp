@@ -1,7 +1,6 @@
 #include "CombineChannelsToTexturePopUp.h"
 using namespace VisNodeSys;
 
-CombineChannelsToTexturePopUp* CombineChannelsToTexturePopUp::Instance = nullptr;
 ImVec2 CombineChannelsToTexturePopUp::NodeGridRelativePosition = ImVec2(5, 30);
 ImVec2 CombineChannelsToTexturePopUp::WindowPosition = ImVec2(0, 0);
 ImVec2 CombineChannelsToTexturePopUp::MousePositionWhenContextMenuWasOpened = ImVec2(0, 0);
@@ -23,7 +22,7 @@ CombineChannelsToTexturePopUp::~CombineChannelsToTexturePopUp()
 void CombineChannelsToTexturePopUp::Show()
 {
 	Size = ImVec2(800, 800);
-	Position = ImVec2(FEngine::getInstance().GetWindowWidth() / 2 - Size.x / 2, FEngine::getInstance().GetWindowHeight() / 2 - Size.y / 2);
+	Position = ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2 - Size.x / 2, APPLICATION.GetMainWindow()->GetHeight() / 2 - Size.y / 2);
 
 	Flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse;
 
@@ -123,7 +122,7 @@ void CombineChannelsToTexturePopUp::NodeSystemMainContextMenu()
 		if (ImGui::MenuItem("Texture node"))
 		{
 			TextureForNewNode = RESOURCE_MANAGER.NoTexture;
-			SelectFEObjectPopUp::getInstance().Show(FE_TEXTURE, TextureNodeCreationCallback);
+			SELECT_FEOBJECT_POPUP.Show(FE_TEXTURE, TextureNodeCreationCallback);
 		}
 
 		if (ImGui::MenuItem("Float node"))

@@ -81,11 +81,11 @@ public:
 	void Close();
 };
 
-#define USE_NODES
-
-class EditMaterialPopup : public FEImGuiWindow
+class EditMaterialWindow : public FEImGuiWindow
 {
-	SINGLETON_PRIVATE_PART(EditMaterialPopup)
+	friend class FEEditor;
+
+	SINGLETON_PRIVATE_PART(EditMaterialWindow)
 
 	ImGuiButton* CancelButton;
 	ImGuiImageButton* IconButton = nullptr;
@@ -96,7 +96,6 @@ class EditMaterialPopup : public FEImGuiWindow
 	FETexture* TempContainer = nullptr;
 	int TextureDestination = -1;
 
-#ifdef USE_NODES
 	static FEMaterial* ObjToWorkWith;
 
 	// ************** Node area **************
@@ -124,28 +123,28 @@ class EditMaterialPopup : public FEImGuiWindow
 
 	static bool DragAndDropnodeAreaTargetCallback(FEObject* Object, void** CallbackInfo);
 	// ************** Drag&Drop END **************
-#else
-	FEMaterial* ObjToWorkWith;
 
-	// ************** Drag&Drop **************
-	struct MaterialBindingCallbackInfo
-	{
-		void** Material;
-		int TextureBinding;
-	};
-	std::vector<MaterialBindingCallbackInfo> MaterialBindingInfo;
-	std::vector<DragAndDropTarget*> MaterialBindingtargets;
-	DragAndDropTarget* TexturesListTarget;
+	// ************** Scene **************
+	FEScene* PreviewScene;
+	FEGameModel* PreviewGameModel;
+	FEEntity* PreviewEntity;
+	FEEntity* PreviewCameraEntity;
+	FEEntity* PreviewLightEntity;
 
-	static bool DragAndDropCallback(FEObject* Object, void** OldTexture);
-	static bool DragAndDropTexturesListCallback(FEObject* Object, void** Material);
-	static bool DragAndDropMaterialBindingsCallback(FEObject* Object, void** CallbackInfoPointer);
-	// ************** Drag&Drop END **************
-#endif // USE_NODES
+	bool bWindowHovered = false;
+	bool bCameraOutputHovered = false;
+	static void MouseButtonCallback(const int Button, const int Action, int Mods);
+	// ************** Scene END **************
+
+	void Stop();
+
+	FEEntity* InjectModelViewCamera(FEScene* Scene);
 public:
-	SINGLETON_PUBLIC_PART(EditMaterialPopup)
+	SINGLETON_PUBLIC_PART(EditMaterialWindow)
 
 	void Show(FEMaterial* Material);
 	void Render() override;
 	void Close();
 };
+
+#define EDITOR_MATERIAL_WINDOW EditMaterialWindow::GetInstance()

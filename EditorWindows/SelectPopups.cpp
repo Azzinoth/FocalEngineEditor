@@ -1,6 +1,5 @@
 #include "SelectPopups.h"
 
-SelectFEObjectPopUp* SelectFEObjectPopUp::Instance = nullptr;
 bool SelectFEObjectPopUp::ControlButtonPressed = false;
 bool SelectFEObjectPopUp::bOneObjectSelectonMode = true;
 
@@ -20,7 +19,7 @@ SelectFEObjectPopUp::SelectFEObjectPopUp()
 	CancelButton->SetSize(ImVec2(140, 24));
 	CancelButton->SetPosition(ImVec2(660, 35));
 
-	ENGINE.AddKeyCallback(SelectFEObjectPopUp::KeyButtonCallback);
+	INPUT.AddKeyCallback(SelectFEObjectPopUp::KeyButtonCallback);
 }
 
 SelectFEObjectPopUp::~SelectFEObjectPopUp()
@@ -28,6 +27,24 @@ SelectFEObjectPopUp::~SelectFEObjectPopUp()
 	delete SelectButton;
 	delete CancelButton;
 	delete IconButton;
+}
+
+void SelectFEObjectPopUp::FilterOutTags(std::vector<std::string>& FEObjectIDList, std::vector<std::string> ListOfTagsToFilterOut)
+{
+	for (int i = 0; i < FEObjectIDList.size(); i++)
+	{
+		FEObject* CurrentObject = OBJECT_MANAGER.GetFEObject(FEObjectIDList[i]);
+
+		for (size_t j = 0; j < ListOfTagsToFilterOut.size(); j++)
+		{
+			if (CurrentObject->GetTag() == ListOfTagsToFilterOut[j])
+			{
+				FEObjectIDList.erase(FEObjectIDList.begin() + i);
+				i--;
+				break;
+			}
+		}
+	}
 }
 
 void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::vector<FEObject*>), FEObject* HighlightedObject, const std::vector<FEObject*> CustomList)
@@ -50,48 +67,42 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 		{
 			case FE_TEXTURE:
 			{
-				TempList = RESOURCE_MANAGER.GetTextureList();
-				TempList.insert(TempList.begin(), RESOURCE_MANAGER.NoTexture->GetObjectID());
-
+				TempList = RESOURCE_MANAGER.GetTextureIDList();
 				break;
 			}
 
 			case FE_MESH:
 			{
-				TempList = RESOURCE_MANAGER.GetMeshList();
-
-				const std::vector<std::string> StandardMeshList = RESOURCE_MANAGER.GetStandardMeshList();
-				for (size_t i = 0; i < StandardMeshList.size(); i++)
-				{
-					if (EDITOR_INTERNAL_RESOURCES.IsInInternalEditorList(RESOURCE_MANAGER.GetMesh(StandardMeshList[i])))
-						continue;
-
-					TempList.push_back(StandardMeshList[i]);
-				}
-
+				TempList = RESOURCE_MANAGER.GetMeshIDList();
 				break;
 			}
 			
 			case FE_MATERIAL:
 			{
-				TempList = RESOURCE_MANAGER.GetMaterialList();
-				TempList.insert(TempList.begin(), "18251A5E0F08013Z3939317U"/*"SolidColorMaterial"*/);
-
+				TempList = RESOURCE_MANAGER.GetMaterialIDList();
 				break;
 			}
 			
 			case FE_GAMEMODEL:
 			{
-				TempList = RESOURCE_MANAGER.GetGameModelList();
+				TempList = RESOURCE_MANAGER.GetGameModelIDList();
 				break;
 			}
 			
 			case FE_PREFAB:
 			{
-				TempList = RESOURCE_MANAGER.GetPrefabList();
+				TempList = RESOURCE_MANAGER.GetPrefabIDList();
 				break;
 			}
 		}
+
+		FilterOutTags(TempList, std::vector<std::string>{ ENGINE_RESOURCE_TAG, EDITOR_RESOURCE_TAG});
+
+		if (CurrenType == FE_TEXTURE)
+			TempList.insert(TempList.begin(), RESOURCE_MANAGER.NoTexture->GetObjectID());
+
+		if (CurrenType == FE_MATERIAL)
+			TempList.insert(TempList.begin(), "18251A5E0F08013Z3939317U"/*"SolidColorMaterial"*/);
 		
 		for (size_t i = 0; i < TempList.size(); i++)
 			ItemsList.push_back(OBJECT_MANAGER.GetFEObject(TempList[i]));
@@ -125,7 +136,7 @@ void SelectFEObjectPopUp::Render()
 	ImGui::SetNextWindowSize(ImVec2(128 * 7, 800));
 	if (ImGui::BeginPopupModal(PopupCaption.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
 	{
-		ImGui::SetWindowPos(ImVec2(ENGINE.GetWindowWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, ENGINE.GetWindowHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		ImGui::SetCursorPosX(10);
 		ImGui::SetCursorPosY(40);
 		ImGui::Text("Filter: ");
@@ -212,7 +223,6 @@ void SelectFEObjectPopUp::Render()
 		SelectButton->Render();
 		if (SelectButton->IsClicked())
 		{
-			AddToSelected(OBJECT_MANAGER.GetFEObject(FilteredItemsList[IndexUnderMouse]->GetObjectID()));
 			OnSelectAction();
 
 			Close();

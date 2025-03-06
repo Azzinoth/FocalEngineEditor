@@ -28,6 +28,8 @@ class SelectFEObjectPopUp : public ImGuiModalPopup
 	static bool bOneObjectSelectonMode;
 	bool IsSelected(const FEObject* Object) const;
 	void AddToSelected(FEObject* Object);
+
+	void FilterOutTags(std::vector<std::string>& FEObjectIDList, std::vector<std::string> ListOfTagsToFilterOut);
 public:
 	SINGLETON_PUBLIC_PART(SelectFEObjectPopUp)
 
@@ -38,3 +40,5 @@ public:
 	bool IsOneObjectSelectonMode();
 	void SetOneObjectSelectonMode(bool NewValue);
 };
+
+#define SELECT_FEOBJECT_POPUP SelectFEObjectPopUp::GetInstance()
