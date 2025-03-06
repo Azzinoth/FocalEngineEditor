@@ -23,6 +23,11 @@ public:
 	void CloseAllWindows() const;
 
 	void RenderAllWindows() const;
+
+	void UnRegisterWindow(FEImGuiWindow* Window);
+
+	// FIXME: Currently using internal ImGui functions. Need to find an alternative approach.
+	ImGuiWindow* GetCurrentWindowImpl();
 private:
 	SINGLETON_PRIVATE_PART(WindowsManager)
 
@@ -30,7 +35,7 @@ private:
 	std::vector<FEImGuiWindow*> Windows;
 };
 
-#define FE_IMGUI_WINDOW_MANAGER WindowsManager::getInstance()
+#define FE_IMGUI_WINDOW_MANAGER WindowsManager::GetInstance()
 
 class ImGuiModalPopup
 {
@@ -162,6 +167,9 @@ protected:
 	bool bWasClosedLastFrame = false;
 	FEImGuiWindow();
 	ImGuiWindow* Window = nullptr;
+
+	float BorderSize = 2.0f;
+	glm::vec2 Padding = glm::vec2(15.0f, 15.0f);
 public:
 	virtual ~FEImGuiWindow();
 	virtual void Show();
@@ -175,6 +183,14 @@ public:
 	bool IsMouseHovered() const;
 
 	virtual void SetCaption(std::string NewCaption);
+
+	ImGuiWindow* GetWindow() const;
+
+	float GetBorderSize() const;
+	void SetBorderSize(float NewValue);
+
+	glm::vec2 GetPadding() const;
+	void SetPadding(glm::vec2 NewValue);
 };
 
 class FEArrowScroller

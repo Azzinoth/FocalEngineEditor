@@ -7,7 +7,7 @@ using namespace FocalEngine;
 class FEEditorTextureSourceNode : public VisNodeSys::Node
 {
 	friend class NodeFactory;
-	static bool isRegistered;
+	static bool IsRegistered;
 
 	FETexture* Texture = nullptr;
 

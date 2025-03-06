@@ -3,49 +3,42 @@
 #include "../FEngine.h"
 using namespace FocalEngine;
 
-class FEEditor;
-class FEProjectManager;
-class DeleteTexturePopup;
-class RenameMeshPopUp;
-class DeleteMeshPopup;
-class SelectMeshPopUp;
-class SelectMaterialPopUp;
-class SelectGameModelPopUp;
-class EditGameModelPopup;
-class EditMaterialPopup;
-class DeleteMaterialPopup;
-class SelectFeObjectPopUp;
-class PrefabEditorWindow;
-
 class FEEditorPreviewManager
 {
-	friend FEEditor;
-	friend FEProjectManager;
-	friend DeleteTexturePopup;
-	friend RenameMeshPopUp;
-	friend DeleteMeshPopup;
-	friend SelectMeshPopUp;
-	friend SelectMaterialPopUp;
-	friend SelectGameModelPopUp;
-	friend EditGameModelPopup;
-	friend EditMaterialPopup;
-	friend DeleteMaterialPopup;
-	friend SelectFeObjectPopUp;
-	friend PrefabEditorWindow;
+	friend class FEEditor;
+	friend class FEEditorInspectorWindow;
+	friend class FEEditorContentBrowserWindow;
+	friend class FEProjectManager;
+	friend class DeleteTexturePopup;
+	friend class RenameMeshPopUp;
+	friend class DeleteMeshPopup;
+	friend class SelectMeshPopUp;
+	friend class SelectMaterialPopUp;
+	friend class SelectGameModelPopUp;
+	friend class EditGameModelPopup;
+	friend class EditMaterialWindow;
+	friend class DeleteMaterialPopup;
+	friend class SelectFEObjectPopUp;
+	friend class FEPrefabEditorManager;
 
 private:
 	SINGLETON_PUBLIC_PART(FEEditorPreviewManager)
 	SINGLETON_PRIVATE_PART(FEEditorPreviewManager)
 
 	void InitializeResources();
-	void ReInitializeEntities();
 	void UpdateAll();
 
-	FEFramebuffer* PreviewFB;
+	FEScene* PreviewScene = nullptr;
+
 	FEEntity* PreviewEntity;
-	FEPrefab* PreviewPrefab;
 	FEGameModel* PreviewGameModel;
 	FEMaterial* MeshPreviewMaterial;
+
+	FEEntity* LocalSunEntity;
+	FEEntity* LocalCameraEntity;
+
+	// Saved scene settings
+	bool bIsRegularFogEnabled = false;
 
 	std::unordered_map<std::string, FETexture*> MeshPreviewTextures;
 	std::unordered_map<std::string, FETexture*> MaterialPreviewTextures;
@@ -53,13 +46,7 @@ private:
 	std::unordered_map<std::string, FETexture*> PrefabPreviewTextures;
 
 	static glm::vec4 OriginalClearColor;
-	static FETransformComponent OriginalMeshTransform;
-	static glm::vec3 OriginalCameraPosition;
-	static float OriginalAspectRation;
-	static float OriginalCameraPitch;
-	static float OriginalCameraRoll;
-	static float OriginalCameraYaw;
-	static float OriginalExposure;
+	static FETransformComponent OriginalTransform;
 
 	void BeforePreviewActions();
 	void AfterPreviewActions();
@@ -85,4 +72,4 @@ private:
 	void Clear();
 };
 
-#define PREVIEW_MANAGER FEEditorPreviewManager::getInstance()
+#define PREVIEW_MANAGER FEEditorPreviewManager::GetInstance()

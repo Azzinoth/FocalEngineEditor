@@ -1,0 +1,93 @@
+cmake_minimum_required(VERSION 3.10)
+
+add_definitions(-DUNICODE)
+add_definitions(-D_UNICODE)
+
+set(PROJECT_NAME PLACE_HOLDER)
+
+project(${PROJECT_NAME})
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Set compiler flags based on USE_STATIC_RUNTIME
+if(MSVC)
+    # Disable C4251 warning
+    add_compile_options(/wd4251)
+
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+    set(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME ON CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" FORCE)
+
+    # Always add /MP for multi-processor compilation
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+endif()
+
+# Turn on the ability to create folders to organize projects (.vcproj)
+# It creates "CMakePredefinedTargets" folder by default and adds CMake
+# defined projects like INSTALL.vcproj and ZERO_CHECK.vcproj
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+set(DEAR_IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/imgui CACHE PATH "Path to Dear ImGui directory." FORCE)
+set(VISUAL_NODE_SYSTEM_BUILD_SHARED_LIBS OFF CACHE BOOL "Build VisualNodeSystem as a shared library" FORCE)
+set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/GLFW/lib/x64/glfw3_mt.lib CACHE PATH "Path to GLFW library." FORCE)
+
+if(NOT TARGET VisualNodeSystem)
+	add_subdirectory(SubSystems/VisualNodeSystem)
+endif()
+
+if(NOT TARGET FocalEngine)
+	add_subdirectory(SubSystems/FocalEngine)
+endif()
+
+# Extract the relative path of the engine folder
+file(RELATIVE_PATH RELATIVE_PATH_TO_ENGINE_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}" "${ENGINE_FOLDER}")
+# We need to re-configure the Config.h file for the engine
+# This is necessary for any project that will include FocalEngine
+# to make sure that the engine can find its dependencies
+set(ENGINE_FOLDER "${RELATIVE_PATH_TO_ENGINE_FOLDER}")
+configure_file(${ENGINE_FOLDER}/ResourceManager/Config.h.in ${ENGINE_FOLDER}/ResourceManager/Config.h @ONLY)
+
+file(GLOB Main_SRC
+	"Main.h"
+	"Main.cpp"
+)
+
+#(PLACE_HOLDER) Here should be list of all script modules sources.
+link_directories(${GLEW_LIB_DIR})
+link_directories(${GLFW_LIB_DIR})
+
+add_executable(${PROJECT_NAME}
+	WIN32
+		${Main_SRC}
+		#(PLACE_HOLDER) Here should be list of all script modules.
+)
+
+target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+        FEBasicApplication
+		VisualNodeSystem
+        FocalEngine
+        ${GLFW_LIBRARY}
+        ${GLEW_LIBRARY}
+        opengl32.lib
+)
+
+# FocalEngine is headers-only, we need to add its include directories
+target_include_directories(${PROJECT_NAME} PRIVATE ${FOCAL_ENGINE_INCLUDES})
+target_compile_definitions(${PROJECT_NAME} PRIVATE FOCAL_ENGINE_HEADERS_ONLY)
+
+source_group("Source Files/" FILES ${Main_SRC})
+#(PLACE_HOLDER) Here should be list of all script modules and where to place them in VS project.
+
+# set the startup project
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+
+include_directories(
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${GLEW_INCLUDE_DIR}
+	${BASICAPP_THIRDPARTY_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/imgui
+	${BASICAPP_DIR}
+	${FOCAL_ENGINE_INCLUDES}
+	${VISUAL_NODE_SYSTEM_DIR}
+)

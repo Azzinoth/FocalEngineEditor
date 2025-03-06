@@ -1,26 +1,25 @@
 #include "FEEditorDragAndDropManager.h"
 using namespace FocalEngine;
 
-DragAndDropManager* DragAndDropManager::Instance = nullptr;
 DragAndDropManager::DragAndDropManager() {}
 DragAndDropManager::~DragAndDropManager() {}
 
 void DragAndDropManager::InitializeResources()
 {
 	HandCursor = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/handCursor.png", "handCursor");
-	RESOURCE_MANAGER.MakeTextureStandard(HandCursor);
+	RESOURCE_MANAGER.SetTag(HandCursor, EDITOR_RESOURCE_TAG);
 
 	HandCursorUnavailable = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/handCursorUnavailable.png", "handCursorUnavailable");
-	RESOURCE_MANAGER.MakeTextureStandard(HandCursorUnavailable);
+	RESOURCE_MANAGER.SetTag(HandCursorUnavailable, EDITOR_RESOURCE_TAG);
 }
 
-DragAndDropTarget* DragAndDropManager::AddTarget(const FE_OBJECT_TYPE AcceptedType, bool (*Callback)(FEObject*, void**), void** UserData, const std::string ToolTipText)
+DragAndDropTarget* DragAndDropManager::AddTarget(const FE_OBJECT_TYPE AcceptedType, std::function<bool(FEObject*, void**)> Callback, void** UserData, const std::string ToolTipText)
 {
 	Targets.push_back(new DragAndDropTarget(AcceptedType, Callback, UserData, ToolTipText));
 	return Targets.back();
 }
 
-DragAndDropTarget* DragAndDropManager::AddTarget(std::vector<FE_OBJECT_TYPE>& AcceptedTypes, bool (*Callback)(FEObject*, void**), void** UserData, std::vector<std::string>& ToolTipTexts)
+DragAndDropTarget* DragAndDropManager::AddTarget(std::vector<FE_OBJECT_TYPE>& AcceptedTypes, std::function<bool(FEObject*, void**)> Callback, void** UserData, std::vector<std::string>& ToolTipTexts)
 {
 	Targets.push_back(new DragAndDropTarget(AcceptedTypes, Callback, UserData, ToolTipTexts));
 	return Targets.back();
@@ -165,9 +164,9 @@ void DragAndDropManager::MouseMove()
 	}
 }
 
-void DragAndDropManager::SetObject(FEObject* Obj, FETexture* Texture, ImVec2 UV0, ImVec2 UV1)
+void DragAndDropManager::SetObjectToDrag(FEObject* Object, FETexture* Texture, ImVec2 UV0, ImVec2 UV1)
 {
-	Object = Obj;
+	this->Object = Object;
 	PreviewTexture = Texture;
 	this->UV0 = UV0;
 	this->UV1 = UV1;
@@ -188,7 +187,7 @@ DragAndDropTarget::DragAndDropTarget()
 	this->Callback = nullptr;
 }
 
-DragAndDropTarget::DragAndDropTarget(const FE_OBJECT_TYPE AcceptedType, bool (*Callback)(FEObject*, void**), void** UserData, const std::string ToolTipText)
+DragAndDropTarget::DragAndDropTarget(const FE_OBJECT_TYPE AcceptedType, std::function<bool(FEObject*, void**)> Callback, void** UserData, const std::string ToolTipText)
 {
 	AcceptedTypes.push_back(AcceptedType);
 	this->Callback = Callback;
@@ -196,7 +195,7 @@ DragAndDropTarget::DragAndDropTarget(const FE_OBJECT_TYPE AcceptedType, bool (*C
 	ToolTipTexts.push_back(ToolTipText);
 }
 
-DragAndDropTarget::DragAndDropTarget(std::vector<FE_OBJECT_TYPE>& AcceptedTypes, bool (*Callback)(FEObject*, void**), void** UserData, std::vector<std::string>& ToolTipTexts)
+DragAndDropTarget::DragAndDropTarget(std::vector<FE_OBJECT_TYPE>& AcceptedTypes, std::function<bool(FEObject*, void**)> Callback, void** UserData, std::vector<std::string>& ToolTipTexts)
 {
 	this->AcceptedTypes = AcceptedTypes;
 	this->Callback = Callback;
