@@ -543,6 +543,9 @@ void FEEditorContentBrowserWindow::InitializeResources()
 	GameModelIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/gameModelContentBrowserIcon.png", "gameModelContentBrowserIcon");
 	RESOURCE_MANAGER.SetTag(GameModelIcon, EDITOR_RESOURCE_TAG);
 
+	PointCloudIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/PointCloudContentBrowserIcon.png", "pointCloudContentBrowserIcon");
+	RESOURCE_MANAGER.SetTag(PointCloudIcon, EDITOR_RESOURCE_TAG);
+
 	PrefabIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/prefabContentBrowserIcon.png", "prefabContentBrowserIcon");
 	RESOURCE_MANAGER.SetTag(PrefabIcon, EDITOR_RESOURCE_TAG);
 
@@ -580,6 +583,9 @@ void FEEditorContentBrowserWindow::InitializeResources()
 
 	FilterGameModelTypeButton = new ImGuiImageButton(GameModelIcon);
 	FilterGameModelTypeButton->SetSize(ImVec2(32, 32));
+
+	FilterPointCloudTypeButton = new ImGuiImageButton(PointCloudIcon);
+	FilterPointCloudTypeButton->SetSize(ImVec2(32, 32));
 
 	FilterPrefabTypeButton = new ImGuiImageButton(PrefabIcon);
 	FilterPrefabTypeButton->SetSize(ImVec2(32, 32));
@@ -654,6 +660,13 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 
 		PreviewTexture = PREVIEW_MANAGER.GetGameModelPreview(Item->GetObjectID());
 		SmallAdditionTypeIcon = GameModelIcon;
+	}
+	else if (Item->GetType() == FE_POINT_CLOUD)
+	{
+		UV0 = ImVec2(0.0f, 1.0f);
+		UV1 = ImVec2(1.0f, 0.0f);
+		PreviewTexture = RESOURCE_MANAGER.NoTexture;
+		SmallAdditionTypeIcon = PointCloudIcon;
 	}
 	else if (Item->GetType() == FE_PREFAB)
 	{
@@ -867,6 +880,32 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		else
 		{
 			ObjectTypeFilters.push_back(FEObjectTypeToString(FE_GAMEMODEL));
+		}
+	}
+
+	CurrentX += 48.0f;
+	ImGui::SetCursorPosX(CurrentX);
+	ImGui::SetCursorPosY(CurrentY - 5);
+	bIsCurrentTypeInFilters = false;
+	for (size_t i = 0; i < ObjectTypeFilters.size(); i++)
+	{
+		if (ObjectTypeFilters[i] == FEObjectTypeToString(FE_POINT_CLOUD))
+		{
+			bIsCurrentTypeInFilters = true;
+			break;
+		}
+	}
+	bIsCurrentTypeInFilters ? SetSelectedStyle(FilterPointCloudTypeButton) : SetDefaultStyle(FilterPointCloudTypeButton);
+	FilterPointCloudTypeButton->Render();
+	if (FilterPointCloudTypeButton->IsClicked())
+	{
+		if (bIsCurrentTypeInFilters)
+		{
+			ObjectTypeFilters.erase(std::remove(ObjectTypeFilters.begin(), ObjectTypeFilters.end(), FEObjectTypeToString(FE_POINT_CLOUD)), ObjectTypeFilters.end());
+		}
+		else
+		{
+			ObjectTypeFilters.push_back(FEObjectTypeToString(FE_POINT_CLOUD));
 		}
 	}
 

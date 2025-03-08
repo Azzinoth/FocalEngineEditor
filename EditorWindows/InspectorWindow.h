@@ -75,6 +75,7 @@ class FEEditorInspectorWindow
     static void AddLightComponent(FEEntity* Entity);
     static void AddCameraComponent(FEEntity* Entity);
 	static void AddGameModelComponent(FEEntity* Entity);
+	static void AddPointCloudComponent(FEEntity* Entity);
     static void AddNewGameModelComponentCallBack(const std::vector<FEObject*> SelectionsResult);
 	static void AddTerrainComponent(FEEntity* Entity);
 	static void AddInstancedComponent(FEEntity* Entity);

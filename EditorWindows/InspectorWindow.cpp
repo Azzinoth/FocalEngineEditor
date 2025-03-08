@@ -10,6 +10,7 @@ FEEditorInspectorWindow::FEEditorInspectorWindow()
 	AddComponentHandlers[typeid(FELightComponent)] = &FEEditorInspectorWindow::AddLightComponent;
 	AddComponentHandlers[typeid(FECameraComponent)] = &FEEditorInspectorWindow::AddCameraComponent;
 	AddComponentHandlers[typeid(FEGameModelComponent)] = &FEEditorInspectorWindow::AddGameModelComponent;
+	AddComponentHandlers[typeid(FEPointCloudComponent)] = &FEEditorInspectorWindow::AddPointCloudComponent;
 	AddComponentHandlers[typeid(FEInstancedComponent)] = &FEEditorInspectorWindow::AddInstancedComponent;
 	AddComponentHandlers[typeid(FETerrainComponent)] = &FEEditorInspectorWindow::AddTerrainComponent;
 	AddComponentHandlers[typeid(FEVirtualUIComponent)] = &FEEditorInspectorWindow::AddVirtualUIComponent;
@@ -23,6 +24,9 @@ FEEditorInspectorWindow::FEEditorInspectorWindow()
 	};
 	RemoveComponentHandlers[typeid(FEGameModelComponent)] = [](FEEntity* ParentEntity) -> void {
 		ParentEntity->RemoveComponent<FEGameModelComponent>();
+	};
+	RemoveComponentHandlers[typeid(FEPointCloudComponent)] = [](FEEntity* ParentEntity) -> void {
+		ParentEntity->RemoveComponent<FEPointCloudComponent>();
 	};
 	RemoveComponentHandlers[typeid(FEInstancedComponent)] = [](FEEntity* ParentEntity) -> void {
 		ParentEntity->RemoveComponent<FEInstancedComponent>();
@@ -1205,6 +1209,62 @@ void FEEditorInspectorWindow::Render()
 		}
 	}
 
+	if (EntitySelected->HasComponent<FEPointCloudComponent>())
+	{
+		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FEPointCloudComponent>()))
+		{
+			ImGui::PopStyleVar();
+			ImGui::End();
+			return;
+		}
+
+		if (ImGui::CollapsingHeader("Point cloud", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.5f, 0.5f, 0.5f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.95f, 0.90f, 0.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.1f, 1.0f, 0.1f, 1.0f));
+
+			FEPointCloudComponent& PointCloudComponent = EntitySelected->GetComponent<FEPointCloudComponent>();
+
+			/*ImGui::Text("Game Model : ");
+			FETexture* PreviewTexture = PREVIEW_MANAGER.GetGameModelPreview(GameModelComponent.GetGameModel()->GetObjectID());
+
+			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+			{
+				EntityToModify = EntitySelected;
+				FEGameModelComponent& GameModelComponent = EntityToModify->GetComponent<FEGameModelComponent>();
+				SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, ChangeGameModelOfEntityCallBack, GameModelComponent.GetGameModel());
+			}
+			EntityChangeGameModelTarget->StickToItem();
+
+			bool bOpenContextMenu = false;
+			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
+				bOpenContextMenu = true;
+
+			if (bOpenContextMenu)
+				ImGui::OpenPopup("##Inspector_context_menu");
+
+			CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = false;
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
+			if (ImGui::BeginPopup("##Inspector_context_menu"))
+			{
+				CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = true;
+
+				if (ImGui::MenuItem("Show in folder"))
+				{
+					CONTENT_BROWSER_WINDOW.OpenItemParentFolder(GameModelComponent.GetGameModel());
+				}
+
+				ImGui::EndPopup();
+			}
+			ImGui::PopStyleVar();*/
+
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+		}
+	}
+
 	if (EntitySelected->HasComponent<FEPrefabInstanceComponent>())
 	{
 		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FEPrefabInstanceComponent>()))
@@ -2150,6 +2210,11 @@ void FEEditorInspectorWindow::AddGameModelComponent(FEEntity* Entity)
 {
 	INSPECTOR_WINDOW.EntityToWorkWith = Entity;
 	SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, AddNewGameModelComponentCallBack);
+}
+
+void FEEditorInspectorWindow::AddPointCloudComponent(FEEntity* Entity)
+{
+	Entity->AddComponent<FEPointCloudComponent>();
 }
 
 void FEEditorInspectorWindow::AddNewGameModelComponentCallBack(const std::vector<FEObject*> SelectionsResult)

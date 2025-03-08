@@ -48,6 +48,7 @@
         FETexture* MeshIcon = nullptr;
         FETexture* MaterialIcon = nullptr;
         FETexture* GameModelIcon = nullptr;
+        FETexture* PointCloudIcon = nullptr;
         FETexture* PrefabIcon = nullptr;
 		FETexture* SceneIcon = nullptr;
 		FETexture* AssetPackageIcon = nullptr;
@@ -85,6 +86,7 @@
         ImGuiImageButton* FilterMeshTypeButton = nullptr;
         ImGuiImageButton* FilterMaterialTypeButton = nullptr;
         ImGuiImageButton* FilterGameModelTypeButton = nullptr;
+		ImGuiImageButton* FilterPointCloudTypeButton = nullptr;
         ImGuiImageButton* FilterPrefabTypeButton = nullptr;
 		ImGuiImageButton* FilterSceneTypeButton = nullptr;
 		ImGuiImageButton* FilterAssetPackageTypeButton = nullptr;
