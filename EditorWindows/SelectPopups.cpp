@@ -88,6 +88,12 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 				TempList = RESOURCE_MANAGER.GetGameModelIDList();
 				break;
 			}
+
+			case FE_POINT_CLOUD:
+			{
+				TempList = RESOURCE_MANAGER.GetPointCloudIDList();
+				break;
+			}
 			
 			case FE_PREFAB:
 			{

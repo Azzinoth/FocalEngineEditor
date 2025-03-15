@@ -374,6 +374,70 @@ void FEEditorPreviewManager::UpdateAllGameModelPreviews()
 	}
 }
 
+void FEEditorPreviewManager::CreatePointCloudPreview(std::string PointCloudID)
+{
+	FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(PointCloudID);
+	if (PointCloud == nullptr)
+		return;
+
+	PreviewEntity->AddComponent<FEPointCloudComponent>(PointCloud);
+	BeforePreviewActions();
+
+	FEAABB PointCloudAABB = PointCloud->GetAABB();
+	PointCloudAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
+	const glm::vec3 Min = PointCloudAABB.GetMin();
+	const glm::vec3 Max = PointCloudAABB.GetMax();
+
+	const float XSize = sqrt((Max.x - Min.x) * (Max.x - Min.x));
+	const float YSize = sqrt((Max.y - Min.y) * (Max.y - Min.y));
+	const float ZSize = sqrt((Max.z - Min.z) * (Max.z - Min.z));
+
+	// Invert center point to get required translation vector for centering mesh at origin
+	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(Max.x - XSize / 2.0f, Max.y - YSize / 2.0f, Max.z - ZSize / 2.0f));
+	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
+	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
+
+	RENDERER.Render(PreviewScene);
+
+	PreviewEntity->RemoveComponent<FEPointCloudComponent>();
+	AfterPreviewActions();
+
+	// if we are updating preview we should delete old texture.
+	if (PointCloudPreviewTextures.find(PointCloudID) != PointCloudPreviewTextures.end())
+		delete PointCloudPreviewTextures[PointCloudID];
+
+	FETexture* CameraResult = RENDERER.GetCameraResult(LocalCameraEntity);
+	if (CameraResult != nullptr)
+		PointCloudPreviewTextures[PointCloudID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
+}
+
+FETexture* FEEditorPreviewManager::GetPointCloudPreview(std::string PointCloudID)
+{
+	FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(PointCloudID);
+	if (PointCloud == nullptr)
+	{
+		LOG.Add("FEEditorPreviewManager::GetPointCloudPreview could not find point cloud with ID: " + PointCloudID, "FE_LOG_RENDERING", FE_LOG_ERROR);
+		return RESOURCE_MANAGER.NoTexture;
+	}
+
+	// If point cloud dirty flag is set we need to update preview
+	if (PointCloud->IsDirty())
+	{
+		CreatePointCloudPreview(PointCloudID);
+		PointCloud->SetDirtyFlag(false);
+	}
+
+	// If we somehow could not find preview, we will create it.
+	if (PointCloudPreviewTextures.find(PointCloudID) == PointCloudPreviewTextures.end())
+		CreatePointCloudPreview(PointCloudID);
+
+	// Ff still we don't have it.
+	if (PointCloudPreviewTextures.find(PointCloudID) == PointCloudPreviewTextures.end())
+		return RESOURCE_MANAGER.NoTexture;
+
+	return PointCloudPreviewTextures[PointCloudID];
+}
+
 void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 {
 	FEPrefab* Prefab = RESOURCE_MANAGER.GetPrefab(PrefabID);
@@ -521,6 +585,9 @@ FETexture* FEEditorPreviewManager::GetPreview(FEObject* Object)
 
 		case FE_GAMEMODEL:
 			return GetGameModelPreview(Object->GetObjectID());
+
+		case FE_POINT_CLOUD:
+			return GetPointCloudPreview(Object->GetObjectID());
 
 		case FE_PREFAB:
 			return GetPrefabPreview(Object->GetObjectID());

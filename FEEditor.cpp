@@ -656,6 +656,11 @@ void FEEditor::DisplayEditorCamerasWindow() const
 			{
 				INSPECTOR_WINDOW.DisplayCameraProperties(CameraEntity);
 			}
+
+			if (ImGui::CollapsingHeader("Script", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				INSPECTOR_WINDOW.DisplayNativeScriptProperties(CameraEntity);
+			}
 		}
 
 		EditorCameraIterator++;

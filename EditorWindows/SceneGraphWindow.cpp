@@ -558,7 +558,7 @@ void FEEditorSceneGraphWindow::Render()
 	// Draw AABB
 	FEEntity* SelectedEntity = SELECTED.GetSelected(CurrentScene);
 	if (SelectedEntity != nullptr &&
-		(SelectedEntity->HasComponent<FEGameModelComponent>() || SelectedEntity->HasComponent<FETerrainComponent>()) &&
+		(SelectedEntity->HasComponent<FEGameModelComponent>() || SelectedEntity->HasComponent<FETerrainComponent>() || SelectedEntity->HasComponent<FEPointCloudComponent>()) &&
 		bDisplaySelectedObjAABB)
 	{
 		FEAABB SelectedAABB;
@@ -600,6 +600,15 @@ void FEEditorSceneGraphWindow::Render()
 			return true;
 		});
 		RENDERER.DrawAABB(SceneAABB);
+	}
+
+	// Draw camera frustum
+	if (SelectedEntity != nullptr && SelectedEntity->HasComponent<FECameraComponent>())
+	{
+		static bool bDisplayCameraFrustum = false;
+		ImGui::Checkbox("Display camera frustum", &bDisplayCameraFrustum);
+		if (bDisplayCameraFrustum)
+			RENDERER.DrawFrustum(SelectedEntity);
 	}
 
 	ImGui::PopStyleVar();

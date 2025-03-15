@@ -43,7 +43,9 @@ private:
 	std::unordered_map<std::string, FETexture*> MeshPreviewTextures;
 	std::unordered_map<std::string, FETexture*> MaterialPreviewTextures;
 	std::unordered_map<std::string, FETexture*> GameModelPreviewTextures;
+	std::unordered_map<std::string, FETexture*> PointCloudPreviewTextures;
 	std::unordered_map<std::string, FETexture*> PrefabPreviewTextures;
+	//std::unordered_map<std::string, FETexture*> ScenePreviewTextures;
 
 	static glm::vec4 OriginalClearColor;
 	static FETransformComponent OriginalTransform;
@@ -61,6 +63,9 @@ private:
 	void CreateGameModelPreview(const FEGameModel* GameModel, FETexture** ResultingTexture);
 	FETexture* GetGameModelPreview(std::string GameModelID);
 	void UpdateAllGameModelPreviews();
+
+	void CreatePointCloudPreview(std::string PointCloudID);
+	FETexture* GetPointCloudPreview(std::string PointCloudID);
 
 	void CreatePrefabPreview(std::string PrefabID);
 	void CreatePrefabPreview(FEPrefab* Prefab, FETexture** ResultingTexture);

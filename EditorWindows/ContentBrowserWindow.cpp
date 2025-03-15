@@ -637,7 +637,7 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 		UV0 = ImVec2(0.0f, 1.0f);
 		UV1 = ImVec2(1.0f, 0.0f);
 
-		PreviewTexture = PREVIEW_MANAGER.GetMeshPreview(Item->GetObjectID());
+		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetObjectID());
 		SmallAdditionTypeIcon = MeshIcon;
 	}
 	else if (Item->GetType() == FE_TEXTURE)
@@ -650,7 +650,7 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 		UV0 = ImVec2(0.0f, 1.0f);
 		UV1 = ImVec2(1.0f, 0.0f);
 
-		PreviewTexture = PREVIEW_MANAGER.GetMaterialPreview(Item->GetObjectID());
+		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetObjectID());
 		SmallAdditionTypeIcon = MaterialIcon;
 	}
 	else if (Item->GetType() == FE_GAMEMODEL)
@@ -658,14 +658,14 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 		UV0 = ImVec2(0.0f, 1.0f);
 		UV1 = ImVec2(1.0f, 0.0f);
 
-		PreviewTexture = PREVIEW_MANAGER.GetGameModelPreview(Item->GetObjectID());
+		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetObjectID());
 		SmallAdditionTypeIcon = GameModelIcon;
 	}
 	else if (Item->GetType() == FE_POINT_CLOUD)
 	{
 		UV0 = ImVec2(0.0f, 1.0f);
 		UV1 = ImVec2(1.0f, 0.0f);
-		PreviewTexture = RESOURCE_MANAGER.NoTexture;
+		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetObjectID());
 		SmallAdditionTypeIcon = PointCloudIcon;
 	}
 	else if (Item->GetType() == FE_PREFAB)
@@ -673,7 +673,7 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 		UV0 = ImVec2(0.0f, 1.0f);
 		UV1 = ImVec2(1.0f, 0.0f);
 
-		PreviewTexture = PREVIEW_MANAGER.GetPrefabPreview(Item->GetObjectID());
+		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetObjectID());
 		SmallAdditionTypeIcon = PrefabIcon;
 	}
 	else if (Item->GetType() == FE_SCENE)

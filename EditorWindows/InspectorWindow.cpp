@@ -989,6 +989,22 @@ void FEEditorInspectorWindow::ChangeGameModelOfEntityCallBack(const std::vector<
 	}
 }
 
+void FEEditorInspectorWindow::ChangePointCloudOfEntityCallBack(const std::vector<FEObject*> SelectionsResult)
+{
+	if (EntityToModify == nullptr)
+		return;
+
+	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_POINT_CLOUD)
+	{
+		FEPointCloud* SelectedPointCloud = RESOURCE_MANAGER.GetPointCloud(SelectionsResult[0]->GetObjectID());
+		if (SelectedPointCloud == nullptr)
+			return;
+
+		FEPointCloudComponent& PointCloudComponent = EntityToModify->GetComponent<FEPointCloudComponent>();
+		PointCloudComponent.SetPointCloud(SelectedPointCloud);
+	}
+}
+
 void FEEditorInspectorWindow::AddLightComponent(FEEntity* Entity)
 {
 	Entity->AddComponent<FELightComponent>(FE_POINT_LIGHT);
@@ -1226,16 +1242,16 @@ void FEEditorInspectorWindow::Render()
 
 			FEPointCloudComponent& PointCloudComponent = EntitySelected->GetComponent<FEPointCloudComponent>();
 
-			/*ImGui::Text("Game Model : ");
-			FETexture* PreviewTexture = PREVIEW_MANAGER.GetGameModelPreview(GameModelComponent.GetGameModel()->GetObjectID());
+			ImGui::Text("Point Cloud : ");
+			FETexture* PreviewTexture = PREVIEW_MANAGER.GetPreview(PointCloudComponent.GetPointCloud()->GetObjectID());
 
 			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
 				EntityToModify = EntitySelected;
-				FEGameModelComponent& GameModelComponent = EntityToModify->GetComponent<FEGameModelComponent>();
-				SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, ChangeGameModelOfEntityCallBack, GameModelComponent.GetGameModel());
+				//FEGameModelComponent& GameModelComponent = EntityToModify->GetComponent<FEGameModelComponent>();
+				SELECT_FEOBJECT_POPUP.Show(FE_POINT_CLOUD, ChangePointCloudOfEntityCallBack, PointCloudComponent.GetPointCloud());
 			}
-			EntityChangeGameModelTarget->StickToItem();
+			/*EntityChangeGameModelTarget->StickToItem();*/
 
 			bool bOpenContextMenu = false;
 			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
@@ -1252,12 +1268,12 @@ void FEEditorInspectorWindow::Render()
 
 				if (ImGui::MenuItem("Show in folder"))
 				{
-					CONTENT_BROWSER_WINDOW.OpenItemParentFolder(GameModelComponent.GetGameModel());
+					CONTENT_BROWSER_WINDOW.OpenItemParentFolder(PointCloudComponent.GetPointCloud());
 				}
 
 				ImGui::EndPopup();
 			}
-			ImGui::PopStyleVar();*/
+			ImGui::PopStyleVar();
 
 			ImGui::PopStyleColor();
 			ImGui::PopStyleColor();

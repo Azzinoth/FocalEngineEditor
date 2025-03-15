@@ -266,6 +266,7 @@ bool FEVirtualFileSystem::CreateFile(FEObject* Data, const std::string Path)
 		Data->GetType() != FE_MESH &&
 		Data->GetType() != FE_MATERIAL &&
 		Data->GetType() != FE_GAMEMODEL &&
+		Data->GetType() != FE_POINT_CLOUD &&
 		Data->GetType() != FE_PREFAB &&
 		Data->GetType() != FE_SCENE &&
 		Data->GetType() != FE_ASSET_PACKAGE &&
