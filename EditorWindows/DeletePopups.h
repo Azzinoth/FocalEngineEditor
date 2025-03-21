@@ -38,6 +38,22 @@ public:
 	void Render() override;
 };
 
+class DeletePointCloudPopup : public ImGuiModalPopup
+{
+	SINGLETON_PRIVATE_PART(DeletePointCloudPopup)
+
+	friend DeleteDirectoryPopup;
+	FEPointCloud* ObjToWorkWith;
+
+	static void DeletePointCloud(FEPointCloud* PointCloud);
+public:
+	SINGLETON_PUBLIC_PART(DeletePointCloudPopup)
+
+	int TimesPointCloudUsed(const FEPointCloud* PointCloud);
+	void Show(FEPointCloud* PointCloud);
+	void Render() override;
+};
+
 class DeleteMaterialPopup : public ImGuiModalPopup
 {
 	SINGLETON_PRIVATE_PART(DeleteMaterialPopup)

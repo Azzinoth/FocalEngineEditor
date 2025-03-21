@@ -187,6 +187,7 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 	if (Entity == nullptr || CameraEntity == nullptr)
 		return;
 
+	// TO-DO: Add support for entities with multiple components that can be selected.
 	if (Entity->HasComponent<FEGameModelComponent>())
 	{
 		FEGameModelComponent& GameModelComponent = Entity->GetComponent<FEGameModelComponent>();
@@ -285,6 +286,17 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 
 		PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr);
 		PixelAccurateSelectionMaterial->SetAlbedoMap(nullptr, 1);
+	}
+	else if (Entity->HasComponent<FEPointCloudComponent>())
+	{
+		FEPointCloudComponent& PointCloudComponent = Entity->GetComponent<FEPointCloudComponent>();
+		if (!PointCloudComponent.IsVisible())
+			return;
+
+		PointCloudComponent.SetUseGlobalColorOverride(true);
+		PointCloudComponent.SetGlobalColorOverride(ColorID);
+		POINT_CLOUD_SYSTEM.RenderPointCloudComponent(Entity->GetComponent<FETransformComponent>(), PointCloudComponent, CameraEntity);
+		PointCloudComponent.SetUseGlobalColorOverride(false);
 	}
 
 	PixelAccurateSelectionMaterial->ClearAllTexturesInfo();
@@ -460,6 +472,7 @@ void FEEditorSelectedObject::RenderEntityHaloEffectInternal(FEEntity* Entity, gl
 
 	HALO_SELECTION_EFFECT.HaloMaterial->SetBaseColor(Color);
 
+	// TO-DO: Add support for entities with multiple components that can be selected.
 	if (Entity->HasComponent<FEGameModelComponent>())
 	{
 		FEGameModelComponent& GameModelComponent = Entity->GetComponent<FEGameModelComponent>();
@@ -541,6 +554,19 @@ void FEEditorSelectedObject::RenderEntityHaloEffectInternal(FEEntity* Entity, gl
 
 		VIRTUAL_UI_SYSTEM.RenderVirtualUIComponent(Entity, HALO_SELECTION_EFFECT.HaloMaterial);
 	}
+	else if (Entity->HasComponent<FEPointCloudComponent>())
+	{
+		FEPointCloudComponent& PointCloudComponent = Entity->GetComponent<FEPointCloudComponent>();
+		if (!PointCloudComponent.IsVisible())
+			return;
+
+		PointCloudComponent.SetUseGlobalColorOverride(true);
+		PointCloudComponent.SetGlobalColorOverride(Color);
+		POINT_CLOUD_SYSTEM.RenderPointCloudComponent(Entity->GetComponent<FETransformComponent>(), PointCloudComponent, CameraEntity);
+		PointCloudComponent.SetUseGlobalColorOverride(false);
+
+		HALO_SELECTION_EFFECT.GetSceneData(Entity->GetParentScene()->GetObjectID())->SetBloomSize(0.1f);
+	}
 
 	HALO_SELECTION_EFFECT.HaloMaterial->ClearAllTexturesInfo();
 }
@@ -567,6 +593,8 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 			continue;
 		}
 
+		// Set default bloom size
+		HaloSelectionData->SetBloomSize(-1.0f);
 		HaloSelectionData->HaloObjectsFB->Bind();
 		HALO_SELECTION_EFFECT.HaloMaterial->ClearAllTexturesInfo();
 

@@ -13,11 +13,17 @@
 		{ L"Image files (*.png; *.jpg; *.bmp)", L"*.png;*.jpg;*.bmp" }
 	};
 
+    const COMDLG_FILTERSPEC PLY_FILTER[] =
+    {
+        { L"Stanford PLY (*.ply)", L"*.ply" }
+    };
+
 	const COMDLG_FILTERSPEC ALL_IMPORT_LOAD_FILTER[] =
 	{
 		{ L"All files (*.png; *.jpg; *.bmp; *.obj)", L"*.png;*.jpg;*.bmp;*.obj" },
 		{ L"Image files (*.png; *.jpg; *.bmp)", L"*.png;*.jpg;*.bmp" },
-		{ L"Wavefront OBJ files (*.obj)", L"*.obj" }
+		{ L"Wavefront OBJ files (*.obj)", L"*.obj" },
+		{ L"Stanford PLY (*.ply)", L"*.ply" }
 	};
 #endif
 
@@ -30,7 +36,7 @@
 
         // Visibility and state
         bool bVisible = true;
-        bool bShouldOpenContextMenu = false;
+        bool bContextMenuOpened = false;
 
         // Callbacks and rendering
         static void MouseButtonCallback(int Button, int Action, int Mods);
@@ -63,6 +69,7 @@
 
         // Item properties and renaming
         float ItemIconSize = 128.0;
+    public:
         int ItemUnderMouse = -1;
         int RenameIndex = -1;
         char RenameBuffer[1024];

@@ -115,20 +115,20 @@ void FEEditorContentBrowserWindow::Render()
 		bOpenContextMenu = true;
 
 	if (bOpenContextMenu)
-		ImGui::OpenPopup("##context_menu");
+		ImGui::OpenPopup("##Content_Browser_Context_Menu");
 
-	bShouldOpenContextMenu = false;
+	bContextMenuOpened = false;
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-	if (ImGui::BeginPopup("##context_menu"))
+	if (ImGui::BeginPopup("##Content_Browser_Context_Menu"))
 	{
-		bShouldOpenContextMenu = true;
+		bContextMenuOpened = true;
 
 		if (ItemUnderMouse == -1)
 		{
 			if (ImGui::MenuItem("Import Asset..."))
 			{
 				std::string FilePath;
-				FILE_SYSTEM.ShowFileOpenDialog(FilePath, ALL_IMPORT_LOAD_FILTER, 3);
+				FILE_SYSTEM.ShowFileOpenDialog(FilePath, ALL_IMPORT_LOAD_FILTER, 4);
 				if (!FilePath.empty())
 				{
 					if (EDITOR.GetFocusedScene() != nullptr)
@@ -378,6 +378,10 @@ void FEEditorContentBrowserWindow::Render()
 					{
 						DeleteMeshPopup::GetInstance().Show(RESOURCE_MANAGER.GetMesh(FilteredResources[ItemUnderMouse]->GetObjectID()));
 					}
+					else if (FilteredResources[ItemUnderMouse]->GetType() == FE_POINT_CLOUD)
+					{
+						DeletePointCloudPopup::GetInstance().Show(RESOURCE_MANAGER.GetPointCloud(FilteredResources[ItemUnderMouse]->GetObjectID()));
+					}
 					else if (FilteredResources[ItemUnderMouse]->GetType() == FE_TEXTURE)
 					{
 						DeleteTexturePopup::GetInstance().Show(RESOURCE_MANAGER.GetTexture(FilteredResources[ItemUnderMouse]->GetObjectID()));
@@ -406,12 +410,52 @@ void FEEditorContentBrowserWindow::Render()
 					if (ImGui::MenuItem("as OBJ"))
 					{
 						std::string FilePath;
-						FILE_SYSTEM.ShowFileSaveDialog(FilePath, TEXTURE_LOAD_FILTER, 1);
+						FILE_SYSTEM.ShowFileSaveDialog(FilePath, OBJ_LOAD_FILTER, 1);
 
 						if (!FilePath.empty())
 						{
-							FilePath += ".obj";
+							if (FilePath.find(".obj") == std::string::npos)
+								FilePath += ".obj";
+
 							RESOURCE_MANAGER.ExportFEMeshToOBJ(MeshToExport, FilePath.c_str());
+						}
+					}
+
+					if (ImGui::MenuItem("as PLY"))
+					{
+						std::string FilePath;
+						FILE_SYSTEM.ShowFileSaveDialog(FilePath, PLY_FILTER, 1);
+
+						if (!FilePath.empty())
+						{
+							if (FilePath.find(".ply") == std::string::npos)
+								FilePath += ".ply";
+
+							RESOURCE_MANAGER.ExportFEMeshToPLY(MeshToExport, FilePath);
+						}
+					}
+
+					ImGui::EndMenu();
+				}
+			}
+
+			if (FilteredResources[ItemUnderMouse]->GetType() == FE_POINT_CLOUD)
+			{
+				if (ImGui::BeginMenu("Export"))
+				{
+					FEPointCloud* PointCloudToExport = RESOURCE_MANAGER.GetPointCloud(FilteredResources[ItemUnderMouse]->GetObjectID());
+
+					if (ImGui::MenuItem("as PLY"))
+					{
+						std::string FilePath;
+						FILE_SYSTEM.ShowFileSaveDialog(FilePath, PLY_FILTER, 1);
+
+						if (!FilePath.empty())
+						{
+							if (FilePath.find(".ply") == std::string::npos)
+								FilePath += ".ply";
+
+							RESOURCE_MANAGER.ExportFEPointCloudToPLY(PointCloudToExport, FilePath);
 						}
 					}
 
@@ -1065,7 +1109,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 	if (IconsPerWindowWidth == 0)
 		return;
 
-	if (!bShouldOpenContextMenu) ItemUnderMouse = -1;
+	if (!bContextMenuOpened) ItemUnderMouse = -1;
 	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 	ImGui::Columns(IconsPerWindowWidth, "mycolumns3", false);
 
@@ -1102,7 +1146,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 
 		if (ImGui::IsItemHovered())
 		{
-			if (!bShouldOpenContextMenu && !DRAG_AND_DROP_MANAGER.ObjectIsDraged())
+			if (!bContextMenuOpened && !DRAG_AND_DROP_MANAGER.ObjectIsDraged())
 			{
 				std::string AdditionalTypeInfo;
 				if (FilteredResources[i]->GetType() == FE_TEXTURE)
@@ -1226,14 +1270,14 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		}
 		else if (FilteredResources[ItemUnderMouse]->GetType() == FE_GAMEMODEL)
 		{
-			if (!bShouldOpenContextMenu && !EditGameModelPopup::GetInstance().IsVisible())
+			if (!bContextMenuOpened && !EditGameModelPopup::GetInstance().IsVisible())
 			{
 				EditGameModelPopup::GetInstance().Show(RESOURCE_MANAGER.GetGameModel(FilteredResources[ItemUnderMouse]->GetObjectID()));
 			}
 		}
 		else if (FilteredResources[ItemUnderMouse]->GetType() == FE_PREFAB)
 		{
-			if (!bShouldOpenContextMenu)
+			if (!bContextMenuOpened)
 			{
 				PREFAB_EDITOR_MANAGER.PrepareEditWinow(RESOURCE_MANAGER.GetPrefab(FilteredResources[ItemUnderMouse]->GetObjectID()));
 			}

@@ -12,6 +12,7 @@ class FEEditorInspectorWindow
 
     // Visibility
     bool bVisible = true;
+    bool bContextMenuOpened = false;
     static FEEntity* EntityToModify;
 
     void DisplayLightProperties(FEEntity* LightEntity) const;
@@ -30,10 +31,12 @@ class FEEditorInspectorWindow
     ImGuiImageButton* SmoothBrushButton = nullptr;
     ImGuiImageButton* LayerBrushButton = nullptr;
     static bool EntityChangeGameModelTargetCallBack(FEObject* Object, void** EntityPointer);
+	static bool EntityChangePointCloudTargetCallBack(FEObject* Object, void** EntityPointer);
     static bool TerrainChangeMaterialTargetCallBack(FEObject* Object, void** LayerIndex);
     static void ChangeGameModelOfEntityCallBack(std::vector<FEObject*> SelectionsResult);
     static void ChangePointCloudOfEntityCallBack(const std::vector<FEObject*> SelectionsResult);
     DragAndDropTarget* EntityChangeGameModelTarget = nullptr;
+	DragAndDropTarget* EntityChangePointCloudTarget = nullptr;
     std::vector<int> TerrainChangeMaterialIndecies;
     std::vector<DragAndDropTarget*> TerrainChangeLayerMaterialTargets;
     int HoveredTerrainLayerItem = -1;

@@ -2,6 +2,35 @@
 #include "FEEditor.h"
 using namespace FocalEngine;
 
+FEHaloSelectionData::~FEHaloSelectionData()
+{
+	delete HaloObjectsFB;
+}
+
+float FEHaloSelectionData::GetBloomSize() const
+{
+	return BloomSize;
+}
+
+void FEHaloSelectionData::SetBloomSize(float NewBloomSize)
+{
+	BloomSize = NewBloomSize;
+	if (BloomSize <= 0.0f)
+	{
+		PostProcess->Stages[0]->StageSpecificUniformValues[1].SetValue(1.5f * 4.0f);
+		PostProcess->Stages[1]->StageSpecificUniformValues[1].SetValue(1.5f);
+		PostProcess->Stages[2]->StageSpecificUniformValues[1].SetValue(1.0f);
+		PostProcess->Stages[3]->StageSpecificUniformValues[1].SetValue(1.0f);
+	}
+	else
+	{
+		PostProcess->Stages[0]->StageSpecificUniformValues[1].SetValue(BloomSize * 4.0f);
+		PostProcess->Stages[1]->StageSpecificUniformValues[1].SetValue(BloomSize);
+		PostProcess->Stages[2]->StageSpecificUniformValues[1].SetValue(BloomSize * 0.6666f);
+		PostProcess->Stages[3]->StageSpecificUniformValues[1].SetValue(BloomSize * 0.6666f);
+	}
+}
+
 FEEditorHaloSelectionEffect::FEEditorHaloSelectionEffect() {}
 FEEditorHaloSelectionEffect::~FEEditorHaloSelectionEffect() {}
 

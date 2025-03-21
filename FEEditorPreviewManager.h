@@ -12,6 +12,7 @@ class FEEditorPreviewManager
 	friend class DeleteTexturePopup;
 	friend class RenameMeshPopUp;
 	friend class DeleteMeshPopup;
+	friend class DeletePointCloudPopup;
 	friend class SelectMeshPopUp;
 	friend class SelectMaterialPopUp;
 	friend class SelectGameModelPopUp;

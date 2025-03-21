@@ -676,6 +676,7 @@ void FEEditor::RenderAllSubWindows()
 
 	DeleteTexturePopup::GetInstance().Render();
 	DeleteMeshPopup::GetInstance().Render();
+	DeletePointCloudPopup::GetInstance().Render();
 	DeleteGameModelPopup::GetInstance().Render();
 	DeleteMaterialPopup::GetInstance().Render();
 	DeletePrefabPopup::GetInstance().Render();

@@ -60,21 +60,29 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 		{
 			switch (UnSavedObjects[i]->GetType())
 			{
-			case FE_MESH:
-			{
-				FEMesh* MeshToSave = RESOURCE_MANAGER.GetMesh(UnSavedObjects[i]->GetObjectID());
-				if (MeshToSave != nullptr)
-					RESOURCE_MANAGER.SaveFEMesh(MeshToSave, (DirectoryPath + MeshToSave->GetObjectID() + std::string(".model")).c_str());
-				break;
-			}
+				case FE_MESH:
+				{
+					FEMesh* MeshToSave = RESOURCE_MANAGER.GetMesh(UnSavedObjects[i]->GetObjectID());
+					if (MeshToSave != nullptr)
+						RESOURCE_MANAGER.SaveFEMesh(MeshToSave, (DirectoryPath + MeshToSave->GetObjectID() + std::string(".model")).c_str());
+					break;
+				}
 
-			case FE_TEXTURE:
-			{
-				FETexture* TextureToSave = RESOURCE_MANAGER.GetTexture(UnSavedObjects[i]->GetObjectID());
-				if (TextureToSave != nullptr)
-					RESOURCE_MANAGER.SaveFETexture(TextureToSave, (DirectoryPath + TextureToSave->GetObjectID() + std::string(".texture")).c_str());
-				break;
-			}
+				case FE_POINT_CLOUD:
+				{
+					FEPointCloud* PointCloudToSave = RESOURCE_MANAGER.GetPointCloud(UnSavedObjects[i]->GetObjectID());
+					if (PointCloudToSave != nullptr)
+						RESOURCE_MANAGER.SaveFEPointCloud(PointCloudToSave, (DirectoryPath + PointCloudToSave->GetObjectID() + std::string(".pointcloud")).c_str());
+					break;
+				}
+
+				case FE_TEXTURE:
+				{
+					FETexture* TextureToSave = RESOURCE_MANAGER.GetTexture(UnSavedObjects[i]->GetObjectID());
+					if (TextureToSave != nullptr)
+						RESOURCE_MANAGER.SaveFETexture(TextureToSave, (DirectoryPath + TextureToSave->GetObjectID() + std::string(".texture")).c_str());
+					break;
+				}
 			}
 		}
 	}
@@ -98,6 +106,26 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 		Mesh->SetDirtyFlag(false);
 	}
 	Root["Meshes"] = MeshData;
+
+	// Saving Point Clouds.
+	std::vector<std::string> PointCloudList = RESOURCE_MANAGER.GetPointCloudIDList();
+	Json::Value PointCloudData;
+	for (size_t i = 0; i < PointCloudList.size(); i++)
+	{
+		FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(PointCloudList[i]);
+		if (PointCloud->GetTag() == ENGINE_RESOURCE_TAG ||
+			PointCloud->GetTag() == EDITOR_RESOURCE_TAG)
+			continue;
+
+		PointCloudData[PointCloud->GetObjectID()]["FEObjectData"] = RESOURCE_MANAGER.SaveFEObjectPart(PointCloud);
+		PointCloudData[PointCloud->GetObjectID()]["FileName"] = PointCloud->GetObjectID() + ".pointcloud";
+
+		if (bFullSave)
+			RESOURCE_MANAGER.SaveFEPointCloud(PointCloud, (DirectoryPath + PointCloud->GetObjectID() + std::string(".pointcloud")).c_str());
+
+		PointCloud->SetDirtyFlag(false);
+	}
+	Root["PointClouds"] = PointCloudData;
 
 	// Saving Textures.
 	std::vector<std::string> TexturesList = RESOURCE_MANAGER.GetTextureIDList();
@@ -487,6 +515,14 @@ void FEProject::LoadResources(std::string DirectoryPath)
 	{
 		FEObjectLoadedData LoadedObjectData = RESOURCE_MANAGER.LoadFEObjectPart(Root["Meshes"][MeshList[i]]["FEObjectData"]);
 		RESOURCE_MANAGER.LoadFEMesh((DirectoryPath + Root["Meshes"][MeshList[i]]["FileName"].asCString()).c_str(), LoadedObjectData.Name);
+	}
+
+	// Loading point clouds.
+	std::vector<Json::String> PointCloudList = Root["PointClouds"].getMemberNames();
+	for (size_t i = 0; i < PointCloudList.size(); i++)
+	{
+		FEObjectLoadedData LoadedObjectData = RESOURCE_MANAGER.LoadFEObjectPart(Root["PointClouds"][PointCloudList[i]]["FEObjectData"]);
+		RESOURCE_MANAGER.LoadFEPointCloud((DirectoryPath + Root["PointClouds"][PointCloudList[i]]["FileName"].asCString()).c_str(), LoadedObjectData.Name);
 	}
 
 	// Loading textures.

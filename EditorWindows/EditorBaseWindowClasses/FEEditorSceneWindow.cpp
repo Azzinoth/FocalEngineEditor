@@ -20,6 +20,8 @@ FEEditorSceneWindow::FEEditorSceneWindow(FEScene* Scene)
 
 	AcceptedTypes.push_back(FE_GAMEMODEL);
 	AcceptedTypes.push_back(FE_PREFAB);
+	AcceptedTypes.push_back(FE_POINT_CLOUD);
+	ToolTipTexts.push_back("Drop to add to scene");
 	ToolTipTexts.push_back("Drop to add to scene");
 	ToolTipTexts.push_back("Drop to add to scene");
 	CurrentDragAndDropCallback = DragAndDropCallBack;
@@ -43,6 +45,8 @@ bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
 	if (Object->GetType() == FE_GAMEMODEL)
 	{
 		FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Object->GetObjectID());
+		if (GameModel == nullptr)
+			return false;
 
 		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
 		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
@@ -63,6 +67,9 @@ bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
 		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
 
 		FEPrefab* Prefab = RESOURCE_MANAGER.GetPrefab(Object->GetObjectID());
+		if (Prefab == nullptr)
+			return false;
+
 		FEScene* PrefabScene = Prefab->GetScene();
 		FENaiveSceneGraphNode* RootNode = PrefabScene->SceneGraph.GetRoot();
 
@@ -72,8 +79,25 @@ bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
 			AddedEntities[0]->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
 			SELECTED.SetSelected(AddedEntities[0]);
 			PROJECT_MANAGER.GetCurrent()->SetModified(true);
+
 			return true;
 		}
+	}
+	else if (Object->GetType() == FE_POINT_CLOUD)
+	{
+		FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(Object->GetObjectID());
+		if (PointCloud == nullptr)
+			return false;
+
+		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
+		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
+		FEEntity* Entity = EditorSceneWindow->GetScene()->CreateEntity(Object->GetName());
+		Entity->GetComponent<FETransformComponent>().SetPosition(CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
+		Entity->AddComponent<FEPointCloudComponent>(PointCloud);
+		SELECTED.SetSelected(Entity);
+		PROJECT_MANAGER.GetCurrent()->SetModified(true);
+
+		return true;
 	}
 
 	return false;

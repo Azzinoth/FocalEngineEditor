@@ -78,6 +78,7 @@ void FEEditorInspectorWindow::InitializeResources()
 	LayerBrushButton->SetSize(ImVec2(48, 48));
 
 	EntityChangeGameModelTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_GAMEMODEL, EntityChangeGameModelTargetCallBack, nullptr, "Drop to assign game model");
+	EntityChangePointCloudTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_POINT_CLOUD, EntityChangePointCloudTargetCallBack, nullptr, "Drop to assign point cloud");
 	// ************** Terrain Settings END **************
 
 	MouseCursorIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/mouseCursorIcon.png", "mouseCursorIcon");
@@ -105,8 +106,37 @@ bool FEEditorInspectorWindow::EntityChangeGameModelTargetCallBack(FEObject* Obje
 	if (Entity == nullptr)
 		return false;
 
+	if (!Entity->HasComponent<FEGameModelComponent>())
+		return false;
+
 	FEGameModelComponent& GameModelComponent = Entity->GetComponent<FEGameModelComponent>();
-	GameModelComponent.SetGameModel(RESOURCE_MANAGER.GetGameModel(Object->GetObjectID()));
+	FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Object->GetObjectID());
+	if (GameModel == nullptr)
+		return false;
+
+	GameModelComponent.SetGameModel(GameModel);
+
+	return true;
+}
+
+bool FEEditorInspectorWindow::EntityChangePointCloudTargetCallBack(FEObject* Object, void** EntityPointer)
+{
+	if (EDITOR.GetFocusedScene() == nullptr)
+		return false;
+
+	FEEntity* Entity = SELECTED.GetSelected(EDITOR.GetFocusedScene());
+	if (Entity == nullptr)
+		return false;
+
+	if (!Entity->HasComponent<FEPointCloudComponent>())
+		return false;
+
+	FEPointCloudComponent& PointCloudComponent = Entity->GetComponent<FEPointCloudComponent>();
+	FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(Object->GetObjectID());
+	if (PointCloud == nullptr)
+		return false;
+
+	PointCloudComponent.SetPointCloud(PointCloud);
 
 	return true;
 }
@@ -1204,11 +1234,11 @@ void FEEditorInspectorWindow::Render()
 			if (bOpenContextMenu)
 				ImGui::OpenPopup("##Inspector_context_menu");
 
-			CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = false;
+			bContextMenuOpened = false;
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 			if (ImGui::BeginPopup("##Inspector_context_menu"))
 			{
-				CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = true;
+				bContextMenuOpened = true;
 
 				if (ImGui::MenuItem("Show in folder"))
 				{
@@ -1243,15 +1273,16 @@ void FEEditorInspectorWindow::Render()
 			FEPointCloudComponent& PointCloudComponent = EntitySelected->GetComponent<FEPointCloudComponent>();
 
 			ImGui::Text("Point Cloud : ");
-			FETexture* PreviewTexture = PREVIEW_MANAGER.GetPreview(PointCloudComponent.GetPointCloud()->GetObjectID());
+			FETexture* PreviewTexture = RESOURCE_MANAGER.NoTexture;
+			if (PointCloudComponent.GetPointCloud() != nullptr)
+				PreviewTexture = PREVIEW_MANAGER.GetPreview(PointCloudComponent.GetPointCloud()->GetObjectID());
 
 			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
 				EntityToModify = EntitySelected;
-				//FEGameModelComponent& GameModelComponent = EntityToModify->GetComponent<FEGameModelComponent>();
 				SELECT_FEOBJECT_POPUP.Show(FE_POINT_CLOUD, ChangePointCloudOfEntityCallBack, PointCloudComponent.GetPointCloud());
 			}
-			/*EntityChangeGameModelTarget->StickToItem();*/
+			EntityChangePointCloudTarget->StickToItem();
 
 			bool bOpenContextMenu = false;
 			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
@@ -1260,11 +1291,11 @@ void FEEditorInspectorWindow::Render()
 			if (bOpenContextMenu)
 				ImGui::OpenPopup("##Inspector_context_menu");
 
-			CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = false;
+			bContextMenuOpened = false;
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 			if (ImGui::BeginPopup("##Inspector_context_menu"))
 			{
-				CONTENT_BROWSER_WINDOW.bShouldOpenContextMenu = true;
+				bContextMenuOpened = true;
 
 				if (ImGui::MenuItem("Show in folder"))
 				{
