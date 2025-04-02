@@ -1,19 +1,19 @@
-#include "GyzmosSettingsWindow.h"
+#include "GizmosSettingsWindow.h"
 #include "../FEEditor.h"
 
-GyzmosSettingsWindow::GyzmosSettingsWindow()
+GizmosSettingsWindow::GizmosSettingsWindow()
 {
 	Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar;
 }
 
-GyzmosSettingsWindow::~GyzmosSettingsWindow()
+GizmosSettingsWindow::~GizmosSettingsWindow()
 {
 	delete TransformationGizmoButton;
 	delete ScaleGizmoButton;
 	delete RotateGizmoButton;
 }
 
-void GyzmosSettingsWindow::Show()
+void GizmosSettingsWindow::Show()
 {
 	const std::string TempCaption = "##GizmosSettingsWindow";
 	strcpy_s(Caption, TempCaption.size() + 1, TempCaption.c_str());
@@ -38,7 +38,7 @@ void GyzmosSettingsWindow::Show()
 	RotateGizmoButton->SetPosition(ImVec2(CurrentX, 5.0f));
 }
 
-void GyzmosSettingsWindow::Render()
+void GizmosSettingsWindow::Render()
 {
 	if (!IsVisible())
 		return;

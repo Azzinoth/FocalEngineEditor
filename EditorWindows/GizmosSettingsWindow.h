@@ -2,16 +2,16 @@
 
 #include "ShaderEditorWindow.h"
 
-class GyzmosSettingsWindow : public FEImGuiWindow
+class GizmosSettingsWindow : public FEImGuiWindow
 {
 	ImGuiImageButton* TransformationGizmoButton = nullptr;
 	ImGuiImageButton* ScaleGizmoButton = nullptr;
 	ImGuiImageButton* RotateGizmoButton = nullptr;
 public:
-	GyzmosSettingsWindow();
-	~GyzmosSettingsWindow();
+	GizmosSettingsWindow();
+	~GizmosSettingsWindow();
 
 	void Show() override;
 	void Render() override;
 };
-static GyzmosSettingsWindow GyzmosSettingsWindowObject;
+static GizmosSettingsWindow GizmosSettingsWindowObject;

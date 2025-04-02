@@ -64,11 +64,11 @@ void DeleteTexturePopup::Render()
 std::vector<FEMaterial*> DeleteTexturePopup::MaterialsThatUsesTexture(const FETexture* Texture)
 {
 	std::vector<FEMaterial*> Result;
-	const std::vector<std::string> MateriasList = RESOURCE_MANAGER.GetMaterialIDList();
+	const std::vector<std::string> MaterialsList = RESOURCE_MANAGER.GetMaterialIDList();
 
-	for (size_t i = 0; i < MateriasList.size(); i++)
+	for (size_t i = 0; i < MaterialsList.size(); i++)
 	{
-		FEMaterial* CurrentMaterial = RESOURCE_MANAGER.GetMaterial(MateriasList[i]);
+		FEMaterial* CurrentMaterial = RESOURCE_MANAGER.GetMaterial(MaterialsList[i]);
 
 		for (size_t j = 0; j < CurrentMaterial->Textures.size(); j++)
 		{

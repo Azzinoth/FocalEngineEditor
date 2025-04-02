@@ -21,7 +21,7 @@ class EditGameModelPopup : public FEImGuiWindow
 	FEMaterial* UpdatedBillboardMaterial;
 	static FEMaterial** BillboardMaterialToModify;
 
-	std::vector<FEMesh*> UpdatedLODMeshs;
+	std::vector<FEMesh*> UpdatedLODMeshes;
 
 	ImGuiButton* CancelButton;
 	ImGuiButton* ApplyButton;
@@ -68,9 +68,9 @@ class EditGameModelPopup : public FEImGuiWindow
 	const float NO_LOD_WINDOW_HEIGHT = 520.0f;
 
 	static FEMesh** MeshToModify;
-	static void ChangeMeshCallBack(std::vector<FEObject*> SelectionsResult);
-	static void ChangeMaterialCallBack(std::vector<FEObject*> SelectionsResult);
-	static void ChangeBillboardMaterialCallBack(std::vector<FEObject*> SelectionsResult);
+	static void ChangeMeshCallback(std::vector<FEObject*> SelectionsResult);
+	static void ChangeMaterialCallback(std::vector<FEObject*> SelectionsResult);
+	static void ChangeBillboardMaterialCallback(std::vector<FEObject*> SelectionsResult);
 public:
 	SINGLETON_PUBLIC_PART(EditGameModelPopup)
 
@@ -121,7 +121,7 @@ class EditMaterialWindow : public FEImGuiWindow
 
 	FEEditorTextureCreatingNode* TextureNode = nullptr;
 
-	static bool DragAndDropnodeAreaTargetCallback(FEObject* Object, void** CallbackInfo);
+	static bool DragAndDropNodeAreaTargetCallback(FEObject* Object, void** CallbackInfo);
 	// ************** Drag&Drop END **************
 
 	// ************** Scene **************

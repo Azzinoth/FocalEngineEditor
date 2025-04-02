@@ -49,8 +49,8 @@ void SelectFEObjectPopUp::FilterOutTags(std::vector<std::string>& FEObjectIDList
 
 void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::vector<FEObject*>), FEObject* HighlightedObject, const std::vector<FEObject*> CustomList)
 {
-	CurrenType = Type;
-	if (CurrenType == FE_NULL)
+	CurrentType = Type;
+	if (CurrentType == FE_NULL)
 		return;
 
 	this->HighlightedObject = HighlightedObject;
@@ -63,7 +63,7 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 	{
 		std::vector<std::string> TempList;
 
-		switch (CurrenType)
+		switch (CurrentType)
 		{
 			case FE_TEXTURE:
 			{
@@ -104,10 +104,10 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 
 		FilterOutTags(TempList, std::vector<std::string>{ ENGINE_RESOURCE_TAG, EDITOR_RESOURCE_TAG});
 
-		if (CurrenType == FE_TEXTURE)
+		if (CurrentType == FE_TEXTURE)
 			TempList.insert(TempList.begin(), RESOURCE_MANAGER.NoTexture->GetObjectID());
 
-		if (CurrenType == FE_MATERIAL)
+		if (CurrentType == FE_MATERIAL)
 			TempList.insert(TempList.begin(), "18251A5E0F08013Z3939317U"/*"SolidColorMaterial"*/);
 		
 		for (size_t i = 0; i < TempList.size(); i++)

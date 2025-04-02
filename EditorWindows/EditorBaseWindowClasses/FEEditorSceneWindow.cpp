@@ -133,7 +133,6 @@ void FEEditorSceneWindow::Render()
 	if (ImGui::IsWindowFocused())
 		EDITOR.SetFocusedScene(Scene);
 
-
 	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
 	if (CurrentProject == nullptr)
 		return;
@@ -192,4 +191,14 @@ void FEEditorSceneWindow::OnRenderEnd()
 FEScene* FEEditorSceneWindow::GetScene() const
 {
 	return Scene;
+}
+
+glm::vec2 FEEditorSceneWindow::GetSize() const
+{
+	return glm::vec2(Size.x, Size.y);
+}
+
+void FEEditorSceneWindow::SetSize(glm::vec2 NewSize)
+{
+	Size = ImVec2(NewSize.x, NewSize.y);
 }

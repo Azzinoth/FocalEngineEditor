@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GyzmosSettingsWindow.h"
+#include "GizmosSettingsWindow.h"
 
 class CombineChannelsToTexturePopUp : public FEImGuiWindow
 {
@@ -16,7 +16,7 @@ class CombineChannelsToTexturePopUp : public FEImGuiWindow
 
 	FEEditorTextureCreatingNode* TextureNode = nullptr;
 
-	static bool DragAndDropnodeAreaTargetCallback(FEObject* Object, void** CallbackInfo);
+	static bool DragAndDropNodeAreaTargetCallback(FEObject* Object, void** CallbackInfo);
 	// ************** Drag&Drop END **************
 
 	// ************** Node area **************

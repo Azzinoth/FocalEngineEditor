@@ -257,7 +257,7 @@ void FEPrefabEditorManager::PrepareEditWinow(FEPrefab* Prefab)
 	LightComponent.SetCastShadows(true);
 
 	PrefabWindows[Prefab] = new FEPrefabSceneEditorWindow(CurrentPrefabScene);
-	EDITOR.AddCustomEditorScene(PrefabWindows[Prefab]);
+	EDITOR.CreateCustomEditorWindowForScene(PrefabWindows[Prefab]);
 }
 
 void FEPrefabEditorManager::ApplyModificationsToPrefabScene(FEPrefabSceneEditorWindow* Window)

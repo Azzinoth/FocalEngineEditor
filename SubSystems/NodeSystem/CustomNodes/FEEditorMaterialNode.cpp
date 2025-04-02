@@ -40,11 +40,11 @@ void FEEditorMaterialNode::Draw()
 	const float FieldWidth = 160.0f * Zoom;
 	const float FieldStep = 30.0f * Zoom;
 
-	bool bCompactFlag = Data->IsCompackPacking();
+	bool bCompactFlag = Data->IsCompactPacking();
 	ImGui::Checkbox("##Compact flag", &bCompactFlag);
 	ImGui::SameLine();
 	ImGui::Text("Compact packing");
-	Data->SetCompackPacking(bCompactFlag);
+	Data->SetCompactPacking(bCompactFlag);
 
 	FEShaderUniformValue CurrentValue;
 	if (Data->Shader->GetUniformData("debugFlag", CurrentValue))

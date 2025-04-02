@@ -71,19 +71,19 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 	IndexChosen = -1;
 
 	// After loading project we should update our previews
-	PREVIEW_MANAGER.UpdateAll();
+	PREVIEW_MANAGER.ReCreateAll();
 	SELECTED.ClearAll();
 }
 
 void FEProjectManager::DisplayProjectSelection()
 {
-	static float LowerPanelHight = 90.0f;
+	static float LowerPanelHeight = 90.0f;
 	const float MainWindowW = static_cast<float>(APPLICATION.GetMainWindow()->GetWidth());
 	const float MainWindowH = static_cast<float>(APPLICATION.GetMainWindow()->GetHeight());
 
 	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
 	ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
-	ImGui::SetNextWindowSize(ImVec2(MainWindowW, MainWindowH - LowerPanelHight));
+	ImGui::SetNextWindowSize(ImVec2(MainWindowW, MainWindowH - LowerPanelHeight));
 	ImGui::Begin("Project Browser", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
 	{
 		ImGui::SetWindowFontScale(2.0f);
@@ -145,8 +145,8 @@ void FEProjectManager::DisplayProjectSelection()
 	ImGui::PopStyleVar();
 
 	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
-	ImGui::SetNextWindowPos(ImVec2(0.0f, MainWindowH - LowerPanelHight));
-	ImGui::SetNextWindowSize(ImVec2(MainWindowW, LowerPanelHight));
+	ImGui::SetNextWindowPos(ImVec2(0.0f, MainWindowH - LowerPanelHeight));
+	ImGui::SetNextWindowSize(ImVec2(MainWindowW, LowerPanelHeight));
 	ImGui::Begin("##create project", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
 	{
 		ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor(0.0f, 162.0f / 255.0f, 232.0f / 255.0f, 1.0f)));
@@ -290,7 +290,7 @@ void FEProjectManager::CreateNewProject(std::string ProjectName, std::string Pro
 	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
 	SkyDome->AddComponent<FESkyDomeComponent>();
 
-	EDITOR.AddEditorScene(NewScene);
+	EDITOR.CreateEditorWindowForScene(NewScene->GetObjectID());
 	NewProject->InjectEditorCamera(NewScene);
 	NewProject->AddMissingVFSData();
 	NewProject->SaveProject(true);

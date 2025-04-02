@@ -27,7 +27,9 @@ private:
 	SINGLETON_PRIVATE_PART(FEEditorPreviewManager)
 
 	void InitializeResources();
-	void UpdateAll();
+	void ReCreateAll();
+
+	void Update();
 
 	FEScene* PreviewScene = nullptr;
 
@@ -46,7 +48,7 @@ private:
 	std::unordered_map<std::string, FETexture*> GameModelPreviewTextures;
 	std::unordered_map<std::string, FETexture*> PointCloudPreviewTextures;
 	std::unordered_map<std::string, FETexture*> PrefabPreviewTextures;
-	//std::unordered_map<std::string, FETexture*> ScenePreviewTextures;
+	std::unordered_map<std::string, FETexture*> ScenePreviewTextures;
 
 	static glm::vec4 OriginalClearColor;
 	static FETransformComponent OriginalTransform;
@@ -72,8 +74,14 @@ private:
 	void CreatePrefabPreview(FEPrefab* Prefab, FETexture** ResultingTexture);
 	FETexture* GetPrefabPreview(std::string PrefabID);
 
+	void CreateScenePreview(std::string SceneID);
+	FETexture* GetScenePreview(std::string SceneID);
+
 	FETexture* GetPreview(FEObject* Object);
 	FETexture* GetPreview(std::string ObjectID);
+
+	void CheckAndUpdateIfNeededGameModelPreview(const std::string ObjectIDThatWasChanged);
+	void CheckAndUpdateIfNeededPrefabPreview(const std::string GameModelIDThatWasChanged);
 
 	void Clear();
 };

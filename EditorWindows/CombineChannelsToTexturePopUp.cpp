@@ -12,7 +12,7 @@ CombineChannelsToTexturePopUp::CombineChannelsToTexturePopUp()
 	const std::string TempCaption = "Choose what channels/textures to combine";
 	strcpy_s(Caption, TempCaption.size() + 1, TempCaption.c_str());
 
-	NodeAreaTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_TEXTURE, DragAndDropnodeAreaTargetCallback, reinterpret_cast<void**>(&DragAndDropCallbackInfo), "Drop to add texture");
+	NodeAreaTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_TEXTURE, DragAndDropNodeAreaTargetCallback, reinterpret_cast<void**>(&DragAndDropCallbackInfo), "Drop to add texture");
 }
 
 CombineChannelsToTexturePopUp::~CombineChannelsToTexturePopUp()
@@ -102,7 +102,7 @@ void CombineChannelsToTexturePopUp::Render()
 	FEImGuiWindow::OnRenderEnd();
 }
 
-bool CombineChannelsToTexturePopUp::DragAndDropnodeAreaTargetCallback(FEObject* Object, void** CallbackInfo)
+bool CombineChannelsToTexturePopUp::DragAndDropNodeAreaTargetCallback(FEObject* Object, void** CallbackInfo)
 {
 	FEEditorTextureSourceNode* NewNode = new FEEditorTextureSourceNode(RESOURCE_MANAGER.GetTexture(Object->GetObjectID()));
 	

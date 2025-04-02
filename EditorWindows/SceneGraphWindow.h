@@ -77,7 +77,7 @@ class FEEditorSceneGraphWindow
     float BackgroundColorYShift = -2.0f;  // Used to shift background color of the scene graph tree.
     float BackgroundHeightModifier = -4.0f;  // Modifier of the scene graph background height.
 	bool bUseNodeBackground = true;  // Do we want to render the background of the scene graph tree?
-	bool bIndintationAwareNodeBackground = false;  // Used to make sure the background of the scene graph tree is indented properly.
+	bool bIndentationAwareNodeBackground = false;  // Used to make sure the background of the scene graph tree is indented properly.
 
     void RenderNodeBackground();
 

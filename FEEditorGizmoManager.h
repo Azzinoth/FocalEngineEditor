@@ -14,7 +14,7 @@ class FEGizmoSceneData
 	friend class FEEditorSelectedObject;
 	friend class GizmoManager;
 	friend class FEEditorInspectorWindow;
-	friend class GyzmosSettingsWindow;
+	friend class GizmosSettingsWindow;
 
 	std::string SceneID = "";
 	
@@ -71,7 +71,7 @@ class GizmoManager
 {
 	friend class FEEditor;
 	friend class FEProjectManager;
-	friend class GyzmosSettingsWindow;
+	friend class GizmosSettingsWindow;
 	friend class FEEditorSceneWindow;
 public:
 	SINGLETON_PUBLIC_PART(GizmoManager)

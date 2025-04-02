@@ -31,5 +31,8 @@ public:
 	void Render() override;
 	void OnRenderEnd() override;
 
+	glm::vec2 GetSize() const;
+	void SetSize(glm::vec2 NewSize);
+
 	FEScene* GetScene() const;
 };

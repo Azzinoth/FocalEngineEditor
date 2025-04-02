@@ -33,7 +33,7 @@ void FEEditorSceneGraphWindow::Clear()
 	bLastFrameWasInvisible = true;
 }
 
-static void CreateInstancedEntityCallBack(const std::vector<FEObject*> SelectionsResult)
+static void CreateInstancedEntityCallback(const std::vector<FEObject*> SelectionsResult)
 {
 	if (EDITOR.GetFocusedScene() == nullptr)
 		return;
@@ -56,7 +56,7 @@ static void CreateInstancedEntityCallBack(const std::vector<FEObject*> Selection
 	}
 }
 
-static void CreateEntityCallBack(const std::vector<FEObject*> SelectionsResult)
+static void CreateEntityCallback(const std::vector<FEObject*> SelectionsResult)
 {
 	if (EDITOR.GetFocusedScene() == nullptr)
 		return;
@@ -150,7 +150,7 @@ void FEEditorSceneGraphWindow::RenderNodeBackground()
 	float NodeHeight = ImGui::GetFrameHeight();
 	NodeHeight += BackgroundHeightModifier;
 
-	ImRect BackgroundRect = ImRect(ImVec2(bIndintationAwareNodeBackground ? ImGui::GetCursorScreenPos().x : ImGui::GetWindowContentRegionMin().x, ImGui::GetCursorScreenPos().y),
+	ImRect BackgroundRect = ImRect(ImVec2(bIndentationAwareNodeBackground ? ImGui::GetCursorScreenPos().x : ImGui::GetWindowContentRegionMin().x, ImGui::GetCursorScreenPos().y),
 								   ImVec2(ImGui::GetWindowContentRegionMax().x, ImGui::GetCursorScreenPos().y + NodeHeight));
 
 	// Shift the background rectangle

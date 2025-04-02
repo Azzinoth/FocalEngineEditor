@@ -274,6 +274,7 @@ void FEEditor::AfterEngineUpdate()
 
 void FEEditor::Render()
 {
+	PREVIEW_MANAGER.Update();
 	EDITOR_SCRIPTING_SYSTEM.Update();
 
 	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetScenesByFlagMask(FESceneFlag::Active | FESceneFlag::Renderable);
@@ -461,7 +462,7 @@ void FEEditor::Render()
 
 		for (size_t i = 0; i < EditorSceneWindows.size(); i++)
 		{
-			// Rendeting would be done by RenderAllSubWindows().
+			// Rendering would be done by RenderAllSubWindows().
 			// 
 			// Check if some window is waiting for removal
 			if (EditorSceneWindows[i]->bWaitingForRemoval)
@@ -492,9 +493,9 @@ void FEEditor::Render()
 		INSPECTOR_WINDOW.Render();
 		DisplayEditorCamerasWindow();
 		DisplayLogWindow();
-		if (!GyzmosSettingsWindowObject.IsVisible())
-			GyzmosSettingsWindowObject.Show();
-		GyzmosSettingsWindowObject.Render();
+		if (!GizmosSettingsWindowObject.IsVisible())
+			GizmosSettingsWindowObject.Show();
+		GizmosSettingsWindowObject.Render();
 
 		for (size_t i = 0; i < EditorSceneWindows.size(); i++)
 		{
@@ -809,14 +810,26 @@ FEEditorSceneWindow* FEEditor::GetEditorSceneWindow(std::string SceneID)
 	return nullptr;
 }
 
-void FEEditor::AddEditorScene(FEScene* Scene)
+void FEEditor::CreateEditorWindowForScene(const std::string& SceneID)
 {
+	FEScene* Scene = SCENE_MANAGER.GetScene(SceneID);
+	if (Scene == nullptr)
+	{
+		LOG.Add("FEEditor::CreateEditorWindowForScene: Scene not found.", "FE_EDITOR", FE_LOG_ERROR);
+		return;
+	}
+
+	Scene->SetFlag(FESceneFlag::Active, true);
+	Scene->SetFlag(FESceneFlag::Renderable, true);
+	Scene->SetFlag(FESceneFlag::EditorMode, true);
+
 	FEEditorSceneWindow* NewSceneWindow = new FEEditorSceneWindow(Scene);
+	PROJECT_MANAGER.GetCurrent()->InjectEditorCamera(Scene);
 	NewSceneWindow->SetVisible(true);
 	EditorSceneWindows.push_back(NewSceneWindow);
 }
 
-void FEEditor::AddCustomEditorScene(FEEditorSceneWindow* SceneWindow)
+void FEEditor::CreateCustomEditorWindowForScene(FEEditorSceneWindow* SceneWindow)
 {
 	if (SceneWindow == nullptr)
 		return;
@@ -866,7 +879,7 @@ bool FEEditor::DuplicateScenesForGameMode()
 
 	ParentIDToScenesInGameMode[EDITOR.GetFocusedScene()->GetObjectID()] = GameModeScene;
 
-	EDITOR.AddEditorScene(GameModeScene);
+	EDITOR.CreateEditorWindowForScene(GameModeScene->GetObjectID());
 
 	return true;
 }
@@ -1000,8 +1013,6 @@ void FEEditor::UpdateBeforeRender()
 			{
 				if (CurrentMainCameraEntity != nullptr && CurrentMainCameraEntity->GetObjectID() != EditorCameraID)
 				{
-					//SceneIDToOldMainCameraID[Scenes[i]->GetObjectID()] = CurrentMainCameraEntity->GetObjectID();
-					//CurrentProject->SceneIDToProperMainCameraID[Scenes[i]->GetObjectID()] = EditorCameraID;
 					CAMERA_SYSTEM.SetMainCamera(Scenes[i]->GetEntity(EditorCameraID));
 				}
 			}

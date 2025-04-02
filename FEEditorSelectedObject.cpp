@@ -293,9 +293,18 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 		if (!PointCloudComponent.IsVisible())
 			return;
 
+		FEPointCloud* PointCloud = PointCloudComponent.GetPointCloud();
 		PointCloudComponent.SetUseGlobalColorOverride(true);
 		PointCloudComponent.SetGlobalColorOverride(ColorID);
-		POINT_CLOUD_SYSTEM.RenderPointCloudComponent(Entity->GetComponent<FETransformComponent>(), PointCloudComponent, CameraEntity);
+		if (PointCloud->IsAdvancedRenderingEnabled())
+		{
+			CurrentSelectionData->bHadPointCloudWithAdvancedRendering = true;
+			POINT_CLOUD_SYSTEM.RenderWithComputeShaders(Entity->GetComponent<FETransformComponent>(), PointCloudComponent, CameraEntity);
+		}
+		else
+		{
+			POINT_CLOUD_SYSTEM.RenderPointCloudComponent(Entity->GetComponent<FETransformComponent>(), PointCloudComponent, CameraEntity);
+		}
 		PointCloudComponent.SetUseGlobalColorOverride(false);
 	}
 
@@ -314,6 +323,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 #endif
 
 	CurrentSelectionData->CheckForSelectionisNeeded = false;
+	CurrentSelectionData->bHadPointCloudWithAdvancedRendering = false;
 
 	int LocalMouseX = static_cast<int>(MouseX);
 	int LocalMouseY = static_cast<int>(MouseY);
@@ -330,7 +340,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 	CurrentSelectionData->PixelAccurateSelectionFB->Bind();
 	glm::ivec4 OriginalViewport = RENDERER.GetGLViewport();
 	RENDERER.SetGLViewport(0, 0, CurrentSelectionData->PixelAccurateSelectionFB->GetWidth(), CurrentSelectionData->PixelAccurateSelectionFB->GetHeight());
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	FE_GL_ERROR(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 	FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
 	FEEntity* CurrentCamera = CAMERA_SYSTEM.GetMainCamera(Scene);
@@ -338,17 +348,17 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 	for (size_t i = 0; i < CurrentSelectionData->SceneEntitiesUnderMouse.size(); i++)
 	{
 #ifdef EDITOR_SELECTION_DEBUG_MODE
-		int r = (i + 1) * 50 & 255;
-		int g = ((i + 1) * 50 >> 8) & 255;
-		int b = ((i + 1) * 50 >> 16) & 255;
+		int R = (i + 1) * 50 & 255;
+		int G = ((i + 1) * 50 >> 8) & 255;
+		int B = ((i + 1) * 50 >> 16) & 255;
 #else
-		int r = (i + 1) & 255;
-		int g = ((i + 1) >> 8) & 255;
-		int b = ((i + 1) >> 16) & 255;
+		int R = (i + 1) & 255;
+		int G = ((i + 1) >> 8) & 255;
+		int B = ((i + 1) >> 16) & 255;
 #endif
 
 		RenderEntitySelectionColorID(CurrentSelectionData->SceneEntitiesUnderMouse[i],
-									 glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f),
+									 glm::vec3(static_cast<float>(R) / 255.0f, static_cast<float>(G) / 255.0f, static_cast<float>(B) / 255.0f),
 									 CurrentCamera, CurrentSelectionData);
 	}
 
@@ -391,6 +401,13 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			DummyGameModelComponent.SetVisibility(false);
 		}
 		InstancedSubObjectIterator++;
+	}
+
+	// If some point cloud has advanced rendering, we need to fuse the rendered data to the framebuffer
+	if (CurrentSelectionData->bHadPointCloudWithAdvancedRendering)
+	{
+		POINT_CLOUD_SYSTEM.FuseComputeRenderedToFramebuffer(CurrentCamera, CurrentSelectionData->PixelAccurateSelectionFB);
+		CurrentSelectionData->PixelAccurateSelectionFB->Bind();
 	}
 
 	FETransformComponent& CameraTransformComponent = CurrentCamera->GetComponent<FETransformComponent>();
@@ -560,9 +577,18 @@ void FEEditorSelectedObject::RenderEntityHaloEffectInternal(FEEntity* Entity, gl
 		if (!PointCloudComponent.IsVisible())
 			return;
 
+		FEPointCloud* PointCloud = PointCloudComponent.GetPointCloud();
 		PointCloudComponent.SetUseGlobalColorOverride(true);
 		PointCloudComponent.SetGlobalColorOverride(Color);
-		POINT_CLOUD_SYSTEM.RenderPointCloudComponent(Entity->GetComponent<FETransformComponent>(), PointCloudComponent, CameraEntity);
+		if (PointCloud->IsAdvancedRenderingEnabled())
+		{
+			CurrentSelectionData->bHadPointCloudWithAdvancedRenderingInHalo = true;
+			POINT_CLOUD_SYSTEM.RenderWithComputeShaders(Entity->GetComponent<FETransformComponent>(), PointCloudComponent, CameraEntity);
+		}
+		else
+		{
+			POINT_CLOUD_SYSTEM.RenderPointCloudComponent(Entity->GetComponent<FETransformComponent>(), PointCloudComponent, CameraEntity);
+		}
 		PointCloudComponent.SetUseGlobalColorOverride(false);
 
 		HALO_SELECTION_EFFECT.GetSceneData(Entity->GetParentScene()->GetObjectID())->SetBloomSize(0.1f);
@@ -577,6 +603,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 	while (SceneIterator != PerSceneData.end())
 	{
 		FESelectionData* CurrentSelectionData = SceneIterator->second;
+		CurrentSelectionData->bHadPointCloudWithAdvancedRenderingInHalo = false;
 
 		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneIterator->first);
 		if (CurrentScene == nullptr)
@@ -652,6 +679,12 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 				FEEntity* CurrentEntity = AllChildren[i]->GetEntity();
 				SELECTED.RenderEntityHaloEffectInternal(CurrentEntity, glm::vec3(0.61f, 0.86f, 1.0f), CurrentCamera, CurrentSelectionData);
 			}
+		}
+
+		// If some point cloud has advanced rendering, we need to fuse the rendered data to the framebuffer
+		if (CurrentSelectionData->bHadPointCloudWithAdvancedRenderingInHalo)
+		{
+			POINT_CLOUD_SYSTEM.FuseComputeRenderedToFramebuffer(CurrentCamera, HaloSelectionData->HaloObjectsFB);
 		}
 
 		HaloSelectionData->HaloObjectsFB->UnBind();

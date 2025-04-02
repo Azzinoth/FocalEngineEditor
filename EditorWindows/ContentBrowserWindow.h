@@ -73,7 +73,7 @@
         int ItemUnderMouse = -1;
         int RenameIndex = -1;
         char RenameBuffer[1024];
-        bool bLastFrameRenameEditWasVisiable = false;
+        bool bLastFrameRenameEditWasVisible = false;
         static FEObject* ItemInFocus;
 
         // Resource filtering
@@ -107,7 +107,7 @@
         std::vector <DirectoryDragAndDropCallbackInfo> DirectoryDragAndDropInfo;
         std::vector<DragAndDropTarget*> DirectoriesTargets;
         DragAndDropTarget* VFSBackButtonTarget = nullptr;
-        DirectoryDragAndDropCallbackInfo VFSBackButtoninfo;
+        DirectoryDragAndDropCallbackInfo VFSBackButtonInfo;
 
         static bool DirectoryDragAndDropCallback(FEObject* Object, void** Directory)
         {

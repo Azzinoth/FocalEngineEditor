@@ -77,8 +77,8 @@ void FEEditorInspectorWindow::InitializeResources()
 	LayerBrushButton = new ImGuiImageButton(DrawBrushIcon);
 	LayerBrushButton->SetSize(ImVec2(48, 48));
 
-	EntityChangeGameModelTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_GAMEMODEL, EntityChangeGameModelTargetCallBack, nullptr, "Drop to assign game model");
-	EntityChangePointCloudTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_POINT_CLOUD, EntityChangePointCloudTargetCallBack, nullptr, "Drop to assign point cloud");
+	EntityChangeGameModelTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_GAMEMODEL, EntityChangeGameModelTargetCallback, nullptr, "Drop to assign game model");
+	EntityChangePointCloudTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_POINT_CLOUD, EntityChangePointCloudTargetCallback, nullptr, "Drop to assign point cloud");
 	// ************** Terrain Settings END **************
 
 	MouseCursorIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/mouseCursorIcon.png", "mouseCursorIcon");
@@ -97,7 +97,7 @@ void FEEditorInspectorWindow::ShowTransformConfiguration(FEObject* Object, FETra
 	ShowTransformConfiguration(Object->GetName(), Transform);
 }
 
-bool FEEditorInspectorWindow::EntityChangeGameModelTargetCallBack(FEObject* Object, void** EntityPointer)
+bool FEEditorInspectorWindow::EntityChangeGameModelTargetCallback(FEObject* Object, void** EntityPointer)
 {
 	if (EDITOR.GetFocusedScene() == nullptr)
 		return false;
@@ -119,7 +119,7 @@ bool FEEditorInspectorWindow::EntityChangeGameModelTargetCallBack(FEObject* Obje
 	return true;
 }
 
-bool FEEditorInspectorWindow::EntityChangePointCloudTargetCallBack(FEObject* Object, void** EntityPointer)
+bool FEEditorInspectorWindow::EntityChangePointCloudTargetCallback(FEObject* Object, void** EntityPointer)
 {
 	if (EDITOR.GetFocusedScene() == nullptr)
 		return false;
@@ -141,7 +141,7 @@ bool FEEditorInspectorWindow::EntityChangePointCloudTargetCallBack(FEObject* Obj
 	return true;
 }
 
-bool FEEditorInspectorWindow::TerrainChangeMaterialTargetCallBack(FEObject* Object, void** LayerIndex)
+bool FEEditorInspectorWindow::TerrainChangeMaterialTargetCallback(FEObject* Object, void** LayerIndex)
 {
 	if (EDITOR.GetFocusedScene() == nullptr)
 		return false;
@@ -152,7 +152,7 @@ bool FEEditorInspectorWindow::TerrainChangeMaterialTargetCallBack(FEObject* Obje
 		return false;
 
 	FEMaterial* MaterialToAssign = RESOURCE_MANAGER.GetMaterial(Object->GetObjectID());
-	if (!MaterialToAssign->IsCompackPacking())
+	if (!MaterialToAssign->IsCompactPacking())
 		return false;
 
 	FETerrainComponent& Terrain = SELECTED.GetSelected(CurrentScene)->GetComponent<FETerrainComponent>();
@@ -879,7 +879,7 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 				const bool is_selected = (SSAO_SelectedOption == SSAO_Options[i]);
 				if (ImGui::Selectable(SSAO_Options[i], is_selected))
 				{
-					CameraComponent.SetSSAOResultBlured(true);
+					CameraComponent.SetSSAOResultBlurred(true);
 					CameraComponent.SetSSAOBias(0.013f);
 					CameraComponent.SetSSAORadius(10.0f);
 					CameraComponent.SetSSAORadiusSmallDetails(0.4f);
@@ -930,9 +930,9 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 		ImGui::Checkbox("SSAO small details", &TempBool);
 		CameraComponent.SetSSAOSmallDetailsEnabled(TempBool);
 
-		TempBool = CameraComponent.IsSSAOResultBlured();
-		ImGui::Checkbox("SSAO blured", &TempBool);
-		CameraComponent.SetSSAOResultBlured(TempBool);
+		TempBool = CameraComponent.IsSSAOResultBlurred();
+		ImGui::Checkbox("SSAO blurred", &TempBool);
+		CameraComponent.SetSSAOResultBlurred(TempBool);
 
 		int TempInt = CameraComponent.GetSSAOSampleCount();
 		ImGui::SetNextItemWidth(100);
@@ -1003,7 +1003,7 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	}
 }
 
-void FEEditorInspectorWindow::ChangeGameModelOfEntityCallBack(const std::vector<FEObject*> SelectionsResult)
+void FEEditorInspectorWindow::ChangeGameModelOfEntityCallback(const std::vector<FEObject*> SelectionsResult)
 {
 	if (EntityToModify == nullptr)
 		return;
@@ -1019,7 +1019,7 @@ void FEEditorInspectorWindow::ChangeGameModelOfEntityCallBack(const std::vector<
 	}
 }
 
-void FEEditorInspectorWindow::ChangePointCloudOfEntityCallBack(const std::vector<FEObject*> SelectionsResult)
+void FEEditorInspectorWindow::ChangePointCloudOfEntityCallback(const std::vector<FEObject*> SelectionsResult)
 {
 	if (EntityToModify == nullptr)
 		return;
@@ -1223,7 +1223,7 @@ void FEEditorInspectorWindow::Render()
 			{
 				EntityToModify = EntitySelected;
 				FEGameModelComponent& GameModelComponent = EntityToModify->GetComponent<FEGameModelComponent>();
-				SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, ChangeGameModelOfEntityCallBack, GameModelComponent.GetGameModel());
+				SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, ChangeGameModelOfEntityCallback, GameModelComponent.GetGameModel());
 			}
 			EntityChangeGameModelTarget->StickToItem();
 
@@ -1280,7 +1280,7 @@ void FEEditorInspectorWindow::Render()
 			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
 				EntityToModify = EntitySelected;
-				SELECT_FEOBJECT_POPUP.Show(FE_POINT_CLOUD, ChangePointCloudOfEntityCallBack, PointCloudComponent.GetPointCloud());
+				SELECT_FEOBJECT_POPUP.Show(FE_POINT_CLOUD, ChangePointCloudOfEntityCallback, PointCloudComponent.GetPointCloud());
 			}
 			EntityChangePointCloudTarget->StickToItem();
 
@@ -1726,7 +1726,7 @@ void FEEditorInspectorWindow::Render()
 	ImGui::End();
 }
 
-void FEEditorInspectorWindow::CreateNewTerrainLayerWithMaterialCallBack(std::vector<FEObject*> SelectionsResult)
+void FEEditorInspectorWindow::CreateNewTerrainLayerWithMaterialCallback(std::vector<FEObject*> SelectionsResult)
 {
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_MATERIAL)
 	{
@@ -1744,7 +1744,7 @@ void FEEditorInspectorWindow::CreateNewTerrainLayerWithMaterialCallBack(std::vec
 }
 
 static size_t TempLayerIndex = -1;
-void FEEditorInspectorWindow::ChangeMaterialInTerrainLayerCallBack(std::vector<FEObject*> SelectionsResult)
+void FEEditorInspectorWindow::ChangeMaterialInTerrainLayerCallback(std::vector<FEObject*> SelectionsResult)
 {
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_MATERIAL)
 	{
@@ -1774,11 +1774,11 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 		}
 
 		TerrainChangeLayerMaterialTargets.resize(TerrainComponent.LayersUsed());
-		TerrainChangeMaterialIndecies.resize(TerrainComponent.LayersUsed());
+		TerrainChangeMaterialIndices.resize(TerrainComponent.LayersUsed());
 		for (size_t i = 0; i < size_t(TerrainComponent.LayersUsed()); i++)
 		{
-			TerrainChangeMaterialIndecies[i] = int(i);
-			TerrainChangeLayerMaterialTargets[i] = DRAG_AND_DROP_MANAGER.AddTarget(FE_MATERIAL, TerrainChangeMaterialTargetCallBack, (void**)&TerrainChangeMaterialIndecies[i], "Drop to assing material to " + TerrainComponent.GetLayerInSlot(i)->GetName());
+			TerrainChangeMaterialIndices[i] = int(i);
+			TerrainChangeLayerMaterialTargets[i] = DRAG_AND_DROP_MANAGER.AddTarget(FE_MATERIAL, TerrainChangeMaterialTargetCallback, (void**)&TerrainChangeMaterialIndices[i], "Drop to assing material to " + TerrainComponent.GetLayerInSlot(i)->GetName());
 		}
 	}
 
@@ -1867,9 +1867,9 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 				}
 			}
 
-			float HighScale = TerrainComponent.GetHightScale();
-			ImGui::DragFloat("hight range in m", &HighScale);
-			TerrainComponent.SetHightScale(HighScale);
+			float HighScale = TerrainComponent.GetHeightScale();
+			ImGui::DragFloat("Height range in m", &HighScale);
+			TerrainComponent.SetHeightScale(HighScale);
 
 			float CurrentBrushSize = TERRAIN_SYSTEM.GetBrushSize();
 			ImGui::DragFloat("brushSize", &CurrentBrushSize, 0.1f, 0.01f, 100.0f);
@@ -2016,12 +2016,12 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 				if (TerrainLayerRenameIndex == i)
 				{
-					if (!bLastFrameTerrainLayerRenameEditWasVisiable)
+					if (!bLastFrameTerrainLayerRenameEditWasVisible)
 					{
 						ImGui::SetKeyboardFocusHere(0);
 						ImGui::SetFocusID(ImGui::GetID("##newNameTerrainLayerEditor"), FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl());
 						ImGui::SetItemDefaultFocus();
-						bLastFrameTerrainLayerRenameEditWasVisiable = true;
+						bLastFrameTerrainLayerRenameEditWasVisible = true;
 					}
 
 					ImGui::SetNextItemWidth(350.0f);
@@ -2085,7 +2085,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 					std::vector<FEObject*> FinalMaterialList;
 					for (size_t i = 0; i < TempMaterialList.size(); i++)
 					{
-						if (RESOURCE_MANAGER.GetMaterial(TempMaterialList[i])->IsCompackPacking())
+						if (RESOURCE_MANAGER.GetMaterial(TempMaterialList[i])->IsCompactPacking())
 						{
 							FinalMaterialList.push_back(RESOURCE_MANAGER.GetMaterial(TempMaterialList[i]));
 						}
@@ -2093,12 +2093,12 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 					if (FinalMaterialList.empty())
 					{
-						MessagePopUp::GetInstance().Show("No suitable material", "There are no materials with compack packing.");
+						MessagePopUp::GetInstance().Show("No suitable material", "There are no materials with compact packing.");
 					}
 					else
 					{
 						TerrainToWorkWith = TerrainEntity;
-						SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, CreateNewTerrainLayerWithMaterialCallBack, nullptr, FinalMaterialList);
+						SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, CreateNewTerrainLayerWithMaterialCallback, nullptr, FinalMaterialList);
 					}
 				}
 
@@ -2120,7 +2120,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 							TerrainLayerRenameIndex = HoveredTerrainLayerItem;
 
 							strcpy_s(TerrainLayerRename, Layer->GetName().size() + 1, Layer->GetName().c_str());
-							bLastFrameTerrainLayerRenameEditWasVisiable = false;
+							bLastFrameTerrainLayerRenameEditWasVisible = false;
 						}
 
 						if (ImGui::MenuItem("Fill"))
@@ -2146,7 +2146,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 							std::vector<FEObject*> FinalMaterialList;
 							for (size_t i = 0; i < TempMaterialList.size(); i++)
 							{
-								if (RESOURCE_MANAGER.GetMaterial(TempMaterialList[i])->IsCompackPacking())
+								if (RESOURCE_MANAGER.GetMaterial(TempMaterialList[i])->IsCompactPacking())
 								{
 									FinalMaterialList.push_back(RESOURCE_MANAGER.GetMaterial(TempMaterialList[i]));
 								}
@@ -2154,13 +2154,13 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 							if (FinalMaterialList.empty())
 							{
-								MessagePopUp::GetInstance().Show("No suitable material", "There are no materials with compack packing.");
+								MessagePopUp::GetInstance().Show("No suitable material", "There are no materials with compact packing.");
 							}
 							else
 							{
 								TerrainToWorkWith = TerrainEntity;
 								TempLayerIndex = HoveredTerrainLayerItem;
-								SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialInTerrainLayerCallBack, TerrainComponent.GetLayerInSlot(HoveredTerrainLayerItem)->GetMaterial(), FinalMaterialList);
+								SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialInTerrainLayerCallback, TerrainComponent.GetLayerInSlot(HoveredTerrainLayerItem)->GetMaterial(), FinalMaterialList);
 							}
 						}
 
@@ -2256,7 +2256,7 @@ void FEEditorInspectorWindow::DisplayVirtualUIProperties(FEEntity* VirtualUIEnti
 void FEEditorInspectorWindow::AddGameModelComponent(FEEntity* Entity)
 {
 	INSPECTOR_WINDOW.EntityToWorkWith = Entity;
-	SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, AddNewGameModelComponentCallBack);
+	SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, AddNewGameModelComponentCallback);
 }
 
 void FEEditorInspectorWindow::AddPointCloudComponent(FEEntity* Entity)
@@ -2264,7 +2264,7 @@ void FEEditorInspectorWindow::AddPointCloudComponent(FEEntity* Entity)
 	Entity->AddComponent<FEPointCloudComponent>();
 }
 
-void FEEditorInspectorWindow::AddNewGameModelComponentCallBack(const std::vector<FEObject*> SelectionsResult)
+void FEEditorInspectorWindow::AddNewGameModelComponentCallback(const std::vector<FEObject*> SelectionsResult)
 {
 	if (!SelectionsResult.empty() && SelectionsResult[0]->GetType() == FE_GAMEMODEL)
 	{
@@ -2290,7 +2290,7 @@ void FEEditorInspectorWindow::AddNewGameModelComponentCallBack(const std::vector
 void FEEditorInspectorWindow::AddTerrainComponent(FEEntity* Entity)
 {
 	Entity->AddComponent<FETerrainComponent>();
-	TERRAIN_SYSTEM.SetHeightMap(RESOURCE_MANAGER.CreateBlankHightMapTexture(1024, 1024), Entity);
+	TERRAIN_SYSTEM.SetHeightMap(RESOURCE_MANAGER.CreateBlankHeightMapTexture(1024, 1024), Entity);
 }
 
 void FEEditorInspectorWindow::AddInstancedComponent(FEEntity* Entity)

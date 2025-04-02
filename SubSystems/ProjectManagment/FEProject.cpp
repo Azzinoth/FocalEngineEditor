@@ -684,10 +684,7 @@ void FEProject::LoadProject()
 			}
 			else
 			{
-				Scene->SetFlag(FESceneFlag::Active, true);
-				Scene->SetFlag(FESceneFlag::Renderable, true);
-				Scene->SetFlag(FESceneFlag::EditorMode, true);
-				EDITOR.AddEditorScene(Scene);
+				EDITOR.CreateEditorWindowForScene(Scene->GetObjectID());
 			}
 		}
 

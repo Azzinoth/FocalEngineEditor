@@ -29,6 +29,9 @@ public:
 
 	unsigned char* ColorUnderMouse = new unsigned char[3];
 	int ColorIndex = -1;
+	
+	bool bHadPointCloudWithAdvancedRendering = false;
+	bool bHadPointCloudWithAdvancedRenderingInHalo = false;
 
 	~FESelectionData()
 	{

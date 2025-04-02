@@ -6,7 +6,7 @@ FEMesh** EditGameModelPopup::MeshToModify = nullptr;
 FEMaterial** EditGameModelPopup::MaterialToModify = nullptr;
 FEMaterial** EditGameModelPopup::BillboardMaterialToModify = nullptr;
 
-void EditGameModelPopup::ChangeMeshCallBack(const std::vector<FEObject*> SelectionsResult)
+void EditGameModelPopup::ChangeMeshCallback(const std::vector<FEObject*> SelectionsResult)
 {
 	if (MeshToModify == nullptr)
 		return;
@@ -21,7 +21,7 @@ void EditGameModelPopup::ChangeMeshCallBack(const std::vector<FEObject*> Selecti
 	}
 }
 
-void EditGameModelPopup::ChangeMaterialCallBack(const std::vector<FEObject*> SelectionsResult)
+void EditGameModelPopup::ChangeMaterialCallback(const std::vector<FEObject*> SelectionsResult)
 {
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_MATERIAL)
 	{
@@ -33,7 +33,7 @@ void EditGameModelPopup::ChangeMaterialCallBack(const std::vector<FEObject*> Sel
 	}
 }
 
-void EditGameModelPopup::ChangeBillboardMaterialCallBack(const std::vector<FEObject*> SelectionsResult)
+void EditGameModelPopup::ChangeBillboardMaterialCallback(const std::vector<FEObject*> SelectionsResult)
 {
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_MATERIAL)
 	{
@@ -101,7 +101,7 @@ void EditGameModelPopup::Show(FEGameModel* GameModel)
 		UpdatedMaterial = ObjToWorkWith->GetMaterial();
 		UpdatedBillboardMaterial = ObjToWorkWith->GetBillboardMaterial();
 		TempModel->SetUsingLOD(ObjToWorkWith->IsUsingLOD());
-		TempModel->SetBillboardZeroRotaion(ObjToWorkWith->GetBillboardZeroRotaion());
+		TempModel->SetBillboardZeroRotation(ObjToWorkWith->GetBillboardZeroRotation());
 
 		ChangeLODMeshButton.clear();
 		if (ObjToWorkWith->IsUsingLOD())
@@ -122,13 +122,13 @@ void EditGameModelPopup::Show(FEGameModel* GameModel)
 			ChangeLODMeshButton[0]->SetPosition(ImVec2(Size.x / 2.0f - Size.x / 4.0f - ChangeLODMeshButton[0]->GetSize().x / 2, 35 + 340.0f));
 		}
 
-		UpdatedLODMeshs.clear();
+		UpdatedLODMeshes.clear();
 		for (size_t i = 0; i < ObjToWorkWith->GetMaxLODCount(); i++)
 		{
 			TempModel->SetLODMesh(i, ObjToWorkWith->GetLODMesh(i));
 			TempModel->SetLODMaxDrawDistance(i, ObjToWorkWith->GetLODMaxDrawDistance(i));
 			TempModel->SetIsLODBillboard(i, ObjToWorkWith->IsLODBillboard(i));
-			UpdatedLODMeshs.push_back(ObjToWorkWith->GetLODMesh(i));
+			UpdatedLODMeshes.push_back(ObjToWorkWith->GetLODMesh(i));
 		}
 		TempModel->SetCullDistance(ObjToWorkWith->GetCullDistance());
 
@@ -215,7 +215,7 @@ void EditGameModelPopup::SwitchMode(const int ToMode)
 
 			for (size_t i = 1; i < TempModel->GetMaxLODCount(); i++)
 			{
-				UpdatedLODMeshs[i] = nullptr;
+				UpdatedLODMeshes[i] = nullptr;
 				TempModel->SetLODMesh(i, nullptr);
 			}
 
@@ -340,14 +340,14 @@ void EditGameModelPopup::Render()
 
 	for (size_t i = 0; i < TempModel->GetMaxLODCount(); i++)
 	{
-		if (UpdatedLODMeshs[i] != TempModel->GetLODMesh(i))
+		if (UpdatedLODMeshes[i] != TempModel->GetLODMesh(i))
 		{
 			if (TempModel->GetLODMesh(i) == nullptr)
 			{
 				LODGroups->AddRange((TempModel->GetLODMaxDrawDistance(i)) / TempModel->GetCullDistance(), std::string("LOD") + std::to_string(i), "", LODColors[i]);
 			}
 
-			TempModel->SetLODMesh(i, UpdatedLODMeshs[i]);
+			TempModel->SetLODMesh(i, UpdatedLODMeshes[i]);
 			PREVIEW_MANAGER.CreateGameModelPreview(TempModel, &TempPreview);
 		}
 	}
@@ -398,10 +398,10 @@ void EditGameModelPopup::Render()
 		ChangeLODMeshButton[0]->Render();
 		if (ChangeLODMeshButton[0]->IsClicked())
 		{
-			UpdatedLODMeshs[0] = TempModel->GetLODMesh(0);
+			UpdatedLODMeshes[0] = TempModel->GetLODMesh(0);
 
-			MeshToModify = &UpdatedLODMeshs[0];
-			SELECT_FEOBJECT_POPUP.Show(FE_MESH, ChangeMeshCallBack, UpdatedLODMeshs[0]);
+			MeshToModify = &UpdatedLODMeshes[0];
+			SELECT_FEOBJECT_POPUP.Show(FE_MESH, ChangeMeshCallback, UpdatedLODMeshes[0]);
 		}
 
 		TextSize = ImGui::CalcTextSize("Material component:");
@@ -418,7 +418,7 @@ void EditGameModelPopup::Render()
 			UpdatedMaterial = TempModel->GetMaterial();
 
 			MaterialToModify = &UpdatedMaterial;
-			SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialCallBack, UpdatedMaterial);
+			SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialCallback, UpdatedMaterial);
 		}
 	}
 	else if (CurrentMode == HAS_LOD_MODE)
@@ -440,17 +440,17 @@ void EditGameModelPopup::Render()
 				ChangeLODMeshButton[i]->Render();
 				if (ChangeLODMeshButton[i]->IsClicked())
 				{
-					UpdatedLODMeshs[i] = TempModel->GetLODMesh(i);
+					UpdatedLODMeshes[i] = TempModel->GetLODMesh(i);
 
-					MeshToModify = &UpdatedLODMeshs[i];
-					SELECT_FEOBJECT_POPUP.Show(FE_MESH, ChangeMeshCallBack, UpdatedLODMeshs[i]);
+					MeshToModify = &UpdatedLODMeshes[i];
+					SELECT_FEOBJECT_POPUP.Show(FE_MESH, ChangeMeshCallback, UpdatedLODMeshes[i]);
 				}
 
 				AddBillboard->SetPosition(ImVec2(CurrentXPosition - AddBillboard->GetSize().x / 2, CurrentY + 210.0f + 128.0f / 2.0f + 10.0f / 2.0f));
 				AddBillboard->Render();
 				if (AddBillboard->IsClicked())
 				{
-					UpdatedLODMeshs[i] = RESOURCE_MANAGER.GetMesh("1Y251E6E6T78013635793156"/*"plane"*/);
+					UpdatedLODMeshes[i] = RESOURCE_MANAGER.GetMesh("1Y251E6E6T78013635793156"/*"plane"*/);
 					UpdatedBillboardMaterial = RESOURCE_MANAGER.GetMaterial("61649B9E0F08013Q3939316C"/*"FEPBRBaseMaterial"*/);
 					TempModel->SetIsLODBillboard(i, true);
 				}
@@ -487,7 +487,7 @@ void EditGameModelPopup::Render()
 					DeleteLODMeshButton->Render();
 					if (DeleteLODMeshButton->IsClicked())
 					{
-						UpdatedLODMeshs[i] = nullptr;
+						UpdatedLODMeshes[i] = nullptr;
 						TempModel->SetLODMesh(i, nullptr);
 						TempModel->SetIsLODBillboard(i, false);
 						LODGroups->DeleteRange(i);
@@ -498,10 +498,10 @@ void EditGameModelPopup::Render()
 			ChangeLODMeshButton[i]->Render();
 			if (ChangeLODMeshButton[i]->IsClicked())
 			{
-				UpdatedLODMeshs[i] = TempModel->GetLODMesh(i);
+				UpdatedLODMeshes[i] = TempModel->GetLODMesh(i);
 
-				MeshToModify = &UpdatedLODMeshs[i];
-				SELECT_FEOBJECT_POPUP.Show(FE_MESH, ChangeMeshCallBack, UpdatedLODMeshs[i]);
+				MeshToModify = &UpdatedLODMeshes[i];
+				SELECT_FEOBJECT_POPUP.Show(FE_MESH, ChangeMeshCallback, UpdatedLODMeshes[i]);
 			}
 		}
 
@@ -525,7 +525,7 @@ void EditGameModelPopup::Render()
 					if (ChangeMaterialButton->IsClicked())
 					{
 						MaterialToModify = &UpdatedMaterial;
-						SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialCallBack, UpdatedMaterial);
+						SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialCallback, UpdatedMaterial);
 					}
 
 					TextSize = ImGui::CalcTextSize("Billboard Material component:");
@@ -556,7 +556,7 @@ void EditGameModelPopup::Render()
 						}
 
 						BillboardMaterialToModify = &UpdatedBillboardMaterial;
-						SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeBillboardMaterialCallBack, UpdatedBillboardMaterial, FinalMaterialList);
+						SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeBillboardMaterialCallback, UpdatedBillboardMaterial, FinalMaterialList);
 					}
 				}
 				else
@@ -574,7 +574,7 @@ void EditGameModelPopup::Render()
 					if (ChangeMaterialButton->IsClicked())
 					{
 						MaterialToModify = &UpdatedMaterial;
-						SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialCallBack, UpdatedMaterial);
+						SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialCallback, UpdatedMaterial);
 					}
 				}
 
@@ -607,11 +607,11 @@ void EditGameModelPopup::Render()
 
 			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10.0f);
 			ImGui::Text("Billboard Zero Rotation:");
-			float ZeroRotation = TempModel->GetBillboardZeroRotaion();
+			float ZeroRotation = TempModel->GetBillboardZeroRotation();
 			ImGui::SameLine();
 			ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 5.0f);
 			ImGui::DragFloat("##Billboard Zero Rotation", &ZeroRotation, 0.1f, 0.0f, 360.0f);
-			TempModel->SetBillboardZeroRotaion(ZeroRotation);
+			TempModel->SetBillboardZeroRotation(ZeroRotation);
 		}
 	}
 
@@ -645,7 +645,7 @@ void EditGameModelPopup::Render()
 		ObjToWorkWith->SetMaterial(TempModel->GetMaterial());
 		ObjToWorkWith->SetBillboardMaterial(TempModel->GetBillboardMaterial());
 		ObjToWorkWith->SetScaleFactor(TempModel->GetScaleFactor());
-		ObjToWorkWith->SetBillboardZeroRotaion(TempModel->GetBillboardZeroRotaion());
+		ObjToWorkWith->SetBillboardZeroRotation(TempModel->GetBillboardZeroRotation());
 		PREVIEW_MANAGER.CreateGameModelPreview(ObjToWorkWith->GetObjectID());
 
 		FEImGuiWindow::Close();
@@ -672,7 +672,7 @@ void EditGameModelPopup::Close()
 bool EditGameModelPopup::DragAndDropLODMeshCallback(FEObject* Object, void** CallbackInfo)
 {
 	const MeshTargetCallbackInfo* Info = reinterpret_cast<MeshTargetCallbackInfo*>(CallbackInfo);
-	Info->Window->UpdatedLODMeshs[Info->LODLevel] = RESOURCE_MANAGER.GetMesh(Object->GetObjectID());
+	Info->Window->UpdatedLODMeshes[Info->LODLevel] = RESOURCE_MANAGER.GetMesh(Object->GetObjectID());
 	Info->Window->TempModel->SetLODMesh(Info->LODLevel, RESOURCE_MANAGER.GetMesh(Object->GetObjectID()));
 	PREVIEW_MANAGER.CreateGameModelPreview(Info->Window->TempModel, &Info->Window->TempPreview);
 	return true;
@@ -774,7 +774,7 @@ EditMaterialWindow::EditMaterialWindow()
 	CancelButton->SetDefaultColor(ImVec4(0.7f, 0.5f, 0.5f, 1.0f));
 	CancelButton->SetHoveredColor(ImVec4(0.95f, 0.5f, 0.0f, 1.0f));
 	CancelButton->SetActiveColor(ImVec4(0.1f, 1.0f, 0.1f, 1.0f));
-	NodeAreaTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_TEXTURE, DragAndDropnodeAreaTargetCallback, reinterpret_cast<void**>(&DragAndDropCallbackInfo), "Drop to add texture");
+	NodeAreaTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_TEXTURE, DragAndDropNodeAreaTargetCallback, reinterpret_cast<void**>(&DragAndDropCallbackInfo), "Drop to add texture");
 
 	PreviewScene = SCENE_MANAGER.CreateScene("MaterialEditor_Scene", "", FESceneFlag::Active | FESceneFlag::EditorMode);
 	RESOURCE_MANAGER.SetTag(PreviewScene, EDITOR_RESOURCE_TAG);
@@ -1018,7 +1018,7 @@ void EditMaterialWindow::Stop()
 	PreviewGameModel->SetMaterial(nullptr);
 }
 
-bool EditMaterialWindow::DragAndDropnodeAreaTargetCallback(FEObject* Object, void** CallbackInfo)
+bool EditMaterialWindow::DragAndDropNodeAreaTargetCallback(FEObject* Object, void** CallbackInfo)
 {
 	if (ObjToWorkWith->IsTextureInList(RESOURCE_MANAGER.GetTexture(Object->GetObjectID())))
 		return false;

@@ -53,7 +53,7 @@ void FEEditorPreviewManager::InitializeResources()
 	PreviewScene->SetFlag(FESceneFlag::EditorMode, true);
 }
 
-void FEEditorPreviewManager::UpdateAll()
+void FEEditorPreviewManager::ReCreateAll()
 {
 	Clear();
 
@@ -134,6 +134,8 @@ void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 	FETexture* CameraResult = RENDERER.GetCameraResult(LocalCameraEntity);
 	if (CameraResult != nullptr)
 		MeshPreviewTextures[MeshID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
+
+	CheckAndUpdateIfNeededGameModelPreview(MeshID);
 }
 
 FETexture* FEEditorPreviewManager::GetMeshPreview(const std::string MeshID)
@@ -204,14 +206,16 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 			CreateGameModelPreview(CurrentGameModel->GetObjectID());
 	}
 
-	// Looking for all prefabs that uses this material to also update them.
-	const std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
-	for (size_t i = 0; i < PrefabList.size(); i++)
-	{
-		FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[i]);
-		if (CurrentPrefab->IsUsingMaterial(MaterialID))
-			CreatePrefabPreview(CurrentPrefab->GetObjectID());
-	}
+	CheckAndUpdateIfNeededGameModelPreview(MaterialID);
+
+	//// Looking for all prefabs that uses this material to also update them.
+	//const std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
+	//for (size_t i = 0; i < PrefabList.size(); i++)
+	//{
+	//	FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[i]);
+	//	if (CurrentPrefab->IsUsingMaterial(MaterialID))
+	//		CreatePrefabPreview(CurrentPrefab->GetObjectID());
+	//}
 }
 
 FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string MaterialID)
@@ -269,15 +273,15 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 
 	FEAABB MeshAABB = PreviewEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Mesh->GetAABB();
 	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
-	const glm::vec3 min = MeshAABB.GetMin();
-	const glm::vec3 max = MeshAABB.GetMax();
+	const glm::vec3 Min = MeshAABB.GetMin();
+	const glm::vec3 Max = MeshAABB.GetMax();
 
-	const float XSize = sqrt((max.x - min.x) * (max.x - min.x));
-	const float YSize = sqrt((max.y - min.y) * (max.y - min.y));
-	const float ZSize = sqrt((max.z - min.z) * (max.z - min.z));
+	const float XSize = sqrt((Max.x - Min.x) * (Max.x - Min.x));
+	const float YSize = sqrt((Max.y - Min.y) * (Max.y - Min.y));
+	const float ZSize = sqrt((Max.z - Min.z) * (Max.z - Min.z));
 
 	// Invert center point to get required translation vector for centering mesh at origin
-	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
+	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(Max.x - XSize / 2.0f, Max.y - YSize / 2.0f, Max.z - ZSize / 2.0f));
 	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
 
@@ -292,6 +296,8 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 	FETexture* CameraResult = RENDERER.GetCameraResult(LocalCameraEntity);
 	if (CameraResult != nullptr)
 		GameModelPreviewTextures[GameModelID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
+
+	CheckAndUpdateIfNeededPrefabPreview(GameModelID);
 }
 
 void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel, FETexture** ResultingTexture)
@@ -307,15 +313,15 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 
 	FEAABB MeshAABB = PreviewEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Mesh->GetAABB();
 	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
-	const glm::vec3 min = MeshAABB.GetMin();
-	const glm::vec3 max = MeshAABB.GetMax();
+	const glm::vec3 Min = MeshAABB.GetMin();
+	const glm::vec3 Max = MeshAABB.GetMax();
 
-	const float XSize = sqrt((max.x - min.x) * (max.x - min.x));
-	const float YSize = sqrt((max.y - min.y) * (max.y - min.y));
-	const float ZSize = sqrt((max.z - min.z) * (max.z - min.z));
+	const float XSize = sqrt((Max.x - Min.x) * (Max.x - Min.x));
+	const float YSize = sqrt((Max.y - Min.y) * (Max.y - Min.y));
+	const float ZSize = sqrt((Max.z - Min.z) * (Max.z - Min.z));
 
 	// Invert center point to get required translation vector for centering mesh at origin
-	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(max.x - XSize / 2.0f, max.y - YSize / 2.0f, max.z - ZSize / 2.0f));
+	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(Max.x - XSize / 2.0f, Max.y - YSize / 2.0f, Max.z - ZSize / 2.0f));
 	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
 	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
 
@@ -326,6 +332,54 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 	FETexture* CameraResult = RENDERER.GetCameraResult(LocalCameraEntity);
 	if (CameraResult != nullptr)
 		*ResultingTexture = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
+
+	CheckAndUpdateIfNeededPrefabPreview(GameModel->GetObjectID());
+}
+
+void FEEditorPreviewManager::CheckAndUpdateIfNeededGameModelPreview(const std::string ObjectIDThatWasChanged)
+{
+	FEObject* ObjectThatWasChanged = OBJECT_MANAGER.GetFEObject(ObjectIDThatWasChanged);
+	if (ObjectThatWasChanged == nullptr)
+		return;
+
+	if (ObjectThatWasChanged->GetType() != FE_MESH)
+	{
+		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
+		for (size_t i = 0; i < GameModelList.size(); i++)
+		{
+			const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
+			if (CurrentGameModel->Material == RESOURCE_MANAGER.GetMaterial(ObjectIDThatWasChanged))
+				CreateGameModelPreview(CurrentGameModel->GetObjectID());
+		}
+		return;
+	}
+	else if (ObjectThatWasChanged->GetType() != FE_MATERIAL)
+	{
+		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
+		for (size_t i = 0; i < GameModelList.size(); i++)
+		{
+			const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
+			if (CurrentGameModel->Material == RESOURCE_MANAGER.GetMaterial(ObjectIDThatWasChanged))
+				CreateGameModelPreview(CurrentGameModel->GetObjectID());
+		}
+		return;
+	}
+}
+
+void FEEditorPreviewManager::CheckAndUpdateIfNeededPrefabPreview(const std::string GameModelIDThatWasChanged)
+{
+	FEGameModel* GameModelThatWasChanged = RESOURCE_MANAGER.GetGameModel(GameModelIDThatWasChanged);
+	if (GameModelThatWasChanged == nullptr)
+		return;
+
+	std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
+	for (size_t j = 0; j < PrefabList.size(); j++)
+	{
+		FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[j]);
+
+		if (CurrentPrefab->IsUsingGameModel(GameModelThatWasChanged->GetObjectID()))
+			CreatePrefabPreview(CurrentPrefab->GetObjectID());
+	}
 }
 
 FETexture* FEEditorPreviewManager::GetGameModelPreview(const std::string GameModelID)
@@ -340,7 +394,11 @@ FETexture* FEEditorPreviewManager::GetGameModelPreview(const std::string GameMod
 	if (RESOURCE_MANAGER.GetGameModel(GameModelID)->IsDirty())
 	{
 		CreateGameModelPreview(GameModelID);
-		RESOURCE_MANAGER.GetGameModel(GameModelID)->SetDirtyFlag(false);
+
+		FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelID);
+		CheckAndUpdateIfNeededPrefabPreview(GameModelID);
+
+		CurrentGameModel->SetDirtyFlag(false);
 	}
 
 	// if game model's material dirty flag is set we need to update preview
@@ -570,6 +628,91 @@ void FEEditorPreviewManager::Clear()
 	GameModelPreviewTextures.clear();
 }
 
+void FEEditorPreviewManager::CreateScenePreview(std::string SceneID)
+{
+	FEScene* Scene = SCENE_MANAGER.GetScene(SceneID);
+	if (Scene == nullptr)
+	{
+		LOG.Add("FEEditorPreviewManager::CreateScenePreview could not find scene with ID: " + SceneID, "FE_LOG_RENDERING", FE_LOG_ERROR);
+		return;
+	}
+	bool bWasActive = Scene->HasFlag(FESceneFlag::Active);
+	Scene->SetFlag(FESceneFlag::Active, true);
+
+	FEAABB SceneAABB = Scene->GetSceneAABB([](FEEntity* Entity) -> bool {
+		if (Entity->GetTag() == EDITOR_RESOURCE_TAG)
+			return false;
+
+		if (Entity->HasComponent<FESkyDomeComponent>())
+			return false;
+
+		if (Entity->HasComponent<FECameraComponent>())
+			return false;
+
+		return true;
+	});
+
+	FEEntity* TemporaryCamera = Scene->CreateEntity("Temporary scene camera");
+	RESOURCE_MANAGER.SetTag(TemporaryCamera, EDITOR_RESOURCE_TAG);
+	TemporaryCamera->AddComponent<FECameraComponent>();
+	FETransformComponent& CameraTransform = TemporaryCamera->GetComponent<FETransformComponent>();
+	CameraTransform.SetSceneIndependent(true);
+	glm::vec3 CenterOfAABB = SceneAABB.GetCenter();
+	CameraTransform.SetPosition(glm::vec3(0.0, 0.0, SceneAABB.GetLongestAxisLength() * 2));
+	//LookAt(TemporaryCamera, CenterOfAABB);
+	CAMERA_SYSTEM.PointCameraAt(TemporaryCamera, CenterOfAABB);
+	FECameraComponent& CameraComponent = TemporaryCamera->GetComponent<FECameraComponent>();
+	CameraComponent.TryToSetViewportSize(128, 128);
+	CameraComponent.SetDistanceFogEnabled(false);
+	CameraComponent.SetSSAOEnabled(false);
+	FEEntity* PreviousMainCamera = CAMERA_SYSTEM.GetMainCamera(Scene);
+	CAMERA_SYSTEM.SetMainCamera(TemporaryCamera);
+
+	CAMERA_SYSTEM.IndividualUpdate(TemporaryCamera, 0.0);
+
+	RENDERER.Render(Scene);
+
+	// If we are updating preview we should delete old texture.
+	if (ScenePreviewTextures.find(SceneID) != ScenePreviewTextures.end())
+		delete ScenePreviewTextures[SceneID];
+
+	FETexture* CameraResult = RENDERER.GetCameraResult(TemporaryCamera);
+	if (CameraResult != nullptr)
+		ScenePreviewTextures[SceneID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
+
+	CAMERA_SYSTEM.SetMainCamera(PreviousMainCamera);
+	Scene->DeleteEntity(TemporaryCamera);
+
+	Scene->SetFlag(FESceneFlag::Active, bWasActive);
+}
+
+FETexture* FEEditorPreviewManager::GetScenePreview(std::string SceneID)
+{
+	FEScene* Scene = SCENE_MANAGER.GetScene(SceneID);
+	if (Scene == nullptr)
+	{
+		LOG.Add("FEEditorPreviewManager::GetScenePreview could not find scene with ID: " + SceneID, "FE_LOG_RENDERING", FE_LOG_ERROR);
+		return RESOURCE_MANAGER.NoTexture;
+	}
+
+	// If scene's dirty flag is set we need to update preview.
+	if (Scene->IsDirty())
+	{
+		CreateScenePreview(SceneID);
+		Scene->SetDirtyFlag(false);
+	}
+
+	// If we somehow could not find preview, we will create it.
+	if (ScenePreviewTextures.find(SceneID) == ScenePreviewTextures.end())
+		CreateScenePreview(SceneID);
+
+	// If still we don't have it.
+	if (ScenePreviewTextures.find(SceneID) == ScenePreviewTextures.end())
+		return RESOURCE_MANAGER.NoTexture;
+
+	return ScenePreviewTextures[SceneID];
+}
+
 FETexture* FEEditorPreviewManager::GetPreview(FEObject* Object)
 {
 	switch (Object->GetType())
@@ -591,6 +734,9 @@ FETexture* FEEditorPreviewManager::GetPreview(FEObject* Object)
 
 		case FE_PREFAB:
 			return GetPrefabPreview(Object->GetObjectID());
+
+		case FE_SCENE:
+			return GetScenePreview(Object->GetObjectID());
 		
 		default:
 			return RESOURCE_MANAGER.NoTexture;
@@ -600,4 +746,24 @@ FETexture* FEEditorPreviewManager::GetPreview(FEObject* Object)
 FETexture* FEEditorPreviewManager::GetPreview(const std::string ObjectID)
 {
 	return GetPreview(OBJECT_MANAGER.GetFEObject(ObjectID));
+}
+
+void FEEditorPreviewManager::Update()
+{
+	// Check if any material is dirty.
+	// FIX ME! Dirty flag systems is not working properly. It should be fixed.
+	const std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialIDList();
+	for (size_t i = 0; i < MaterialList.size(); i++)
+	{
+		FEMaterial* CurrentMaterial = RESOURCE_MANAGER.GetMaterial(MaterialList[i]);
+		if (CurrentMaterial->GetTag() == ENGINE_RESOURCE_TAG ||
+			CurrentMaterial->GetTag() == EDITOR_RESOURCE_TAG)
+			continue;
+
+		if (CurrentMaterial->IsDirty())
+		{
+			CreateMaterialPreview(MaterialList[i]);
+			CurrentMaterial->SetDirtyFlag(false);
+		}
+	}
 }

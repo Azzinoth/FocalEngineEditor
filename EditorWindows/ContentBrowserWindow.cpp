@@ -12,7 +12,7 @@ FEEditorContentBrowserWindow::FEEditorContentBrowserWindow()
 }
 
 static FETexture* TempTexture = nullptr;
-static void AddTransparencyToTextureCallBack(const std::vector<FEObject*> SelectionsResult)
+static void AddTransparencyToTextureCallback(const std::vector<FEObject*> SelectionsResult)
 {
 	if (TempTexture == nullptr)
 		return;
@@ -29,8 +29,8 @@ static void AddTransparencyToTextureCallBack(const std::vector<FEObject*> Select
 		}
 
 		unsigned char* NewRawData = NewTexture->GetRawData();
-		const int MaxDimention = std::max(OriginalTexture->GetWidth(), OriginalTexture->GetHeight());
-		const size_t MipCount = size_t(floor(log2(MaxDimention)) + 1);
+		const int MaxDimension = std::max(OriginalTexture->GetWidth(), OriginalTexture->GetHeight());
+		const size_t MipCount = size_t(floor(log2(MaxDimension)) + 1);
 		OriginalTexture->UpdateRawData(NewRawData, MipCount);
 		FE_GL_ERROR(glGenerateMipmap(GL_TEXTURE_2D));
 		FE_GL_ERROR(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f));
@@ -44,7 +44,7 @@ static void AddTransparencyToTextureCallBack(const std::vector<FEObject*> Select
 	TempTexture = nullptr;
 }
 
-static void CreateNewPrefabCallBack(const std::vector<FEObject*> SelectionsResult)
+static void CreateNewPrefabCallback(const std::vector<FEObject*> SelectionsResult)
 {
 	if (!SelectionsResult.empty() && SelectionsResult[0]->GetType() == FE_GAMEMODEL)
 	{
@@ -179,7 +179,7 @@ void FEEditorContentBrowserWindow::Render()
 						{
 							RenameIndex = int(i);
 							strcpy_s(RenameBuffer, FilteredResources[i]->GetName().size() + 1, FilteredResources[i]->GetName().c_str());
-							bLastFrameRenameEditWasVisiable = false;
+							bLastFrameRenameEditWasVisible = false;
 							break;
 						}
 					}
@@ -217,14 +217,15 @@ void FEEditorContentBrowserWindow::Render()
 				if (ImGui::MenuItem("Create new prefab"))
 				{
 					SELECT_FEOBJECT_POPUP.SetOneObjectSelectonMode(false);
-					SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, CreateNewPrefabCallBack);
+					SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, CreateNewPrefabCallback);
 				}
 
 				if (ImGui::MenuItem("Create new scene"))
 				{
-					/*FEObject* NewScene = RESOURCE_MANAGER.CreateScene();
+					FEScene* NewScene = SCENE_MANAGER.CreateScene("", "", FESceneFlag::EditorMode);
+					//PROJECT_MANAGER.GetCurrent()->InjectEditorCamera(NewScene);
 					PROJECT_MANAGER.GetCurrent()->SetModified(true);
-					VIRTUAL_FILE_SYSTEM.CreateFile(NewScene, VIRTUAL_FILE_SYSTEM.GetCurrentPath());*/
+					VIRTUAL_FILE_SYSTEM.CreateFile(NewScene, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 				}
 
 				/*if (ImGui::MenuItem("Create new asset package"))
@@ -263,7 +264,7 @@ void FEEditorContentBrowserWindow::Render()
 					RenameIndex = ItemUnderMouse;
 
 					strcpy_s(RenameBuffer, FilteredResources[ItemUnderMouse]->GetName().size() + 1, FilteredResources[ItemUnderMouse]->GetName().c_str());
-					bLastFrameRenameEditWasVisiable = false;
+					bLastFrameRenameEditWasVisible = false;
 				}
 			}
 
@@ -398,6 +399,18 @@ void FEEditorContentBrowserWindow::Render()
 					{
 						DeletePrefabPopup::GetInstance().Show(RESOURCE_MANAGER.GetPrefab(FilteredResources[ItemUnderMouse]->GetObjectID()));
 					}
+					else if (FilteredResources[ItemUnderMouse]->GetType() == FE_SCENE)
+					{
+						//DeleteScenePopup::GetInstance().Show(FilteredResources[ItemUnderMouse]->GetObjectID());
+					}
+					else if (FilteredResources[ItemUnderMouse]->GetType() == FE_SHADER)
+					{
+						//
+					}
+					else if (FilteredResources[ItemUnderMouse]->GetType() == FE_NATIVE_SCRIPT_MODULE)
+					{
+						//
+					}
 				}
 			}
 
@@ -441,10 +454,10 @@ void FEEditorContentBrowserWindow::Render()
 
 			if (FilteredResources[ItemUnderMouse]->GetType() == FE_POINT_CLOUD)
 			{
+				FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(FilteredResources[ItemUnderMouse]->GetObjectID());
+
 				if (ImGui::BeginMenu("Export"))
 				{
-					FEPointCloud* PointCloudToExport = RESOURCE_MANAGER.GetPointCloud(FilteredResources[ItemUnderMouse]->GetObjectID());
-
 					if (ImGui::MenuItem("as PLY"))
 					{
 						std::string FilePath;
@@ -455,11 +468,17 @@ void FEEditorContentBrowserWindow::Render()
 							if (FilePath.find(".ply") == std::string::npos)
 								FilePath += ".ply";
 
-							RESOURCE_MANAGER.ExportFEPointCloudToPLY(PointCloudToExport, FilePath);
+							RESOURCE_MANAGER.ExportFEPointCloudToPLY(PointCloud, FilePath);
 						}
 					}
 
 					ImGui::EndMenu();
+				}
+
+				bool bUseAdvancedRendering = PointCloud->IsAdvancedRenderingEnabled();
+				if (ImGui::MenuItem("Advanced rendering", NULL, &bUseAdvancedRendering))
+				{
+					PointCloud->SetAdvancedRenderingEnabled(bUseAdvancedRendering);
 				}
 			}
 
@@ -498,7 +517,7 @@ void FEEditorContentBrowserWindow::Render()
 					if (ImGui::MenuItem("Choose transparency mask"))
 					{
 						TempTexture = reinterpret_cast<FETexture*>(FilteredResources[ItemUnderMouse]);
-						SELECT_FEOBJECT_POPUP.Show(FE_TEXTURE, AddTransparencyToTextureCallBack);
+						SELECT_FEOBJECT_POPUP.Show(FE_TEXTURE, AddTransparencyToTextureCallback);
 					}
 
 					ImGui::EndMenu();
@@ -526,20 +545,45 @@ void FEEditorContentBrowserWindow::Render()
 
 			if (FilteredResources[ItemUnderMouse]->GetType() == FE_SCENE)
 			{
-				if (ImGui::MenuItem("Open"))
+				std::string SceneID = FilteredResources[ItemUnderMouse]->GetObjectID();
+				bool bIsAlreadyOpened = EDITOR.GetEditorSceneWindow(SceneID) != nullptr;
+				
+				if (!bIsAlreadyOpened)
 				{
-					//EDITOR.LoadScene(RESOURCE_MANAGER.GetScene(FilteredResources[ItemUnderMouse]->GetObjectID()));
+					if (ImGui::MenuItem("Open"))
+					{
+						EDITOR.CreateEditorWindowForScene(SceneID);
+					}
+				}
+				else
+				{
+					ImGui::BeginDisabled();
+					ImGui::MenuItem("Already opened");
+					ImGui::EndDisabled();
+				}
+
+				if (ImGui::MenuItem("Duplicate"))
+				{
+					FEScene* NewScene = SCENE_MANAGER.DuplicateScene(SceneID, "", [](FEEntity* EntityToCheck) {
+						return !(EntityToCheck->GetTag() == EDITOR_RESOURCE_TAG);
+					});
+
+					if (NewScene != nullptr)
+					{
+						PROJECT_MANAGER.GetCurrent()->SetModified(true);
+						VIRTUAL_FILE_SYSTEM.CreateFile(NewScene, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
+					}
 				}
 
 				FEScene* StartingScene = SCENE_MANAGER.GetStartingScene();
 				bool bIsSceneStarting = false;
 				if (StartingScene != nullptr)
-					bIsSceneStarting = StartingScene->GetObjectID() == FilteredResources[ItemUnderMouse]->GetObjectID();
+					bIsSceneStarting = StartingScene->GetObjectID() == SceneID;
 				
 				if (ImGui::MenuItem("Starting scene", NULL, &bIsSceneStarting))
 				{
 					if (bIsSceneStarting)
-						SCENE_MANAGER.SetStartingScene(FilteredResources[ItemUnderMouse]->GetObjectID());
+						SCENE_MANAGER.SetStartingScene(SceneID);
 				}
 			}
 		}
@@ -725,8 +769,7 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 		UV0 = ImVec2(0.0f, 1.0f);
 		UV1 = ImVec2(1.0f, 0.0f);
 
-		//PreviewTexture = PREVIEW_MANAGER.GetPrefabPreview(Item->GetObjectID());
-		PreviewTexture = RESOURCE_MANAGER.NoTexture;
+		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetObjectID());
 		SmallAdditionTypeIcon = SceneIcon;
 	}
 	else if (Item->GetType() == FE_ASSET_PACKAGE)
@@ -1158,6 +1201,12 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 				{
 					
 				}
+				else if (FilteredResources[i]->GetType() == FE_POINT_CLOUD)
+				{
+					FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(FilteredResources[i]->GetObjectID());
+					AdditionalTypeInfo += "\nPoint count: ";
+					AdditionalTypeInfo += std::to_string(PointCloud->GetPointCount());
+				}
 
 				ImGui::BeginTooltip();
 				ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
@@ -1194,12 +1243,12 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		
 		if (RenameIndex == i)
 		{
-			if (!bLastFrameRenameEditWasVisiable)
+			if (!bLastFrameRenameEditWasVisible)
 			{
 				ImGui::SetKeyboardFocusHere(0);
 				ImGui::SetFocusID(ImGui::GetID("##newNameEditor"), FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl());
 				ImGui::SetItemDefaultFocus();
-				bLastFrameRenameEditWasVisiable = true;
+				bLastFrameRenameEditWasVisible = true;
 			}
 
 			ImGui::SetNextItemWidth(ItemIconSize + 8.0f + 8.0f);
@@ -1282,6 +1331,24 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 				PREFAB_EDITOR_MANAGER.PrepareEditWinow(RESOURCE_MANAGER.GetPrefab(FilteredResources[ItemUnderMouse]->GetObjectID()));
 			}
 		}
+		else if (FilteredResources[ItemUnderMouse]->GetType() == FE_SCENE)
+		{
+			if (!bContextMenuOpened)
+			{
+				std::string SceneID = FilteredResources[ItemUnderMouse]->GetObjectID();
+				bool bIsAlreadyOpened = EDITOR.GetEditorSceneWindow(SceneID) != nullptr;
+				if (!bIsAlreadyOpened)
+					EDITOR.CreateEditorWindowForScene(SceneID);
+			}
+		}
+		else if (FilteredResources[ItemUnderMouse]->GetType() == FE_ASSET_PACKAGE)
+		{
+			//
+		}
+		else if (FilteredResources[ItemUnderMouse]->GetType() == FE_NATIVE_SCRIPT_MODULE)
+		{
+			//
+		}
 	}
 
 	ImGui::Columns(1);
@@ -1324,14 +1391,14 @@ void FEEditorContentBrowserWindow::UpdateDirectoryDragAndDropTargets()
 
 	if (VFSBackButtonTarget == nullptr)
 	{
-		VFSBackButtoninfo.DirectoryPath = VIRTUAL_FILE_SYSTEM.GetDirectoryParent(VIRTUAL_FILE_SYSTEM.GetCurrentPath());
+		VFSBackButtonInfo.DirectoryPath = VIRTUAL_FILE_SYSTEM.GetDirectoryParent(VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 		VFSBackButtonTarget = DRAG_AND_DROP_MANAGER.AddTarget(std::vector<FE_OBJECT_TYPE> { FE_NULL, FE_SHADER, FE_TEXTURE, FE_MESH, FE_MATERIAL, FE_GAMEMODEL, FE_PREFAB },
-			DirectoryDragAndDropCallback, reinterpret_cast<void**>(&VFSBackButtoninfo),
+			DirectoryDragAndDropCallback, reinterpret_cast<void**>(&VFSBackButtonInfo),
 			std::vector<std::string> { "Drop to move to parent folder", "Drop to move to parent folder", "Drop to move to parent folder", "Drop to move to parent folder", "Drop to move to parent folder", "Drop to move to parent folder", "Drop to move to parent folder" });
 	}
 	else
 	{
-		VFSBackButtoninfo.DirectoryPath = VIRTUAL_FILE_SYSTEM.GetDirectoryParent(VIRTUAL_FILE_SYSTEM.GetCurrentPath());
+		VFSBackButtonInfo.DirectoryPath = VIRTUAL_FILE_SYSTEM.GetDirectoryParent(VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 		//VFSBackButton->setNewUserData();
 	}
 }

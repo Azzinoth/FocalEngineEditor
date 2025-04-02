@@ -9,6 +9,7 @@ class FEProject
 	friend class FEEditor;
 	friend class FEProjectBuildSystem;
 	friend class FEPrefabEditorManager;
+	friend class FEEditorContentBrowserWindow;
 public:
 	FEProject(std::string Name, std::string ProjectFolder);
 	~FEProject();
