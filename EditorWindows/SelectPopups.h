@@ -21,7 +21,7 @@ class SelectFEObjectPopUp : public ImGuiModalPopup
 	std::vector<FEObject*> SelectedObjects;
 	void OnSelectAction();
 
-	FE_OBJECT_TYPE CurrenType;
+	FE_OBJECT_TYPE CurrentType;
 
 	static void KeyButtonCallback(int Key, int Scancode, int Action, int Mods);
 	static bool ControlButtonPressed;
