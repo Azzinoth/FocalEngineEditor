@@ -277,6 +277,14 @@ if(BUILD_SHARED_LIBS)
             ${OpenXRLoader_DLL}
             "$<TARGET_FILE_DIR:FocalEngineEditor>"
     )
+
+	if(LASZIP_FINAL_DLL)
+		add_custom_command(TARGET FocalEngineEditor POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${LASZIP_FINAL_DLL}
+            "$<TARGET_FILE_DIR:FocalEngineEditor>"
+		)
+	endif()
 endif()
 
 # If using dynamic runtime, copy necessary DLLs to output directory

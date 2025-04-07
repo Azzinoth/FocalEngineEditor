@@ -18,6 +18,16 @@
         { L"Stanford PLY (*.ply)", L"*.ply" }
     };
 
+	const COMDLG_FILTERSPEC LAS_FILTER[] =
+	{
+	    { L"lidar point cloud files (*.las)", L"*.las" }
+	};
+
+	const COMDLG_FILTERSPEC LAZ_FILTER[] =
+	{
+		{ L"compressed lidar point cloud files (*.laz)", L"*.laz" }
+	};
+
 	const COMDLG_FILTERSPEC ALL_IMPORT_LOAD_FILTER[] =
 	{
 		{ L"All files (*.png; *.jpg; *.bmp; *.obj)", L"*.png;*.jpg;*.bmp;*.obj" },

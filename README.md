@@ -69,8 +69,6 @@ The Focal Engine provides specialized capabilities for working with large-scale 
 
 - LAS/LAZ File Format Support
 
-  ⚠️ Work in progress ⚠️
-
 - High-Performance Rendering: Support for real-time visualization of massive point clouds (hundreds of millions to billions of points)
 
   *Implementation based on:*  
