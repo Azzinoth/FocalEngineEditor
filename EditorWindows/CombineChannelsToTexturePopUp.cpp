@@ -36,7 +36,7 @@ void CombineChannelsToTexturePopUp::Show()
 	TextureNode->SetPosition(PositionOnCanvas);
 	CurrentNodeArea = NODE_SYSTEM.CreateNodeArea();
 	CurrentNodeArea->AddNode(TextureNode);
-	CurrentNodeArea->SetMainContextMenuFunc(NodeSystemMainContextMenu);
+	CurrentNodeArea->SetMainContextMenuFunction(NodeSystemMainContextMenu);
 	
 	FEImGuiWindow::Show();
 }

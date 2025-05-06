@@ -865,7 +865,7 @@ void EditMaterialWindow::Show(FEMaterial* Material)
 		IconButton->SetFramePadding(8);
 
 		MaterialNodeArea = NODE_SYSTEM.CreateNodeArea();
-		MaterialNodeArea->SetMainContextMenuFunc(NodeSystemMainContextMenu);
+		MaterialNodeArea->SetMainContextMenuFunction(NodeSystemMainContextMenu);
 		MaterialNodeArea->AddNodeEventCallback(TextureNodeCallback);
 
 		MaterialNodeArea->SetRenderOffset(ImVec2(-340, 250));

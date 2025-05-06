@@ -274,14 +274,14 @@ bool FEEditorMaterialNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* Candida
 		return false;
 
 	// For now it is unsupported type.
-	if (CandidateSocket->GetType() == "FLOAT")
+	if (CandidateSocket->GetAllowedTypes()[0] == "FLOAT")
 	{
 		if (MsgToUser != nullptr)
 			*MsgToUser = IncompatibleTypesMsg;
 		return false;
 	}
 
-	if ((OwnSocket->GetName() == "albedo" || OwnSocket->GetName() == "albedo_1" || OwnSocket->GetName() == "normal" || OwnSocket->GetName() == "normal_1") && (CandidateSocket->GetType() != "RGBA"))
+	if ((OwnSocket->GetName() == "albedo" || OwnSocket->GetName() == "albedo_1" || OwnSocket->GetName() == "normal" || OwnSocket->GetName() == "normal_1") && (CandidateSocket->GetAllowedTypes()[0] != "RGBA"))
 	{
 		if (MsgToUser != nullptr)
 			*MsgToUser = IncompatibleTypesMsg;
@@ -291,7 +291,7 @@ bool FEEditorMaterialNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* Candida
 	if ((OwnSocket->GetName() == "AO" || OwnSocket->GetName() == "AO_1" ||
 		OwnSocket->GetName() == "Roughness" || OwnSocket->GetName() == "Roughness_1" ||
 		OwnSocket->GetName() == "Metalness" || OwnSocket->GetName() == "Metalness_1" ||
-		OwnSocket->GetName() == "Displacement" || OwnSocket->GetName() == "Displacement_1") && (CandidateSocket->GetType() != "COLOR_CHANNEL" && CandidateSocket->GetType() != "FLOAT"))
+		OwnSocket->GetName() == "Displacement" || OwnSocket->GetName() == "Displacement_1") && (CandidateSocket->GetAllowedTypes()[0] != "COLOR_CHANNEL" && CandidateSocket->GetAllowedTypes()[0] != "FLOAT"))
 	{
 		if (MsgToUser != nullptr)
 			*MsgToUser = IncompatibleTypesMsg;
