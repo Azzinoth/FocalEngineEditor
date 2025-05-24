@@ -305,7 +305,7 @@ void FEEditorContentBrowserWindow::Render()
 				}
 			}
 
-			if (FilteredResources[ItemUnderMouse]->GetType() == FE_SHADER)
+			if (!ReadOnlyItem && FilteredResources[ItemUnderMouse]->GetType() == FE_SHADER)
 			{
 				if (ImGui::MenuItem("Edit"))
 				{
@@ -757,6 +757,8 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 	else if (Item->GetType() == FE_TEXTURE)
 	{
 		PreviewTexture = RESOURCE_MANAGER.GetTexture(Item->GetObjectID());
+		if (PreviewTexture->GetType() == FE_TEXTURE_TYPE::FE_TEXTURE_3D)
+			PreviewTexture = RESOURCE_MANAGER.NoTexture;
 		SmallAdditionTypeIcon = TextureIcon;
 	}
 	else if (Item->GetType() == FE_MATERIAL)
