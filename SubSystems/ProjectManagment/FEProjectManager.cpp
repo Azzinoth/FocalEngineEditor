@@ -290,7 +290,7 @@ void FEProjectManager::CreateNewProject(std::string ProjectName, std::string Pro
 	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
 	SkyDome->AddComponent<FESkyDomeComponent>();
 
-	EDITOR.CreateEditorWindowForScene(NewScene->GetObjectID());
+	EDITOR.CreateEditorWindowForScene(NewScene->GetObjectID(), NewProject);
 	NewProject->InjectEditorCamera(NewScene);
 	NewProject->AddMissingVFSData();
 	NewProject->SaveProject(true);

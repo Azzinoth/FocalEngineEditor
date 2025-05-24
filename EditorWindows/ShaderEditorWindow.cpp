@@ -401,13 +401,12 @@ void ShaderEditorWindow::Render()
 		DummyShader->AddUniformsFromShader(ShaderToEdit);
 
 		std::string Errors = DummyShader->GetCompilationErrors();
-		Errors += "\n";
-		Errors += DummyShader->GetLinkErrors();
-		Errors += "\n";
-		Errors += DummyShader->GetValidateErrors();
-
 		if (!Errors.empty())
 		{
+			Errors += "\n";
+			Errors += DummyShader->GetLinkErrors();
+			Errors += "\n";
+			Errors += DummyShader->GetValidateErrors();
 			JustTextWindowObj.Show(Errors, "Shader have error(s)!");
 		}
 		else

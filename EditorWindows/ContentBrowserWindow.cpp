@@ -305,7 +305,7 @@ void FEEditorContentBrowserWindow::Render()
 				}
 			}
 
-			if (!ReadOnlyItem && FilteredResources[ItemUnderMouse]->GetType() == FE_SHADER)
+			if (FilteredResources[ItemUnderMouse]->GetType() == FE_SHADER)
 			{
 				if (ImGui::MenuItem("Edit"))
 				{

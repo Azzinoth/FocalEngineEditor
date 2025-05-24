@@ -30,7 +30,7 @@ public:
     std::string GetSceneEntityIDInClipboard();
     void SetSceneEntityIDInClipboard(std::string NewValue);
 
-    void CreateEditorWindowForScene(const std::string& SceneID);
+    void CreateEditorWindowForScene(const std::string& SceneID, FEProject* CurrentProject = nullptr);
     void CreateCustomEditorWindowForScene(FEEditorSceneWindow* SceneWindow);
     FEEditorSceneWindow* GetEditorSceneWindow(std::string SceneID);
 

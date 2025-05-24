@@ -810,7 +810,7 @@ FEEditorSceneWindow* FEEditor::GetEditorSceneWindow(std::string SceneID)
 	return nullptr;
 }
 
-void FEEditor::CreateEditorWindowForScene(const std::string& SceneID)
+void FEEditor::CreateEditorWindowForScene(const std::string& SceneID, FEProject* CurrentProject)
 {
 	FEScene* Scene = SCENE_MANAGER.GetScene(SceneID);
 	if (Scene == nullptr)
@@ -819,12 +819,22 @@ void FEEditor::CreateEditorWindowForScene(const std::string& SceneID)
 		return;
 	}
 
+	if (CurrentProject == nullptr)
+	{
+		CurrentProject = PROJECT_MANAGER.GetCurrent();
+		if (CurrentProject == nullptr)
+		{
+			LOG.Add("FEEditor::CreateEditorWindowForScene: No project opened.", "FE_EDITOR", FE_LOG_ERROR);
+			return;
+		}
+	}
+
 	Scene->SetFlag(FESceneFlag::Active, true);
 	Scene->SetFlag(FESceneFlag::Renderable, true);
 	Scene->SetFlag(FESceneFlag::EditorMode, true);
 
 	FEEditorSceneWindow* NewSceneWindow = new FEEditorSceneWindow(Scene);
-	PROJECT_MANAGER.GetCurrent()->InjectEditorCamera(Scene);
+	CurrentProject->InjectEditorCamera(Scene);
 	NewSceneWindow->SetVisible(true);
 	EditorSceneWindows.push_back(NewSceneWindow);
 }
