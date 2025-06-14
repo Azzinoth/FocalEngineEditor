@@ -8,6 +8,11 @@
 		{ L"Wavefront OBJ files (*.obj)", L"*.obj" }
 	};
 
+    const COMDLG_FILTERSPEC GLTF_FILTER[] =
+    {
+        { L"GL Transmission Format (*.gltf)", L"*.gltf" }
+    };
+
 	const COMDLG_FILTERSPEC TEXTURE_LOAD_FILTER[] =
 	{
 		{ L"Image files (*.png; *.jpg; *.bmp)", L"*.png;*.jpg;*.bmp" }
@@ -30,9 +35,10 @@
 
 	const COMDLG_FILTERSPEC ALL_IMPORT_LOAD_FILTER[] =
 	{
-		{ L"All files (*.png; *.jpg; *.bmp; *.obj)", L"*.png;*.jpg;*.bmp;*.obj" },
+		{ L"All files (*.png; *.jpg; *.bmp; *.obj; *.gltf)", L"*.png;*.jpg;*.bmp;*.obj;*.gltf" },
 		{ L"Image files (*.png; *.jpg; *.bmp)", L"*.png;*.jpg;*.bmp" },
 		{ L"Wavefront OBJ files (*.obj)", L"*.obj" },
+        { L"GL Transmission Format (*.gltf)", L"*.gltf" },
 		{ L"Stanford PLY (*.ply)", L"*.ply" }
 	};
 #endif

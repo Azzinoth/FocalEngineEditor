@@ -128,7 +128,7 @@ void FEEditorContentBrowserWindow::Render()
 			if (ImGui::MenuItem("Import Asset..."))
 			{
 				std::string FilePath;
-				FILE_SYSTEM.ShowFileOpenDialog(FilePath, ALL_IMPORT_LOAD_FILTER, 4);
+				FILE_SYSTEM.ShowFileOpenDialog(FilePath, ALL_IMPORT_LOAD_FILTER, 5);
 				if (!FilePath.empty())
 				{
 					if (EDITOR.GetFocusedScene() != nullptr)
