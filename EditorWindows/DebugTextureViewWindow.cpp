@@ -30,7 +30,7 @@ void DebugTextureViewWindow::Render()
 	if (!IsVisible())
 		return;
 
-	ImGui::Image((void*)(intptr_t)TextureToView()->GetTextureID(), ImVec2(Size.x - 30.0f, Size.y - 85.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+	ImGui::Image(TextureToView()->GetTextureID(), ImVec2(Size.x - 30.0f, Size.y - 85.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 
 	CloseButton->SetPosition(ImVec2(Size.x / 2.0f - 140.0f / 2.0f, Size.y - 35.0f));
 	CloseButton->Render();

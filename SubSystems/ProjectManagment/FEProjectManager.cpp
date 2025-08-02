@@ -117,11 +117,12 @@ void FEProjectManager::DisplayProjectSelection()
 				}
 			}
 
-			if (ImGui::ImageButton((void*)static_cast<intptr_t>(List[i]->SceneScreenshot->GetTextureID()), ImVec2(512.0f, 288.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
+			if (ImGui::ImageButton(List[i]->GetID().c_str(), List[i]->SceneScreenshot->GetTextureID(), ImVec2(512.0f, 288.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
 				IndexChosen = static_cast<int>(i);
 			}
-
+			ImGui::PopStyleVar();
 			ImGui::Text(List[i]->GetName().c_str());
 
 			if (bPushedStyle)

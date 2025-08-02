@@ -89,33 +89,33 @@ void FEEditorSceneGraphWindow::DrawCorrectIcon(FEEntity* SceneEntity) const
 
 	if (SceneEntity->HasComponent<FEInstancedComponent>())
 	{
-		ImGui::Image((void*)(intptr_t)InstancedEntityIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+		ImGui::Image(InstancedEntityIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 	}
 
 	if (SceneEntity->HasComponent<FELightComponent>())
 	{
 		if (SceneEntity->GetComponent<FELightComponent>().GetType() == FE_DIRECTIONAL_LIGHT)
 		{
-			ImGui::Image((void*)(intptr_t)DirectionalLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+			ImGui::Image(DirectionalLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 		}
 		if (SceneEntity->GetComponent<FELightComponent>().GetType() == FE_SPOT_LIGHT)
 		{
-			ImGui::Image((void*)(intptr_t)SpotLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+			ImGui::Image(SpotLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 		}
 		if (SceneEntity->GetComponent<FELightComponent>().GetType() == FE_POINT_LIGHT)
 		{
-			ImGui::Image((void*)(intptr_t)PointLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+			ImGui::Image(PointLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 		}
 	}
 
 	if (SceneEntity->HasComponent<FETerrainComponent>())
 	{
-		ImGui::Image((void*)(intptr_t)TerrainIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+		ImGui::Image(TerrainIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 	}
 
 	if (SceneEntity->HasComponent<FECameraComponent>())
 	{
-		ImGui::Image((void*)(intptr_t)CameraIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+		ImGui::Image(CameraIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 	}
 
 	ImGui::SetCursorPosX(CurrentCursorPosX);

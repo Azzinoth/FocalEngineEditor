@@ -541,7 +541,7 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	}
 
 	if (CameraPreviewTexture != nullptr)
-		ImGui::Image((void*)(intptr_t)CameraPreviewTexture->GetTextureID(), ImVec2(452, 256), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		ImGui::Image(CameraPreviewTexture->GetTextureID(), ImVec2(452, 256), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 
 	// Rendering pipeline settings
 	ImGui::Text("Rendering pipeline:");
@@ -1219,12 +1219,14 @@ void FEEditorInspectorWindow::Render()
 			ImGui::Text("Game Model : ");
 			FETexture* PreviewTexture = PREVIEW_MANAGER.GetGameModelPreview(GameModelComponent.GetGameModel()->GetObjectID());
 
-			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
+			if (ImGui::ImageButton("GameModelPreviewButton", PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
 				EntityToModify = EntitySelected;
 				FEGameModelComponent& GameModelComponent = EntityToModify->GetComponent<FEGameModelComponent>();
 				SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, ChangeGameModelOfEntityCallback, GameModelComponent.GetGameModel());
 			}
+			ImGui::PopStyleVar();
 			EntityChangeGameModelTarget->StickToItem();
 
 			bool bOpenContextMenu = false;
@@ -1277,11 +1279,13 @@ void FEEditorInspectorWindow::Render()
 			if (PointCloudComponent.GetPointCloud() != nullptr)
 				PreviewTexture = PREVIEW_MANAGER.GetPreview(PointCloudComponent.GetPointCloud()->GetObjectID());
 
-			if (ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
+			if (ImGui::ImageButton("PointCloudPreviewButton", PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
 				EntityToModify = EntitySelected;
 				SELECT_FEOBJECT_POPUP.Show(FE_POINT_CLOUD, ChangePointCloudOfEntityCallback, PointCloudComponent.GetPointCloud());
 			}
+			ImGui::PopStyleVar();
 			EntityChangePointCloudTarget->StickToItem();
 
 			bool bOpenContextMenu = false;
@@ -1359,10 +1363,12 @@ void FEEditorInspectorWindow::Render()
 				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
 				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
 
-				if (ImGui::ImageButton((void*)(intptr_t)ArrowToGroundIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
+				if (ImGui::ImageButton("InstanceAttachToTerrainButton", ArrowToGroundIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 				{
 					INSTANCED_RENDERING_SYSTEM.TryToSnapIndividualInstance(EntitySelected, CurrentSelectionData->InstancedSubObjectIndexSelected);
 				}
+				ImGui::PopStyleVar();
 				ShowToolTip("Selected instance will attempt to snap to the terrain.");
 
 				ImGui::PopStyleColor();
@@ -1584,7 +1590,8 @@ void FEEditorInspectorWindow::Render()
 				}
 
 				ImGui::Separator();
-				if (ImGui::ImageButton((void*)(intptr_t)MouseCursorIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
+				if (ImGui::ImageButton("SetIndividualSelectModeButton", MouseCursorIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 				{
 					INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(EntitySelected, !INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected));
 					if (!INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected))
@@ -1593,6 +1600,7 @@ void FEEditorInspectorWindow::Render()
 						SELECTED.SetSelected(EntitySelected);
 					}
 				}
+				ImGui::PopStyleVar();
 				ShowToolTip("Individual selection mode - Used to select individual instances.");
 
 				ImGui::PopStyleColor();
@@ -2056,7 +2064,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 				ImGui::SetCursorPos(PostionBeforeDraw);
 				ImColor ImageTint = ImGui::IsItemHovered() ? ImColor(1.0f, 1.0f, 1.0f, 0.5f) : ImColor(1.0f, 1.0f, 1.0f, 1.0f);
 				FETexture* PreviewTexture = PREVIEW_MANAGER.GetMaterialPreview(Layer->GetMaterial()->GetObjectID());
-				ImGui::Image((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImageTint);
+				ImGui::Image(PreviewTexture->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 			}
 
 			ImGui::EndListBox();

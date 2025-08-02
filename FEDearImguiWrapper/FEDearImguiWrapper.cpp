@@ -147,6 +147,7 @@ void ImGuiButton::Render()
 ImGuiImageButton::ImGuiImageButton(FETexture* Texture)
 {
 	this->Texture = Texture;
+	ID = APPLICATION.GetUniqueHexID();
 }
 
 ImVec2 ImGuiImageButton::GetPosition() const
@@ -219,15 +220,16 @@ void ImGuiImageButton::SetUV1(const ImVec2 NewValue)
 	UV1 = NewValue;
 }
 
-int ImGuiImageButton::GetFramePadding() const
+float ImGuiImageButton::GetFramePadding() const
 {
 	return FramePadding;
 }
 
-void ImGuiImageButton::SetFramePadding(int NewFramePadding)
+void ImGuiImageButton::SetFramePadding(float NewFramePadding)
 {
-	if (NewFramePadding < 0)
-		NewFramePadding = 0;
+	if (NewFramePadding < 0.0f)
+		NewFramePadding = 0.0f;
+
 	FramePadding = NewFramePadding;
 }
 
@@ -282,7 +284,9 @@ void ImGuiImageButton::RenderBegin()
 
 	bHovered = false;
 
-	ImGui::ImageButton((void*)static_cast<intptr_t>(Texture->GetTextureID()), Size, UV0, UV1, FramePadding, BackgroundColor, TintColor);
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(FramePadding, FramePadding));
+	ImGui::ImageButton(ID.c_str(), Texture->GetTextureID(), Size, UV0, UV1, BackgroundColor, TintColor);
+	ImGui::PopStyleVar();
 
 	// flag important for drag and drop functionality
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem))

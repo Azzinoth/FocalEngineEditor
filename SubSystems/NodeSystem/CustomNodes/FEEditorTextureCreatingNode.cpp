@@ -33,7 +33,7 @@ void FEEditorTextureCreatingNode::Draw()
 	float Zoom = ParentArea->GetZoomFactor();
 
 	ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x + 75.0f * Zoom, ImGui::GetCursorScreenPos().y + NODE_TITLE_HEIGHT * Zoom + 10.0f * Zoom));
-	ImGui::Image((void*)static_cast<intptr_t>(ResultTexture->GetTextureID()), ImVec2(128, 128) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+	ImGui::Image(ResultTexture->GetTextureID(), ImVec2(128, 128) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 }
 
 void FEEditorTextureCreatingNode::PutDataFromColorChannelInArray(NodeSocket* SourceSocket, unsigned char* DataArray, const size_t TextureDataLenght, const size_t ToWhatChannel)

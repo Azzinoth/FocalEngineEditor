@@ -382,7 +382,7 @@ void EditGameModelPopup::Render()
 	ImGui::SetCursorPosY(CurrentY + 50);
 	
 	if (TempPreview != nullptr)
-		ImGui::Image((void*)static_cast<intptr_t>(TempPreview->GetTextureID()), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		ImGui::Image(TempPreview->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 
 	if (CurrentMode == NO_LOD_MODE)
 	{
@@ -392,7 +392,7 @@ void EditGameModelPopup::Render()
 		ImGui::Text("Mesh component:");
 		ImGui::SetCursorPosX(Size.x / 4 - 128 / 2);
 		ImGui::SetCursorPosY(CurrentY + 210.0f);
-		ImGui::Image((void*)static_cast<intptr_t>(PREVIEW_MANAGER.GetMeshPreview(TempModel->Mesh->GetObjectID())->GetTextureID()), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		ImGui::Image(PREVIEW_MANAGER.GetMeshPreview(TempModel->Mesh->GetObjectID())->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 		LODMeshTarget[0]->StickToItem();
 
 		ChangeLODMeshButton[0]->Render();
@@ -410,7 +410,7 @@ void EditGameModelPopup::Render()
 		ImGui::Text("Material component:");
 		ImGui::SetCursorPosX(Size.x / 2 + Size.x / 4 - 128 / 2);
 		ImGui::SetCursorPosY(CurrentY + 210.0f);
-		ImGui::Image((void*)static_cast<intptr_t>(PREVIEW_MANAGER.GetMaterialPreview(TempModel->Material->GetObjectID())->GetTextureID()), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		ImGui::Image(PREVIEW_MANAGER.GetMaterialPreview(TempModel->Material->GetObjectID())->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 		MaterialTarget->StickToItem();
 		ChangeMaterialButton->Render();
 		if (ChangeMaterialButton->IsClicked())
@@ -470,10 +470,10 @@ void EditGameModelPopup::Render()
 				ImGui::SetCursorPosX(CurrentXPosition - 128 / 2);
 				ImGui::SetCursorPosY(CurrentY + 210.0f);
 
-				ImGui::Image((void*)static_cast<intptr_t>(TempModel->GetLODMesh(i) == nullptr
-					                                          ? RESOURCE_MANAGER.NoTexture->GetTextureID()
-					                                          : PREVIEW_MANAGER.GetMeshPreview(TempModel->GetLODMesh(i)->GetObjectID())->GetTextureID()),
-														  ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+				ImGui::Image(TempModel->GetLODMesh(i) == nullptr
+					        ? RESOURCE_MANAGER.NoTexture->GetTextureID()
+					        : PREVIEW_MANAGER.GetMeshPreview(TempModel->GetLODMesh(i)->GetObjectID())->GetTextureID(),
+							ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 				LODMeshTarget[i]->StickToItem();
 
 				ChangeLODMeshButton[i]->SetCaption(std::string("Change LOD") + std::to_string(i) + " Mesh");
@@ -517,7 +517,7 @@ void EditGameModelPopup::Render()
 					ImGui::Text("Material component:");
 					ImGui::SetCursorPosX(Size.x / 2 - Size.x / 4 - 128 / 2);
 					ImGui::SetCursorPosY(CurrentY + 200 + 210.0f);
-					ImGui::Image((void*)static_cast<intptr_t>(PREVIEW_MANAGER.GetMaterialPreview(TempModel->GetMaterial()->GetObjectID())->GetTextureID()), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+					ImGui::Image(PREVIEW_MANAGER.GetMaterialPreview(TempModel->GetMaterial()->GetObjectID())->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 					MaterialTarget->StickToItem();
 
 					ChangeMaterialButton->SetPosition(ImVec2(Size.x / 2 - Size.x / 4 - ChangeMaterialButton->GetSize().x / 2, BaseY + 340.0f + 200.0f));
@@ -534,10 +534,10 @@ void EditGameModelPopup::Render()
 					ImGui::Text("Billboard Material component:");
 					ImGui::SetCursorPosX(Size.x / 2 + Size.x / 4 - 128 / 2);
 					ImGui::SetCursorPosY(CurrentY + 200 + 210.0f);
-					ImGui::Image((void*)static_cast<intptr_t>(TempModel->GetBillboardMaterial() == nullptr
-						                                          ? RESOURCE_MANAGER.NoTexture->GetTextureID()
-						                                          : PREVIEW_MANAGER.GetMaterialPreview(TempModel->GetBillboardMaterial()->GetObjectID())->
-						                                          GetTextureID()), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+					ImGui::Image(TempModel->GetBillboardMaterial() == nullptr
+						         ? RESOURCE_MANAGER.NoTexture->GetTextureID()
+						         : PREVIEW_MANAGER.GetMaterialPreview(TempModel->GetBillboardMaterial()->GetObjectID())->GetTextureID(),
+								 ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 					BillboardMaterialTarget->StickToItem();
 
 					ChangeBillboardMaterialButton->Render();
@@ -567,7 +567,7 @@ void EditGameModelPopup::Render()
 					ImGui::Text("Material component:");
 					ImGui::SetCursorPosX(Size.x / 2 - 128 / 2);
 					ImGui::SetCursorPosY(CurrentY + 200 + 210.0f);
-					ImGui::Image((void*)static_cast<intptr_t>(PREVIEW_MANAGER.GetMaterialPreview(TempModel->GetMaterial()->GetObjectID())->GetTextureID()), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+					ImGui::Image(PREVIEW_MANAGER.GetMaterialPreview(TempModel->GetMaterial()->GetObjectID())->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 
 					ChangeMaterialButton->SetPosition(ImVec2(Size.x / 2 - ChangeMaterialButton->GetSize().x / 2, BaseY + 340.0f + 200.0f));
 					ChangeMaterialButton->Render();
@@ -976,7 +976,7 @@ void EditMaterialWindow::Render()
 		ImGui::SetCursorPosX(-10);
 		ImGui::SetCursorPosY(-10);
 		
-		ImGui::Image((void*)(intptr_t)CameraResult->GetTextureID(), ImVec2(512, 1020), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		ImGui::Image(CameraResult->GetTextureID(), ImVec2(512, 1020), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 		if (ImGui::IsItemHovered())
 		{
 			bCameraOutputHovered = true;

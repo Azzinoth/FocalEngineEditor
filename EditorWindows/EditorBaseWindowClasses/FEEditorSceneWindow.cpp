@@ -171,7 +171,7 @@ void FEEditorSceneWindow::Render()
 		FETexture* CameraResult = RENDERER.GetCameraResult(CAMERA_SYSTEM.GetMainCamera(Scene));
 		if (CameraResult != nullptr)
 		{
-			ImGui::Image((void*)(intptr_t)CameraResult->GetTextureID(), ImVec2(GetWindow()->ContentRegionRect.GetWidth(), GetWindow()->ContentRegionRect.GetHeight()), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+			ImGui::Image(CameraResult->GetTextureID(), ImVec2(GetWindow()->ContentRegionRect.GetWidth(), GetWindow()->ContentRegionRect.GetHeight()), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 		}
 	}
 	else

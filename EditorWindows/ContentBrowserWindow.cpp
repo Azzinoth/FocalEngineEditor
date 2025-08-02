@@ -838,11 +838,13 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 
 	float CurrentY = ImGui::GetCursorPosY();
 	ImGui::SetCursorPosY(CurrentY);
-	if (ImGui::ImageButton((void*)(intptr_t)VFSBackIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
+	if (ImGui::ImageButton("GoUpVFSButton", VFSBackIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 	{
 		VIRTUAL_FILE_SYSTEM.SetCurrentPath(VIRTUAL_FILE_SYSTEM.GetDirectoryParent(VIRTUAL_FILE_SYSTEM.GetCurrentPath()));
 		strcpy_s(NameFilter, "");
 	}
+	ImGui::PopStyleVar();
 	VFSBackButtonTarget->StickToItem();
 
 	ImGui::PopStyleColor();
@@ -1199,16 +1201,20 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 			ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor(0.1f, 1.0f, 0.1f, 1.0f));
 		}
 		
- 		ImVec2 uv0 = ImVec2(0.0f, 0.0f);
-		ImVec2 uv1 = ImVec2(1.0f, 1.0f);
+ 		ImVec2 UV0 = ImVec2(0.0f, 0.0f);
+		ImVec2 UV1 = ImVec2(1.0f, 1.0f);
 
 		FETexture* PreviewTexture = nullptr;
 		FETexture* SmallAdditionTypeIcon = nullptr;
 
-		ChooseTexturesItem(PreviewTexture, SmallAdditionTypeIcon, uv0, uv1, FilteredResources[i]);
+		ChooseTexturesItem(PreviewTexture, SmallAdditionTypeIcon, UV0, UV1, FilteredResources[i]);
 
 		if (PreviewTexture != nullptr)
-			ImGui::ImageButton((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(ItemIconSize, ItemIconSize), uv0, uv1, 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f));
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
+			ImGui::ImageButton((FilteredResources[i]->GetObjectID() + "FilteredContentBrowserButton").c_str(), PreviewTexture->GetTextureID(), ImVec2(ItemIconSize, ItemIconSize), UV0, UV1, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f));
+			ImGui::PopStyleVar();
+		}
 		
 		if (FilteredResources[i]->GetType() == FE_NULL && DirectoriesTargets.size() > (size_t)DirectoryIndex)
 			DirectoriesTargets[DirectoryIndex++]->StickToItem();
@@ -1249,7 +1255,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 				ItemUnderMouse = int(i);
 
 				if (ImGui::IsMouseDragging(0))
-					DRAG_AND_DROP_MANAGER.SetObjectToDrag(FilteredResources[i], PreviewTexture, uv0, uv1);
+					DRAG_AND_DROP_MANAGER.SetObjectToDrag(FilteredResources[i], PreviewTexture, UV0, UV1);
 			}
 		}
 
@@ -1257,7 +1263,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		{
 			ImVec2 CursorPosBefore = ImGui::GetCursorPos();
 			ImGui::SetCursorPos(ImVec2(CursorPosBefore.x + 10, CursorPosBefore.y - 48));
-			ImGui::Image((void*)(intptr_t)SmallAdditionTypeIcon->GetTextureID(), ImVec2(32, 32));
+			ImGui::Image(SmallAdditionTypeIcon->GetTextureID(), ImVec2(32, 32));
 			ImGui::SetCursorPos(CursorPosBefore);
 		}
 

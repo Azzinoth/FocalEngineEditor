@@ -288,7 +288,7 @@ void FEEditor::Render()
 
 	if (PROJECT_MANAGER.GetCurrent())
 	{
-		ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+		ImGui::DockSpaceOverViewport(0U, ImGui::GetMainViewport());
 		DockspaceID = ImGui::GetMainViewport()->ID;
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
