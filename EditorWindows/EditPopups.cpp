@@ -784,7 +784,6 @@ EditMaterialWindow::EditMaterialWindow()
 
 	PreviewEntity = PreviewScene->CreateEntity("MaterialEditor_Scene_PreviewEntity");
 	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
-	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
 	PreviewEntity->GetComponent<FETransformComponent>().SetScale(glm::vec3(0.1f));
 	RESOURCE_MANAGER.SetTag(PreviewEntity, EDITOR_RESOURCE_TAG);
 

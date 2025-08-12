@@ -190,10 +190,10 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 	// TO-DO: Add support for entities with multiple components that can be selected.
 	if (Entity->HasComponent<FEGameModelComponent>())
 	{
-		FEGameModelComponent& GameModelComponent = Entity->GetComponent<FEGameModelComponent>();
-		if (!GameModelComponent.IsVisible())
+		if (!Entity->IsComponentVisible(ComponentVisibilityType::GAME_MODEL))
 			return;
 
+		FEGameModelComponent& GameModelComponent = Entity->GetComponent<FEGameModelComponent>();
 		FEMaterial* RegularMaterial = GameModelComponent.GetGameModel()->Material;
 		GameModelComponent.GetGameModel()->Material = PixelAccurateSelectionMaterial;
 		PixelAccurateSelectionMaterial->SetBaseColor(ColorID);
@@ -228,10 +228,10 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 	}
 	else if (Entity->HasComponent<FETerrainComponent>())
 	{
-		FETerrainComponent& TerrainComponent = Entity->GetComponent<FETerrainComponent>();
-		if (!TerrainComponent.IsVisible())
+		if (!Entity->IsComponentVisible(ComponentVisibilityType::TERRAIN))
 			return;
 
+		FETerrainComponent& TerrainComponent = Entity->GetComponent<FETerrainComponent>();
 		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
 		TerrainComponent.Shader->UpdateUniformData("baseColor", ColorID);
 		RENDERER.RenderTerrainComponent(Entity, CameraEntity);
@@ -249,10 +249,10 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 			if (EntityWithGameModel == nullptr)
 				continue;
 
-			FEGameModelComponent& GameModelComponent = EntityWithGameModel->GetComponent<FEGameModelComponent>();
-			if (!GameModelComponent.IsVisible())
-				continue;
+			if (!EntityWithGameModel->IsComponentVisible(ComponentVisibilityType::GAME_MODEL))
+				return;
 
+			FEGameModelComponent& GameModelComponent = EntityWithGameModel->GetComponent<FEGameModelComponent>();
 			FEMaterial* RegularMaterial = GameModelComponent.GetGameModel()->Material;
 			GameModelComponent.GetGameModel()->Material = PixelAccurateSelectionMaterial;
 			PixelAccurateSelectionMaterial->SetBaseColor(ColorID);
@@ -276,7 +276,7 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 	else if (Entity->HasComponent<FEVirtualUIComponent>())
 	{
 		FEVirtualUIComponent& VirtualUIComponent = Entity->GetComponent<FEVirtualUIComponent>();
-		if (!VirtualUIComponent.IsVisible() || VirtualUIComponent.IsInputActive())
+		if (!Entity->IsComponentVisible(ComponentVisibilityType::VIRTUAL_UI) || VirtualUIComponent.IsInputActive())
 			return;
 
 		PixelAccurateSelectionMaterial->SetBaseColor(ColorID);
@@ -289,10 +289,10 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 	}
 	else if (Entity->HasComponent<FEPointCloudComponent>())
 	{
-		FEPointCloudComponent& PointCloudComponent = Entity->GetComponent<FEPointCloudComponent>();
-		if (!PointCloudComponent.IsVisible())
+		if (!Entity->IsComponentVisible(ComponentVisibilityType::POINT_CLOUD))
 			return;
 
+		FEPointCloudComponent& PointCloudComponent = Entity->GetComponent<FEPointCloudComponent>();
 		FEPointCloud* PointCloud = PointCloudComponent.GetPointCloud();
 		PointCloudComponent.SetUseGlobalColorOverride(true);
 		PointCloudComponent.SetGlobalColorOverride(ColorID);
@@ -383,7 +383,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			FEGameModelComponent& OriginalGameModelComponent = InstancedSubObjectIterator->first->GetComponent<FEGameModelComponent>();
 
 			DummyGameModelComponent.SetGameModel(OriginalGameModelComponent.GetGameModel());
-			DummyGameModelComponent.SetVisibility(true);
+			DummyEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
 
 			FEInstancedComponent& InstancedComponent = InstancedSubObjectIterator->first->GetComponent<FEInstancedComponent>();
 			FETransformComponent& DummyTransformComponent = DummyEntity->GetComponent<FETransformComponent>();
@@ -398,7 +398,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 
 			RenderEntitySelectionColorID(DummyEntity, glm::vec3(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f), CurrentCamera, CurrentSelectionData);
 
-			DummyGameModelComponent.SetVisibility(false);
+			DummyEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
 		}
 		InstancedSubObjectIterator++;
 	}
@@ -566,17 +566,17 @@ void FEEditorSelectedObject::RenderEntityHaloEffectInternal(FEEntity* Entity, gl
 	else if (Entity->HasComponent<FEVirtualUIComponent>())
 	{
 		FEVirtualUIComponent& VirtualUIComponent = Entity->GetComponent<FEVirtualUIComponent>();
-		if (!VirtualUIComponent.IsVisible() || VirtualUIComponent.IsInputActive())
+		if (!Entity->IsComponentVisible(ComponentVisibilityType::VIRTUAL_UI) || VirtualUIComponent.IsInputActive())
 			return;
 
 		VIRTUAL_UI_SYSTEM.RenderVirtualUIComponent(Entity, HALO_SELECTION_EFFECT.HaloMaterial);
 	}
 	else if (Entity->HasComponent<FEPointCloudComponent>())
 	{
-		FEPointCloudComponent& PointCloudComponent = Entity->GetComponent<FEPointCloudComponent>();
-		if (!PointCloudComponent.IsVisible())
+		if (!Entity->IsComponentVisible(ComponentVisibilityType::POINT_CLOUD))
 			return;
 
+		FEPointCloudComponent& PointCloudComponent = Entity->GetComponent<FEPointCloudComponent>();
 		FEPointCloud* PointCloud = PointCloudComponent.GetPointCloud();
 		PointCloudComponent.SetUseGlobalColorOverride(true);
 		PointCloudComponent.SetGlobalColorOverride(Color);
@@ -651,7 +651,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 
 			FEGameModelComponent& DummyGameModelComponent = CurrentSelectionData->DummyEntity->GetComponent<FEGameModelComponent>();
 			DummyGameModelComponent.SetGameModel(GameModelComponent.GetGameModel());
-			DummyGameModelComponent.SetVisibility(true);
+			CurrentSelectionData->DummyEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
 
 			FEInstancedComponent& InstancedComponent = SelectedEntity->GetComponent<FEInstancedComponent>();
 			FETransformComponent& DummyTransformComponent = CurrentSelectionData->DummyEntity->GetComponent<FETransformComponent>();
@@ -666,7 +666,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 
 			SELECTED.RenderEntityHaloEffectInternal(CurrentSelectionData->DummyEntity, glm::vec3(0.61f, 0.86f, 1.0f), CurrentCamera, CurrentSelectionData);
 
-			DummyGameModelComponent.SetVisibility(false);
+			CurrentSelectionData->DummyEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
 		}
 		else
 		{

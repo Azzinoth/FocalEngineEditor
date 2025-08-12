@@ -28,7 +28,6 @@ void FEEditorPreviewManager::InitializeResources()
 
 	PreviewEntity = PreviewScene->CreateEntity("EditorPreviewEntity");
 	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
-	PreviewEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
 	RESOURCE_MANAGER.SetTag(PreviewEntity, EDITOR_RESOURCE_TAG);
 
 	LocalCameraEntity = PreviewScene->CreateEntity("EditorPreview CameraEntity");

@@ -563,7 +563,7 @@ void FEEditorSceneGraphWindow::Render()
 	{
 		FEAABB SelectedAABB;
 		SelectedAABB = SelectedEntity->GetParentScene()->GetEntityAABB(SelectedEntity);
-		RENDERER.DrawAABB(SelectedAABB);
+		RENDERER.DebugDrawAABB(SelectedAABB);
 
 		if (SelectedEntity->HasComponent<FEInstancedComponent>())
 		{
@@ -577,7 +577,7 @@ void FEEditorSceneGraphWindow::Render()
 
 				for (size_t j = 0; j < MaxIterations; j++)
 				{
-					RENDERER.DrawAABB(InstancedComponent.IndividualInstancedAABB[j]);
+					RENDERER.DebugDrawAABB(InstancedComponent.IndividualInstancedAABB[j]);
 				}
 			}
 		}
@@ -599,7 +599,7 @@ void FEEditorSceneGraphWindow::Render()
 
 			return true;
 		});
-		RENDERER.DrawAABB(SceneAABB);
+		RENDERER.DebugDrawAABB(SceneAABB);
 	}
 
 	// Draw camera frustum
@@ -608,7 +608,7 @@ void FEEditorSceneGraphWindow::Render()
 		static bool bDisplayCameraFrustum = false;
 		ImGui::Checkbox("Display camera frustum", &bDisplayCameraFrustum);
 		if (bDisplayCameraFrustum)
-			RENDERER.DrawFrustum(SelectedEntity);
+			RENDERER.DebugDrawFrustum(SelectedEntity);
 	}
 
 	ImGui::PopStyleVar();
