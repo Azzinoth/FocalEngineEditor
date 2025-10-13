@@ -573,7 +573,7 @@ void FEEditorSceneGraphWindow::Render()
 			if (bDisplaySubObjAABB)
 			{
 				FEInstancedComponent& InstancedComponent = SelectedEntity->GetComponent<FEInstancedComponent>();
-				const int MaxIterations = InstancedComponent.IndividualInstancedAABB.size() * 8 >= FE_MAX_LINES ? FE_MAX_LINES : int(InstancedComponent.IndividualInstancedAABB.size());
+				const int MaxIterations = InstancedComponent.IndividualInstancedAABB.size() * 8 >= FE_MAX_DEBUG_LINES ? FE_MAX_DEBUG_LINES : int(InstancedComponent.IndividualInstancedAABB.size());
 
 				for (size_t j = 0; j < MaxIterations; j++)
 				{
