@@ -221,6 +221,8 @@ add_executable(FocalEngineEditor WIN32
 								 ${textEditor_SRC}
 )
 
+target_link_directories(FocalEngineEditor PRIVATE ${PYTHON_LIB_DIR})
+
 target_link_libraries(FocalEngineEditor
     PRIVATE
         FEBasicApplication
@@ -277,6 +279,14 @@ if(BUILD_SHARED_LIBS)
             ${OpenXRLoader_DLL}
             "$<TARGET_FILE_DIR:FocalEngineEditor>"
     )
+
+	if (ENABLE_PYTHON_BINDINGS)
+		add_custom_command(TARGET FocalEngineEditor POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+				"$<TARGET_FILE_DIR:FocalEngine>/FocalEnginePython.pyd"
+				"$<TARGET_FILE_DIR:FocalEngineEditor>"
+		)
+	endif()
 
 	if(LASZIP_FINAL_DLL)
 		add_custom_command(TARGET FocalEngineEditor POST_BUILD
