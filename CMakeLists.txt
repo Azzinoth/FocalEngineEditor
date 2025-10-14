@@ -221,7 +221,10 @@ add_executable(FocalEngineEditor WIN32
 								 ${textEditor_SRC}
 )
 
-target_link_directories(FocalEngineEditor PRIVATE ${PYTHON_LIB_DIR})
+if (ENABLE_PYTHON_BINDINGS)
+	target_compile_definitions(FocalEngineEditor PRIVATE ENABLE_PYTHON_BINDINGS)
+	target_link_directories(FocalEngineEditor PRIVATE ${PYTHON_LIB_DIR})
+endif()
 
 target_link_libraries(FocalEngineEditor
     PRIVATE
