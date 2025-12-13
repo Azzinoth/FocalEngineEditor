@@ -123,6 +123,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				int y = 0;
 				y++;
 			}
+
+			if (ImGui::Button("get python output"))
+			{
+				std::string text = PYTHON_MANAGER.GetOutput();
+
+				int y = 0;
+				y++;
+			}
 		}
 
 		bool bVRMode = ENGINE.IsVREnabled();
