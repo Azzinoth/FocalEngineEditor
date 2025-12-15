@@ -263,7 +263,8 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 			FEMaterial* RegularBillboardMaterials = GameModelComponent.GetGameModel()->GetBillboardMaterial();
 			GameModelComponent.GetGameModel()->SetBillboardMaterial(PixelAccurateSelectionMaterial);
 
-			RENDERER.RenderGameModelComponentWithInstanced(Entity, nullptr, false, false, i);
+
+			RENDERER.RenderGameModelComponentWithInstanced(Entity, CameraEntity, false, false, i);
 
 			GameModelComponent.GetGameModel()->SetBillboardMaterial(RegularBillboardMaterials);
 			GameModelComponent.GetGameModel()->Material = RegularMaterial;
@@ -555,7 +556,7 @@ void FEEditorSelectedObject::RenderEntityHaloEffectInternal(FEEntity* Entity, gl
 			FEMaterial* RegularBillboardMaterial = GameModelComponent.GetGameModel()->GetBillboardMaterial();
 			GameModelComponent.GetGameModel()->SetBillboardMaterial(HALO_SELECTION_EFFECT.HaloMaterial);
 
-			RENDERER.RenderGameModelComponentWithInstanced(Entity, nullptr, false, false, i);
+			RENDERER.RenderGameModelComponentWithInstanced(Entity, CameraEntity, false, false, i);
 
 			GameModelComponent.GetGameModel()->Material = RegularMaterial;
 			GameModelComponent.GetGameModel()->SetBillboardMaterial(RegularBillboardMaterial);
