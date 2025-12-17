@@ -711,10 +711,12 @@ bool FEProject::LoadVFSData(std::string FilePath)
 	VIRTUAL_FILE_SYSTEM.LoadState(FilePath);
 	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(false, "/Shaders");
 
-	auto Files = VIRTUAL_FILE_SYSTEM.GetDirectoryContent("/Shaders");
+	auto Files = VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs("/Shaders");
 	for (size_t i = 0; i < Files.size(); i++)
 	{
-		VIRTUAL_FILE_SYSTEM.DeleteFile(Files[i], "/Shaders");
+		FEObject* ShaderObject = OBJECT_MANAGER.GetFEObject(Files[i]);
+		if (ShaderObject == nullptr)
+			VIRTUAL_FILE_SYSTEM.DeleteFile(ShaderObject, "/Shaders");
 	}
 
 	std::vector<std::string> ShaderList = RESOURCE_MANAGER.GetShaderIDList();

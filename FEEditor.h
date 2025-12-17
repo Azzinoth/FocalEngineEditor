@@ -31,7 +31,7 @@ public:
     void SetSceneEntityIDInClipboard(std::string NewValue);
 
     void CreateEditorWindowForScene(const std::string& SceneID, FEProject* CurrentProject = nullptr);
-    void CreateCustomEditorWindowForScene(FEEditorSceneWindow* SceneWindow);
+    void RegisterEditorSceneWindow(FEEditorSceneWindow* SceneWindow);
     FEEditorSceneWindow* GetEditorSceneWindow(std::string SceneID);
 
     std::vector<std::string> GetEditorOpenedScenesIDs() const;
@@ -58,7 +58,7 @@ private:
 
 	// TO-DO: Make it more general, so it would be possible to be used by user.
     // When winodow close set FESceneFlag::Active | FESceneFlag::Renderable false.
-	void DeleteScene(std::string SceneID);
+	void DeleteSceneAndCleanup(std::string SceneID);
 
     // Clipboard
     std::string SceneEntityIDInClipboard;
@@ -101,7 +101,7 @@ private:
     void SetUpImgui();
     void SetImguiStyle();
 
-    void OnProjectClose();
+    void CloseProjectAndCleanup();
 
     void BeforeChangeOfFocusedScene(FEScene* NewSceneInFocus);
 

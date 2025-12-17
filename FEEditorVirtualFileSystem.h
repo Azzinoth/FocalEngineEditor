@@ -7,9 +7,9 @@ class FEVFSDirectory;
 struct FEVFSFile
 {
 	FEVFSFile();
-	FEVFSFile(FEObject* Data, FEVFSDirectory* InDirectory);
+	FEVFSFile(std::string DataID, FEVFSDirectory* InDirectory);
 	FEVFSDirectory* InDirectory;
-	FEObject* Data;
+	std::string DataID;
 	bool bReadOnly = false;
 	bool IsReadOnly();
 	void SetReadOnly(bool NewValue);
@@ -62,7 +62,7 @@ public:
 	bool MoveDirectory(std::string DirectoryPath, std::string NewPath);
 	bool DeleteEmptyDirectory(std::string Path);
 	int SubDirectoriesCount(std::string Path);
-	std::vector<FEObject*> GetDirectoryContent(std::string Path);
+	std::vector<std::string> GetDirectoryContentIDs(std::string Path);
 	std::string GetDirectoryParent(std::string Path);
 	void SetDirectoryReadOnly(bool NewValue, std::string Path);
 

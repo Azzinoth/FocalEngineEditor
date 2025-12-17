@@ -151,7 +151,6 @@ void FEEditorSceneWindow::Render()
 	if (CameraEntity != nullptr)
 	{
 		FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
-
 		if (CameraComponent.GetViewport() == nullptr || CameraComponent.GetViewport()->GetType() == FE_VIEWPORT_VIRTUAL)
 		{
 			std::string NewViewportID = ENGINE.CreateViewport(GetWindow());
@@ -163,6 +162,13 @@ void FEEditorSceneWindow::Render()
 				reinterpret_cast<void**>(this),
 				ToolTipTexts);
 		}
+
+		// It could be the case that viewport or camera was not ready when we set the viewport above, so we need to check again.
+		if (SELECTED.GetSceneData(Scene->GetObjectID()) == nullptr)
+			SELECTED.AddSceneData(Scene->GetObjectID());
+		
+		if (GIZMO_MANAGER.GetSceneData(Scene->GetObjectID()) == nullptr)
+			GIZMO_MANAGER.AddSceneData(Scene->GetObjectID());
 
 		ImGuiStyle& Style = ImGui::GetStyle();
 		Style.WindowBorderSize = 0.0f;

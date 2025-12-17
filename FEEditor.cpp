@@ -319,7 +319,7 @@ void FEEditor::Render()
 					}
 					else
 					{
-						OnProjectClose();
+						CloseProjectAndCleanup();
 
 						ImGui::PopStyleVar();
 						ImGui::EndMenu();
@@ -338,7 +338,7 @@ void FEEditor::Render()
 					}
 					else
 					{
-						OnProjectClose();
+						CloseProjectAndCleanup();
 						ENGINE.Terminate();
 						return;
 					}
@@ -535,7 +535,7 @@ void FEEditor::CloseWindowCallBack()
 	}
 	else
 	{
-		EDITOR.OnProjectClose();
+		EDITOR.CloseProjectAndCleanup();
 		ENGINE.Terminate();
 		return;
 	}
@@ -787,7 +787,7 @@ void FEEditor::SetUpImgui()
 	SetImguiStyle();
 }
 
-void FEEditor::OnProjectClose()
+void FEEditor::CloseProjectAndCleanup()
 {
 	EDITOR_MATERIAL_WINDOW.Stop();
 	EditorSceneWindows.clear();
@@ -839,7 +839,7 @@ void FEEditor::CreateEditorWindowForScene(const std::string& SceneID, FEProject*
 	EditorSceneWindows.push_back(NewSceneWindow);
 }
 
-void FEEditor::CreateCustomEditorWindowForScene(FEEditorSceneWindow* SceneWindow)
+void FEEditor::RegisterEditorSceneWindow(FEEditorSceneWindow* SceneWindow)
 {
 	if (SceneWindow == nullptr)
 		return;
@@ -918,7 +918,7 @@ bool FEEditor::SetGameModeInternal(bool GameMode)
 		auto SceneIterator = ParentIDToScenesInGameMode.begin();
 		while (SceneIterator != ParentIDToScenesInGameMode.end())
 		{
-			DeleteScene(SceneIterator->second->GetObjectID());
+			DeleteSceneAndCleanup(SceneIterator->second->GetObjectID());
 			SceneIterator = ParentIDToScenesInGameMode.erase(SceneIterator);
 		}
 	}
@@ -926,12 +926,12 @@ bool FEEditor::SetGameModeInternal(bool GameMode)
 	return true;
 }
 
-void FEEditor::DeleteScene(std::string SceneID)
+void FEEditor::DeleteSceneAndCleanup(std::string SceneID)
 {
 	FEScene* SceneToDelete = SCENE_MANAGER.GetScene(SceneID);
 	if (SceneToDelete == nullptr)
 	{
-		LOG.Add("FEEditor::DeleteScene: Scene to delete not found.", "FE_EDITOR", FE_LOG_ERROR);
+		LOG.Add("FEEditor::DeleteSceneAndCleanup: Scene to delete not found.", "FE_EDITOR", FE_LOG_ERROR);
 		return;
 	}
 

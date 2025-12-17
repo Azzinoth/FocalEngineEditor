@@ -93,13 +93,13 @@
         static FEObject* ItemInFocus;
 
         // Resource filtering
-        std::vector<FEObject*> AllResources;
-        std::vector<FEObject*> FilteredResources;
+        std::vector<std::string> AllResourcesIDs;
+        std::vector<std::string> FilteredResourcesIDs;
         char NameFilter[1024];
         std::vector<std::string> ObjectTypeFilters;
 		std::vector<std::string> ObjectTagNegativeFilters;
         bool AnyFilterActive();
-		bool ShouldPassVisibilityFilter(FEObject* Object);
+		bool ShouldPassVisibilityFilter(std::string ObjectID);
         void UpdateFilterForResources();
 
         // Filter buttons

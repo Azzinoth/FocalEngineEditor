@@ -659,41 +659,45 @@ void DeleteDirectoryPopup::Show(const std::string DirectoryName)
 
 void DeleteDirectoryPopup::RecursiveDeletion(const std::string Path)
 {
-	const auto DirectoryContent = VIRTUAL_FILE_SYSTEM.GetDirectoryContent(Path);
+	const auto DirectoryContent = VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs(Path);
 	for (size_t i = 0; i < DirectoryContent.size(); i++)
 	{
-		if (DirectoryContent[i]->GetType() == FE_NULL)
+		FEObject* CurrentObject = OBJECT_MANAGER.GetFEObject(DirectoryContent[i]);
+		if (CurrentObject == nullptr)
+			continue;
+
+		if (CurrentObject->GetType() == FE_NULL)
 		{
 			std::string TempPath = Path;
 			if (TempPath.back() != '/')
 				TempPath += '/';
 
-			TempPath += DirectoryContent[i]->GetName();
+			TempPath += CurrentObject->GetName();
 			RecursiveDeletion(TempPath);
 		}
-		else if (DirectoryContent[i]->GetType() == FE_SHADER)
+		else if (CurrentObject->GetType() == FE_SHADER)
 		{
 			//RESOURCE_MANAGER.deleteShader(RESOURCE_MANAGER.getShader(content[i]->getObjectID()));
 		}
-		else if (DirectoryContent[i]->GetType() == FE_MESH)
+		else if (CurrentObject->GetType() == FE_MESH)
 		{
-			DeleteMeshPopup::DeleteMesh(RESOURCE_MANAGER.GetMesh(DirectoryContent[i]->GetObjectID()));
+			DeleteMeshPopup::DeleteMesh(RESOURCE_MANAGER.GetMesh(CurrentObject->GetObjectID()));
 		}
-		else if (DirectoryContent[i]->GetType() == FE_POINT_CLOUD)
+		else if (CurrentObject->GetType() == FE_POINT_CLOUD)
 		{
-			DeletePointCloudPopup::DeletePointCloud(RESOURCE_MANAGER.GetPointCloud(DirectoryContent[i]->GetObjectID()));
+			DeletePointCloudPopup::DeletePointCloud(RESOURCE_MANAGER.GetPointCloud(CurrentObject->GetObjectID()));
 		}
-		else if (DirectoryContent[i]->GetType() == FE_TEXTURE)
+		else if (CurrentObject->GetType() == FE_TEXTURE)
 		{
-			DeleteTexturePopup::DeleteTexture(RESOURCE_MANAGER.GetTexture(DirectoryContent[i]->GetObjectID()));
+			DeleteTexturePopup::DeleteTexture(RESOURCE_MANAGER.GetTexture(CurrentObject->GetObjectID()));
 		}
-		else if (DirectoryContent[i]->GetType() == FE_MATERIAL)
+		else if (CurrentObject->GetType() == FE_MATERIAL)
 		{
-			DeleteMaterialPopup::DeleteMaterial(RESOURCE_MANAGER.GetMaterial(DirectoryContent[i]->GetObjectID()));
+			DeleteMaterialPopup::DeleteMaterial(RESOURCE_MANAGER.GetMaterial(CurrentObject->GetObjectID()));
 		}
-		else if (DirectoryContent[i]->GetType() == FE_GAMEMODEL)
+		else if (CurrentObject->GetType() == FE_GAMEMODEL)
 		{
-			DeleteGameModelPopup::DeleteGameModel(RESOURCE_MANAGER.GetGameModel(DirectoryContent[i]->GetObjectID()));
+			DeleteGameModelPopup::DeleteGameModel(RESOURCE_MANAGER.GetGameModel(CurrentObject->GetObjectID()));
 		}
 	}
 
@@ -704,7 +708,7 @@ void DeleteDirectoryPopup::Render()
 {
 	ImGuiModalPopup::Render();
 
-	if (!PathToDirectory.empty() && VIRTUAL_FILE_SYSTEM.GetDirectoryContent(PathToDirectory).empty())
+	if (!PathToDirectory.empty() && VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs(PathToDirectory).empty())
 	{
 		VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(PathToDirectory);
 		ObjToWorkWith = "";

@@ -4,12 +4,12 @@ using namespace FocalEngine;
 FEVFSFile::FEVFSFile()
 {
 	InDirectory = nullptr;
-	Data = nullptr;
+	DataID = nullptr;
 }
 
-FEVFSFile::FEVFSFile(FEObject* Data, FEVFSDirectory* InDirectory)
+FEVFSFile::FEVFSFile(std::string DataID, FEVFSDirectory* InDirectory)
 {
-	this->Data = Data;
+	this->DataID = DataID;
 	this->InDirectory = InDirectory;
 }
 
@@ -49,7 +49,7 @@ bool FEVFSDirectory::HasFile(const FEObject* File)
 
 	for (size_t i = 0; i < Files.size(); i++)
 	{
-		if (Files[i].Data->GetObjectID() == File->GetObjectID())
+		if (Files[i].DataID == File->GetObjectID())
 			return true;
 	}
 
@@ -120,7 +120,7 @@ bool FEVFSDirectory::DeleteFile(const FEObject* File)
 
 	for (size_t i = 0; i < Files.size(); i++)
 	{
-		if (File->GetObjectID() == Files[i].Data->GetObjectID() && !Files[i].IsReadOnly())
+		if (File->GetObjectID() == Files[i].DataID && !Files[i].IsReadOnly())
 		{
 			Files.erase(Files.begin() + i, Files.begin() + i + 1);
 			return true;
@@ -138,7 +138,7 @@ bool FEVFSDirectory::AddFile(FEObject* File)
 		return false;
 	}
 
-	Files.push_back(FEVFSFile(File, this));
+	Files.push_back(FEVFSFile(File->GetObjectID(), this));
 	return true;
 }
 
@@ -195,7 +195,8 @@ bool FEVirtualFileSystem::IsPathCorrect(std::string Path)
 		{
 			for (size_t j = 0; j < CurrentDirectory->Files.size(); j++)
 			{
-				if (CurrentDirectory->Files[j].Data->GetName() == TokenizedPath[i])
+				FEObject* FileObject = OBJECT_MANAGER.GetFEObject(CurrentDirectory->Files[j].DataID);
+				if (FileObject != nullptr && FileObject->GetName() == TokenizedPath[i])
 					return true;
 			}
 
@@ -240,7 +241,8 @@ FEVFSDirectory* FEVirtualFileSystem::PathToDirectory(std::string Path)
 			for (size_t j = 0; j < CurrentDirectory->Files.size(); j++)
 			{
 				// If that the case we return last valid directory.
-				if (CurrentDirectory->Files[j].Data->GetName() == TokenizedPath[i])
+				FEObject* FileObject = OBJECT_MANAGER.GetFEObject(CurrentDirectory->Files[j].DataID);
+				if (FileObject != nullptr && FileObject->GetName() == TokenizedPath[i])
 					return CurrentDirectory;
 			}
 		}
@@ -289,25 +291,25 @@ bool FEVirtualFileSystem::CreateFile(FEObject* Data, const std::string Path)
 		return false;
 	}	
 
-	Directory->Files.push_back(FEVFSFile(Data, Directory));
+	Directory->Files.push_back(FEVFSFile(Data->GetObjectID(), Directory));
 	return true;
 }
 
-std::vector<FEObject*> FEVirtualFileSystem::GetDirectoryContent(const std::string Path)
+std::vector<std::string> FEVirtualFileSystem::GetDirectoryContentIDs(const std::string Path)
 {
-	std::vector<FEObject*> Result;
+	std::vector<std::string> Result;
 	const FEVFSDirectory* Directory = PathToDirectory(Path);
 	if (Directory == nullptr)
 		return Result;
 
 	for (size_t i = 0; i < Directory->SubDirectories.size(); i++)
 	{
-		Result.push_back(Directory->SubDirectories[i]);
+		Result.push_back(Directory->SubDirectories[i]->GetObjectID());
 	}
 
 	for (size_t i = 0; i < Directory->Files.size(); i++)
 	{
-		Result.push_back(Directory->Files[i].Data);
+		Result.push_back(Directory->Files[i].DataID);
 	}
 
 	return Result;
@@ -579,7 +581,7 @@ std::string FEVirtualFileSystem::LocateFileRecursive(FEVFSDirectory* Directory, 
 
 	for (size_t i = 0; i < Directory->Files.size(); i++)
 	{
-		if (Directory->Files[i].Data->GetObjectID() == File->GetObjectID())
+		if (Directory->Files[i].DataID == File->GetObjectID())
 		{
 			Path = DirectoryToPath(Directory);
 			return Path;
@@ -632,7 +634,7 @@ void FEVirtualFileSystem::SaveStateRecursive(Json::Value* LocalRoot, FEVFSDirect
 	Json::Value Files;
 	for (size_t i = 0; i < Directory->Files.size(); i++)
 	{
-		Files[Directory->Files[i].Data->GetObjectID()];
+		Files[Directory->Files[i].DataID];
 	}
 	LocalRoot->operator[](Directory->GetObjectID())["files"] = Files;
 
@@ -723,10 +725,8 @@ bool FEVirtualFileSystem::IsReadOnly(const FEObject* Data, const std::string Pat
 	{
 		for (size_t i = 0; i < Root->Files.size(); i++)
 		{
-			if (Root->Files[i].Data == Data)
-			{
+			if (Root->Files[i].DataID == Data->GetObjectID())
 				return Root->Files[i].IsReadOnly();
-			}
 		}
 
 		return true;
@@ -740,10 +740,8 @@ bool FEVirtualFileSystem::IsReadOnly(const FEObject* Data, const std::string Pat
 
 	for (size_t i = 0; i < Directory->Files.size(); i++)
 	{
-		if (Directory->Files[i].Data == Data)
-		{
+		if (Directory->Files[i].DataID == Data->GetObjectID())
 			return Directory->Files[i].IsReadOnly();
-		}
 	}
 
 	return false;
@@ -766,7 +764,7 @@ void FEVirtualFileSystem::SetFileReadOnly(const bool NewValue, const FEObject* D
 
 	for (size_t i = 0; i < Directory->Files.size(); i++)
 	{
-		if (Directory->Files[i].Data == Data)
+		if (Directory->Files[i].DataID == Data->GetObjectID())
 		{
 			Directory->Files[i].SetReadOnly(NewValue);
 			return;

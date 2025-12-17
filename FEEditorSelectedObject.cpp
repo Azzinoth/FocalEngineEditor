@@ -766,12 +766,12 @@ void FEEditorSelectedObject::AddSceneData(const std::string& SceneID)
 	if (MainCamera == nullptr)
 		return;
 
+	FECameraComponent& CameraComponent = MainCamera->GetComponent<FECameraComponent>();
+	if (CameraComponent.GetRenderTargetWidth() <= 0 || CameraComponent.GetRenderTargetHeight() <= 0)
+		return;
+
 	PerSceneData[SceneID] = new FESelectionData();
 	PerSceneData[SceneID]->SceneID = SceneID;
-
-	FETransformComponent& CameraTransformComponent = MainCamera->GetComponent<FETransformComponent>();
-	FECameraComponent& CameraComponent = MainCamera->GetComponent<FECameraComponent>();
-
 	PerSceneData[SceneID]->PixelAccurateSelectionFB = RESOURCE_MANAGER.CreateFramebuffer(FE_COLOR_ATTACHMENT | FE_DEPTH_ATTACHMENT, CameraComponent.GetRenderTargetWidth(), CameraComponent.GetRenderTargetHeight());
 	delete PerSceneData[SceneID]->PixelAccurateSelectionFB->GetColorAttachment();
 	PerSceneData[SceneID]->PixelAccurateSelectionFB->SetColorAttachment(RESOURCE_MANAGER.CreateTexture(GL_RGB, GL_RGB, CameraComponent.GetRenderTargetWidth(), CameraComponent.GetRenderTargetHeight()));
