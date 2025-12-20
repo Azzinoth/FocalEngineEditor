@@ -831,10 +831,14 @@ void FEEditor::CreateEditorWindowForScene(const std::string& SceneID, FEProject*
 
 	Scene->SetFlag(FESceneFlag::Active, true);
 	Scene->SetFlag(FESceneFlag::Renderable, true);
-	Scene->SetFlag(FESceneFlag::EditorMode, true);
+	// If scene is not game mode, then it should be flagged as in editor mode.
+	if (!Scene->HasFlag(FESceneFlag::GameMode))
+		Scene->SetFlag(FESceneFlag::EditorMode, true);
 
 	FEEditorSceneWindow* NewSceneWindow = new FEEditorSceneWindow(Scene);
-	CurrentProject->InjectEditorCamera(Scene);
+	// If it is in game mode, then editor camera is not needed.
+	if (!Scene->HasFlag(FESceneFlag::GameMode))
+		CurrentProject->InjectEditorCamera(Scene);
 	NewSceneWindow->SetVisible(true);
 	EditorSceneWindows.push_back(NewSceneWindow);
 }
