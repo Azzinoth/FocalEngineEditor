@@ -859,7 +859,7 @@ FEArrowScroller::FEArrowScroller(const bool Horizontal)
 	Color = ImColor(10, 10, 40, 255);
 	SelectedColor = ImColor(115, 115, 255, 255);
 
-	AvailableRange = ImVec2(-FLT_MAX, FLT_MAX);
+	AvailableRange = ImVec2(-std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
 }
 
 ImVec2 FEArrowScroller::GetPosition() const
@@ -1031,5 +1031,5 @@ void FEArrowScroller::SetAvailableRange(const ImVec2 NewValue)
 
 void FEArrowScroller::LiftRangeRestrictions()
 {
-	AvailableRange = ImVec2(-FLT_MAX, FLT_MAX);
+	AvailableRange = ImVec2(-std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
 }
