@@ -3,6 +3,7 @@
 #include "EditorWindows/InspectorWindow.h"
 #include "EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.h"
 #include <functional>
+#include "FEEditorVersion.h"
 
 class FEEditor
 {
@@ -11,6 +12,12 @@ class FEEditor
     friend class FEPrefabEditorManager;
 public:
     SINGLETON_PUBLIC_PART(FEEditor)
+
+    std::string GetEditorVersion();        // "1.0.0"
+    std::string GetEditorBuildInfo();      // "build 231+52 (dev, ed4c7ce-dirty)"
+	std::string GetEditorFullVersion();    // "Focal Engine Editor 1.0.0 build 231+52 (dev, ed4c7ce-dirty)"
+    std::string GetEditorBuildTimestamp(); // "20260207232613"
+    int GetEditorBuildNumber();            // 231
 
     // Initialization and rendering
     void InitializeResources();
@@ -79,6 +86,11 @@ private:
     // Log window
     bool bLogWindowVisible = true;
     void DisplayLogWindow() const;
+
+	// About window
+    bool bShouldOpenAboutWindow = false;
+    void ShowAboutDialog();
+    void RenderAboutWindow();
 
     // Resource under mouse
     int TextureUnderMouse = -1;

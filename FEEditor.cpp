@@ -10,6 +10,44 @@ FEEditor::FEEditor()
 
 FEEditor::~FEEditor() {}
 
+std::string FEEditor::GetEditorVersion()
+{
+	return std::to_string(EDITOR_VERSION_MAJOR) + "."
+		   + std::to_string(EDITOR_VERSION_MINOR) + "."
+		   + std::to_string(EDITOR_VERSION_PATCH);
+}
+
+int FEEditor::GetEditorBuildNumber()
+{
+	return EDITOR_BUILD_NUMBER;
+}
+
+std::string FEEditor::GetEditorBuildTimestamp()
+{
+	return EDITOR_BUILD_TIMESTAMP;
+}
+
+std::string FEEditor::GetEditorBuildInfo()
+{
+	std::string Result = "build " + std::to_string(EDITOR_BUILD_NUMBER);
+	if (EDITOR_BUILD_BRANCH_OFFSET > 0)
+	{
+		Result += "+" + std::to_string(EDITOR_BUILD_BRANCH_OFFSET)
+			+ " (" + std::string(EDITOR_GIT_BRANCH) + ", "
+			+ EDITOR_GIT_HASH + std::string(EDITOR_GIT_DIRTY ? "-dirty" : "") + ")";
+	}
+	else if (EDITOR_GIT_DIRTY)
+	{
+		Result += " (dirty)";
+	}
+	return Result;
+}
+
+std::string FEEditor::GetEditorFullVersion()
+{
+	return "Focal Engine Editor " + GetEditorVersion() + " " + GetEditorBuildInfo();
+}
+
 double FEEditor::GetLastMouseX() const
 {
 	return LastMouseX;
@@ -421,6 +459,14 @@ void FEEditor::Render()
 				ImGui::EndMenu();
 			}
 
+			if (ImGui::BeginMenu("Info"))
+			{
+				if (ImGui::MenuItem("About..."))
+					ShowAboutDialog();
+
+				ImGui::EndMenu();
+			}
+
 			ImGui::EndMainMenuBar();
 		}
 		ImGui::PopStyleVar();
@@ -513,6 +559,7 @@ void FEEditor::Render()
 		}
 
 		RenderAllSubWindows();
+		RenderAboutWindow();
 	}
 	else
 	{
@@ -538,6 +585,58 @@ void FEEditor::CloseWindowCallBack()
 		EDITOR.CloseProjectAndCleanup();
 		ENGINE.Terminate();
 		return;
+	}
+}
+
+void FEEditor::ShowAboutDialog()
+{
+	bShouldOpenAboutWindow = true;
+}
+
+void FEEditor::RenderAboutWindow()
+{
+	if (bShouldOpenAboutWindow)
+	{
+		ImGui::OpenPopup("About");
+		bShouldOpenAboutWindow = false;
+	}
+
+	float PopupW = 700.0f;
+	float PopupH = 145.0f;
+	ImGui::SetNextWindowSize(ImVec2(PopupW, PopupH));
+	if (ImGui::BeginPopupModal("About", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
+	{
+		int WindowW = 0;
+		int WindowH = 0;
+		APPLICATION.GetMainWindow()->GetSize(&WindowW, &WindowH);
+
+		ImGui::SetWindowPos(ImVec2(WindowW / 2.0f - ImGui::GetWindowWidth() / 2.0f, WindowH / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+
+		std::string Text = GetEditorFullVersion();
+		ImVec2 TextSize = ImGui::CalcTextSize(Text.c_str());
+		ImGui::SetCursorPosX(PopupW / 2.0f - TextSize.x / 2.0f);
+		ImGui::Text(Text.c_str());
+
+		ImGui::Separator();
+
+		Text = "To submit a bug report or provide feedback, ";
+		TextSize = ImGui::CalcTextSize(Text.c_str());
+		ImGui::SetCursorPosX(PopupW / 2.0f - TextSize.x / 2.0f);
+		ImGui::Text(Text.c_str());
+
+		Text = "please email me at ";
+		TextSize = ImGui::CalcTextSize(Text.c_str());
+		ImGui::SetCursorPosX(PopupW / 2.0f - TextSize.x / 2.0f);
+		ImGui::Text(Text.c_str());
+
+		ImGui::Separator();
+
+		ImGui::SetCursorPosX(PopupW / 2.0f - 210.0f / 2.0f);
+		ImGui::SetNextItemWidth(210);
+		if (ImGui::Button("Close", ImVec2(210.0f, 25.0f)))
+			ImGui::CloseCurrentPopup();
+
+		ImGui::EndPopup();
 	}
 }
 

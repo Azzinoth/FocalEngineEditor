@@ -295,3 +295,8 @@ if(NOT USE_STATIC_RUNTIME)
             "$<TARGET_FILE_DIR:FocalEngineEditor>"
     )
 endif()
+
+add_custom_command(TARGET FocalEngineEditor PRE_BUILD
+	COMMAND ${CMAKE_COMMAND}
+		-P ${CMAKE_CURRENT_SOURCE_DIR}/UpdateFEEditorVersion.cmake
+)
