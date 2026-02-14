@@ -29,17 +29,15 @@ std::string FEEditor::GetEditorBuildTimestamp()
 
 std::string FEEditor::GetEditorBuildInfo()
 {
-	std::string Result = "build " + std::to_string(EDITOR_BUILD_NUMBER);
+	std::string Result = "build " + std::to_string(EDITOR_BUILD_NUMBER) + " (" + std::string(EDITOR_GIT_HASH);
+
 	if (EDITOR_BUILD_BRANCH_OFFSET > 0)
-	{
-		Result += "+" + std::to_string(EDITOR_BUILD_BRANCH_OFFSET)
-			+ " (" + std::string(EDITOR_GIT_BRANCH) + ", "
-			+ EDITOR_GIT_HASH + std::string(EDITOR_GIT_DIRTY ? "-dirty" : "") + ")";
-	}
-	else if (EDITOR_GIT_DIRTY)
-	{
-		Result += " (dirty)";
-	}
+		Result += " " + std::string(EDITOR_GIT_BRANCH) + " +" + std::to_string(EDITOR_BUILD_BRANCH_OFFSET) + " from master";
+
+	if (EDITOR_GIT_DIRTY)
+		Result += ", dirty";
+
+	Result += ")";
 	return Result;
 }
 

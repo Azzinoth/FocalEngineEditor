@@ -18,10 +18,10 @@ set(EDITOR_VERSION_PATCH 7)
 find_package(Git QUIET)
 if(GIT_FOUND)
     # --- Commit counts ---
-    # Count total commits on master — this is the stable build number.
+    # Count total commits on master, this is the stable build number.
     execute_process(
         COMMAND ${GIT_EXECUTABLE} rev-list --count origin/master
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        WORKING_DIRECTORY ${EDITOR_FOLDER}
         OUTPUT_VARIABLE EDITOR_MASTER_COMMIT_COUNT
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
@@ -31,7 +31,7 @@ if(GIT_FOUND)
     # Will be 0 when building on master itself.
     execute_process(
         COMMAND ${GIT_EXECUTABLE} rev-list --count origin/master..HEAD
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        WORKING_DIRECTORY ${EDITOR_FOLDER}
         OUTPUT_VARIABLE EDITOR_BRANCH_COMMIT_COUNT
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
@@ -41,7 +41,7 @@ if(GIT_FOUND)
     # Short hash for exact commit identification.
     execute_process(
         COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        WORKING_DIRECTORY ${EDITOR_FOLDER}
         OUTPUT_VARIABLE EDITOR_GIT_HASH
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
@@ -50,7 +50,7 @@ if(GIT_FOUND)
     # Get current branch name. Returns "HEAD" when in detached HEAD state.
     execute_process(
         COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        WORKING_DIRECTORY ${EDITOR_FOLDER}
         OUTPUT_VARIABLE EDITOR_GIT_BRANCH
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
@@ -60,7 +60,7 @@ if(GIT_FOUND)
     # git diff --quiet returns exit code 1 if there are changes.
     execute_process(
         COMMAND ${GIT_EXECUTABLE} diff --quiet HEAD
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        WORKING_DIRECTORY ${EDITOR_FOLDER}
         RESULT_VARIABLE GIT_DIRTY_RC
     )
     if(GIT_DIRTY_RC EQUAL 0)
@@ -83,7 +83,7 @@ endif()
 if("${EDITOR_GIT_BRANCH}" STREQUAL "HEAD")
     execute_process(
         COMMAND ${GIT_EXECUTABLE} branch -r --contains HEAD
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        WORKING_DIRECTORY ${EDITOR_FOLDER}
         OUTPUT_VARIABLE EDITOR_GIT_BRANCH
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
@@ -102,4 +102,4 @@ endif()
 string(TIMESTAMP EDITOR_BUILD_TIMESTAMP \"%Y%m%d%H%M%S\")
 
 # --- Generate header ---
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/FEEditorVersion.h.in ${CMAKE_CURRENT_SOURCE_DIR}/FEEditorVersion.h @ONLY)
+configure_file(${EDITOR_FOLDER}/FEEditorVersion.h.in ${EDITOR_FOLDER}/FEEditorVersion.h @ONLY)
