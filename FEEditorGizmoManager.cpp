@@ -277,7 +277,7 @@ void GizmoManager::Update()
 	auto PerSceneIterator = PerSceneData.begin();
 	while (PerSceneIterator != PerSceneData.end())
 	{
-		if (SCENE_MANAGER.GetScene(PerSceneIterator->first) == nullptr)
+		if (SCENE_MANAGER.GetSceneByID(PerSceneIterator->first) == nullptr)
 		{
 			PerSceneIterator = PerSceneData.erase(PerSceneIterator);
 			continue;
@@ -290,7 +290,7 @@ void GizmoManager::Update()
 			continue;
 		}
 		
-		FEScene* Scene = SCENE_MANAGER.GetScene(GizmoSceneData->SceneID);
+		FEScene* Scene = SCENE_MANAGER.GetSceneByID(GizmoSceneData->SceneID);
 		if (SELECTED.GetSelected(Scene) == nullptr || CAMERA_SYSTEM.GetMainCamera(Scene) == nullptr)
 		{
 			HideAllGizmo(Scene);
@@ -943,7 +943,7 @@ void GizmoManager::ClearSceneData(const std::string& SceneID)
 
 void GizmoManager::AddSceneData(const std::string& SceneID)
 {
-	FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneID);
+	FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneID);
 	if (CurrentScene == nullptr)
 		return;
 

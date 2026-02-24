@@ -165,6 +165,8 @@ file(GLOB EditorWindows_SRC
 	"EditorWindows/PrefabEditorManager.h"
 	"EditorWindows/DebugTextureViewWindow.cpp"
 	"EditorWindows/DebugTextureViewWindow.h"
+	"EditorWindows/FESceneGraphUI.cpp"
+	"EditorWindows/FESceneGraphUI.h"
 	"EditorWindows/SceneGraphWindow.cpp"
 	"EditorWindows/SceneGraphWindow.h"
 	"EditorWindows/InspectorWindow.cpp"

@@ -391,7 +391,7 @@ void FEProject::SaveProject(bool bFullSave)
 	std::vector<std::string> EditorSceneIDs = EDITOR.GetEditorOpenedScenesIDs();
 	for (size_t i = 0; i < EditorSceneIDs.size(); i++)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetScene(EditorSceneIDs[i]);
+		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(EditorSceneIDs[i]);
 		if (CurrentScene == nullptr)
 			continue;
 
@@ -440,7 +440,7 @@ void FEProject::SaveProject(bool bFullSave)
 	auto EditorCameraIterator = SceneIDToEditorCameraID.begin();
 	while (EditorCameraIterator != SceneIDToEditorCameraID.end())
 	{
-		FEScene* Scene = SCENE_MANAGER.GetScene(EditorCameraIterator->first);
+		FEScene* Scene = SCENE_MANAGER.GetSceneByID(EditorCameraIterator->first);
 		if (Scene == nullptr)
 		{
 			EditorCameraIterator++;
@@ -638,7 +638,7 @@ void FEProject::LoadProject()
 	for (size_t i = 0; i < EditorCamerasData.size(); i++)
 	{
 		std::string SceneID = EditorCamerasData[static_cast<int>(i)]["SceneID"].asCString();
-		FEScene* Scene = SCENE_MANAGER.GetScene(SceneID);
+		FEScene* Scene = SCENE_MANAGER.GetSceneByID(SceneID);
 		if (Scene == nullptr)
 			continue;
 
@@ -660,7 +660,7 @@ void FEProject::LoadProject()
 		Json::Value OpenedScenes = Root["EditorScenes"]["Opened"];
 		for (size_t i = 0; i < OpenedScenes.size(); i++)
 		{
-			FEScene* Scene = SCENE_MANAGER.GetScene(OpenedScenes[std::to_string(i)]["ID"].asCString());
+			FEScene* Scene = SCENE_MANAGER.GetSceneByID(OpenedScenes[std::to_string(i)]["ID"].asCString());
 			if (Scene == nullptr)
 				continue;
 
@@ -689,7 +689,7 @@ void FEProject::LoadProject()
 		}
 
 		std::string FocusedSceneID = Root["EditorScenes"]["FocusedSceneID"].asCString();
-		FEScene* FocusedScene = SCENE_MANAGER.GetScene(FocusedSceneID);
+		FEScene* FocusedScene = SCENE_MANAGER.GetSceneByID(FocusedSceneID);
 		if (FocusedScene != nullptr)
 			EDITOR.SetFocusedScene(FocusedScene);
 	}
@@ -776,7 +776,7 @@ void FEProject::AddMissingVFSData()
 	// Filter prefab scenes.
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		FEScene* Scene = SCENE_MANAGER.GetScene(SceneList[i]);
+		FEScene* Scene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
 		if (Scene->GetTag() == PREFAB_SCENE_DESCRIPTION_TAG)
 			continue;
 
@@ -955,7 +955,7 @@ std::string FEProject::GetProperMainCameraIDBySceneID(std::string SceneID)
 
 bool FEProject::SetProperMainCameraIDBySceneID(std::string SceneID, std::string CameraID)
 {
-	FEScene* Scene = SCENE_MANAGER.GetScene(SceneID);
+	FEScene* Scene = SCENE_MANAGER.GetSceneByID(SceneID);
 	if (Scene == nullptr)
 	{
 		LOG.Add("FEProject::SetProperMainCameraIDBySceneID: Scene " + SceneID + " not found!", "FE_LOG_LOADING", FE_LOG_WARNING);
@@ -987,7 +987,7 @@ void FEProject::SetProperMainCamerasInsteadOfEditorCameras()
 	auto Iterator = SceneIDToProperMainCameraID.begin();
 	while (Iterator != SceneIDToProperMainCameraID.end())
 	{
-		FEScene* Scene = SCENE_MANAGER.GetScene(Iterator->first);
+		FEScene* Scene = SCENE_MANAGER.GetSceneByID(Iterator->first);
 		if (Scene != nullptr)
 		{
 			FEEntity* CurrentMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(Scene);
@@ -1005,7 +1005,7 @@ void FEProject::SetEditorCamerasInsteadOfProperMainCameras()
 	auto Iterator = SceneIDToEditorCameraID.begin();
 	while (Iterator != SceneIDToEditorCameraID.end())
 	{
-		FEScene* Scene = SCENE_MANAGER.GetScene(Iterator->first);
+		FEScene* Scene = SCENE_MANAGER.GetSceneByID(Iterator->first);
 		if (Scene != nullptr)
 		{
 			FEEntity* CurrentMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(Scene);
@@ -1023,7 +1023,7 @@ void FEProject::SaveProperMainCameras()
 	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneList[i]);
+		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
 		if (CurrentScene == nullptr)
 			continue;
 

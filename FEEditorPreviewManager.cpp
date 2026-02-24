@@ -629,7 +629,7 @@ void FEEditorPreviewManager::Clear()
 
 void FEEditorPreviewManager::CreateScenePreview(std::string SceneID)
 {
-	FEScene* Scene = SCENE_MANAGER.GetScene(SceneID);
+	FEScene* Scene = SCENE_MANAGER.GetSceneByID(SceneID);
 	if (Scene == nullptr)
 	{
 		LOG.Add("FEEditorPreviewManager::CreateScenePreview could not find scene with ID: " + SceneID, "FE_LOG_RENDERING", FE_LOG_ERROR);
@@ -687,7 +687,7 @@ void FEEditorPreviewManager::CreateScenePreview(std::string SceneID)
 
 FETexture* FEEditorPreviewManager::GetScenePreview(std::string SceneID)
 {
-	FEScene* Scene = SCENE_MANAGER.GetScene(SceneID);
+	FEScene* Scene = SCENE_MANAGER.GetSceneByID(SceneID);
 	if (Scene == nullptr)
 	{
 		LOG.Add("FEEditorPreviewManager::GetScenePreview could not find scene with ID: " + SceneID, "FE_LOG_RENDERING", FE_LOG_ERROR);

@@ -1,41 +1,35 @@
 #pragma once
 
-#include "ProjectWasModifiedPopUp.h"
+#include "FESceneGraphUI.h"
 
 class FEEditorSceneGraphWindow
 {
     friend class FEEditor;
     SINGLETON_PRIVATE_PART(FEEditorSceneGraphWindow)
 
-    // Visibility
     bool bVisible = true;
 
-    // Icon management
-    void DrawCorrectIcon(FEEntity* SceneEntity) const;
+	FETexture* GameModelSceneGraphIcon = nullptr;
     FETexture* EntityIcon = nullptr;
     FETexture* InstancedEntityIcon = nullptr;
+    FETexture* PrefabSceneGraphIcon = nullptr;
     FETexture* DirectionalLightIcon = nullptr;
     FETexture* SpotLightIcon = nullptr;
+	FETexture* SkyDomeIcon = nullptr;
     FETexture* PointLightIcon = nullptr;
     FETexture* TerrainIcon = nullptr;
     FETexture* CameraIcon = nullptr;
+	FETexture* LineIcon = nullptr;
+	FETexture* VirtualUIIcon = nullptr;
+	FETexture* PointCloudIcon = nullptr;
+	FETexture* NativeScriptIcon = nullptr;
 
-    // Entity filtering
-	static const size_t FilterInputBufferSize = 2048;
-    char FilterForEntities[FilterInputBufferSize];
-	bool bIsPlaceHolderTextUsed = true;
-	bool bFilterInputWasFocused = false;
-	std::string PlaceHolderTextString = "Filter entities...";
-	void RenderFilterInput();
-    static int FilterInputTextCallback(ImGuiInputTextCallbackData* data);
+    FETexture* VisibilityOnIcon = nullptr;
+    FETexture* VisibilityOffIcon = nullptr;
 
-    // Context menu
-    bool bShouldOpenContextMenu = false;
 	bool bLastFrameWasInvisible = true;
 
     // Drag and drop
-    int64_t ItemUnderMouse = 0;
-    int SceneNodeDragAndDropTargetIndex = -1;
     std::unordered_map <int64_t, DragAndDropTarget*> SceneNodeDragAndDropTargets;
     DragAndDropTarget* GetSceneNodeDragAndDropTarget(FENaiveSceneGraphNode* NodeToFind);
 
@@ -52,36 +46,33 @@ class FEEditorSceneGraphWindow
         return CurrentScene->SceneGraph.MoveNode(SceneEntity->GetObjectID(), NodeTarget->GetObjectID());
     }
 
-    //void UpdateSceneNodeDragAndDropTargets();
-
     // Rendering and initialization.
     void Render();
-    void RenderSceneGraph();
-    ImRect RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot);
     void Clear();
     void InitializeResources();
 
-    bool bBackgroundColorSwitch = true;
-	ImRect SceneGraphBackgroundRect;
+	FESceneGraphUI* SceneGraphUI = nullptr;
+	std::string LastFrameRootNodeID = "";
+    static void OnNodeClicked(FENaiveSceneGraphNode* Node, ImGuiMouseButton_ MouseButton);
+    static bool IsSelected(FENaiveSceneGraphNode* Node);
+    static std::string GetDisplayedName(FENaiveSceneGraphNode* Node);
+	static void OnNodeHovered(FENaiveSceneGraphNode* Node);
+	static void AfterNodeRender(FENaiveSceneGraphNode* Node);
+    static void ContextMenuRenderingFunction(FENaiveSceneGraphNode* Node);
 
-	// Colors
-    ImVec4 EvenNodeBackgroundColor = ImVec4(50.0f / 255.0f, 50.0f / 255.0f, 50.0f / 255.0f, 1.0f);
-    ImVec4 OddNodeBackgroundColor = ImVec4(90.0f / 255.0f, 90.0f / 255.0f, 90.0f / 255.0f, 1.0f);
-    ImVec4 VerticalTreeLineColor = ImVec4(0.5f, 140.0f / 255.0f, 170.0f / 255.0f, 1.0f);
+    FESceneGraphNodeWidget CameraComponentIndicator;
+	FESceneGraphNodeWidget LightComponentIndicator;
+	FESceneGraphNodeWidget GameModelComponentIndicator;
+	FESceneGraphNodeWidget TerrainComponentIndicator;
+	FESceneGraphNodeWidget InstancedEntityComponentIndicator;
+    FESceneGraphNodeWidget PrefabSceneGraphIndicator;
+	FESceneGraphNodeWidget SkyDomeComponentIndicator;
+	FESceneGraphNodeWidget LineComponentIndicator;
+    FESceneGraphNodeWidget VirtualUIComponentIndicator;
+	FESceneGraphNodeWidget PointCloudComponentIndicator;
+	FESceneGraphNodeWidget NativeScriptComponentIndicator;
 
-    // Layout
-    float VerticalTreeLineXOffset = -6.5f;  // Used to nicely line up with the arrow symbol.
-    float VerticalTreeLineYOffset = -8.5f;  // Used to nicely line up with the arrow symbol.
-    float HorizontalTreeLineLength = 32.0f;  // Used to make sure the horizontal line is "touching" the arrow symbol of children.
-    float HorizontalTreeLineLengthParentOffset = -15.6f;  // Used to create small gap for nodes that have children.
-    float BackgroundColorYShift = -2.0f;  // Used to shift background color of the scene graph tree.
-    float BackgroundHeightModifier = -4.0f;  // Modifier of the scene graph background height.
-	bool bUseNodeBackground = true;  // Do we want to render the background of the scene graph tree?
-	bool bIndentationAwareNodeBackground = false;  // Used to make sure the background of the scene graph tree is indented properly.
-
-    void RenderNodeBackground();
-
-	std::string SceneGraphNodeHoveredID = "";
+	FESceneGraphNodeWidget VisibilityToggleWidget;
 public:
     SINGLETON_PUBLIC_PART(FEEditorSceneGraphWindow)
 };

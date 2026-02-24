@@ -212,7 +212,7 @@ void DeletePointCloudPopup::DeletePointCloud(FEPointCloud* PointCloud)
 	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneList[i]);
+		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
 		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEPointCloudComponent>();
 		for (size_t j = 0; j < EntitiesList.size(); j++)
 		{
@@ -306,7 +306,7 @@ int DeletePointCloudPopup::TimesPointCloudUsed(const FEPointCloud* PointCloud)
 	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneList[i]);
+		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
 		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEPointCloudComponent>();
 		for (size_t j = 0; j < EntitiesList.size(); j++)
 		{
@@ -417,7 +417,7 @@ int DeleteGameModelPopup::TimesGameModelUsed(const FEGameModel* GameModel)
 	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneList[i]);
+		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
 		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEGameModelComponent>();
 		for (size_t j = 0; j < EntitiesList.size(); j++)
 		{
@@ -510,7 +510,7 @@ int DeletePrefabPopup::TimesPrefabUsed(const FEPrefab* Prefab)
 	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneList[i]);
+		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
 		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEPrefabInstanceComponent>();
 		for (size_t j = 0; j < EntitiesList.size(); j++)
 		{

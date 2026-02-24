@@ -606,7 +606,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 		FESelectionData* CurrentSelectionData = SceneIterator->second;
 		CurrentSelectionData->bHadPointCloudWithAdvancedRenderingInHalo = false;
 
-		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneIterator->first);
+		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneIterator->first);
 		if (CurrentScene == nullptr)
 		{
 			SceneIterator++;
@@ -755,7 +755,7 @@ void FEEditorSelectedObject::ClearSceneData(const std::string& SceneID)
 
 void FEEditorSelectedObject::AddSceneData(const std::string& SceneID)
 {
-	FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneID);
+	FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneID);
 	if (CurrentScene == nullptr)
 		return;
 

@@ -3,33 +3,309 @@
 
 FEEditorSceneGraphWindow::FEEditorSceneGraphWindow()
 {
-	strcpy_s(FilterForEntities, "Filter entities...");
+	SceneGraphUI = new FESceneGraphUI();
+	SceneGraphUI->AddHiddenEntityTag(EDITOR_RESOURCE_TAG);
+
+	SceneGraphUI->AddOnNodeClickedCallback(FEEditorSceneGraphWindow::OnNodeClicked);
+	SceneGraphUI->SetNodeSelectionPredicate(FEEditorSceneGraphWindow::IsSelected);
+	SceneGraphUI->SetNodeDisplayNameProvider(FEEditorSceneGraphWindow::GetDisplayedName);
+	SceneGraphUI->AddOnNodeHoveredCallback(FEEditorSceneGraphWindow::OnNodeHovered);
+	SceneGraphUI->AddAfterNodeRenderCallback(FEEditorSceneGraphWindow::AfterNodeRender);
+	SceneGraphUI->SetContextMenuRenderingFunction(FEEditorSceneGraphWindow::ContextMenuRenderingFunction);
 }
 
 void FEEditorSceneGraphWindow::InitializeResources()
 {
+	GameModelSceneGraphIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/GameModelSceneGraphIcon.png", "GameModelSceneGraphIcon");
+	RESOURCE_MANAGER.SetTag(GameModelSceneGraphIcon, EDITOR_RESOURCE_TAG);
+
 	EntityIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/entitySceneBrowserIcon.png", "entitySceneBrowserIcon");
 	RESOURCE_MANAGER.SetTag(EntityIcon, EDITOR_RESOURCE_TAG);
-	InstancedEntityIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/instancedEntitySceneBrowserIcon.png", "instancedEntitySceneBrowserIcon");
+	InstancedEntityIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/InstancedEntitySceneGraphIcon.png", "InstancedEntitySceneGraphIcon");
 	RESOURCE_MANAGER.SetTag(InstancedEntityIcon, EDITOR_RESOURCE_TAG);
 
-	DirectionalLightIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/directionalLightSceneBrowserIcon.png", "directionalLightSceneBrowserIcon");
+	DirectionalLightIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/DirectionalLightSceneGraphIcon.png", "DirectionalLightSceneGraphIcon");
 	RESOURCE_MANAGER.SetTag(DirectionalLightIcon, EDITOR_RESOURCE_TAG);
-	SpotLightIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/spotLightSceneBrowserIcon.png", "spotLightSceneBrowserIcon");
+	SpotLightIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/SpotLightSceneGraphIcon.png", "SpotLightSceneGraphIcon");
 	RESOURCE_MANAGER.SetTag(SpotLightIcon, EDITOR_RESOURCE_TAG);
-	PointLightIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/pointLightSceneBrowserIcon.png", "pointLightSceneBrowserIcon");
+	PointLightIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/PointLightSceneGraphIcon.png", "PointLightSceneGraphIcon");
 	RESOURCE_MANAGER.SetTag(PointLightIcon, EDITOR_RESOURCE_TAG);
 
-	TerrainIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/terrainSceneBrowserIcon.png", "terrainSceneBrowserIcon");
+	TerrainIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/TerrainSceneGraphIcon.png", "TerrainSceneGraphIcon.png");
 	RESOURCE_MANAGER.SetTag(TerrainIcon, EDITOR_RESOURCE_TAG);
 
-	CameraIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/cameraSceneBrowserIcon.png", "cameraSceneBrowserIcon");
+	CameraIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/CameraSceneGraphIcon.png", "CameraSceneGraphIcon");
 	RESOURCE_MANAGER.SetTag(CameraIcon, EDITOR_RESOURCE_TAG);
+
+	PrefabSceneGraphIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/PrefabSceneGraphIcon.png", "PrefabSceneGraphIcon");
+	RESOURCE_MANAGER.SetTag(PrefabSceneGraphIcon, EDITOR_RESOURCE_TAG);
+
+	SkyDomeIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/SkyDomeSceneGraphIcon.png", "SkyDomeSceneGraphIcon");
+	RESOURCE_MANAGER.SetTag(SkyDomeIcon, EDITOR_RESOURCE_TAG);
+
+	LineIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/LineSceneGraphIcon.png", "LineSceneGraphIcon");
+	RESOURCE_MANAGER.SetTag(LineIcon, EDITOR_RESOURCE_TAG);
+
+	VirtualUIIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/VirtualUISceneGraphIcon.png", "VirtualUISceneGraphIcon");
+	RESOURCE_MANAGER.SetTag(VirtualUIIcon, EDITOR_RESOURCE_TAG);
+
+	PointCloudIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/PointCloudSceneGraphIcon.png", "PointCloudSceneGraphIcon");
+	RESOURCE_MANAGER.SetTag(PointCloudIcon, EDITOR_RESOURCE_TAG);
+
+	NativeScriptIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/NativeScriptSceneGraphIcon.png", "NativeScriptSceneGraphIcon");
+	RESOURCE_MANAGER.SetTag(NativeScriptIcon, EDITOR_RESOURCE_TAG);
+
+	VisibilityOnIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/VisibilityOn.png", "VisibilityOnIcon");
+	RESOURCE_MANAGER.SetTag(VisibilityOnIcon, EDITOR_RESOURCE_TAG);
+	VisibilityOffIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/VisibilityOff.png", "VisibilityOffIcon");
+	RESOURCE_MANAGER.SetTag(VisibilityOffIcon, EDITOR_RESOURCE_TAG);
+
+	CameraComponentIndicator.Icon = CameraIcon;
+	CameraComponentIndicator.bIsInteractive = false;
+	// FE_TO_DO_MAYBE: Maybe after clicking it should focus on camera component in component list or something similar.
+	//CameraComponentIndicator.OnClickCallback = [](FENaiveSceneGraphNode* Node) {};
+	CameraComponentIndicator.bIsVisibleByDefault = false;
+	CameraComponentIndicator.TooltipText = "Camera component";
+
+	CameraComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return false;
+
+		if (CurrentEntity->HasComponent<FECameraComponent>())
+			return true;
+
+		return false;
+	};
+	SceneGraphUI->AddNodeWidget(CameraComponentIndicator);
+
+	LightComponentIndicator.Icon = nullptr;
+	LightComponentIndicator.bIsInteractive = false;
+	// FE_TO_DO_MAYBE: Maybe after clicking it should focus on camera component in component list or something similar.
+	//CameraComponentIndicator.OnClickCallback = [](FENaiveSceneGraphNode* Node) {};
+	LightComponentIndicator.bIsVisibleByDefault = false;
+	LightComponentIndicator.TooltipText = "Light component";
+
+	LightComponentIndicator.IsVisiblePredicate = [this](FENaiveSceneGraphNode* Node) -> bool {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return false;
+
+		if (CurrentEntity->HasComponent<FELightComponent>())
+			return true;
+
+		return false;
+	};
+
+	LightComponentIndicator.DynamicIconProvider = [this](FENaiveSceneGraphNode* Node) -> FETexture* {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return nullptr;
+
+		if (!CurrentEntity->HasComponent<FELightComponent>())
+			return nullptr;
+
+		FELightComponent& LightComponent = CurrentEntity->GetComponent<FELightComponent>();
+		if (LightComponent.GetType() == FE_DIRECTIONAL_LIGHT)
+			return DirectionalLightIcon;
+		
+		if (LightComponent.GetType() == FE_SPOT_LIGHT)
+			return SpotLightIcon;
+		
+		if (LightComponent.GetType() == FE_POINT_LIGHT)
+			return PointLightIcon;
+		
+		return nullptr;
+	};
+	SceneGraphUI->AddNodeWidget(LightComponentIndicator);
+
+	GameModelComponentIndicator.Icon = GameModelSceneGraphIcon;
+	GameModelComponentIndicator.bIsInteractive = false;
+	GameModelComponentIndicator.bIsVisibleByDefault = false;
+	GameModelComponentIndicator.TooltipText = "Game model component";
+
+	GameModelComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return false;
+
+		if (CurrentEntity->HasComponent<FEGameModelComponent>())
+			return true;
+
+		return false;
+	};
+	SceneGraphUI->AddNodeWidget(GameModelComponentIndicator);
+
+	TerrainComponentIndicator.Icon = TerrainIcon;
+	TerrainComponentIndicator.bIsInteractive = false;
+	TerrainComponentIndicator.bIsVisibleByDefault = false;
+	TerrainComponentIndicator.TooltipText = "Terrain component";
+
+	TerrainComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return false;
+
+		if (CurrentEntity->HasComponent<FETerrainComponent>())
+			return true;
+
+		return false;
+	};
+	SceneGraphUI->AddNodeWidget(TerrainComponentIndicator);
+
+	InstancedEntityComponentIndicator.Icon = InstancedEntityIcon;
+	InstancedEntityComponentIndicator.bIsInteractive = false;
+	InstancedEntityComponentIndicator.bIsVisibleByDefault = false;
+	InstancedEntityComponentIndicator.TooltipText = "Instanced entity component";
+
+	InstancedEntityComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return false;
+
+		if (CurrentEntity->HasComponent<FEInstancedComponent>())
+			return true;
+
+		return false;
+	};
+	SceneGraphUI->AddNodeWidget(InstancedEntityComponentIndicator);
+
+	PrefabSceneGraphIndicator.Icon = PrefabSceneGraphIcon;
+	PrefabSceneGraphIndicator.bIsInteractive = false;
+	PrefabSceneGraphIndicator.bIsVisibleByDefault = false;
+	PrefabSceneGraphIndicator.TooltipText = "Prefab Instance component";
+
+	PrefabSceneGraphIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return false;
+
+		if (CurrentEntity->HasComponent<FEPrefabInstanceComponent>())
+			return true;
+
+		return false;
+	};
+	SceneGraphUI->AddNodeWidget(PrefabSceneGraphIndicator);
+
+	SkyDomeComponentIndicator.Icon = SkyDomeIcon;
+	SkyDomeComponentIndicator.bIsInteractive = false;
+	SkyDomeComponentIndicator.bIsVisibleByDefault = false;
+	SkyDomeComponentIndicator.TooltipText = "Sky dome component";
+
+	SkyDomeComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return false;
+
+		if (CurrentEntity->HasComponent<FESkyDomeComponent>())
+			return true;
+
+		return false;
+	};
+	SceneGraphUI->AddNodeWidget(SkyDomeComponentIndicator);
+
+	LineComponentIndicator.Icon = LineIcon;
+	LineComponentIndicator.bIsInteractive = false;
+	LineComponentIndicator.bIsVisibleByDefault = false;
+	LineComponentIndicator.TooltipText = "Line component";
+
+	LineComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return false;
+
+		if (CurrentEntity->HasComponent<FELineComponent>())
+			return true;
+
+		return false;
+	};
+	SceneGraphUI->AddNodeWidget(LineComponentIndicator);
+
+	VirtualUIComponentIndicator.Icon = VirtualUIIcon;
+	VirtualUIComponentIndicator.bIsInteractive = false;
+	VirtualUIComponentIndicator.bIsVisibleByDefault = false;
+	VirtualUIComponentIndicator.TooltipText = "Virtual UI component";
+
+	VirtualUIComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return false;
+
+		if (CurrentEntity->HasComponent<FEVirtualUIComponent>())
+			return true;
+
+		return false;
+	};
+	SceneGraphUI->AddNodeWidget(VirtualUIComponentIndicator);
+
+	PointCloudComponentIndicator.Icon = PointCloudIcon;
+	PointCloudComponentIndicator.bIsInteractive = false;
+	PointCloudComponentIndicator.bIsVisibleByDefault = false;
+	PointCloudComponentIndicator.TooltipText = "Point cloud component";
+
+	PointCloudComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return false;
+
+		if (CurrentEntity->HasComponent<FEPointCloudComponent>())
+			return true;
+
+		return false;
+	};
+	SceneGraphUI->AddNodeWidget(PointCloudComponentIndicator);
+
+	NativeScriptComponentIndicator.Icon = NativeScriptIcon;
+	NativeScriptComponentIndicator.bIsInteractive = false;
+	NativeScriptComponentIndicator.bIsVisibleByDefault = false;
+	NativeScriptComponentIndicator.TooltipText = "Native script component";
+
+	NativeScriptComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return false;
+
+		if (CurrentEntity->HasComponent<FENativeScriptComponent>())
+			return true;
+
+		return false;
+	};
+	SceneGraphUI->AddNodeWidget(NativeScriptComponentIndicator);
+
+	VisibilityToggleWidget.Icon = VisibilityOnIcon;
+	VisibilityToggleWidget.DynamicIconProvider = [this](FENaiveSceneGraphNode* Node) -> FETexture* {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return nullptr;
+
+		bool bIsVisible = CurrentEntity->IsVisible();
+		return bIsVisible ? VisibilityOnIcon : VisibilityOffIcon;
+	};
+
+	VisibilityToggleWidget.bIsInteractive = true;
+	VisibilityToggleWidget.OnClickCallback = [](FENaiveSceneGraphNode* Node) {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return;
+
+		bool bIsVisible = CurrentEntity->IsVisible();
+		CurrentEntity->SetVisible(!bIsVisible);
+	};
+	VisibilityToggleWidget.bIsVisibleByDefault = true;
+	VisibilityToggleWidget.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
+		FEEntity* CurrentEntity = Node->GetEntity();
+		if (CurrentEntity == nullptr)
+			return false;
+
+		return true;
+	};
+	VisibilityToggleWidget.TooltipText = "Show/Hide";
+
+	SceneGraphUI->AddNodeWidget(VisibilityToggleWidget);
 }
 
 void FEEditorSceneGraphWindow::Clear()
 {
-	strcpy_s(FilterForEntities, "");
 	bLastFrameWasInvisible = true;
 }
 
@@ -77,62 +353,10 @@ static void CreateEntityCallback(const std::vector<FEObject*> SelectionsResult)
 	}
 }
 
-// FIXME: Make icons colored and place them in the right place.
-// Currently this function is not working properly.
-void FEEditorSceneGraphWindow::DrawCorrectIcon(FEEntity* SceneEntity) const
-{
-	if (SceneEntity == nullptr)
-		return;
-
-	float CurrentCursorPosX = ImGui::GetCursorPosX();
-	ImGui::SameLine();
-
-	if (SceneEntity->HasComponent<FEInstancedComponent>())
-	{
-		ImGui::Image(InstancedEntityIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-	}
-
-	if (SceneEntity->HasComponent<FELightComponent>())
-	{
-		if (SceneEntity->GetComponent<FELightComponent>().GetType() == FE_DIRECTIONAL_LIGHT)
-		{
-			ImGui::Image(DirectionalLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-		}
-		if (SceneEntity->GetComponent<FELightComponent>().GetType() == FE_SPOT_LIGHT)
-		{
-			ImGui::Image(SpotLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-		}
-		if (SceneEntity->GetComponent<FELightComponent>().GetType() == FE_POINT_LIGHT)
-		{
-			ImGui::Image(PointLightIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-		}
-	}
-
-	if (SceneEntity->HasComponent<FETerrainComponent>())
-	{
-		ImGui::Image(TerrainIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-	}
-
-	if (SceneEntity->HasComponent<FECameraComponent>())
-	{
-		ImGui::Image(CameraIcon->GetTextureID(), ImVec2(16, 16), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-	}
-
-	ImGui::SetCursorPosX(CurrentCursorPosX);
-}
-
 DragAndDropTarget* FEEditorSceneGraphWindow::GetSceneNodeDragAndDropTarget(FENaiveSceneGraphNode* NodeToFind)
 {
-	int64_t UniqueID = 0;
-	// If node is root.
-	if (NodeToFind->GetEntity() == nullptr)
-	{
-		UniqueID = -1;
-	}
-	else
-	{
-		UniqueID = static_cast<intptr_t>(std::hash<std::string>{}(NodeToFind->GetEntity()->GetObjectID().c_str()));
-	}
+	std::string NewNodeID = SceneGraphUI->GetNodeInternalID(NodeToFind);
+	int64_t UniqueID = static_cast<int64_t>(std::hash<std::string>{}(NewNodeID.c_str()));
 
 	if (SceneNodeDragAndDropTargets.find(UniqueID) == SceneNodeDragAndDropTargets.end())
 	{
@@ -142,265 +366,6 @@ DragAndDropTarget* FEEditorSceneGraphWindow::GetSceneNodeDragAndDropTarget(FENai
 	}
 
 	return SceneNodeDragAndDropTargets[UniqueID];
-}
-
-void FEEditorSceneGraphWindow::RenderNodeBackground()
-{
-	// Calculate the expected height of the node.
-	float NodeHeight = ImGui::GetFrameHeight();
-	NodeHeight += BackgroundHeightModifier;
-
-	ImRect BackgroundRect = ImRect(ImVec2(bIndentationAwareNodeBackground ? ImGui::GetCursorScreenPos().x : ImGui::GetWindowContentRegionMin().x, ImGui::GetCursorScreenPos().y),
-								   ImVec2(ImGui::GetWindowContentRegionMax().x, ImGui::GetCursorScreenPos().y + NodeHeight));
-
-	// Shift the background rectangle
-	BackgroundRect.Min.y += BackgroundColorYShift;
-	BackgroundRect.Max.y += BackgroundColorYShift;
-
-	// Render
-	ImColor BackgroundColor = bBackgroundColorSwitch ? ImColor(EvenNodeBackgroundColor) : ImColor(OddNodeBackgroundColor);
-	ImGui::GetWindowDrawList()->AddRectFilled(BackgroundRect.Min, BackgroundRect.Max, BackgroundColor);
-	bBackgroundColorSwitch = !bBackgroundColorSwitch;
-}
-
-ImRect FEEditorSceneGraphWindow::RenderSubTree(FENaiveSceneGraphNode* SubTreeRoot)
-{
-	if (SubTreeRoot == nullptr)
-		return ImRect();
-
-	FEEntity* CurrentEntity = SubTreeRoot->GetEntity();
-	if (CurrentEntity != nullptr)
-	{
-		if (CurrentEntity->GetTag() == EDITOR_RESOURCE_TAG)
-			return ImRect();
-	}
-
-	SceneNodeDragAndDropTargetIndex++;
-	int64_t UniqueID = 0;
-	bool bIsLeaf = SubTreeRoot->GetChildren().size() == 0;
-	ImGuiTreeNodeFlags NodeFlags = bIsLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : ImGuiTreeNodeFlags_OpenOnArrow;
-	std::string Name = SubTreeRoot->GetParent() == nullptr ? PROJECT_MANAGER.GetCurrent()->GetName() : SubTreeRoot->GetName();
-
-	if (SELECTED.GetSelected(EDITOR.GetFocusedScene()) != nullptr && CurrentEntity != nullptr)
-	{
-		if (SELECTED.GetSelected(EDITOR.GetFocusedScene())->GetObjectID() == CurrentEntity->GetObjectID())
-		{
-			NodeFlags |= ImGuiTreeNodeFlags_Selected;
-		}
-	}
-
-	// If node is root.
-	if (CurrentEntity == nullptr)
-	{
-		UniqueID = -1;
-	}
-	else
-	{
-		UniqueID = static_cast<intptr_t>(std::hash<std::string>{}(CurrentEntity->GetObjectID().c_str()));
-	}
-
-	// If last frame scene graph was invisible, open root node.
-	if (bLastFrameWasInvisible && CurrentEntity == nullptr)
-		ImGui::SetNextItemOpen(true);
-
-	if (bUseNodeBackground)
-		RenderNodeBackground();
-
-	bool bOpened = ImGui::TreeNodeEx((void*)UniqueID, NodeFlags, Name.c_str(), 0);
-	GetSceneNodeDragAndDropTarget(SubTreeRoot)->StickToItem();
-	const ImRect NodeRect = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
-	//DrawCorrectIcon(SubTreeRoot->GetEntity());
-
-	ImVec2 VerticalLineStart = ImGui::GetCursorScreenPos();
-	VerticalLineStart.x += VerticalTreeLineXOffset;
-	VerticalLineStart.y += VerticalTreeLineYOffset;
-	ImVec2 VerticalLineEnd = VerticalLineStart;
-
-	if (ImGui::IsItemClicked())
-	{
-		if (SubTreeRoot->GetParent() != nullptr)
-		{
-			SELECTED.SetSelected(CurrentEntity);
-		}
-	}
-
-	if (ImGui::IsItemHovered())
-	{
-		if (!bShouldOpenContextMenu && !DRAG_AND_DROP_MANAGER.ObjectIsDraged())
-		{
-			/*std::string AdditionalTypeInfo;
-			if (FilteredResources[i]->GetType() == FE_TEXTURE)
-			{
-				AdditionalTypeInfo += "\nTexture type: ";
-				AdditionalTypeInfo += FETexture::TextureInternalFormatToString(RESOURCE_MANAGER.GetTexture(FilteredResources[i]->GetObjectID())->GetInternalFormat());
-			}
-
-			ImGui::BeginTooltip();
-			ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-			ImGui::TextUnformatted(("Name: " + FilteredResources[i]->GetName() +
-				"\nType: " + FEObjectTypeToString(FilteredResources[i]->GetType()) +
-				AdditionalTypeInfo +
-				"\nPath: " + VIRTUAL_FILE_SYSTEM.GetCurrentPath()
-				).c_str());
-			ImGui::PopTextWrapPos();
-			ImGui::EndTooltip();*/
-
-			SceneGraphNodeHoveredID = SubTreeRoot->GetObjectID();
-
-			ItemUnderMouse = UniqueID;
-
-			if (ImGui::IsMouseDragging(0))
-				DRAG_AND_DROP_MANAGER.SetObjectToDrag(SubTreeRoot, nullptr, ImVec2(), ImVec2());
-		}
-	}
-
-	if (bOpened)
-	{
-		auto Children = SubTreeRoot->GetChildren();
-		if (!Children.empty())
-		{
-			for (size_t i = 0; i < Children.size(); i++)
-			{
-				// Double check if we need to draw child to make sure we don't draw internal editor resources.
-				FEEntity* ChildEntity = Children[i]->GetEntity();
-				if (ChildEntity != nullptr)
-				{
-					if (ChildEntity->GetTag() == EDITOR_RESOURCE_TAG)
-						continue;
-				}
-
-				const ImRect ChildRect = RenderSubTree(Children[i]);
-				
-				// Draw horizontal line.
-				const float MiddlePoint = (ChildRect.Min.y + ChildRect.Max.y) / 2.0f;
-				bool bChildHaveChildren = Children[i]->GetChildren().size() > 0;
-				ImVec2 HorizontalLineStart = ImVec2(VerticalLineStart.x, MiddlePoint);
-				ImVec2 HorizontalLineEnd = ImVec2(VerticalLineStart.x + HorizontalTreeLineLength, MiddlePoint);
-				if (bChildHaveChildren)
-					HorizontalLineEnd.x += HorizontalTreeLineLengthParentOffset;
-				ImGui::GetWindowDrawList()->AddLine(HorizontalLineStart, HorizontalLineEnd, ImColor(VerticalTreeLineColor));
-
-				VerticalLineEnd.y = MiddlePoint;
-			}
-
-			ImGui::TreePop();
-		}
-
-		// Draw vertical line.
-		ImGui::GetWindowDrawList()->AddLine(VerticalLineStart, VerticalLineEnd, ImColor(VerticalTreeLineColor));
-	}
-
-	SceneGraphBackgroundRect.Max.x = SceneGraphBackgroundRect.Max.x > NodeRect.Max.x ? SceneGraphBackgroundRect.Max.x : NodeRect.Max.x;
-	SceneGraphBackgroundRect.Max.y = SceneGraphBackgroundRect.Max.y > NodeRect.Max.y ? SceneGraphBackgroundRect.Max.y : NodeRect.Max.y;
-
-	return NodeRect;
-}
-
-int FEEditorSceneGraphWindow::FilterInputTextCallback(ImGuiInputTextCallbackData* Data)
-{
-	if (Data->EventFlag == ImGuiInputTextFlags_CallbackAlways)
-	{
-		bool isFocused = ImGui::IsItemActive();
-		if (SCENE_GRAPH_WINDOW.bIsPlaceHolderTextUsed)
-		{
-			// Check if the input just gained focus
-			if (isFocused && !SCENE_GRAPH_WINDOW.bFilterInputWasFocused)
-			{
-				strcpy_s(SCENE_GRAPH_WINDOW.FilterForEntities, "");
-				
-				// Update ImGui's buffer.
-				Data->BufDirty = true;
-				Data->DeleteChars(0, Data->BufTextLen);
-				Data->InsertChars(0, SCENE_GRAPH_WINDOW.FilterForEntities);
-
-				SCENE_GRAPH_WINDOW.bIsPlaceHolderTextUsed = false;
-			}
-		}
-
-		SCENE_GRAPH_WINDOW.bFilterInputWasFocused = isFocused;
-	}
-
-	return 0;
-}
-
-
-void FEEditorSceneGraphWindow::RenderFilterInput()
-{
-	const bool bIsPlaceHolderTextUsedWasOn = bIsPlaceHolderTextUsed;
-
-	if (bIsPlaceHolderTextUsedWasOn)
-		ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 150));
-
-	// Setting up the callback for the input text.
-	std::function<int(ImGuiInputTextCallbackData*)> Callback = std::bind(&FEEditorSceneGraphWindow::FilterInputTextCallback, std::placeholders::_1);
-	auto StaticCallback = [](ImGuiInputTextCallbackData* Data) -> int {
-		const auto& Callback = *static_cast<std::function<int(ImGuiInputTextCallbackData*)>*>(Data->UserData);
-		return Callback(Data);
-	};
-
-	if (ImGui::InputText("##SceneGraphWindowFilter", FilterForEntities, FilterInputBufferSize, ImGuiInputTextFlags_CallbackAlways, StaticCallback, &Callback))
-	{
-		
-	}
-
-	if (!ImGui::IsItemActive())
-	{
-		if (strlen(FilterForEntities) == 0)
-		{
-			strcpy_s(FilterForEntities, PlaceHolderTextString.c_str());
-			bIsPlaceHolderTextUsed = true;
-			bFilterInputWasFocused = false;
-		}
-	}
-
-	if (bIsPlaceHolderTextUsedWasOn)
-		ImGui::PopStyleColor();
-}
-
-void FEEditorSceneGraphWindow::RenderSceneGraph()
-{
-	if (EDITOR.GetFocusedScene() == nullptr)
-		return;
-
-	FENaiveSceneGraphNode* Root = EDITOR.GetFocusedScene()->SceneGraph.GetRoot();
-
-	if (bSceneNodeTargetsDirty)
-		SceneNodeDragAndDropTargets.clear();
-
-	SceneGraphBackgroundRect.Min = ImGui::GetCursorScreenPos();
-	SceneGraphBackgroundRect.Max = SceneGraphBackgroundRect.Min;
-
-	RenderFilterInput();
-
-	SceneNodeDragAndDropTargetIndex = -1;
-	bBackgroundColorSwitch = true;
-	RenderSubTree(Root);
-
-	SceneGraphBackgroundRect.Max.x = ImGui::GetWindowContentRegionMax().x;
-	SceneGraphBackgroundRect.Min -= ImVec2(10.0f, 10.0f);
-	SceneGraphBackgroundRect.Max += ImVec2(10.0f, 10.0f);
-	// Render box around the scene graph.
-	ImGui::GetWindowDrawList()->AddRect(SceneGraphBackgroundRect.Min, SceneGraphBackgroundRect.Max, ImColor(ImVec4(0.0f, 0.0f, 0.0f, 0.7f)), 2.0f);
-
-	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 15.0f);
-
-	// Uncomment this to tweak the scene graph rendering.
-	/*ImGui::DragFloat("VerticalTreeLineXOffset", &VerticalTreeLineXOffset, 0.1f);
-	ImGui::DragFloat("VerticalTreeLineYOffset", &VerticalTreeLineYOffset, 0.1f);
-	ImGui::DragFloat("HorizontalTreeLineLenght", &HorizontalTreeLineLength, 0.1f);
-	ImGui::DragFloat("HorizontalTreeLineLenghtOffset", &HorizontalTreeLineLengthParentOffset, 0.1f);
-	ImGui::DragFloat("BackgroundColorYShift", &BackgroundColorYShift, 0.1f);
-	ImGui::DragFloat("BackgroundHeightModifier", &BackgroundHeightModifier, 0.1f);
-	ImGui::ColorEdit4("VerticalTreeLineColor", (float*)&VerticalTreeLineColor);
-	ImGui::ColorEdit4("EvenNodeBackgroundColor", (float*)&EvenNodeBackgroundColor);
-	ImGui::ColorEdit4("OddNodeBackgroundColor", (float*)&OddNodeBackgroundColor);
-	ImGui::Checkbox("Draw node background", &bUseNodeBackground);
-	ImGui::Checkbox("IndintationAwareNodeBackground", &bIndintationAwareNodeBackground);*/
-	
-	if (bSceneNodeTargetsDirty)
-		bSceneNodeTargetsDirty = false;
-
-	bLastFrameWasInvisible = false;
 }
 
 void FEEditorSceneGraphWindow::Render()
@@ -418,199 +383,114 @@ void FEEditorSceneGraphWindow::Render()
 		return;
 	}
 
-	if (!bShouldOpenContextMenu)
-		SceneGraphNodeHoveredID = "";
-
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-	ImGui::Begin("Scene Entities", nullptr, ImGuiWindowFlags_None);
-
-	ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::ImColor(0.6f, 0.24f, 0.24f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.7f, 0.21f, 0.21f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.8f, 0.16f, 0.16f));
-
-	RenderSceneGraph();
-
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-
-	bool bOpenContextMenu = false;
-	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(1))
-		bOpenContextMenu = true;
-
-	if (bOpenContextMenu)
-		ImGui::OpenPopup("##context_menu");
-
-	bShouldOpenContextMenu = false;
-
-	if (ImGui::BeginPopup("##context_menu"))
+	if (ImGui::Begin("Scene Graph", nullptr, ImGuiWindowFlags_None))
 	{
-		bShouldOpenContextMenu = true;
-
-		if (SceneGraphNodeHoveredID.empty())
+		SceneGraphUI->Render(CurrentScene->SceneGraph.GetRoot());
+		if (LastFrameRootNodeID != CurrentScene->SceneGraph.GetRoot()->GetObjectID())
 		{
-			if (ImGui::BeginMenu("Add"))
-			{
-				if (ImGui::MenuItem("Empty entity"))
-				{
-					CurrentScene->CreateEntity("Unnamed entity");
-				}
-
-				ImGui::EndMenu();
-			}
-		}
-		else
-		{
-			FENaiveSceneGraphNode* HoveredNode = CurrentScene->SceneGraph.GetNode(SceneGraphNodeHoveredID);
-			if (HoveredNode != nullptr)
-			{
-				FEEntity* HoveredEntity = CurrentScene->SceneGraph.GetNode(SceneGraphNodeHoveredID)->GetEntity();
-				if (HoveredEntity != nullptr)
-				{
-					if (ImGui::MenuItem("Rename"))
-					{
-						RenamePopUp::GetInstance().Show(HoveredNode);
-					}
-
-					if (ImGui::MenuItem("Delete"))
-					{
-						if (SELECTED.GetSelected(CurrentScene) == HoveredEntity)
-							SELECTED.Clear(CurrentScene);
-
-						CurrentScene->DeleteEntity(HoveredEntity);
-					}
-				}
-			}
+			LastFrameRootNodeID = CurrentScene->SceneGraph.GetRoot()->GetObjectID();
+			SceneGraphUI->SetNodeExpanded(CurrentScene->SceneGraph.GetRoot(), true);
 		}
 
-		ImGui::EndPopup();
+		ImGui::PopStyleVar();
+		ImGui::End();
 	}
+}
 
-	// FIXME: Grid settings should be moved to other window, not scene graph window.
-	//static bool bDisplayGrid = true;
-	//ImGui::Checkbox("Display grid", &bDisplayGrid);
+void FEEditorSceneGraphWindow::OnNodeClicked(FENaiveSceneGraphNode* Node, ImGuiMouseButton_ MouseButton)
+{
+	if (MouseButton != ImGuiMouseButton_Left)
+		return;
 
-	//static glm::vec3 color = glm::vec3(0.2f, 0.3f, 0.4f);
+	FEEntity* CurrentEntity = Node->GetEntity();
+	if (CurrentEntity == nullptr)
+		return;
 
-	//const float BasicW = 0.1f;
-	//float width = BasicW * 4.0f;
-	//if (bDisplayGrid)
-	//{
-	//	const int GridSize = 200;
-	//	for (int i = -GridSize / 2; i < GridSize / 2; i++)
-	//	{
-	//		color = glm::vec3(0.4f, 0.65f, 0.73f);
-	//		width = BasicW * 4.0f;
-	//		if (i % 2 != 0 && i != 0)
-	//		{
-	//			color = color / 4.0f;
-	//			width = width / 4.0f;
-	//		}
-	//		else if (i == 0)
-	//		{
-	//			color = glm::vec3(0.9f, 0.9f, 0.9f);
-	//			width = BasicW * 4.0f;
-	//		}
+	SELECTED.SetSelected(CurrentEntity);
+}
 
-	//		RENDERER.DrawLine(glm::vec3(i, 0.0f, -GridSize / 2), glm::vec3(i, 0.0f, GridSize / 2), color, width);
-	//		RENDERER.DrawLine(glm::vec3(-GridSize / 2, 0.0f, i), glm::vec3(GridSize / 2, 0.0f, i), color, width);
-	//	}
-	//}
+bool FEEditorSceneGraphWindow::IsSelected(FENaiveSceneGraphNode* Node)
+{
+	FEEntity* CurrentEntity = Node->GetEntity();
+	if (CurrentEntity == nullptr)
+		return false;
 
-	static float FavgTime = 0.0f;
-	static std::vector<float> AvgTime;
-	static int counter = 0;
-
-	ImGui::Text((std::string("Time : ") + std::to_string(RENDERER.LastTestTime)).c_str());
-
-	if (AvgTime.size() < 100)
+	if (SELECTED.GetSelected(EDITOR.GetFocusedScene()) != nullptr && CurrentEntity != nullptr)
 	{
-		AvgTime.push_back(RENDERER.LastTestTime);
-	}
-	else if (AvgTime.size() >= 100)
-	{
-		AvgTime[counter++ % 100] = RENDERER.LastTestTime;
-	}
-
-	for (size_t i = 0; i < AvgTime.size(); i++)
-	{
-		FavgTime += AvgTime[i];
-	}
-	FavgTime /= AvgTime.size();
-
-
-	if (counter > 1000000)
-		counter = 0;
-
-	ImGui::Text((std::string("avg Time : ") + std::to_string(FavgTime)).c_str());
-
-	bool bFreezeCulling = RENDERER.bFreezeCulling;
-	ImGui::Checkbox("bFreezeCulling", &bFreezeCulling);
-	RENDERER.bFreezeCulling = bFreezeCulling;
-
-	bool bFreezeOcclusionCulling = !RENDERER.IsOcclusionCullingEnabled();
-	ImGui::Checkbox("freezeOcclusionCulling", &bFreezeOcclusionCulling);
-	RENDERER.SetOcclusionCullingEnabled(!bFreezeOcclusionCulling);
-
-	static bool bDisplaySelectedObjAABB = false;
-	ImGui::Checkbox("Display AABB of selected object", &bDisplaySelectedObjAABB);
-
-	// Draw AABB
-	FEEntity* SelectedEntity = SELECTED.GetSelected(CurrentScene);
-	if (SelectedEntity != nullptr &&
-		(SelectedEntity->HasComponent<FEGameModelComponent>() || SelectedEntity->HasComponent<FETerrainComponent>() || SelectedEntity->HasComponent<FEPointCloudComponent>()) &&
-		bDisplaySelectedObjAABB)
-	{
-		FEAABB SelectedAABB;
-		SelectedAABB = SelectedEntity->GetParentScene()->GetEntityAABB(SelectedEntity);
-		RENDERER.DebugDrawAABB(SelectedAABB);
-
-		if (SelectedEntity->HasComponent<FEInstancedComponent>())
-		{
-			static bool bDisplaySubObjAABB = false;
-			ImGui::Checkbox("Display AABB of instanced entity subobjects", &bDisplaySubObjAABB);
-
-			if (bDisplaySubObjAABB)
-			{
-				FEInstancedComponent& InstancedComponent = SelectedEntity->GetComponent<FEInstancedComponent>();
-				const int MaxIterations = InstancedComponent.IndividualInstancedAABB.size() * 8 >= FE_MAX_DEBUG_LINES ? FE_MAX_DEBUG_LINES : int(InstancedComponent.IndividualInstancedAABB.size());
-
-				for (size_t j = 0; j < MaxIterations; j++)
-				{
-					RENDERER.DebugDrawAABB(InstancedComponent.IndividualInstancedAABB[j]);
-				}
-			}
-		}
-	}
-
-	static bool bDisplaySceneAABB = false;
-	ImGui::Checkbox("Display AABB of scene", &bDisplaySceneAABB);
-	if (bDisplaySceneAABB)
-	{
-		FEAABB SceneAABB = CurrentScene->GetSceneAABB([](FEEntity* Entity) -> bool {
-			if (Entity->GetTag() == EDITOR_RESOURCE_TAG)
-				return false;
-
-			if (Entity->HasComponent<FESkyDomeComponent>())
-				return false;
-
-			if (Entity->HasComponent<FECameraComponent>())
-				return false;
-
+		if (SELECTED.GetSelected(EDITOR.GetFocusedScene())->GetObjectID() == CurrentEntity->GetObjectID())
 			return true;
-		});
-		RENDERER.DebugDrawAABB(SceneAABB);
 	}
 
-	// Draw camera frustum
-	if (SelectedEntity != nullptr && SelectedEntity->HasComponent<FECameraComponent>())
+	return false;
+}
+
+std::string FEEditorSceneGraphWindow::GetDisplayedName(FENaiveSceneGraphNode* Node)
+{
+	size_t Depth = Node->GetDepth();
+
+	FEEntity* CurrentEntity = Node->GetEntity();
+	std::string DisplayedName = CurrentEntity == nullptr ? Node->GetName() : CurrentEntity->GetName();
+
+	if (CurrentEntity == nullptr && Depth == 0)
 	{
-		static bool bDisplayCameraFrustum = false;
-		ImGui::Checkbox("Display camera frustum", &bDisplayCameraFrustum);
-		if (bDisplayCameraFrustum)
-			RENDERER.DebugDrawFrustum(SelectedEntity);
+		FEScene* ParentScene = EDITOR.GetFocusedScene();
+		if (ParentScene != nullptr)
+			DisplayedName = ParentScene->GetName();
 	}
 
-	ImGui::PopStyleVar();
-	ImGui::End();
+	return DisplayedName;
+}
+
+void FEEditorSceneGraphWindow::OnNodeHovered(FENaiveSceneGraphNode* Node)
+{
+	if (!DRAG_AND_DROP_MANAGER.ObjectIsDraged())
+	{
+		if (ImGui::IsMouseDragging(0))
+			DRAG_AND_DROP_MANAGER.SetObjectToDrag(Node, nullptr, ImVec2(), ImVec2());
+	}
+}
+
+void FEEditorSceneGraphWindow::AfterNodeRender(FENaiveSceneGraphNode* Node)
+{
+	SCENE_GRAPH_WINDOW.GetSceneNodeDragAndDropTarget(Node)->StickToItem();
+}
+
+void FEEditorSceneGraphWindow::ContextMenuRenderingFunction(FENaiveSceneGraphNode* Node)
+{
+	FEScene* CurrentScene = EDITOR.GetFocusedScene();
+	if (CurrentScene == nullptr)
+		return;
+
+	if (Node == nullptr)
+	{
+		if (ImGui::BeginMenu("Add"))
+		{
+			if (ImGui::MenuItem("Empty entity"))
+			{
+				CurrentScene->CreateEntity("Unnamed entity");
+			}
+
+			ImGui::EndMenu();
+		}
+	}
+	else
+	{
+		FEEntity* HoveredEntity = Node->GetEntity();
+		if (HoveredEntity != nullptr)
+		{
+			if (ImGui::MenuItem("Rename"))
+			{
+				SCENE_GRAPH_WINDOW.SceneGraphUI->ActivateRenameForNode(Node);
+			}
+
+			if (ImGui::MenuItem("Delete"))
+			{
+				if (SELECTED.GetSelected(CurrentScene) == HoveredEntity)
+					SELECTED.Clear(CurrentScene);
+
+				CurrentScene->DeleteEntity(HoveredEntity);
+			}
+		}
+	}
 }

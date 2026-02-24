@@ -151,7 +151,7 @@ void FEEditorHaloSelectionEffect::ClearSceneData(const std::string& SceneID)
 
 void FEEditorHaloSelectionEffect::AddSceneData(const std::string& SceneID)
 {
-	FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneID);
+	FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneID);
 	if (CurrentScene == nullptr)
 		return;
 

@@ -51,6 +51,8 @@ public:
     void SetGameMode(bool GameMode);
 
     void UpdateBeforeRender();
+
+	void RenderTemporaryDebugWindow();
 private:
     SINGLETON_PRIVATE_PART(FEEditor)
 
