@@ -355,7 +355,7 @@ static void CreateEntityCallback(const std::vector<FEObject*> SelectionsResult)
 
 DragAndDropTarget* FEEditorSceneGraphWindow::GetSceneNodeDragAndDropTarget(FENaiveSceneGraphNode* NodeToFind)
 {
-	std::string NewNodeID = SceneGraphUI->GetNodeInternalID(NodeToFind);
+	std::string NewNodeID = NodeToFind->GetObjectID();
 	int64_t UniqueID = static_cast<int64_t>(std::hash<std::string>{}(NewNodeID.c_str()));
 
 	if (SceneNodeDragAndDropTargets.find(UniqueID) == SceneNodeDragAndDropTargets.end())

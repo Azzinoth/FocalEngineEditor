@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ProjectWasModifiedPopUp.h"
 #include "FESceneGraphUI.h"
 
 class FEEditorSceneGraphWindow

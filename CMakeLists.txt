@@ -21,10 +21,12 @@ if(MSVC)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 		set(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME ON CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" FORCE)
+		set(FE_SCENE_GRAPH_UI_USE_STATIC_RUNTIME ON CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for FESceneGraphUI" FORCE)
     else()
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
 		set(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME OFF CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" FORCE)
+		set(FE_SCENE_GRAPH_UI_USE_STATIC_RUNTIME OFF CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for FESceneGraphUI" FORCE)
     endif()
 
     # Always add /MP for multi-processor compilation
@@ -47,6 +49,7 @@ set(USE_STATIC_RUNTIME OFF CACHE BOOL "Use static runtime (/MT) instead of dynam
 set(DEAR_IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/imgui CACHE PATH "Path to Dear ImGui directory." FORCE)
 if(BUILD_SHARED_LIBS)
 	set(VISUAL_NODE_SYSTEM_BUILD_SHARED_LIBS ON CACHE BOOL "Build VisualNodeSystem as a shared library" FORCE)
+	set(FE_SCENE_GRAPH_UI_BUILD_SHARED_LIBS ON CACHE BOOL "Build FESceneGraphUI as a shared library" FORCE)
 	# Set options for VisualNodeSystem
 	set(VISUAL_NODE_SYSTEM_USE_EXTERNAL_IMGUI ON CACHE BOOL "Use external ImGui from FEBasicApplication" FORCE)
 	set(EXTERNAL_IMGUI_LIBRARY FEBasicApplication CACHE FILEPATH "Path to external ImGui library" FORCE)
@@ -61,6 +64,7 @@ if(BUILD_SHARED_LIBS)
     set(VISUAL_NODE_SYSTEM_GLFW_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/ CACHE PATH "Path to GLFW include directory.")
 else()
 	set(VISUAL_NODE_SYSTEM_BUILD_SHARED_LIBS OFF CACHE BOOL "Build VisualNodeSystem as a shared library" FORCE)
+	set(FE_SCENE_GRAPH_UI_BUILD_SHARED_LIBS OFF CACHE BOOL "Build FESceneGraphUI as a shared library" FORCE)
 	
     if(USE_STATIC_RUNTIME)
         set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/GLFW/lib/x64/glfw3_mt.lib CACHE PATH "Path to GLFW library." FORCE)
@@ -75,6 +79,10 @@ endif()
 
 if(NOT TARGET FocalEngine)
 	add_subdirectory(SubSystems/FocalEngine)
+endif()
+
+if(NOT TARGET FESceneGraphUI)
+    add_subdirectory(SubSystems/FESceneGraphUI)
 endif()
 
 if(USE_STATIC_RUNTIME)
@@ -165,8 +173,6 @@ file(GLOB EditorWindows_SRC
 	"EditorWindows/PrefabEditorManager.h"
 	"EditorWindows/DebugTextureViewWindow.cpp"
 	"EditorWindows/DebugTextureViewWindow.h"
-	"EditorWindows/FESceneGraphUI.cpp"
-	"EditorWindows/FESceneGraphUI.h"
 	"EditorWindows/SceneGraphWindow.cpp"
 	"EditorWindows/SceneGraphWindow.h"
 	"EditorWindows/InspectorWindow.cpp"
@@ -228,6 +234,7 @@ target_link_libraries(FocalEngineEditor
         FEBasicApplication
 		VisualNodeSystem
         FocalEngine
+		FESceneGraphUI
         ${GLFW_LIBRARY}
         ${GLEW_LIBRARY}
         opengl32.lib
@@ -275,6 +282,9 @@ if(BUILD_SHARED_LIBS)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE_DIR:FocalEngine>/FocalEngine.dll"
             "$<TARGET_FILE_DIR:FocalEngineEditor>"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"$<TARGET_FILE_DIR:FESceneGraphUI>/FESceneGraphUI.dll"
+			"$<TARGET_FILE_DIR:FocalEngineEditor>"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${OpenXRLoader_DLL}
             "$<TARGET_FILE_DIR:FocalEngineEditor>"
