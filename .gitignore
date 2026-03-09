@@ -18,7 +18,7 @@
 imgui.ini
 *.txt
 cmake_install.cmake
-FEEditorVersion.h
+FE_EDITOR_Version.h
 
 #Folders
 Debug/

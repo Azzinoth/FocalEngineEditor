@@ -494,3 +494,8 @@ void FEEditorSceneGraphWindow::ContextMenuRenderingFunction(FENaiveSceneGraphNod
 		}
 	}
 }
+
+FESceneGraphUI* FEEditorSceneGraphWindow::GetSceneGraphUI() const
+{
+	return SceneGraphUI;
+}

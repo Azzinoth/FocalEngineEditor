@@ -3,7 +3,6 @@
 #include "EditorWindows/InspectorWindow.h"
 #include "EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.h"
 #include <functional>
-#include "FEEditorVersion.h"
 
 class FEEditor
 {

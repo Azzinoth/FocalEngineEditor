@@ -10,40 +10,33 @@ FEEditor::FEEditor()
 
 FEEditor::~FEEditor() {}
 
+#include "VersionInfo/FE_EDITOR_Version.h"
+#include "VersionInfo/FEVersionInfo.h"
+FE_DEFINE_VERSION_INFO(FE_EDITOR_)
+
 std::string FEEditor::GetEditorVersion()
 {
-	return std::to_string(EDITOR_VERSION_MAJOR) + "."
-		   + std::to_string(EDITOR_VERSION_MINOR) + "."
-		   + std::to_string(EDITOR_VERSION_PATCH);
+	return GetFE_EDITOR_VersionInfo().GetVersion();
 }
 
 int FEEditor::GetEditorBuildNumber()
 {
-	return EDITOR_BUILD_NUMBER;
+	return GetFE_EDITOR_VersionInfo().BuildNumber;
 }
 
 std::string FEEditor::GetEditorBuildTimestamp()
 {
-	return EDITOR_BUILD_TIMESTAMP;
+	return GetFE_EDITOR_VersionInfo().BuildTimestamp;
 }
 
 std::string FEEditor::GetEditorBuildInfo()
 {
-	std::string Result = "build " + std::to_string(EDITOR_BUILD_NUMBER) + " (" + std::string(EDITOR_GIT_HASH);
-
-	if (EDITOR_BUILD_BRANCH_OFFSET > 0)
-		Result += " " + std::string(EDITOR_GIT_BRANCH) + " +" + std::to_string(EDITOR_BUILD_BRANCH_OFFSET) + " from master";
-
-	if (EDITOR_GIT_DIRTY)
-		Result += ", dirty";
-
-	Result += ")";
-	return Result;
+	return GetFE_EDITOR_VersionInfo().GetBuildInfo();
 }
 
 std::string FEEditor::GetEditorFullVersion()
 {
-	return "Focal Engine Editor " + GetEditorVersion() + " " + GetEditorBuildInfo();
+	return "Focal Engine Editor " + GetFE_EDITOR_VersionInfo().GetFullVersionString();
 }
 
 double FEEditor::GetLastMouseX() const
@@ -705,9 +698,7 @@ void FEEditor::RenderAboutWindow()
 		bShouldOpenAboutWindow = false;
 	}
 
-	float PopupW = 700.0f;
-	float PopupH = 145.0f;
-	ImGui::SetNextWindowSize(ImVec2(PopupW, PopupH));
+	ImGui::SetNextWindowSizeConstraints(ImVec2(400.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
 	if (ImGui::BeginPopupModal("About", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
 	{
 		int WindowW = 0;
@@ -716,28 +707,33 @@ void FEEditor::RenderAboutWindow()
 
 		ImGui::SetWindowPos(ImVec2(WindowW / 2.0f - ImGui::GetWindowWidth() / 2.0f, WindowH / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 
-		std::string Text = GetEditorFullVersion();
-		ImVec2 TextSize = ImGui::CalcTextSize(Text.c_str());
-		ImGui::SetCursorPosX(PopupW / 2.0f - TextSize.x / 2.0f);
-		ImGui::Text(Text.c_str());
+		float ContentW = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+		auto CenteredText = [ContentW](const std::string& Text) {
+			ImVec2 TextSize = ImGui::CalcTextSize(Text.c_str());
+			ImGui::SetCursorPosX((ContentW - TextSize.x) / 2.0f + ImGui::GetWindowContentRegionMin().x);
+			ImGui::Text("%s", Text.c_str());
+		};
+		CenteredText(GetEditorFullVersion());
+
+		ImGui::Separator();
+		ImGui::Text("Modules:");
+
+		CenteredText(APPLICATION.GetFullVersion());
+		CenteredText(ENGINE.GetFullVersion());
+		CenteredText(NODE_SYSTEM.GetFullVersion());
+
+		CenteredText(SCENE_GRAPH_WINDOW.GetSceneGraphUI()->GetFullVersion());
 
 		ImGui::Separator();
 
-		Text = "To submit a bug report or provide feedback, ";
-		TextSize = ImGui::CalcTextSize(Text.c_str());
-		ImGui::SetCursorPosX(PopupW / 2.0f - TextSize.x / 2.0f);
-		ImGui::Text(Text.c_str());
-
-		Text = "please email me at ";
-		TextSize = ImGui::CalcTextSize(Text.c_str());
-		ImGui::SetCursorPosX(PopupW / 2.0f - TextSize.x / 2.0f);
-		ImGui::Text(Text.c_str());
+		CenteredText("To submit a bug report or provide feedback,");
+		CenteredText("please email me at ");
 
 		ImGui::Separator();
 
-		ImGui::SetCursorPosX(PopupW / 2.0f - 210.0f / 2.0f);
-		ImGui::SetNextItemWidth(210);
-		if (ImGui::Button("Close", ImVec2(210.0f, 25.0f)))
+		float ButtonW = 210.0f;
+		ImGui::SetCursorPosX((ContentW - ButtonW) / 2.0f + ImGui::GetWindowContentRegionMin().x);
+		if (ImGui::Button("Close", ImVec2(ButtonW, 25.0f)))
 			ImGui::CloseCurrentPopup();
 
 		ImGui::EndPopup();

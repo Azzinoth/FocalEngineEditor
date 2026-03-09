@@ -76,6 +76,8 @@ class FEEditorSceneGraphWindow
 	FESceneGraphNodeWidget VisibilityToggleWidget;
 public:
     SINGLETON_PUBLIC_PART(FEEditorSceneGraphWindow)
+
+    FESceneGraphUI* GetSceneGraphUI() const;
 };
 
 #define SCENE_GRAPH_WINDOW FEEditorSceneGraphWindow::GetInstance()
