@@ -88,14 +88,14 @@
     public:
         int ItemUnderMouse = -1;
         int RenameIndex = -1;
-        char RenameBuffer[1024];
+		std::string RenameBuffer = "";
         bool bLastFrameRenameEditWasVisible = false;
         static FEObject* ItemInFocus;
 
         // Resource filtering
         std::vector<std::string> AllResourcesIDs;
         std::vector<std::string> FilteredResourcesIDs;
-        char NameFilter[1024];
+		std::string NameFilter = "";
         std::vector<std::string> ObjectTypeFilters;
 		std::vector<std::string> ObjectTagNegativeFilters;
         bool AnyFilterActive();

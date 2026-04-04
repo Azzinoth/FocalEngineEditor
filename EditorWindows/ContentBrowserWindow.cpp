@@ -6,8 +6,6 @@ FEObject* FEEditorContentBrowserWindow::ItemInFocus = nullptr;
 
 FEEditorContentBrowserWindow::FEEditorContentBrowserWindow()
 {
-	strcpy_s(NameFilter, "");
-
 	INPUT.AddMouseButtonCallback(&FEEditorContentBrowserWindow::MouseButtonCallback);
 }
 
@@ -74,7 +72,7 @@ void FEEditorContentBrowserWindow::OpenItemParentFolder(FEObject* Object)
 {
 	VIRTUAL_FILE_SYSTEM.SetCurrentPath(VIRTUAL_FILE_SYSTEM.LocateFile(Object));
 	ImGui::SetWindowFocus("Content Browser");
-	strcpy_s(NameFilter, "");
+	NameFilter = "";
 	ItemInFocus = Object;
 
 	const auto Content = VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs(VIRTUAL_FILE_SYSTEM.GetCurrentPath());
@@ -183,7 +181,7 @@ void FEEditorContentBrowserWindow::Render()
 						if (CurrentResource->GetName() == NewDirectoryName)
 						{
 							RenameIndex = int(i);
-							strcpy_s(RenameBuffer, CurrentResource->GetName().size() + 1, CurrentResource->GetName().c_str());
+							RenameBuffer = CurrentResource->GetName();
 							bLastFrameRenameEditWasVisible = false;
 							break;
 						}
@@ -270,7 +268,7 @@ void FEEditorContentBrowserWindow::Render()
 				{
 					RenameIndex = ItemUnderMouse;
 
-					strcpy_s(RenameBuffer, ObjectUnderMouse->GetName().size() + 1, ObjectUnderMouse->GetName().c_str());
+					RenameBuffer = ObjectUnderMouse->GetName();
 					bLastFrameRenameEditWasVisible = false;
 				}
 			}
@@ -635,7 +633,7 @@ void FEEditorContentBrowserWindow::Clear()
 	FilteredResourcesIDs.clear();
 	ItemUnderMouse = -1;
 	RenameIndex = -1;
-	strcpy_s(NameFilter, "");
+	NameFilter = "";
 }
 
 void FEEditorContentBrowserWindow::InitializeResources()
@@ -849,7 +847,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 	if (ImGui::ImageButton("GoUpVFSButton", VFSBackIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 	{
 		VIRTUAL_FILE_SYSTEM.SetCurrentPath(VIRTUAL_FILE_SYSTEM.GetDirectoryParent(VIRTUAL_FILE_SYSTEM.GetCurrentPath()));
-		strcpy_s(NameFilter, "");
+		NameFilter = "";
 	}
 	ImGui::PopStyleVar();
 	VFSBackButtonTarget->StickToItem();
@@ -1165,7 +1163,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 
 	ImGui::SetCursorPosX(120 + 140);
 	ImGui::SetCursorPosY(CurrentY + 47);
-	ImGui::InputText("##filter", NameFilter, IM_ARRAYSIZE(NameFilter));
+	ImGui::InputText("##ContentBrowserNameFilter", &NameFilter);
 
 	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 25);
 	ImGui::Separator();
@@ -1292,13 +1290,13 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 				if (!bLastFrameRenameEditWasVisible)
 				{
 					ImGui::SetKeyboardFocusHere(0);
-					ImGui::SetFocusID(ImGui::GetID("##newNameEditor"), FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl());
+					ImGui::SetFocusID(ImGui::GetID("##NewNameEditor"), FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl());
 					ImGui::SetItemDefaultFocus();
 					bLastFrameRenameEditWasVisible = true;
 				}
 
 				ImGui::SetNextItemWidth(ItemIconSize + 8.0f + 8.0f);
-				if (ImGui::InputText("##newNameEditor", RenameBuffer, IM_ARRAYSIZE(RenameBuffer), ImGuiInputTextFlags_EnterReturnsTrue) ||
+				if (ImGui::InputText("##NewNameEditor", &RenameBuffer, ImGuiInputTextFlags_EnterReturnsTrue) ||
 					ImGui::IsMouseClicked(0) && !ImGui::IsItemHovered() || !ImGui::IsItemFocused())
 				{
 					if (ObjectToRename->GetType() == FE_NULL)
@@ -1491,7 +1489,7 @@ bool FEEditorContentBrowserWindow::ShouldPassVisibilityFilter(std::string Object
 		return false;
 	}
 
-	if (strlen(NameFilter) > 0)
+	if (!NameFilter.empty())
 	{
 		if (Object->GetName().find(NameFilter) == -1)
 			return false;

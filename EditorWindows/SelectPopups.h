@@ -11,7 +11,7 @@ class SelectFEObjectPopUp : public ImGuiModalPopup
 
 	std::vector<FEObject*> ItemsList;
 	std::vector<FEObject*> FilteredItemsList;
-	char Filter[512];
+	std::string FilterString;
 
 	ImGuiButton* SelectButton = nullptr;
 	ImGuiButton* CancelButton = nullptr;

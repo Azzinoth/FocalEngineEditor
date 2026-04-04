@@ -1169,14 +1169,9 @@ void FEEditorInspectorWindow::Render()
 		if (ImGui::CollapsingHeader("Tag", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			FETagComponent& TagComponent = EntitySelected->GetComponent<FETagComponent>();
-			char Buffer[1024];
-			memset(Buffer, 0, 1024);
-			strcpy_s(Buffer, TagComponent.GetTag().c_str());
-			if (ImGui::InputText("##Tag Edit", Buffer, 1024))
-			{
-				std::string NewTag = Buffer;
-				TagComponent.SetTag(NewTag);
-			}
+			std::string CurrentTag = TagComponent.GetTag();
+			if (ImGui::InputText(("##Tag Edit" + EntitySelected->GetObjectID()).c_str(), &CurrentTag))
+				TagComponent.SetTag(CurrentTag);
 		}
 	}
 
@@ -1995,7 +1990,10 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 			ImGui::Text("Layers:");
 
-			ImGui::BeginChildFrame(ImGui::GetID("Layers ListBox Child"), ImVec2(ImGui::GetContentRegionAvail().x - 10.0f, 500.0f), ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+			ImGui::BeginChild(ImGui::GetID("Layers ListBox Child"),
+							 ImVec2(ImGui::GetContentRegionAvail().x - 10.0f, 500.0f),
+							 ImGuiChildFlags_Borders,
+							 ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 			bool bListBoxHovered = false;
 			if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
 				bListBoxHovered = true;
@@ -2027,18 +2025,18 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 					if (!bLastFrameTerrainLayerRenameEditWasVisible)
 					{
 						ImGui::SetKeyboardFocusHere(0);
-						ImGui::SetFocusID(ImGui::GetID("##newNameTerrainLayerEditor"), FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl());
+						ImGui::SetFocusID(ImGui::GetID("##NewNameTerrainLayerEditor"), FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl());
 						ImGui::SetItemDefaultFocus();
 						bLastFrameTerrainLayerRenameEditWasVisible = true;
 					}
 
 					ImGui::SetNextItemWidth(350.0f);
 					ImGui::SetCursorPos(ImVec2(PostionBeforeDraw.x + 64.0f + (ImGui::GetContentRegionAvail().x - 64.0f) / 2.0f - 350.0f / 2.0f, PostionBeforeDraw.y + 12));
-					if (ImGui::InputText("##newNameTerrainLayerEditor", TerrainLayerRename, IM_ARRAYSIZE(TerrainLayerRename), ImGuiInputTextFlags_EnterReturnsTrue) ||
+					if (ImGui::InputText("##NewNameTerrainLayerEditor", &TerrainLayerRenameBuffer, ImGuiInputTextFlags_EnterReturnsTrue) ||
 						ImGui::IsMouseClicked(0) && !ImGui::IsItemHovered() || ImGui::IsItemFocused()/*FE_IMGUI_WINDOW_MANAGER.GetCurrentFocusID() != ImGui::GetID("##newNameTerrainLayerEditor")*/)
 					{
 						PROJECT_MANAGER.GetCurrent()->SetModified(true);
-						Layer->SetName(TerrainLayerRename);
+						Layer->SetName(TerrainLayerRenameBuffer);
 
 						TerrainLayerRenameIndex = -1;
 					}
@@ -2070,7 +2068,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 			ImGui::EndListBox();
 			ImGui::PopFont();
 
-			ImGui::EndChildFrame();
+			ImGui::EndChild();
 			ImGui::EndTabItem();
 
 			if (bShouldOpenContextMenu)
@@ -2127,7 +2125,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 						{
 							TerrainLayerRenameIndex = HoveredTerrainLayerItem;
 
-							strcpy_s(TerrainLayerRename, Layer->GetName().size() + 1, Layer->GetName().c_str());
+							TerrainLayerRenameBuffer = Layer->GetName();
 							bLastFrameTerrainLayerRenameEditWasVisible = false;
 						}
 
@@ -2311,7 +2309,7 @@ void FEEditorInspectorWindow::AddNativeScriptComponent(FEEntity* Entity)
 	Entity->AddComponent<FENativeScriptComponent>();
 }
 
-// TO-DO: Make it more general with more templated magic.
+// FE_TO_DO: Make it more general with more templated magic.
 template<typename T>
 void HandleScriptVariable(FENativeScriptComponent& Component, const std::string VariableName)
 {
@@ -2335,13 +2333,8 @@ void HandleScriptVariable(FENativeScriptComponent& Component, const std::string 
 		}
 		else if constexpr (std::is_same_v<T, std::string>)
 		{
-			char Buffer[1024];
-			strcpy_s(Buffer, sizeof(Buffer), Value.c_str());
-			if (ImGui::InputText(VariableName.c_str(), Buffer, sizeof(Buffer)))
-			{
-				Value = Buffer;
+			if (ImGui::InputText(VariableName.c_str(), &Value))
 				Component.SetVariableValue(VariableName, Value);
-			}
 		}
 		else if constexpr (std::is_same_v<T, glm::vec2> || std::is_same_v<T, glm::vec3> || std::is_same_v<T, glm::vec4>)
 		{
@@ -2377,7 +2370,7 @@ void HandleScriptVariable(FENativeScriptComponent& Component, const std::string 
 	}
 }
 
-// TO-DO: Make it more general with more templated magic.
+// FE_TO_DO: Make it more general with more templated magic.
 template<typename T>
 void HandleScriptArrayVariable(FENativeScriptComponent& Component, const std::string VariableName)
 {
@@ -2412,11 +2405,8 @@ void HandleScriptArrayVariable(FENativeScriptComponent& Component, const std::st
 			}
 			else if constexpr (std::is_same_v<T, std::string>)
 			{
-				char Buffer[1024];
-				strcpy_s(Buffer, sizeof(Buffer), Value[i].c_str());
-				if (ImGui::InputText(ElementName.c_str(), Buffer, sizeof(Buffer)))
+				if (ImGui::InputText(ElementName.c_str(), &Value[i]))
 				{
-					Value[i] = Buffer;
 					Component.SetVariableValue(VariableName, Value);
 				}
 			}

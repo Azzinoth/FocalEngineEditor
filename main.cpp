@@ -98,7 +98,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				if (ENGINE.EnableVR())
 				{
 
-					std::string ActiveRuntime = FEOpenXR_CORE.GetActiveRuntimeInfo();
 					std::vector<FEOpenXRExtensionInfo> ExtensionsInfo = FEOpenXR_CORE.GetAvailableExtensionsInfo();
 
 					int y = 0;

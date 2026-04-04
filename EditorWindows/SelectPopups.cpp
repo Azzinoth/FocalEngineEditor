@@ -119,7 +119,7 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 	}
 
 	FilteredItemsList = ItemsList;
-	strcpy_s(Filter, "");
+	FilterString = "";
 
 	SelectedObjects.clear();
 	if (HighlightedObject != nullptr)
@@ -149,9 +149,9 @@ void SelectFEObjectPopUp::Render()
 		ImGui::SameLine();
 
 		ImGui::SetCursorPosY(35);
-		if (ImGui::InputText("##selectFEObjectPopUpFilter", Filter, IM_ARRAYSIZE(Filter)))
+		if (ImGui::InputText("##SelectFEObjectPopUpFilter", &FilterString))
 		{
-			if (strlen(Filter) == 0)
+			if (FilterString.empty())
 			{
 				FilteredItemsList = ItemsList;
 			}
@@ -160,7 +160,7 @@ void SelectFEObjectPopUp::Render()
 				FilteredItemsList.clear();
 				for (size_t i = 0; i < ItemsList.size(); i++)
 				{
-					if (ItemsList[i]->GetName().find(Filter) != -1)
+					if (ItemsList[i]->GetName().find(FilterString) != std::string::npos)
 					{
 						FilteredItemsList.push_back(ItemsList[i]);
 					}
