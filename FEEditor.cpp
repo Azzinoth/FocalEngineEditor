@@ -718,11 +718,10 @@ void FEEditor::RenderAboutWindow()
 		ImGui::Separator();
 		ImGui::Text("Modules:");
 
-		CenteredText(APPLICATION.GetFullVersion());
 		CenteredText(ENGINE.GetFullVersion());
-		CenteredText(NODE_SYSTEM.GetFullVersion());
-
 		CenteredText(SCENE_GRAPH_WINDOW.GetSceneGraphUI()->GetFullVersion());
+		CenteredText(NODE_SYSTEM.GetFullVersion());
+		CenteredText(APPLICATION.GetFullVersion());
 
 		ImGui::Separator();
 

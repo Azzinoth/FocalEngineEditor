@@ -53,6 +53,8 @@ if(BUILD_SHARED_LIBS)
 	# Set options for VisualNodeSystem
 	set(VISUAL_NODE_SYSTEM_USE_EXTERNAL_IMGUI ON CACHE BOOL "Use external ImGui from FEBasicApplication" FORCE)
 	set(EXTERNAL_IMGUI_LIBRARY FEBasicApplication CACHE FILEPATH "Path to external ImGui library" FORCE)
+	# Options for FESceneGraphUI
+	set(FE_SCENE_GRAPH_UI_USE_EXTERNAL_IMGUI ON CACHE BOOL "Link against an external ImGui library instead of vendoring sources" FORCE)
 
     if(USE_STATIC_RUNTIME)
         message(WARNING "Building a shared library with static runtime is uncommon and may lead to issues.")
@@ -82,6 +84,7 @@ if(NOT TARGET FocalEngine)
 endif()
 
 if(NOT TARGET FESceneGraphUI)
+	set(FE_SCENE_GRAPH_UI_WITH_FOCAL_BACKEND ON CACHE BOOL "" FORCE)
     add_subdirectory(SubSystems/FESceneGraphUI)
 endif()
 
@@ -146,6 +149,8 @@ file(GLOB FEDearImguiWrapper_SRC
 )
 
 file(GLOB EditorWindows_BaseWindowClasses_SRC
+	"SubSystems/FESceneGraphUI/FocalEngineBackend.cpp"
+	"SubSystems/FESceneGraphUI/FocalEngineBackend.h"
 	"EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.h"
 	"EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.cpp"
 )
@@ -235,10 +240,13 @@ target_link_libraries(FocalEngineEditor
 		VisualNodeSystem
         FocalEngine
 		FESceneGraphUI
+		FESceneGraphUI_FocalBackend
         ${GLFW_LIBRARY}
         ${GLEW_LIBRARY}
         opengl32.lib
 )
+
+target_compile_definitions(FocalEngineEditor PRIVATE SCENE_GRAPH_UI_WITH_FOCAL_ENGINE)
 
 # *************** EDITOR ***************
 source_group("Source Files/" FILES ${EDITOR_SOURCE_FILES})

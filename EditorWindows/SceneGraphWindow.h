@@ -1,7 +1,8 @@
 #pragma once
 
 #include "ProjectWasModifiedPopUp.h"
-#include "FESceneGraphUI.h"
+#include "TreeView.h"
+#include "FocalEngineBackend.h"
 
 class FEEditorSceneGraphWindow
 {
@@ -52,32 +53,34 @@ class FEEditorSceneGraphWindow
     void Clear();
     void InitializeResources();
 
-	FESceneGraphUI* SceneGraphUI = nullptr;
+    SceneGraphUI::TreeView* SceneGraphUI = nullptr;
+	FESceneGraphBackend* SceneGraphBackend = nullptr;
 	std::string LastFrameRootNodeID = "";
-    static void OnNodeClicked(FENaiveSceneGraphNode* Node, ImGuiMouseButton_ MouseButton);
-    static bool IsSelected(FENaiveSceneGraphNode* Node);
-    static std::string GetDisplayedName(FENaiveSceneGraphNode* Node);
-	static void OnNodeHovered(FENaiveSceneGraphNode* Node);
-	static void AfterNodeRender(FENaiveSceneGraphNode* Node);
-    static void ContextMenuRenderingFunction(FENaiveSceneGraphNode* Node);
+    static void OnNodeClicked(SceneGraphUI::NodeHandle Node, ImGuiMouseButton_ MouseButton);
+    static bool IsSelected(SceneGraphUI::NodeHandle Node);
+    static std::string GetDisplayedName(SceneGraphUI::NodeHandle Node);
+	static void OnNodeHovered(SceneGraphUI::NodeHandle Node);
+	static void AfterNodeRender(SceneGraphUI::NodeHandle Node);
+    static void ContextMenuRenderingFunction(SceneGraphUI::NodeHandle Node);
+	static void RenameNodeFunction(SceneGraphUI::NodeHandle Node, std::string NewName);
 
-    FESceneGraphNodeWidget CameraComponentIndicator;
-	FESceneGraphNodeWidget LightComponentIndicator;
-	FESceneGraphNodeWidget GameModelComponentIndicator;
-	FESceneGraphNodeWidget TerrainComponentIndicator;
-	FESceneGraphNodeWidget InstancedEntityComponentIndicator;
-    FESceneGraphNodeWidget PrefabSceneGraphIndicator;
-	FESceneGraphNodeWidget SkyDomeComponentIndicator;
-	FESceneGraphNodeWidget LineComponentIndicator;
-    FESceneGraphNodeWidget VirtualUIComponentIndicator;
-	FESceneGraphNodeWidget PointCloudComponentIndicator;
-	FESceneGraphNodeWidget NativeScriptComponentIndicator;
+    SceneGraphUI::NodeWidget CameraComponentIndicator;
+    SceneGraphUI::NodeWidget LightComponentIndicator;
+    SceneGraphUI::NodeWidget GameModelComponentIndicator;
+    SceneGraphUI::NodeWidget TerrainComponentIndicator;
+    SceneGraphUI::NodeWidget InstancedEntityComponentIndicator;
+    SceneGraphUI::NodeWidget PrefabSceneGraphIndicator;
+    SceneGraphUI::NodeWidget SkyDomeComponentIndicator;
+    SceneGraphUI::NodeWidget LineComponentIndicator;
+    SceneGraphUI::NodeWidget VirtualUIComponentIndicator;
+    SceneGraphUI::NodeWidget PointCloudComponentIndicator;
+    SceneGraphUI::NodeWidget NativeScriptComponentIndicator;
 
-	FESceneGraphNodeWidget VisibilityToggleWidget;
+    SceneGraphUI::NodeWidget VisibilityToggleWidget;
 public:
     SINGLETON_PUBLIC_PART(FEEditorSceneGraphWindow)
 
-    FESceneGraphUI* GetSceneGraphUI() const;
+    SceneGraphUI::TreeView* GetSceneGraphUI() const;
 };
 
 #define SCENE_GRAPH_WINDOW FEEditorSceneGraphWindow::GetInstance()

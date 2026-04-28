@@ -1,9 +1,11 @@
 #include "SceneGraphWindow.h"
 #include "../FEEditor.h"
+using namespace SceneGraphUI;
 
 FEEditorSceneGraphWindow::FEEditorSceneGraphWindow()
 {
-	SceneGraphUI = new FESceneGraphUI();
+	SceneGraphBackend = new FESceneGraphBackend();
+	SceneGraphUI = new TreeView(SceneGraphBackend);
 	SceneGraphUI->AddHiddenEntityTag(EDITOR_RESOURCE_TAG);
 
 	SceneGraphUI->AddOnNodeClickedCallback(FEEditorSceneGraphWindow::OnNodeClicked);
@@ -12,6 +14,7 @@ FEEditorSceneGraphWindow::FEEditorSceneGraphWindow()
 	SceneGraphUI->AddOnNodeHoveredCallback(FEEditorSceneGraphWindow::OnNodeHovered);
 	SceneGraphUI->AddAfterNodeRenderCallback(FEEditorSceneGraphWindow::AfterNodeRender);
 	SceneGraphUI->SetContextMenuRenderingFunction(FEEditorSceneGraphWindow::ContextMenuRenderingFunction);
+	SceneGraphUI->SetRenameNodeFunction(FEEditorSceneGraphWindow::RenameNodeFunction);
 }
 
 void FEEditorSceneGraphWindow::InitializeResources()
@@ -60,15 +63,15 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	VisibilityOffIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/VisibilityOff.png", "VisibilityOffIcon");
 	RESOURCE_MANAGER.SetTag(VisibilityOffIcon, EDITOR_RESOURCE_TAG);
 
-	CameraComponentIndicator.Icon = CameraIcon;
+	CameraComponentIndicator.Icon = CameraIcon->GetTextureID();
 	CameraComponentIndicator.bIsInteractive = false;
 	// FE_TO_DO_MAYBE: Maybe after clicking it should focus on camera component in component list or something similar.
 	//CameraComponentIndicator.OnClickCallback = [](FENaiveSceneGraphNode* Node) {};
 	CameraComponentIndicator.bIsVisibleByDefault = false;
 	CameraComponentIndicator.TooltipText = "Camera component";
 
-	CameraComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	CameraComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
 			return false;
 
@@ -79,15 +82,15 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	};
 	SceneGraphUI->AddNodeWidget(CameraComponentIndicator);
 
-	LightComponentIndicator.Icon = nullptr;
+	LightComponentIndicator.Icon = 0;
 	LightComponentIndicator.bIsInteractive = false;
 	// FE_TO_DO_MAYBE: Maybe after clicking it should focus on camera component in component list or something similar.
 	//CameraComponentIndicator.OnClickCallback = [](FENaiveSceneGraphNode* Node) {};
 	LightComponentIndicator.bIsVisibleByDefault = false;
 	LightComponentIndicator.TooltipText = "Light component";
 
-	LightComponentIndicator.IsVisiblePredicate = [this](FENaiveSceneGraphNode* Node) -> bool {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	LightComponentIndicator.IsVisiblePredicate = [this](SceneGraphUI::NodeHandle Node) -> bool {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
 			return false;
 
@@ -97,35 +100,35 @@ void FEEditorSceneGraphWindow::InitializeResources()
 		return false;
 	};
 
-	LightComponentIndicator.DynamicIconProvider = [this](FENaiveSceneGraphNode* Node) -> FETexture* {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	LightComponentIndicator.DynamicIconProvider = [this](SceneGraphUI::NodeHandle Node) -> ImTextureID {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
-			return nullptr;
+			return 0;
 
 		if (!CurrentEntity->HasComponent<FELightComponent>())
-			return nullptr;
+			return 0;
 
 		FELightComponent& LightComponent = CurrentEntity->GetComponent<FELightComponent>();
 		if (LightComponent.GetType() == FE_DIRECTIONAL_LIGHT)
-			return DirectionalLightIcon;
-		
+			return DirectionalLightIcon->GetTextureID();
+
 		if (LightComponent.GetType() == FE_SPOT_LIGHT)
-			return SpotLightIcon;
-		
+			return SpotLightIcon->GetTextureID();
+
 		if (LightComponent.GetType() == FE_POINT_LIGHT)
-			return PointLightIcon;
-		
-		return nullptr;
+			return PointLightIcon->GetTextureID();
+
+		return 0;
 	};
 	SceneGraphUI->AddNodeWidget(LightComponentIndicator);
 
-	GameModelComponentIndicator.Icon = GameModelSceneGraphIcon;
+	GameModelComponentIndicator.Icon = GameModelSceneGraphIcon->GetTextureID();
 	GameModelComponentIndicator.bIsInteractive = false;
 	GameModelComponentIndicator.bIsVisibleByDefault = false;
 	GameModelComponentIndicator.TooltipText = "Game model component";
 
-	GameModelComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	GameModelComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
 			return false;
 
@@ -136,13 +139,13 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	};
 	SceneGraphUI->AddNodeWidget(GameModelComponentIndicator);
 
-	TerrainComponentIndicator.Icon = TerrainIcon;
+	TerrainComponentIndicator.Icon = TerrainIcon->GetTextureID();
 	TerrainComponentIndicator.bIsInteractive = false;
 	TerrainComponentIndicator.bIsVisibleByDefault = false;
 	TerrainComponentIndicator.TooltipText = "Terrain component";
 
-	TerrainComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	TerrainComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
 			return false;
 
@@ -153,13 +156,13 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	};
 	SceneGraphUI->AddNodeWidget(TerrainComponentIndicator);
 
-	InstancedEntityComponentIndicator.Icon = InstancedEntityIcon;
+	InstancedEntityComponentIndicator.Icon = InstancedEntityIcon->GetTextureID();
 	InstancedEntityComponentIndicator.bIsInteractive = false;
 	InstancedEntityComponentIndicator.bIsVisibleByDefault = false;
 	InstancedEntityComponentIndicator.TooltipText = "Instanced entity component";
 
-	InstancedEntityComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	InstancedEntityComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
 			return false;
 
@@ -170,13 +173,13 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	};
 	SceneGraphUI->AddNodeWidget(InstancedEntityComponentIndicator);
 
-	PrefabSceneGraphIndicator.Icon = PrefabSceneGraphIcon;
+	PrefabSceneGraphIndicator.Icon = PrefabSceneGraphIcon->GetTextureID();
 	PrefabSceneGraphIndicator.bIsInteractive = false;
 	PrefabSceneGraphIndicator.bIsVisibleByDefault = false;
 	PrefabSceneGraphIndicator.TooltipText = "Prefab Instance component";
 
-	PrefabSceneGraphIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	PrefabSceneGraphIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
 			return false;
 
@@ -187,13 +190,13 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	};
 	SceneGraphUI->AddNodeWidget(PrefabSceneGraphIndicator);
 
-	SkyDomeComponentIndicator.Icon = SkyDomeIcon;
+	SkyDomeComponentIndicator.Icon = SkyDomeIcon->GetTextureID();
 	SkyDomeComponentIndicator.bIsInteractive = false;
 	SkyDomeComponentIndicator.bIsVisibleByDefault = false;
 	SkyDomeComponentIndicator.TooltipText = "Sky dome component";
 
-	SkyDomeComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	SkyDomeComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
 			return false;
 
@@ -204,13 +207,13 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	};
 	SceneGraphUI->AddNodeWidget(SkyDomeComponentIndicator);
 
-	LineComponentIndicator.Icon = LineIcon;
+	LineComponentIndicator.Icon = LineIcon->GetTextureID();
 	LineComponentIndicator.bIsInteractive = false;
 	LineComponentIndicator.bIsVisibleByDefault = false;
 	LineComponentIndicator.TooltipText = "Line component";
 
-	LineComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	LineComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
 			return false;
 
@@ -221,13 +224,13 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	};
 	SceneGraphUI->AddNodeWidget(LineComponentIndicator);
 
-	VirtualUIComponentIndicator.Icon = VirtualUIIcon;
+	VirtualUIComponentIndicator.Icon = VirtualUIIcon->GetTextureID();
 	VirtualUIComponentIndicator.bIsInteractive = false;
 	VirtualUIComponentIndicator.bIsVisibleByDefault = false;
 	VirtualUIComponentIndicator.TooltipText = "Virtual UI component";
 
-	VirtualUIComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	VirtualUIComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
 			return false;
 
@@ -238,13 +241,13 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	};
 	SceneGraphUI->AddNodeWidget(VirtualUIComponentIndicator);
 
-	PointCloudComponentIndicator.Icon = PointCloudIcon;
+	PointCloudComponentIndicator.Icon = PointCloudIcon->GetTextureID();
 	PointCloudComponentIndicator.bIsInteractive = false;
 	PointCloudComponentIndicator.bIsVisibleByDefault = false;
 	PointCloudComponentIndicator.TooltipText = "Point cloud component";
 
-	PointCloudComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	PointCloudComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
 			return false;
 
@@ -255,13 +258,13 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	};
 	SceneGraphUI->AddNodeWidget(PointCloudComponentIndicator);
 
-	NativeScriptComponentIndicator.Icon = NativeScriptIcon;
+	NativeScriptComponentIndicator.Icon = NativeScriptIcon->GetTextureID();
 	NativeScriptComponentIndicator.bIsInteractive = false;
 	NativeScriptComponentIndicator.bIsVisibleByDefault = false;
 	NativeScriptComponentIndicator.TooltipText = "Native script component";
 
-	NativeScriptComponentIndicator.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	NativeScriptComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
 			return false;
 
@@ -272,19 +275,19 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	};
 	SceneGraphUI->AddNodeWidget(NativeScriptComponentIndicator);
 
-	VisibilityToggleWidget.Icon = VisibilityOnIcon;
-	VisibilityToggleWidget.DynamicIconProvider = [this](FENaiveSceneGraphNode* Node) -> FETexture* {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	VisibilityToggleWidget.Icon = VisibilityOnIcon->GetTextureID();
+	VisibilityToggleWidget.DynamicIconProvider = [this](SceneGraphUI::NodeHandle Node) -> ImTextureID {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
-			return nullptr;
+			return 0;
 
 		bool bIsVisible = CurrentEntity->IsVisible();
-		return bIsVisible ? VisibilityOnIcon : VisibilityOffIcon;
+		return bIsVisible ? VisibilityOnIcon->GetTextureID() : VisibilityOffIcon->GetTextureID();
 	};
 
 	VisibilityToggleWidget.bIsInteractive = true;
-	VisibilityToggleWidget.OnClickCallback = [](FENaiveSceneGraphNode* Node) {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	VisibilityToggleWidget.OnClickCallback = [](SceneGraphUI::NodeHandle Node) {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
 			return;
 
@@ -292,8 +295,8 @@ void FEEditorSceneGraphWindow::InitializeResources()
 		CurrentEntity->SetVisible(!bIsVisible);
 	};
 	VisibilityToggleWidget.bIsVisibleByDefault = true;
-	VisibilityToggleWidget.IsVisiblePredicate = [](FENaiveSceneGraphNode* Node) -> bool {
-		FEEntity* CurrentEntity = Node->GetEntity();
+	VisibilityToggleWidget.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 		if (CurrentEntity == nullptr)
 			return false;
 
@@ -383,14 +386,25 @@ void FEEditorSceneGraphWindow::Render()
 		return;
 	}
 
+	if (ImGui::Button("ExpandAll"))
+	{
+		SceneGraphUI->ExpandAllNodes();
+	}
+
+	if (ImGui::Button("CollapseAll"))
+	{
+		SceneGraphUI->CollapseAllNodes();
+	}
+
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 	if (ImGui::Begin("Scene Graph", nullptr, ImGuiWindowFlags_None))
 	{
-		SceneGraphUI->Render(CurrentScene->SceneGraph.GetRoot());
+		SceneGraphBackend->SetSceneID(CurrentScene->GetObjectID());
+		SceneGraphUI->Render(SceneGraphUI::NodeHandle(CurrentScene->SceneGraph.GetRoot(), SceneGraphBackend));
 		if (LastFrameRootNodeID != CurrentScene->SceneGraph.GetRoot()->GetObjectID())
 		{
 			LastFrameRootNodeID = CurrentScene->SceneGraph.GetRoot()->GetObjectID();
-			SceneGraphUI->SetNodeExpanded(CurrentScene->SceneGraph.GetRoot(), true);
+			SceneGraphUI->SetNodeExpanded(SceneGraphUI::NodeHandle(CurrentScene->SceneGraph.GetRoot(), SceneGraphBackend), true);
 		}
 
 		ImGui::PopStyleVar();
@@ -398,21 +412,21 @@ void FEEditorSceneGraphWindow::Render()
 	}
 }
 
-void FEEditorSceneGraphWindow::OnNodeClicked(FENaiveSceneGraphNode* Node, ImGuiMouseButton_ MouseButton)
+void FEEditorSceneGraphWindow::OnNodeClicked(SceneGraphUI::NodeHandle Node, ImGuiMouseButton_ MouseButton)
 {
 	if (MouseButton != ImGuiMouseButton_Left)
 		return;
 
-	FEEntity* CurrentEntity = Node->GetEntity();
+	FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 	if (CurrentEntity == nullptr)
 		return;
 
 	SELECTED.SetSelected(CurrentEntity);
 }
 
-bool FEEditorSceneGraphWindow::IsSelected(FENaiveSceneGraphNode* Node)
+bool FEEditorSceneGraphWindow::IsSelected(SceneGraphUI::NodeHandle Node)
 {
-	FEEntity* CurrentEntity = Node->GetEntity();
+	FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
 	if (CurrentEntity == nullptr)
 		return false;
 
@@ -425,12 +439,12 @@ bool FEEditorSceneGraphWindow::IsSelected(FENaiveSceneGraphNode* Node)
 	return false;
 }
 
-std::string FEEditorSceneGraphWindow::GetDisplayedName(FENaiveSceneGraphNode* Node)
+std::string FEEditorSceneGraphWindow::GetDisplayedName(SceneGraphUI::NodeHandle Node)
 {
-	size_t Depth = Node->GetDepth();
+	size_t Depth = Node.As<FENaiveSceneGraphNode>()->GetDepth();
 
-	FEEntity* CurrentEntity = Node->GetEntity();
-	std::string DisplayedName = CurrentEntity == nullptr ? Node->GetName() : CurrentEntity->GetName();
+	FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
+	std::string DisplayedName = CurrentEntity == nullptr ? Node.As<FENaiveSceneGraphNode>()->GetName() : CurrentEntity->GetName();
 
 	if (CurrentEntity == nullptr && Depth == 0)
 	{
@@ -442,27 +456,30 @@ std::string FEEditorSceneGraphWindow::GetDisplayedName(FENaiveSceneGraphNode* No
 	return DisplayedName;
 }
 
-void FEEditorSceneGraphWindow::OnNodeHovered(FENaiveSceneGraphNode* Node)
+void FEEditorSceneGraphWindow::OnNodeHovered(SceneGraphUI::NodeHandle Node)
 {
+	FENaiveSceneGraphNode* NaiveNode = Node.As<FENaiveSceneGraphNode>();
 	if (!DRAG_AND_DROP_MANAGER.ObjectIsDraged())
 	{
 		if (ImGui::IsMouseDragging(0))
-			DRAG_AND_DROP_MANAGER.SetObjectToDrag(Node, nullptr, ImVec2(), ImVec2());
+			DRAG_AND_DROP_MANAGER.SetObjectToDrag(NaiveNode, nullptr, ImVec2(), ImVec2());
 	}
 }
 
-void FEEditorSceneGraphWindow::AfterNodeRender(FENaiveSceneGraphNode* Node)
+void FEEditorSceneGraphWindow::AfterNodeRender(SceneGraphUI::NodeHandle Node)
 {
-	SCENE_GRAPH_WINDOW.GetSceneNodeDragAndDropTarget(Node)->StickToItem();
+	FENaiveSceneGraphNode* NaiveNode = Node.As<FENaiveSceneGraphNode>();
+	SCENE_GRAPH_WINDOW.GetSceneNodeDragAndDropTarget(NaiveNode)->StickToItem();
 }
 
-void FEEditorSceneGraphWindow::ContextMenuRenderingFunction(FENaiveSceneGraphNode* Node)
+void FEEditorSceneGraphWindow::ContextMenuRenderingFunction(SceneGraphUI::NodeHandle Node)
 {
+	FENaiveSceneGraphNode* NaiveNode = Node.As<FENaiveSceneGraphNode>();
 	FEScene* CurrentScene = EDITOR.GetFocusedScene();
 	if (CurrentScene == nullptr)
 		return;
 
-	if (Node == nullptr)
+	if (NaiveNode == nullptr)
 	{
 		if (ImGui::BeginMenu("Add"))
 		{
@@ -476,12 +493,12 @@ void FEEditorSceneGraphWindow::ContextMenuRenderingFunction(FENaiveSceneGraphNod
 	}
 	else
 	{
-		FEEntity* HoveredEntity = Node->GetEntity();
+		FEEntity* HoveredEntity = NaiveNode->GetEntity();
 		if (HoveredEntity != nullptr)
 		{
 			if (ImGui::MenuItem("Rename"))
 			{
-				SCENE_GRAPH_WINDOW.SceneGraphUI->ActivateRenameForNode(Node);
+				SCENE_GRAPH_WINDOW.SceneGraphUI->SetNodeForRenaming(Node);
 			}
 
 			if (ImGui::MenuItem("Delete"))
@@ -495,7 +512,21 @@ void FEEditorSceneGraphWindow::ContextMenuRenderingFunction(FENaiveSceneGraphNod
 	}
 }
 
-FESceneGraphUI* FEEditorSceneGraphWindow::GetSceneGraphUI() const
+TreeView* FEEditorSceneGraphWindow::GetSceneGraphUI() const
 {
 	return SceneGraphUI;
+}
+
+void FEEditorSceneGraphWindow::RenameNodeFunction(SceneGraphUI::NodeHandle Node, std::string NewName)
+{
+	FENaiveSceneGraphNode* NaiveNode = Node.As<FENaiveSceneGraphNode>();
+	if (NaiveNode == nullptr)
+		return;
+
+	FEEntity* CurrentEntity = NaiveNode->GetEntity();
+	if (CurrentEntity == nullptr)
+		return;
+
+	NaiveNode->SetName(NewName);
+	CurrentEntity->SetName(NewName);
 }
