@@ -1,7 +1,11 @@
 #include "FEProjectManager.h"
 #include "../../FEEditor.h"
 
-FEProjectManager::FEProjectManager() {}
+FEProjectManager::FEProjectManager()
+{
+	CustomProjectFolder = FILE_SYSTEM.GetCurrentWorkingPath();
+}
+
 FEProjectManager::~FEProjectManager() {}
 
 void FEProjectManager::InitializeResources()

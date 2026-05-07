@@ -406,10 +406,9 @@ void FEEditorSceneGraphWindow::Render()
 			LastFrameRootNodeID = CurrentScene->SceneGraph.GetRoot()->GetObjectID();
 			SceneGraphUI->SetNodeExpanded(SceneGraphUI::NodeHandle(CurrentScene->SceneGraph.GetRoot(), SceneGraphBackend), true);
 		}
-
-		ImGui::PopStyleVar();
-		ImGui::End();
 	}
+	ImGui::End();
+	ImGui::PopStyleVar();
 }
 
 void FEEditorSceneGraphWindow::OnNodeClicked(SceneGraphUI::NodeHandle Node, ImGuiMouseButton_ MouseButton)

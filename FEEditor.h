@@ -20,6 +20,7 @@ public:
 
     // Initialization and rendering
     void InitializeResources();
+	bool HadImGuiIniFileAtStartup() const;
     void Render();
 
     // Mouse and input
@@ -60,9 +61,8 @@ private:
     double MouseX, MouseY;
 
     std::string FocusedEditorSceneID = "";
-    ImGuiID DockspaceID = 0;
-
     std::vector<FEEditorSceneWindow*> EditorSceneWindows;
+    std::unordered_map<std::string, bool> SeenScenesID;
 
 	// TO-DO: Make it more general, so it would be possible to be used by user.
     // When winodow close set FESceneFlag::Active | FESceneFlag::Renderable false.
@@ -111,8 +111,10 @@ private:
     void RenderAllSubWindows();
 
     // ImGui setup
-    void SetUpImgui();
-    void SetImguiStyle();
+    bool bHadImGuiIniFileAtStartup = false;
+	void SetUpDocking();
+    void SetUpImGui();
+    void SetImGuiStyle();
 
     void CloseProjectAndCleanup();
 

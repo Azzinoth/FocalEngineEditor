@@ -264,7 +264,7 @@ void FEEditor::InitializeResources()
 	ENGINE.AddOnAfterUpdateCallback(AfterEngineUpdate);
 	ENGINE.AddWindowCloseCallback(CloseWindowCallBack);
 
-	SetUpImgui();
+	SetUpImGui();
 }
 
 void FEEditor::MouseMoveCallback(double Xpos, double Ypos)
@@ -401,13 +401,44 @@ void FEEditor::RenderTemporaryDebugWindow()
 					RENDERER.DebugDrawFrustum(SelectedEntity);
 			}
 		}
+	}
+	ImGui::End();
+}
 
-		ImGui::End();
+void FEEditor::SetUpDocking()
+{
+	ImGuiID DockspaceID = APPLICATION.GetMainWindow()->GetDefaultDockspaceID();
+	if (!bHadImGuiIniFileAtStartup && DockspaceID != 0)
+	{
+		bHadImGuiIniFileAtStartup = true;
+		// Wipe any pre-existing layout and recreate the root node
+		ImGui::DockBuilderRemoveNode(DockspaceID);
+		ImGui::DockBuilderAddNode(DockspaceID, ImGuiDockNodeFlags_DockSpace);
+		ImGui::DockBuilderSetNodeSize(DockspaceID, ImGui::GetMainViewport()->Size);
+
+		ImGuiID BottomID;
+		ImGuiID CenterID;
+		ImGuiID LeftID;
+		ImGuiID RightID;
+
+		ImGui::DockBuilderSplitNode(DockspaceID, ImGuiDir_Down, 0.25f, &BottomID, &CenterID);
+		ImGui::DockBuilderSplitNode(CenterID, ImGuiDir_Left, 0.15f, &LeftID, &CenterID);
+		ImGui::DockBuilderSplitNode(CenterID, ImGuiDir_Right, 0.15f, &RightID, &CenterID);
+
+		ImGui::DockBuilderDockWindow("Scene Graph", LeftID);
+		ImGui::DockBuilderDockWindow("Inspector", RightID);
+		ImGui::DockBuilderDockWindow("Content Browser", BottomID);
+		ImGui::DockBuilderDockWindow("Editor Cameras", BottomID);
+		ImGui::DockBuilderDockWindow("Log", BottomID);
+
+		ImGui::DockBuilderFinish(DockspaceID);
 	}
 }
 
 void FEEditor::Render()
 {
+	SetUpDocking();
+
 	PREVIEW_MANAGER.Update();
 	EDITOR_SCRIPTING_SYSTEM.Update();
 
@@ -422,8 +453,7 @@ void FEEditor::Render()
 
 	if (PROJECT_MANAGER.GetCurrent())
 	{
-		ImGui::DockSpaceOverViewport(0U, ImGui::GetMainViewport());
-		DockspaceID = ImGui::GetMainViewport()->ID;
+		//APPLICATION.GetMainWindow()->EnableDefaultDockspace();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 		if (ImGui::BeginMainMenuBar())
@@ -893,7 +923,7 @@ void FEEditor::RenderAllSubWindows()
 	FE_IMGUI_WINDOW_MANAGER.RenderAllWindows();
 }
 
-void FEEditor::SetImguiStyle()
+void FEEditor::SetImGuiStyle()
 {
 	ImGuiStyle* Style = &ImGui::GetStyle();
 	ImVec4* Colors = Style->Colors;
@@ -961,13 +991,15 @@ void FEEditor::SetImguiStyle()
 	Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(0.70f, 0.70f, 0.70f, 0.70f);
 }
 
-void FEEditor::SetUpImgui()
+void FEEditor::SetUpImGui()
 {
 	ImGuiIO& IO = ImGui::GetIO();
 
 	std::string ResourcesFolder = "Resources\\";
 
 	const size_t PathLength = strlen((ResourcesFolder + "imgui.ini").c_str()) + 1;
+	//FILE_SYSTEM.DeleteFile((ResourcesFolder + "imgui.ini").c_str());
+	bHadImGuiIniFileAtStartup = FILE_SYSTEM.DoesFileExist((ResourcesFolder + "imgui.ini").c_str());
 	char* ImguiIniFile = new char[PathLength];
 	strcpy_s(ImguiIniFile, PathLength, (ResourcesFolder + "imgui.ini").c_str());
 	IO.IniFilename = ImguiIniFile;
@@ -982,7 +1014,9 @@ void FEEditor::SetUpImgui()
 	IO.DisplaySize = ImVec2(static_cast<float>(APPLICATION.GetMainWindow()->GetWidth()), static_cast<float>(APPLICATION.GetMainWindow()->GetHeight()));
 	ImGui::StyleColorsDark();
 
-	SetImguiStyle();
+	SetImGuiStyle();
+
+	APPLICATION.GetMainWindow()->EnableDefaultDockspace();
 }
 
 void FEEditor::CloseProjectAndCleanup()
@@ -1037,8 +1071,8 @@ void FEEditor::CreateEditorWindowForScene(const std::string& SceneID, FEProject*
 	// If it is in game mode, then editor camera is not needed.
 	if (!Scene->HasFlag(FESceneFlag::GameMode))
 		CurrentProject->InjectEditorCamera(Scene);
-	NewSceneWindow->SetVisible(true);
-	EditorSceneWindows.push_back(NewSceneWindow);
+
+	RegisterEditorSceneWindow(NewSceneWindow);
 }
 
 void FEEditor::RegisterEditorSceneWindow(FEEditorSceneWindow* SceneWindow)
@@ -1048,6 +1082,12 @@ void FEEditor::RegisterEditorSceneWindow(FEEditorSceneWindow* SceneWindow)
 
 	SceneWindow->SetVisible(true);
 	EditorSceneWindows.push_back(SceneWindow);
+
+	if (SeenScenesID.find(SceneWindow->GetScene()->GetObjectID()) == SeenScenesID.end())
+	{
+		SeenScenesID[SceneWindow->GetScene()->GetObjectID()] = true;
+		SceneWindow->bShouldDockToCentralNode = true;
+	}
 }
 
 void FEEditor::BeforeChangeOfFocusedScene(FEScene* NewSceneInFocus)
@@ -1230,4 +1270,9 @@ void FEEditor::UpdateBeforeRender()
 			}
 		}
 	}
+}
+
+bool FEEditor::HadImGuiIniFileAtStartup() const
+{
+	return bHadImGuiIniFileAtStartup;
 }

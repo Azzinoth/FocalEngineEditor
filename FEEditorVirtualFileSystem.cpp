@@ -4,7 +4,6 @@ using namespace FocalEngine;
 FEVFSFile::FEVFSFile()
 {
 	InDirectory = nullptr;
-	DataID = nullptr;
 }
 
 FEVFSFile::FEVFSFile(std::string DataID, FEVFSDirectory* InDirectory)

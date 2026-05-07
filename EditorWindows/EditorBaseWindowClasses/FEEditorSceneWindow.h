@@ -17,6 +17,7 @@ protected:
 	 std::string SceneID = "";
 	 DragAndDropTarget* SceneWindowTarget = nullptr;
 	 
+	 bool bShouldDockToCentralNode = false;
 	 bool bJustAdded = true;
 	 bool bWindowHovered = false;
 

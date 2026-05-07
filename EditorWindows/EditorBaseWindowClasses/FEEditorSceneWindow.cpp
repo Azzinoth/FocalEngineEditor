@@ -115,6 +115,9 @@ void FEEditorSceneWindow::Show()
 
 void FEEditorSceneWindow::Render()
 {
+	if (!IsVisible())
+		return;
+
 	if (bJustAdded)
 	{
 		ImGui::SetWindowFocus();
@@ -122,10 +125,15 @@ void FEEditorSceneWindow::Render()
 		bJustAdded = false;
 	}
 
-	FEImGuiWindow::Render();
+	ImGuiID DockspaceID = APPLICATION.GetMainWindow()->GetDefaultDockspaceID();
+	if (DockspaceID != 0 && bShouldDockToCentralNode)
+	{
+		ImGuiDockNode* CentralNode = ImGui::DockBuilderGetCentralNode(DockspaceID);
+		if (CentralNode != nullptr)
+			ImGui::SetNextWindowDockID(CentralNode->ID, ImGuiCond_Appearing);
+	}
 
-	if (!IsVisible())
-		return;
+	FEImGuiWindow::Render();
 
 	if (SceneWindowTarget != nullptr)
 		SceneWindowTarget->StickToCurrentWindow();
