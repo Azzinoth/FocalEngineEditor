@@ -47,7 +47,15 @@ void FEEditorSelectedObject::UpdateResources(FEScene* Scene)
 		return;
 
 	FEEntity* CurrentCamera = CAMERA_SYSTEM.GetMainCamera(Scene);
+	if (CurrentCamera == nullptr)
+		return;
+
+	if (!CurrentCamera->HasComponent<FECameraComponent>())
+		return;
+
 	FECameraComponent& CameraComponent = CurrentCamera->GetComponent<FECameraComponent>();
+	if (CameraComponent.GetRenderTargetWidth() <= 0 || CameraComponent.GetRenderTargetHeight() <= 0)
+		return;
 
 	delete CurrentSelectionData->PixelAccurateSelectionFB;
 	CurrentSelectionData->PixelAccurateSelectionFB = RESOURCE_MANAGER.CreateFramebuffer(FE_COLOR_ATTACHMENT | FE_DEPTH_ATTACHMENT, CameraComponent.GetRenderTargetWidth(), CameraComponent.GetRenderTargetHeight());

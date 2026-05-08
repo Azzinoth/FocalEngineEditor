@@ -43,6 +43,7 @@ public:
 class FEEditorSelectedObject
 {
 	friend class FEEditor;
+	friend class FEEditorSceneWindowManager;
 	friend class GizmoManager;
 	friend class FEEditorInspectorWindow;
 	friend class FEEditorSceneWindow;

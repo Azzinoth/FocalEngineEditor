@@ -148,11 +148,16 @@ file(GLOB FEDearImguiWrapper_SRC
 	"FEDearImguiWrapper/FEDearImguiWrapper.h"
 )
 
-file(GLOB EditorWindows_BaseWindowClasses_SRC
+file(GLOB FESceneGraphUI_SRC
 	"SubSystems/FESceneGraphUI/FocalEngineBackend.cpp"
 	"SubSystems/FESceneGraphUI/FocalEngineBackend.h"
-	"EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.h"
-	"EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.cpp"
+)
+
+file(GLOB SceneWindow_SRC
+	"EditorWindows/SceneWindow/FEEditorSceneWindow.h"
+	"EditorWindows/SceneWindow/FEEditorSceneWindow.cpp"
+	"EditorWindows/SceneWindow/FEEditorSceneWindowManager.h"
+	"EditorWindows/SceneWindow/FEEditorSceneWindowManager.cpp"
 )
 
 file(GLOB EditorWindows_SRC
@@ -224,7 +229,8 @@ link_directories(${GLFW_LIB_DIR})
 add_executable(FocalEngineEditor WIN32
 								 ${EDITOR_SOURCE_FILES}
 								 ${FEDearImguiWrapper_SRC}
-								 ${EditorWindows_BaseWindowClasses_SRC}
+								 ${FESceneGraphUI_SRC}
+								 ${SceneWindow_SRC}
 								 ${EditorWindows_SRC}
 								 ${Editor_Materials_SRC}
 								 ${VisualNodeSystem_CustomNodes_SRC}
@@ -254,7 +260,8 @@ if(USE_STATIC_RUNTIME)
 	source_group("Source Files/FocalEngine/2B7956623302254F620A675F" FILES ${Unpacked_NativeScript_2B7956623302254F620A675F_SRC})
 endif()
 source_group("Source Files/FEDearImguiWrapper" FILES ${FEDearImguiWrapper_SRC})
-source_group("Source Files/EditorWindows/BaseWindowClasses" FILES ${EditorWindows_BaseWindowClasses_SRC})
+source_group("Source Files/SubSystems/FESceneGraphUI" FILES ${FESceneGraphUI_SRC})
+source_group("Source Files/EditorWindows/SceneWindow" FILES ${SceneWindow_SRC})
 source_group("Source Files/EditorWindows" FILES ${EditorWindows_SRC})
 source_group("Source Files/Materials" FILES ${Editor_Materials_SRC})
 source_group("Source Files/NodeSystem/CustomNodes" FILES ${VisualNodeSystem_CustomNodes_SRC})

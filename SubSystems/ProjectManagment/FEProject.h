@@ -7,6 +7,7 @@ class FEProject
 {
 	friend class FEProjectManager;
 	friend class FEEditor;
+	friend class FEEditorSceneWindowManager;
 	friend class FEProjectBuildSystem;
 	friend class FEPrefabEditorManager;
 	friend class FEEditorContentBrowserWindow;

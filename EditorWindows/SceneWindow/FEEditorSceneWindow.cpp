@@ -25,6 +25,8 @@ FEEditorSceneWindow::FEEditorSceneWindow(FEScene* Scene)
 	ToolTipTexts.push_back("Drop to add to scene");
 	ToolTipTexts.push_back("Drop to add to scene");
 	CurrentDragAndDropCallback = DragAndDropCallBack;
+
+	bHaveCloseButton = true;
 }
 
 bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)

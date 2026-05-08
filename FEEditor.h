@@ -1,7 +1,8 @@
 ﻿#pragma once
 
 #include "EditorWindows/InspectorWindow.h"
-#include "EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.h"
+#include "EditorWindows/SceneWindow/FEEditorSceneWindow.h"
+#include "EditorWindows/SceneWindow/FEEditorSceneWindowManager.h"
 #include <functional>
 
 class FEEditor
@@ -60,14 +61,6 @@ private:
     double LastMouseX, LastMouseY;
     double MouseX, MouseY;
 
-    std::string FocusedEditorSceneID = "";
-    std::vector<FEEditorSceneWindow*> EditorSceneWindows;
-    std::unordered_map<std::string, bool> SeenScenesID;
-
-	// TO-DO: Make it more general, so it would be possible to be used by user.
-    // When winodow close set FESceneFlag::Active | FESceneFlag::Renderable false.
-	void DeleteSceneAndCleanup(std::string SceneID);
-
     // Clipboard
     std::string SceneEntityIDInClipboard;
 
@@ -117,8 +110,6 @@ private:
     void SetImGuiStyle();
 
     void CloseProjectAndCleanup();
-
-    void BeforeChangeOfFocusedScene(FEScene* NewSceneInFocus);
 
     std::unordered_map<std::string, std::string> SceneIDToOldMainCameraID;
 };

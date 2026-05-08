@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CombineChannelsToTexturePopUp.h"
-#include "EditorBaseWindowClasses/FEEditorSceneWindow.h"
+#include "SceneWindow/FEEditorSceneWindow.h"
 
 class FEPrefabSceneEditorWindow : public FEEditorSceneWindow
 {

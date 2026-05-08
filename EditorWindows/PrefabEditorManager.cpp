@@ -64,7 +64,7 @@ void FEPrefabSceneEditorWindow::Render()
 	CloseButton->Render();
 	if (CloseButton->IsClicked())
 	{
-		bWaitingForRemoval = true;
+		bUserRequestedClose = true;
 		Close();
 	}
 

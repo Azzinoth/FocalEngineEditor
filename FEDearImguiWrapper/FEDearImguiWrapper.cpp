@@ -372,7 +372,7 @@ void FEImGuiWindow::Render()
 		if (GetPadding().x != 0.0f || GetPadding().y != 0.0f)
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(GetPadding().x, GetPadding().y));
 
-		ImGui::Begin(Caption, nullptr, Flags);
+		ImGui::Begin(Caption, (bHaveCloseButton ? &bUserWantsWindowToBeOpen : nullptr), Flags);
 		Window = FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl();
 	}
 }
@@ -391,7 +391,15 @@ void FEImGuiWindow::OnRenderEnd()
 			ImGui::PopStyleVar();
 
 		ImGui::End();
+
+		if (!bUserWantsWindowToBeOpen)
+			bUserRequestedClose = true;
 	}
+}
+
+bool FEImGuiWindow::GetUserRequestedClose() const
+{
+	return bUserRequestedClose;
 }
 
 bool FEImGuiWindow::IsVisible() const
@@ -413,6 +421,11 @@ void FEImGuiWindow::Close()
 
 		ImGui::End();
 	}
+}
+
+std::string FEImGuiWindow::GetCaption() const
+{
+	return std::string(Caption);
 }
 
 void FEImGuiWindow::SetCaption(const std::string NewCaption)

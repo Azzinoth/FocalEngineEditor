@@ -169,6 +169,10 @@ protected:
 	FEImGuiWindow();
 	ImGuiWindow* Window = nullptr;
 
+	bool bHaveCloseButton = false;
+	bool bUserWantsWindowToBeOpen = true;
+	bool bUserRequestedClose = false;
+
 	float BorderSize = 2.0f;
 	glm::vec2 Padding = glm::vec2(15.0f, 15.0f);
 public:
@@ -181,9 +185,12 @@ public:
 	bool IsVisible() const;
 	void SetVisible(bool NewValue);
 
+	bool GetUserRequestedClose() const;
+
 	bool IsMouseHovered() const;
 
 	virtual void SetCaption(std::string NewCaption);
+	std::string GetCaption() const;
 
 	ImGuiWindow* GetWindow() const;
 
