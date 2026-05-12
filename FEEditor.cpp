@@ -430,17 +430,17 @@ void FEEditor::Render()
 				{
 					auto PossibleWindows = RENDERER.GetDebugOutputTextures();
 
-					auto iterator = PossibleWindows.begin();
-					while (iterator != PossibleWindows.end())
+					auto WindowIterator = PossibleWindows.begin();
+					while (WindowIterator != PossibleWindows.end())
 					{
-						if (iterator->second != nullptr)
+						if (WindowIterator->second != nullptr)
 						{
-							FEImGuiWindow* CurrentWindow = FE_IMGUI_WINDOW_MANAGER.GetWindowByCaption(iterator->first.c_str());
+							FEImGuiWindow* CurrentWindow = FE_IMGUI_WINDOW_MANAGER.GetWindowByCaption(WindowIterator->first.c_str());
 							bool bVisible = false;
 							if (CurrentWindow != nullptr)
 								bVisible = CurrentWindow->IsVisible();
-							
-							if (ImGui::MenuItem(iterator->first.c_str(), nullptr, bVisible))
+
+							if (ImGui::MenuItem(WindowIterator->first.c_str(), nullptr, bVisible))
 							{
 								bVisible = !bVisible;
 
@@ -448,8 +448,8 @@ void FEEditor::Render()
 								{
 									if (CurrentWindow == nullptr)
 									{
-										CurrentWindow = new DebugTextureViewWindow(iterator->second);
-										CurrentWindow->SetCaption(iterator->first);
+										CurrentWindow = new DebugTextureViewWindow(WindowIterator->second);
+										CurrentWindow->SetCaption(WindowIterator->first);
 										CurrentWindow->Show();
 									}
 									else
@@ -464,7 +464,7 @@ void FEEditor::Render()
 								}
 							}
 						}
-						iterator++;
+						WindowIterator++;
 					}
 
 					ImGui::EndMenu();

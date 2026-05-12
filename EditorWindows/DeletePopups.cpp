@@ -668,12 +668,12 @@ void DeleteDirectoryPopup::RecursiveDeletion(const std::string Path)
 
 		if (CurrentObject->GetType() == FE_NULL)
 		{
-			std::string TempPath = Path;
-			if (TempPath.back() != '/')
-				TempPath += '/';
+			std::string TemporaryPath = Path;
+			if (TemporaryPath.back() != '/')
+				TemporaryPath += '/';
 
-			TempPath += CurrentObject->GetName();
-			RecursiveDeletion(TempPath);
+			TemporaryPath += CurrentObject->GetName();
+			RecursiveDeletion(TemporaryPath);
 		}
 		else if (CurrentObject->GetType() == FE_SHADER)
 		{

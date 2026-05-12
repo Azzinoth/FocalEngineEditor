@@ -156,9 +156,9 @@ bool FEEditorInspectorWindow::TerrainChangeMaterialTargetCallback(FEObject* Obje
 		return false;
 
 	FETerrainComponent& Terrain = SELECTED.GetSelected(CurrentScene)->GetComponent<FETerrainComponent>();
-	const int TempLayerIndex = *(int*)LayerIndex;
-	if (TempLayerIndex >= 0 && TempLayerIndex < FE_TERRAIN_MAX_LAYERS)
-		Terrain.GetLayerInSlot(TempLayerIndex)->SetMaterial(MaterialToAssign);
+	const int TemporaryLayerIndex = *(int*)LayerIndex;
+	if (TemporaryLayerIndex >= 0 && TemporaryLayerIndex < FE_TERRAIN_MAX_LAYERS)
+		Terrain.GetLayerInSlot(TemporaryLayerIndex)->SetMaterial(MaterialToAssign);
 
 	return true;
 }
@@ -649,10 +649,10 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	{
 		for (const auto& count : SEQUENCE_OPTIONS)
 		{
-			bool is_selected = (TemporalJitterSequenceLength == count);
-			if (ImGui::Selectable(std::to_string(count).c_str(), is_selected))
+			bool bIsSelected = (TemporalJitterSequenceLength == count);
+			if (ImGui::Selectable(std::to_string(count).c_str(), bIsSelected))
 				TemporalJitterSequenceLength = count;
-			if (is_selected)
+			if (bIsSelected)
 				ImGui::SetItemDefaultFocus();
 		}
 		ImGui::EndCombo();
@@ -727,8 +727,8 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 		{
 			for (size_t i = 0; i < 5; i++)
 			{
-				const bool is_selected = (SelectedOption == options[i]);
-				if (ImGui::Selectable(options[i], is_selected))
+				const bool bIsSelected = (SelectedOption == options[i]);
+				if (ImGui::Selectable(options[i], bIsSelected))
 				{
 					CameraComponent.SetFXAASpanMax(float(pow(2.0, (i - 1))));
 					if (i == 0)
@@ -736,7 +736,7 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 					SelectedOption = options[i];
 				}
 
-				if (is_selected)
+				if (bIsSelected)
 					ImGui::SetItemDefaultFocus();
 			}
 			ImGui::EndCombo();
@@ -821,9 +821,9 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	ImGui::Text("Chromatic Aberration:");
 	ImGui::Text("Shift strength:");
 	ImGui::SetNextItemWidth(70);
-	float intensity = CameraComponent.GetChromaticAberrationIntensity();
-	ImGui::DragFloat("##intensity", &intensity, 0.01f, 0.0f, 30.0f);
-	CameraComponent.SetChromaticAberrationIntensity(intensity);
+	float Intensity = CameraComponent.GetChromaticAberrationIntensity();
+	ImGui::DragFloat("##intensity", &Intensity, 0.01f, 0.0f, 30.0f);
+	CameraComponent.SetChromaticAberrationIntensity(Intensity);
 
 	/*ImGui::PushID(GUIID++);
 	ImGui::SameLine();
@@ -876,8 +876,8 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 		{
 			for (size_t i = 0; i < 5; i++)
 			{
-				const bool is_selected = (SSAO_SelectedOption == SSAO_Options[i]);
-				if (ImGui::Selectable(SSAO_Options[i], is_selected))
+				const bool bIsSelected = (SSAO_SelectedOption == SSAO_Options[i]);
+				if (ImGui::Selectable(SSAO_Options[i], bIsSelected))
 				{
 					CameraComponent.SetSSAOResultBlurred(true);
 					CameraComponent.SetSSAOBias(0.013f);
@@ -914,7 +914,7 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 					SSAO_SelectedOption = SSAO_Options[i];
 				}
 
-				if (is_selected)
+				if (bIsSelected)
 					ImGui::SetItemDefaultFocus();
 			}
 			ImGui::EndCombo();
@@ -922,42 +922,42 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	}
 	else
 	{
-		bool TempBool = CameraComponent.IsSSAOEnabled();
-		ImGui::Checkbox("SSAO active", &TempBool);
-		CameraComponent.SetSSAOEnabled(TempBool);
+		bool TemporaryBool = CameraComponent.IsSSAOEnabled();
+		ImGui::Checkbox("SSAO active", &TemporaryBool);
+		CameraComponent.SetSSAOEnabled(TemporaryBool);
 
-		TempBool = CameraComponent.IsSSAOSmallDetailsEnabled();
-		ImGui::Checkbox("SSAO small details", &TempBool);
-		CameraComponent.SetSSAOSmallDetailsEnabled(TempBool);
+		TemporaryBool = CameraComponent.IsSSAOSmallDetailsEnabled();
+		ImGui::Checkbox("SSAO small details", &TemporaryBool);
+		CameraComponent.SetSSAOSmallDetailsEnabled(TemporaryBool);
 
-		TempBool = CameraComponent.IsSSAOResultBlurred();
-		ImGui::Checkbox("SSAO blurred", &TempBool);
-		CameraComponent.SetSSAOResultBlurred(TempBool);
+		TemporaryBool = CameraComponent.IsSSAOResultBlurred();
+		ImGui::Checkbox("SSAO blurred", &TemporaryBool);
+		CameraComponent.SetSSAOResultBlurred(TemporaryBool);
 
-		int TempInt = CameraComponent.GetSSAOSampleCount();
+		int TemporaryInt = CameraComponent.GetSSAOSampleCount();
 		ImGui::SetNextItemWidth(100);
-		ImGui::DragInt("SSAO sample count", &TempInt);
-		CameraComponent.SetSSAOSampleCount(TempInt);
+		ImGui::DragInt("SSAO sample count", &TemporaryInt);
+		CameraComponent.SetSSAOSampleCount(TemporaryInt);
 
-		float TempFloat = CameraComponent.GetSSAOBias();
+		float TemporaryFloat = CameraComponent.GetSSAOBias();
 		ImGui::SetNextItemWidth(100);
-		ImGui::DragFloat("SSAO bias", &TempFloat, 0.1f);
-		CameraComponent.SetSSAOBias(TempFloat);
+		ImGui::DragFloat("SSAO bias", &TemporaryFloat, 0.1f);
+		CameraComponent.SetSSAOBias(TemporaryFloat);
 
-		TempFloat = CameraComponent.GetSSAORadius();
+		TemporaryFloat = CameraComponent.GetSSAORadius();
 		ImGui::SetNextItemWidth(100);
-		ImGui::DragFloat("SSAO radius", &TempFloat, 0.1f);
-		CameraComponent.SetSSAORadius(TempFloat);
+		ImGui::DragFloat("SSAO radius", &TemporaryFloat, 0.1f);
+		CameraComponent.SetSSAORadius(TemporaryFloat);
 
-		TempFloat = CameraComponent.GetSSAORadiusSmallDetails();
+		TemporaryFloat = CameraComponent.GetSSAORadiusSmallDetails();
 		ImGui::SetNextItemWidth(100);
-		ImGui::DragFloat("SSAO radius small details", &TempFloat, 0.1f);
-		CameraComponent.SetSSAORadiusSmallDetails(TempFloat);
+		ImGui::DragFloat("SSAO radius small details", &TemporaryFloat, 0.1f);
+		CameraComponent.SetSSAORadiusSmallDetails(TemporaryFloat);
 
-		TempFloat = CameraComponent.GetSSAOSmallDetailsWeight();
+		TemporaryFloat = CameraComponent.GetSSAOSmallDetailsWeight();
 		ImGui::SetNextItemWidth(100);
-		ImGui::DragFloat("SSAO small details weight", &TempFloat, 0.01f);
-		CameraComponent.SetSSAOSmallDetailsWeight(TempFloat);
+		ImGui::DragFloat("SSAO small details weight", &TemporaryFloat, 0.01f);
+		CameraComponent.SetSSAOSmallDetailsWeight(TemporaryFloat);
 	}
 	
 	// *********** Distance Fog ***********
@@ -1097,12 +1097,12 @@ bool FEEditorInspectorWindow::RenderComponentDeleteButton(FEEntity* Entity, FECo
 	float HeaderWidth = ImGui::GetContentRegionAvail().x;
 
 	float ButtonSize = 24;
-	ImVec2 PreviosCursorPos = ImGui::GetCursorPos();
+	ImVec2 PreviousCursorPosition = ImGui::GetCursorPos();
 
 	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.9f, 0.5f, 0.5f, 1.0f));
 	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.95f, 0.90f, 0.0f, 1.0f));
 	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.1f, 1.0f, 0.1f, 1.0f));
-	ImGui::SetCursorPos(ImVec2(HeaderWidth - ButtonSize / 8.0f - 2.0f, PreviosCursorPos.y + 2.0f));
+	ImGui::SetCursorPos(ImVec2(HeaderWidth - ButtonSize / 8.0f - 2.0f, PreviousCursorPosition.y + 2.0f));
 	if (ImGui::Button(std::string("x##" + ComponentInfo->Name).c_str(), ImVec2(ButtonSize, ButtonSize)))
 	{
 		size_t ComponentHashCode = ComponentInfo->Type->hash_code();
@@ -1115,7 +1115,7 @@ bool FEEditorInspectorWindow::RenderComponentDeleteButton(FEEntity* Entity, FECo
 				ComponentIterator->second(Entity);
 
 				ImGui::PopStyleColor(3);
-				ImGui::SetCursorPos(PreviosCursorPos);
+				ImGui::SetCursorPos(PreviousCursorPosition);
 				return true;
 			}
 
@@ -1124,7 +1124,7 @@ bool FEEditorInspectorWindow::RenderComponentDeleteButton(FEEntity* Entity, FECo
 	}
 
 	ImGui::PopStyleColor(3);
-	ImGui::SetCursorPos(PreviosCursorPos);
+	ImGui::SetCursorPos(PreviousCursorPosition);
 
 	return false;
 }
@@ -1348,11 +1348,11 @@ void FEEditorInspectorWindow::Render()
 				InstancedSubObjectInfo = "index: " + std::to_string(CurrentSelectionData->InstancedSubObjectIndexSelected);
 				ImGui::Text(InstancedSubObjectInfo.c_str());
 
-				FETransformComponent TempTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(CurrentSelectionData->InstancedSubObjectIndexSelected));
-				TempTransform.SetSceneIndependent(true);
-				ShowTransformConfiguration("Selected instance", &TempTransform);
+				FETransformComponent TemporaryTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(CurrentSelectionData->InstancedSubObjectIndexSelected));
+				TemporaryTransform.SetSceneIndependent(true);
+				ShowTransformConfiguration("Selected instance", &TemporaryTransform);
 
-				INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(EntitySelected, CurrentSelectionData->InstancedSubObjectIndexSelected, TempTransform.GetWorldMatrix());
+				INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(EntitySelected, CurrentSelectionData->InstancedSubObjectIndexSelected, TemporaryTransform.GetWorldMatrix());
 
 				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.55f, 0.55f, 0.95f));
 				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
@@ -1478,11 +1478,11 @@ void FEEditorInspectorWindow::Render()
 				ImGui::Separator();
 
 				ImGui::Text("Seed:");
-				int seed = InstancedComponent.SpawnInfo.Seed;
+				int Seed = InstancedComponent.SpawnInfo.Seed;
 				ImGui::SameLine();
 				ImGui::SetNextItemWidth(200);
-				ImGui::DragInt("##Seed", &seed);
-				InstancedComponent.SpawnInfo.Seed = seed;
+				ImGui::DragInt("##Seed", &Seed);
+				InstancedComponent.SpawnInfo.Seed = Seed;
 
 				ImGui::Text("Object count:");
 				int ObjectCount = InstancedComponent.SpawnInfo.ObjectCount;
@@ -1494,13 +1494,13 @@ void FEEditorInspectorWindow::Render()
 				InstancedComponent.SpawnInfo.ObjectCount = ObjectCount;
 
 				ImGui::Text("Radius:");
-				float radius = InstancedComponent.SpawnInfo.Radius;
+				float Radius = InstancedComponent.SpawnInfo.Radius;
 				ImGui::SameLine();
 				ImGui::SetNextItemWidth(200);
-				ImGui::DragFloat("##Radius", &radius);
-				if (radius < 0.0f)
-					radius = 0.1f;
-				InstancedComponent.SpawnInfo.Radius = radius;
+				ImGui::DragFloat("##Radius", &Radius);
+				if (Radius < 0.0f)
+					Radius = 0.1f;
+				InstancedComponent.SpawnInfo.Radius = Radius;
 
 				// Scale deviation.
 				ImGui::Text("Scale: ");
@@ -1746,12 +1746,12 @@ void FEEditorInspectorWindow::CreateNewTerrainLayerWithMaterialCallback(std::vec
 	TerrainToWorkWith = nullptr;
 }
 
-static size_t TempLayerIndex = -1;
+static size_t TemporaryLayerIndex = -1;
 void FEEditorInspectorWindow::ChangeMaterialInTerrainLayerCallback(std::vector<FEObject*> SelectionsResult)
 {
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_MATERIAL)
 	{
-		if (TempLayerIndex == -1)
+		if (TemporaryLayerIndex == -1)
 			return;
 
 		FEMaterial* SelectedMaterial = RESOURCE_MANAGER.GetMaterial(SelectionsResult[0]->GetObjectID());
@@ -1759,11 +1759,11 @@ void FEEditorInspectorWindow::ChangeMaterialInTerrainLayerCallback(std::vector<F
 			return;
 
 		FETerrainComponent& TerrainComponent = TerrainToWorkWith->GetComponent<FETerrainComponent>();
-		TerrainComponent.GetLayerInSlot(TempLayerIndex)->SetMaterial(SelectedMaterial);
+		TerrainComponent.GetLayerInSlot(TemporaryLayerIndex)->SetMaterial(SelectedMaterial);
 	}
 
 	TerrainToWorkWith = nullptr;
-	TempLayerIndex = -1;
+	TemporaryLayerIndex = -1;
 }
 
 void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
@@ -1817,12 +1817,12 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 			// ********************* REAL WORLD COMPARISON SCALE *********************
 			FEAABB RealAABB = TERRAIN_SYSTEM.GetAABB(TerrainEntity);
-			glm::vec3 min = RealAABB.GetMin();
-			glm::vec3 max = RealAABB.GetMax();
+			glm::vec3 Min = RealAABB.GetMin();
+			glm::vec3 Max = RealAABB.GetMax();
 
-			float XSize = sqrt((max.x - min.x) * (max.x - min.x));
-			float YSize = sqrt((max.y - min.y) * (max.y - min.y));
-			float ZSize = sqrt((max.z - min.z) * (max.z - min.z));
+			float XSize = sqrt((Max.x - Min.x) * (Max.x - Min.x));
+			float YSize = sqrt((Max.y - Min.y) * (Max.y - Min.y));
+			float ZSize = sqrt((Max.z - Min.z) * (Max.z - Min.z));
 
 			std::string SizeInM = "Approximate terrain size: ";
 			SizeInM += std::to_string(std::max(XSize, std::max(YSize, ZSize)));
@@ -1843,7 +1843,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 				if (!FilePath.empty())
 				{
 					FilePath += ".png";
-					RESOURCE_MANAGER.ExportFETextureToPNG(TerrainComponent.GetHeightMap(), FilePath.c_str());
+					RESOURCE_MANAGER.ExportFETextureToPNG(TerrainComponent.GetHeightMap(), FilePath);
 				}
 			}
 
@@ -2087,13 +2087,13 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 				if (ImGui::MenuItem("Add layer..."))
 				{
-					std::vector<std::string> TempMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
+					std::vector<std::string> TemporaryMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 					std::vector<FEObject*> FinalMaterialList;
-					for (size_t i = 0; i < TempMaterialList.size(); i++)
+					for (size_t i = 0; i < TemporaryMaterialList.size(); i++)
 					{
-						if (RESOURCE_MANAGER.GetMaterial(TempMaterialList[i])->IsCompactPacking())
+						if (RESOURCE_MANAGER.GetMaterial(TemporaryMaterialList[i])->IsCompactPacking())
 						{
-							FinalMaterialList.push_back(RESOURCE_MANAGER.GetMaterial(TempMaterialList[i]));
+							FinalMaterialList.push_back(RESOURCE_MANAGER.GetMaterial(TemporaryMaterialList[i]));
 						}
 					}
 
@@ -2148,13 +2148,13 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 						if (ImGui::MenuItem("Change material..."))
 						{
-							std::vector<std::string> TempMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
+							std::vector<std::string> TemporaryMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 							std::vector<FEObject*> FinalMaterialList;
-							for (size_t i = 0; i < TempMaterialList.size(); i++)
+							for (size_t i = 0; i < TemporaryMaterialList.size(); i++)
 							{
-								if (RESOURCE_MANAGER.GetMaterial(TempMaterialList[i])->IsCompactPacking())
+								if (RESOURCE_MANAGER.GetMaterial(TemporaryMaterialList[i])->IsCompactPacking())
 								{
-									FinalMaterialList.push_back(RESOURCE_MANAGER.GetMaterial(TempMaterialList[i]));
+									FinalMaterialList.push_back(RESOURCE_MANAGER.GetMaterial(TemporaryMaterialList[i]));
 								}
 							}
 
@@ -2165,7 +2165,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 							else
 							{
 								TerrainToWorkWith = TerrainEntity;
-								TempLayerIndex = HoveredTerrainLayerItem;
+								TemporaryLayerIndex = HoveredTerrainLayerItem;
 								SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialInTerrainLayerCallback, TerrainComponent.GetLayerInSlot(HoveredTerrainLayerItem)->GetMaterial(), FinalMaterialList);
 							}
 						}

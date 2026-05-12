@@ -13,8 +13,8 @@ class EditGameModelPopup : public FEImGuiWindow
 	};
 
 	FEGameModel* ObjToWorkWith;
-	FEGameModel* TempModel = nullptr;
-	FETexture* TempPreview = nullptr;
+	FEGameModel* TemporaryModel = nullptr;
+	FETexture* TemporaryPreview = nullptr;
 
 	FEMaterial* UpdatedMaterial;
 	static FEMaterial** MaterialToModify;
@@ -93,7 +93,7 @@ class EditMaterialWindow : public FEImGuiWindow
 
 	std::vector<std::string> Channels = { "r", "g", "b", "a" };
 	int TextureFromListUnderMouse = -1;
-	FETexture* TempContainer = nullptr;
+	FETexture* TemporaryContainer = nullptr;
 	int TextureDestination = -1;
 
 	static FEMaterial* ObjToWorkWith;

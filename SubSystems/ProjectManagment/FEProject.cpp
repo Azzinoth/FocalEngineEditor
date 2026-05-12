@@ -15,7 +15,7 @@ FEProject::FEProject(const std::string Name, const std::string ProjectFolder)
 }
 	else
 	{
-		SceneScreenshot = RESOURCE_MANAGER.LoadFETextureUnmanaged((this->GetProjectFolder() + "Thumbnail.texture").c_str());
+		SceneScreenshot = RESOURCE_MANAGER.LoadFETextureUnmanaged((this->GetProjectFolder() + "Thumbnail.texture"));
 	}
 	ScreenshotFile.close();
 }
@@ -64,7 +64,7 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 				{
 					FEMesh* MeshToSave = RESOURCE_MANAGER.GetMesh(UnSavedObjects[i]->GetObjectID());
 					if (MeshToSave != nullptr)
-						RESOURCE_MANAGER.SaveFEMesh(MeshToSave, (DirectoryPath + MeshToSave->GetObjectID() + std::string(".model")).c_str());
+						RESOURCE_MANAGER.SaveFEMesh(MeshToSave, (DirectoryPath + MeshToSave->GetObjectID() + std::string(".model")));
 					break;
 				}
 
@@ -80,7 +80,7 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 				{
 					FETexture* TextureToSave = RESOURCE_MANAGER.GetTexture(UnSavedObjects[i]->GetObjectID());
 					if (TextureToSave != nullptr)
-						RESOURCE_MANAGER.SaveFETexture(TextureToSave, (DirectoryPath + TextureToSave->GetObjectID() + std::string(".texture")).c_str());
+						RESOURCE_MANAGER.SaveFETexture(TextureToSave, (DirectoryPath + TextureToSave->GetObjectID() + std::string(".texture")));
 					break;
 				}
 			}
@@ -101,7 +101,7 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 		MeshData[Mesh->GetObjectID()]["FileName"] = Mesh->GetObjectID() + ".model";
 
 		if (bFullSave)
-			RESOURCE_MANAGER.SaveFEMesh(Mesh, (DirectoryPath + Mesh->GetObjectID() + std::string(".model")).c_str());
+			RESOURCE_MANAGER.SaveFEMesh(Mesh, (DirectoryPath + Mesh->GetObjectID() + std::string(".model")));
 
 		Mesh->SetDirtyFlag(false);
 	}
@@ -141,7 +141,7 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 		TexturesData[Texture->GetObjectID()]["FileName"] = Texture->GetObjectID() + ".texture";
 
 		if (bFullSave)
-			RESOURCE_MANAGER.SaveFETexture(Texture, (DirectoryPath + Texture->GetObjectID() + std::string(".texture")).c_str());
+			RESOURCE_MANAGER.SaveFETexture(Texture, (DirectoryPath + Texture->GetObjectID() + std::string(".texture")));
 
 		Texture->SetDirtyFlag(false);
 	}
@@ -514,7 +514,7 @@ void FEProject::LoadResources(std::string DirectoryPath)
 	for (size_t i = 0; i < MeshList.size(); i++)
 	{
 		FEObjectLoadedData LoadedObjectData = RESOURCE_MANAGER.LoadFEObjectPart(Root["Meshes"][MeshList[i]]["FEObjectData"]);
-		RESOURCE_MANAGER.LoadFEMesh((DirectoryPath + Root["Meshes"][MeshList[i]]["FileName"].asCString()).c_str(), LoadedObjectData.Name);
+		RESOURCE_MANAGER.LoadFEMesh((DirectoryPath + Root["Meshes"][MeshList[i]]["FileName"].asCString()), LoadedObjectData.Name);
 	}
 
 	// Loading point clouds.
@@ -533,11 +533,11 @@ void FEProject::LoadResources(std::string DirectoryPath)
 		// Terrain textures should be loaded right away, not async.
 		if (LoadedObjectData.Tag == TERRAIN_SYSTEM_RESOURCE_TAG)
 		{
-			RESOURCE_MANAGER.LoadFETexture((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()).c_str());
+			RESOURCE_MANAGER.LoadFETexture((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()));
 		}
 		else
 		{
-			RESOURCE_MANAGER.LoadFETextureAsync((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()).c_str(), LoadedObjectData.Name, nullptr, LoadedObjectData.ID);
+			RESOURCE_MANAGER.LoadFETextureAsync((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()), LoadedObjectData.Name, nullptr, LoadedObjectData.ID);
 		}
 	}
 
@@ -561,7 +561,7 @@ void FEProject::LoadResources(std::string DirectoryPath)
 	std::vector<Json::String> NativeScriptModulesList = Root["NativeScriptModules"].getMemberNames();
 	for (size_t i = 0; i < NativeScriptModulesList.size(); i++)
 	{
-		FENativeScriptModule* LoadedNativeScriptModule = RESOURCE_MANAGER.LoadFENativeScriptModule((DirectoryPath + Root["NativeScriptModules"][NativeScriptModulesList[i]]["FileName"].asCString()).c_str());
+		FENativeScriptModule* LoadedNativeScriptModule = RESOURCE_MANAGER.LoadFENativeScriptModule((DirectoryPath + Root["NativeScriptModules"][NativeScriptModulesList[i]]["FileName"].asCString()));
 		if (LoadedNativeScriptModule == nullptr)
 			continue;
 		
@@ -816,7 +816,7 @@ void FEProject::CreateDummyScreenshot()
 	}
 
 	FETexture* TempTexture = RESOURCE_MANAGER.RawDataToFETexture(Pixels, static_cast<int>(Width), static_cast<int>(Height));
-	RESOURCE_MANAGER.SaveFETexture(TempTexture, (GetProjectFolder() + "/Thumbnail.texture").c_str());
+	RESOURCE_MANAGER.SaveFETexture(TempTexture, (GetProjectFolder() + "/Thumbnail.texture"));
 	RESOURCE_MANAGER.DeleteFETexture(TempTexture);
 	delete[] Pixels;
 }

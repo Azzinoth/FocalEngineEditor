@@ -74,10 +74,10 @@ void ResizeTexturePopup::Render()
 		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10);
 		ImGui::Text("Where to put resized texture data:");
 
-		static int mode = 0;
-		ImGui::RadioButton("Replace currect texture.", &mode, 0);
-		ImGui::RadioButton("Create new texture.", &mode, 1);
-		bReplaceTexture = mode == 0 ? true : false;
+		static int Mode = 0;
+		ImGui::RadioButton("Replace currect texture.", &Mode, 0);
+		ImGui::RadioButton("Create new texture.", &Mode, 1);
+		bReplaceTexture = Mode == 0 ? true : false;
 
 		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 		ImGui::Text("Note: Only nearest-neighbor algorithm \navailable right now.");
@@ -104,11 +104,11 @@ void ResizeTexturePopup::Render()
 			}
 			else
 			{
-				unsigned char* result = RESOURCE_MANAGER.ResizeTextureRawData(ObjToWorkWith, NewWidth, NewHeight, 0/*filtration*/);
-				FETexture* NewTexture = RESOURCE_MANAGER.RawDataToFETexture(result, NewWidth, NewHeight);
+				unsigned char* Result = RESOURCE_MANAGER.ResizeTextureRawData(ObjToWorkWith, NewWidth, NewHeight, 0/*filtration*/);
+				FETexture* NewTexture = RESOURCE_MANAGER.RawDataToFETexture(Result, NewWidth, NewHeight);
 				VIRTUAL_FILE_SYSTEM.CreateFile(NewTexture, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 				PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(NewTexture);
-				delete[] result;
+				delete[] Result;
 			}
 
 			ObjToWorkWith = nullptr;

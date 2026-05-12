@@ -8,7 +8,7 @@ GizmoManager::~GizmoManager() {}
 void GizmoManager::InitializeResources()
 {
 	SELECTED.SetOnUpdateFunction(OnSelectedObjectUpdate);
-	FEMesh* TransformationGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "45191B6F172E3B531978692E.model").c_str(), "transformationGizmoMesh");
+	FEMesh* TransformationGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "45191B6F172E3B531978692E.model"), "transformationGizmoMesh");
 	RESOURCE_MANAGER.SetTag(TransformationGizmoMesh, EDITOR_RESOURCE_TAG);
 
 	// TransformationXGizmo
@@ -70,7 +70,7 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.SetTag(TransformationXZGizmoGM, EDITOR_RESOURCE_TAG);
 
 	// Scale gizmos.
-	FEMesh* ScaleGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "637C784B2E5E5C6548190E1B.model").c_str(), "scaleGizmoMesh");
+	FEMesh* ScaleGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "637C784B2E5E5C6548190E1B.model"), "scaleGizmoMesh");
 	RESOURCE_MANAGER.SetTag(ScaleGizmoMesh, EDITOR_RESOURCE_TAG);
 
 	// ScaleXGizmo
@@ -104,7 +104,7 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.SetTag(ScaleZGizmoGM, EDITOR_RESOURCE_TAG);
 
 	// RotateAroundAxis gizmos
-	FEMesh* RotateGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "19622421516E5B317E1B5360.model").c_str(), "rotateGizmoMesh");
+	FEMesh* RotateGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "19622421516E5B317E1B5360.model"), "rotateGizmoMesh");
 	RESOURCE_MANAGER.SetTag(RotateGizmoMesh, EDITOR_RESOURCE_TAG);
 
 	// RotateXGizmo
@@ -137,11 +137,11 @@ void GizmoManager::InitializeResources()
 	RotateZGizmoGM = RESOURCE_MANAGER.CreateGameModel(RotateGizmoMesh, CurrentMaterial, "RotateZGizmoGM");
 	RESOURCE_MANAGER.SetTag(RotateZGizmoGM, EDITOR_RESOURCE_TAG);
 
-	TransformationGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "456A31026A1C3152181A6064.texture").c_str(), "transformationGizmoIcon");
+	TransformationGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "456A31026A1C3152181A6064.texture"), "transformationGizmoIcon");
 	RESOURCE_MANAGER.SetTag(TransformationGizmoIcon, EDITOR_RESOURCE_TAG);
-	ScaleGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "3F2118296C1E4533506A472E.texture").c_str(), "scaleGizmoIcon");
+	ScaleGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "3F2118296C1E4533506A472E.texture"), "scaleGizmoIcon");
 	RESOURCE_MANAGER.SetTag(ScaleGizmoIcon, EDITOR_RESOURCE_TAG);
-	RotateGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "7F6057403249580D73311B54.texture").c_str(), "rotateGizmoIcon");
+	RotateGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "7F6057403249580D73311B54.texture"), "rotateGizmoIcon");
 	RESOURCE_MANAGER.SetTag(RotateGizmoIcon, EDITOR_RESOURCE_TAG);
 }
 

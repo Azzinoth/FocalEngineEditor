@@ -9,20 +9,20 @@ FEEditorContentBrowserWindow::FEEditorContentBrowserWindow()
 	INPUT.AddMouseButtonCallback(&FEEditorContentBrowserWindow::MouseButtonCallback);
 }
 
-static FETexture* TempTexture = nullptr;
+static FETexture* TemporaryTexture = nullptr;
 static void AddTransparencyToTextureCallback(const std::vector<FEObject*> SelectionsResult)
 {
-	if (TempTexture == nullptr)
+	if (TemporaryTexture == nullptr)
 		return;
 
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_TEXTURE)
 	{
-		FETexture* OriginalTexture = TempTexture;
+		FETexture* OriginalTexture = TemporaryTexture;
 
 		FETexture* NewTexture = RESOURCE_MANAGER.CreateTextureWithTransparency(OriginalTexture, reinterpret_cast<FETexture*>(SelectionsResult[0]));
 		if (NewTexture == nullptr)
 		{
-			TempTexture = nullptr;
+			TemporaryTexture = nullptr;
 			return;
 		}
 
@@ -39,7 +39,7 @@ static void AddTransparencyToTextureCallback(const std::vector<FEObject*> Select
 		RESOURCE_MANAGER.DeleteFETexture(NewTexture);
 	}
 
-	TempTexture = nullptr;
+	TemporaryTexture = nullptr;
 }
 
 static void CreateNewPrefabCallback(const std::vector<FEObject*> SelectionsResult)
@@ -152,7 +152,7 @@ void FEEditorContentBrowserWindow::Render()
 				FILE_SYSTEM.ShowFileOpenDialog(FilePath, OBJ_LOAD_FILTER, 1);
 				if (!FilePath.empty())
 				{
-					const std::vector<FEObject*> LoadedObjects = RESOURCE_MANAGER.ImportOBJ(FilePath.c_str(), true);
+					const std::vector<FEObject*> LoadedObjects = RESOURCE_MANAGER.ImportOBJ(FilePath, true);
 					for (size_t i = 0; i < LoadedObjects.size(); i++)
 					{
 						if (LoadedObjects[i] != nullptr)
@@ -435,7 +435,7 @@ void FEEditorContentBrowserWindow::Render()
 							if (FilePath.find(".obj") == std::string::npos)
 								FilePath += ".obj";
 
-							RESOURCE_MANAGER.ExportFEMeshToOBJ(MeshToExport, FilePath.c_str());
+							RESOURCE_MANAGER.ExportFEMeshToOBJ(MeshToExport, FilePath);
 						}
 					}
 
@@ -547,7 +547,7 @@ void FEEditorContentBrowserWindow::Render()
 				{
 					if (ImGui::MenuItem("Choose transparency mask"))
 					{
-						TempTexture = reinterpret_cast<FETexture*>(ObjectUnderMouse);
+						TemporaryTexture = reinterpret_cast<FETexture*>(ObjectUnderMouse);
 						SELECT_FEOBJECT_POPUP.Show(FE_TEXTURE, AddTransparencyToTextureCallback);
 					}
 
@@ -566,7 +566,7 @@ void FEEditorContentBrowserWindow::Render()
 						if (!FilePath.empty())
 						{
 							FilePath += ".png";
-							RESOURCE_MANAGER.ExportFETextureToPNG(TextureToExport, FilePath.c_str());
+							RESOURCE_MANAGER.ExportFETextureToPNG(TextureToExport, FilePath);
 						}
 					}
 
@@ -1270,10 +1270,10 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 
 		if (SmallAdditionTypeIcon != nullptr)
 		{
-			ImVec2 CursorPosBefore = ImGui::GetCursorPos();
-			ImGui::SetCursorPos(ImVec2(CursorPosBefore.x + 10, CursorPosBefore.y - 48));
+			ImVec2 CursorPositionBefore = ImGui::GetCursorPos();
+			ImGui::SetCursorPos(ImVec2(CursorPositionBefore.x + 10, CursorPositionBefore.y - 48));
 			ImGui::Image(SmallAdditionTypeIcon->GetTextureID(), ImVec2(32, 32));
-			ImGui::SetCursorPos(CursorPosBefore);
+			ImGui::SetCursorPos(CursorPositionBefore);
 		}
 
 		ImGui::PopStyleColor();

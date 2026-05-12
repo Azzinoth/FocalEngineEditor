@@ -4,8 +4,8 @@ DebugTextureViewWindow::DebugTextureViewWindow(std::function<FETexture* ()> Func
 {
 	TextureToView = Func;
 
-	std::string tempCaption = TextureToView()->GetName();
-	strcpy_s(Caption, tempCaption.size() + 1, tempCaption.c_str());
+	std::string TemporaryCaption = TextureToView()->GetName();
+	strcpy_s(Caption, TemporaryCaption.size() + 1, TemporaryCaption.c_str());
 
 	Size = ImVec2(800, 800);
 	Position = ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2 - Size.x / 2, APPLICATION.GetMainWindow()->GetHeight() / 2 - Size.y / 2);

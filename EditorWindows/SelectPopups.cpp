@@ -61,57 +61,57 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 
 	if (CustomList.empty())
 	{
-		std::vector<std::string> TempList;
+		std::vector<std::string> TemporaryList;
 
 		switch (CurrentType)
 		{
 			case FE_TEXTURE:
 			{
-				TempList = RESOURCE_MANAGER.GetTextureIDList();
+				TemporaryList = RESOURCE_MANAGER.GetTextureIDList();
 				break;
 			}
 
 			case FE_MESH:
 			{
-				TempList = RESOURCE_MANAGER.GetMeshIDList();
+				TemporaryList = RESOURCE_MANAGER.GetMeshIDList();
 				break;
 			}
 			
 			case FE_MATERIAL:
 			{
-				TempList = RESOURCE_MANAGER.GetMaterialIDList();
+				TemporaryList = RESOURCE_MANAGER.GetMaterialIDList();
 				break;
 			}
 			
 			case FE_GAMEMODEL:
 			{
-				TempList = RESOURCE_MANAGER.GetGameModelIDList();
+				TemporaryList = RESOURCE_MANAGER.GetGameModelIDList();
 				break;
 			}
 
 			case FE_POINT_CLOUD:
 			{
-				TempList = RESOURCE_MANAGER.GetPointCloudIDList();
+				TemporaryList = RESOURCE_MANAGER.GetPointCloudIDList();
 				break;
 			}
 			
 			case FE_PREFAB:
 			{
-				TempList = RESOURCE_MANAGER.GetPrefabIDList();
+				TemporaryList = RESOURCE_MANAGER.GetPrefabIDList();
 				break;
 			}
 		}
 
-		FilterOutTags(TempList, std::vector<std::string>{ ENGINE_RESOURCE_TAG, EDITOR_RESOURCE_TAG});
+		FilterOutTags(TemporaryList, std::vector<std::string>{ ENGINE_RESOURCE_TAG, EDITOR_RESOURCE_TAG});
 
 		if (CurrentType == FE_TEXTURE)
-			TempList.insert(TempList.begin(), RESOURCE_MANAGER.NoTexture->GetObjectID());
+			TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.NoTexture->GetObjectID());
 
 		if (CurrentType == FE_MATERIAL)
-			TempList.insert(TempList.begin(), "18251A5E0F08013Z3939317U"/*"SolidColorMaterial"*/);
+			TemporaryList.insert(TemporaryList.begin(), "18251A5E0F08013Z3939317U"/*"SolidColorMaterial"*/);
 		
-		for (size_t i = 0; i < TempList.size(); i++)
-			ItemsList.push_back(OBJECT_MANAGER.GetFEObject(TempList[i]));
+		for (size_t i = 0; i < TemporaryList.size(); i++)
+			ItemsList.push_back(OBJECT_MANAGER.GetFEObject(TemporaryList[i]));
 	}
 	else
 	{

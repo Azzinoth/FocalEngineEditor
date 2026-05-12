@@ -11,7 +11,7 @@ void OnTriggerRelease()
 	//test = ";";
 }
 
-void OnSomething(float value)
+void OnSomething(float Value)
 {
 	int y = 0;
 	y++;
@@ -188,17 +188,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		std::string FrameMs = std::to_string(AverageCpuFrameDuration + AverageGpuFrameDuration);
 		FrameMs.erase(FrameMs.begin() + 4, FrameMs.end());
 
-		std::string caption = "CPU time : ";
-		caption += CPUMs;
-		caption += " ms";
-		caption += "  GPU time : ";
-		caption += GPUMs;
-		caption += " ms";
-		caption += "  Frame time : ";
-		caption += FrameMs;
-		caption += " ms";
+		std::string Caption = "CPU time : ";
+		Caption += CPUMs;
+		Caption += " ms";
+		Caption += "  GPU time : ";
+		Caption += GPUMs;
+		Caption += " ms";
+		Caption += "  Frame time : ";
+		Caption += FrameMs;
+		Caption += " ms";
 
-		ENGINE.SetWindowCaption(caption.c_str());
+		ENGINE.SetWindowCaption(Caption.c_str());
 
 		PROFILING.StopProfiling();
 		if (bPutThisFrameToTimeline)
