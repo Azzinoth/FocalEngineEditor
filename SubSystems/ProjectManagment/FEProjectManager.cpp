@@ -188,7 +188,7 @@ void FEProjectManager::DisplayProjectSelection()
 			// so we are deleting only files.
 			for (size_t i = 0; i < FileList.size(); i++)
 			{
-				FILE_SYSTEM.DeleteFile((List[IndexChosen]->GetProjectFolder() + FileList[i]).c_str());
+				FILE_SYSTEM.RemoveFile((List[IndexChosen]->GetProjectFolder() + FileList[i]).c_str());
 			}
 			// Then we can try to delete project folder, but if user created some folders in it we will fail.
 			FILE_SYSTEM.DeleteDirectory(ProjectFolder.c_str());
@@ -248,7 +248,7 @@ void FEProjectManager::DisplayProjectSelection()
 
 				if (strlen(ProjectName) != 0 && !bAlreadyCreated)
 				{
-					FILE_SYSTEM.CreateDirectory((std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/").c_str());
+					FILE_SYSTEM.MakeDirectory((std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/").c_str());
 					List.push_back(new FEProject(ProjectName, std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/"));
 					List.back()->CreateDummyScreenshot();
 

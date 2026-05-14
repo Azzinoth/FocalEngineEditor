@@ -285,7 +285,7 @@ FEAssetPackage* FEProject::SaveResourcesToAssetPackage()
 		}
 	}
 
-	if (!FILE_SYSTEM.CreateDirectory(TemporaryFolder))
+	if (!FILE_SYSTEM.MakeDirectory(TemporaryFolder))
 	{
 		LOG.Add("FEProject::SaveResourcesToAssetPackage: Error creating Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
 		return nullptr;
@@ -337,7 +337,7 @@ void FEProject::LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage)
 		}
 	}
 
-	if (!FILE_SYSTEM.CreateDirectory(TemporaryFolder))
+	if (!FILE_SYSTEM.MakeDirectory(TemporaryFolder))
 	{
 		LOG.Add("FEProject::LoadResourcesFromAssetPackage: Error creating Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
 		return;
@@ -479,7 +479,7 @@ void FEProject::SaveProject(bool bFullSave)
 
 	for (size_t i = 0; i < FilesToDelete.size(); i++)
 	{
-		FILE_SYSTEM.DeleteFile(FilesToDelete[i].c_str());
+		FILE_SYSTEM.RemoveFile(FilesToDelete[i].c_str());
 	}
 
 	VIRTUAL_FILE_SYSTEM.SaveState(ProjectFolder + "VFS.txt");

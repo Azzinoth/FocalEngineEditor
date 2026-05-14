@@ -121,7 +121,7 @@ void LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage)
 		}
 	}
 
-	if (!FILE_SYSTEM.CreateDirectory(TemporaryFolder))
+	if (!FILE_SYSTEM.MakeDirectory(TemporaryFolder))
 	{
 		LOG.Add("FEProject::LoadResourcesFromAssetPackage: Error creating Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
 		return;

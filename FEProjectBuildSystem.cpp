@@ -43,7 +43,7 @@ bool FEProjectBuildSystem::CopyVisualNodeSystemSubProjectFiles(const std::string
 	std::vector<std::string> FoldersToCreate = { "VisualNodeSystem/"};
 	for (size_t i = 0; i < FoldersToCreate.size(); i++)
 	{
-		if (!FILE_SYSTEM.CreateDirectory(OutputPath + FoldersToCreate[i]))
+		if (!FILE_SYSTEM.MakeDirectory(OutputPath + FoldersToCreate[i]))
 		{
 			LOG.Add("FEProjectBuildSystem::CopyVisualNodeSystemSubProjectFiles: Error creating " + FoldersToCreate[i] + " directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 			return false;
@@ -72,7 +72,7 @@ bool FEProjectBuildSystem::CopyVisualNodeSystemSubProjectFiles(const std::string
 	
 	for (size_t i = 0; i < FilesToCopy.size(); i++)
 	{
-		if (!FILE_SYSTEM.CopyFile(FilesToCopy[i].first, FilesToCopy[i].second))
+		if (!FILE_SYSTEM.CopyFileTo(FilesToCopy[i].first, FilesToCopy[i].second))
 		{
 			LOG.Add("FEProjectBuildSystem::CopyVisualNodeSystemSubProjectFiles: Error copying file " + FilesToCopy[i].first + " to " + FilesToCopy[i].second, "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 			return false;
@@ -114,14 +114,14 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 		}
 	}
 
-	if (!FILE_SYSTEM.CreateDirectory(VSProjectDirectory))
+	if (!FILE_SYSTEM.MakeDirectory(VSProjectDirectory))
 	{
 		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error creating BuildProjects_Temporary directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;
 	}
 
 	VSProjectDirectory += ProjectToBuild->GetID() + "/";
-	if (!FILE_SYSTEM.CreateDirectory(VSProjectDirectory))
+	if (!FILE_SYSTEM.MakeDirectory(VSProjectDirectory))
 	{
 		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error creating project directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;
@@ -151,7 +151,7 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 
 	for (size_t i = 0; i < FoldersToCreate.size(); i++)
 	{
-		if (!FILE_SYSTEM.CreateDirectory(VSProjectDirectory + FoldersToCreate[i]))
+		if (!FILE_SYSTEM.MakeDirectory(VSProjectDirectory + FoldersToCreate[i]))
 		{
 			LOG.Add("FEProjectBuildSystem::InitializeProject: Error creating " + FoldersToCreate[i] + " directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 			return false;
@@ -173,7 +173,7 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 
 	for (size_t i = 0; i < FilesToCopy.size(); i++)
 	{
-		if (!FILE_SYSTEM.CopyFile(FilesToCopy[i].first, FilesToCopy[i].second))
+		if (!FILE_SYSTEM.CopyFileTo(FilesToCopy[i].first, FilesToCopy[i].second))
 		{
 			LOG.Add("FEProjectBuildSystem::BuildExecutable: Error copying file " + FilesToCopy[i].first + " to " + FilesToCopy[i].second, "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 			return false;
@@ -328,7 +328,7 @@ bool FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles(FEProject* ProjectT
 
 		// Now we will create the directories and copy the files to the destination directory.
 		std::string ScriptModuleDirectory = VSProjectDirectory + "ScriptModules/" + CurrentModule->GetObjectID() + "/";
-		if (!FILE_SYSTEM.CreateDirectory(ScriptModuleDirectory))
+		if (!FILE_SYSTEM.MakeDirectory(ScriptModuleDirectory))
 		{
 			LOG.Add("FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles: Error creating directory " + ScriptModuleDirectory, "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 			return false;
@@ -456,26 +456,26 @@ bool FEProjectBuildSystem::CreateFinalExecutableDirectory(FEProject* ProjectToBu
 		}
 	}
 
-	if (!FILE_SYSTEM.CreateDirectory(FinalDirectory))
+	if (!FILE_SYSTEM.MakeDirectory(FinalDirectory))
 	{
 		LOG.Add("FEProjectBuildSystem::CreateFinalExecutableDirectory: Error creating Build directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;
 	}
 
 	// Copy all files to the final directory.
-	if (!FILE_SYSTEM.CopyFile(ExecutablePath, FinalDirectory + GetVSProjectName(ProjectToBuild) + ".exe"))
+	if (!FILE_SYSTEM.CopyFileTo(ExecutablePath, FinalDirectory + GetVSProjectName(ProjectToBuild) + ".exe"))
 	{
 		LOG.Add("FEProjectBuildSystem::CreateFinalExecutableDirectory: Error copying executable", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;
 	}
 
-	if (!FILE_SYSTEM.CopyFile(EngineResourcesPath, FinalDirectory + "EngineResources.fepackage"))
+	if (!FILE_SYSTEM.CopyFileTo(EngineResourcesPath, FinalDirectory + "EngineResources.fepackage"))
 	{
 		LOG.Add("FEProjectBuildSystem::CreateFinalExecutableDirectory: Error copying EngineResources.fepackage", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;
 	}
 
-	if (!FILE_SYSTEM.CopyFile(ProjectResourcesPath, FinalDirectory + "Resources.fepackage"))
+	if (!FILE_SYSTEM.CopyFileTo(ProjectResourcesPath, FinalDirectory + "Resources.fepackage"))
 	{
 		LOG.Add("FEProjectBuildSystem::CreateFinalExecutableDirectory: Error copying ProjectResources.fepackage", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;

@@ -817,7 +817,7 @@ void FEEditor::SetUpImGui()
 	std::string ResourcesFolder = "Resources\\";
 
 	const size_t PathLength = strlen((ResourcesFolder + "imgui.ini").c_str()) + 1;
-	//FILE_SYSTEM.DeleteFile((ResourcesFolder + "imgui.ini").c_str());
+	//FILE_SYSTEM.RemoveFile((ResourcesFolder + "imgui.ini").c_str());
 	bHadImGuiIniFileAtStartup = FILE_SYSTEM.DoesFileExist((ResourcesFolder + "imgui.ini").c_str());
 	char* ImguiIniFile = new char[PathLength];
 	strcpy_s(ImguiIniFile, PathLength, (ResourcesFolder + "imgui.ini").c_str());
