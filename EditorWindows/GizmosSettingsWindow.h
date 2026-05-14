@@ -14,4 +14,4 @@ public:
 	void Show() override;
 	void Render() override;
 };
-static GizmosSettingsWindow GizmosSettingsWindowObject;
+inline GizmosSettingsWindow GizmosSettingsWindowObject;

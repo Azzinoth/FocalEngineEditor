@@ -132,7 +132,10 @@ void FEEditorSceneWindow::Render()
 	{
 		ImGuiDockNode* CentralNode = ImGui::DockBuilderGetCentralNode(DockspaceID);
 		if (CentralNode != nullptr)
+		{
 			ImGui::SetNextWindowDockID(CentralNode->ID, ImGuiCond_Appearing);
+			bShouldDockToCentralNode = false;
+		}
 	}
 
 	FEImGuiWindow::Render();

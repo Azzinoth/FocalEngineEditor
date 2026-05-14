@@ -45,6 +45,7 @@ private:
 	std::string Name;
 	std::string ProjectFolder;
 
+	bool bWasJustCreated = false;
 	bool bModified = false;
 	std::vector<FEObject*> UnSavedObjects;
 

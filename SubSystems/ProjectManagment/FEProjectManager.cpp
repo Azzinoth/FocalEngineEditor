@@ -60,6 +60,7 @@ void FEProjectManager::CloseCurrentProject()
 	LoadProjectList();
 
 	VIRTUAL_FILE_SYSTEM.SetCurrentPath("/");
+	SCENE_MANAGER.Clear();
 }
 
 void FEProjectManager::OpenProject(const int ProjectIndex)
@@ -71,7 +72,15 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 	}
 
 	PROJECT_MANAGER.SetCurrent(List[ProjectIndex]);
-	PROJECT_MANAGER.GetCurrent()->LoadProject();
+	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+	CurrentProject->LoadProject();
+	if (CurrentProject->bWasJustCreated)
+	{
+		CurrentProject->bWasJustCreated = false;
+		FEScene* StartScene = SCENE_MANAGER.GetStartingScene();
+		if (StartScene != nullptr)
+			EDITOR.CreateEditorWindowForScene(StartScene->GetObjectID(), CurrentProject);
+	}
 	IndexChosen = -1;
 
 	// After loading project we should update our previews
@@ -295,7 +304,8 @@ void FEProjectManager::CreateNewProject(std::string ProjectName, std::string Pro
 	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
 	SkyDome->AddComponent<FESkyDomeComponent>();
 
-	EDITOR.CreateEditorWindowForScene(NewScene->GetObjectID(), NewProject);
+	NewProject->bWasJustCreated = true;
+	SCENE_MANAGER.SetStartingScene(NewScene->GetObjectID());
 	NewProject->InjectEditorCamera(NewScene);
 	NewProject->AddMissingVFSData();
 	NewProject->SaveProject(true);

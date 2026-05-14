@@ -371,6 +371,7 @@ void FEProject::SaveProject(bool bFullSave)
 	Root["Version"] = PROJECTS_FILE_VER;
 	Root["ID"] = ID;
 	Root["Name"] = Name;
+	Root["bWasJustCreated"] = bWasJustCreated;
 
 	FEScene* SceneForScreenshot = EDITOR.GetFocusedScene();
 	if (SceneForScreenshot != nullptr)
@@ -627,6 +628,8 @@ void FEProject::LoadProject()
 
 	ID = Root["ID"].asCString();
 	Name = Root["Name"].asCString();
+	if (Root.isMember("bWasJustCreated"))
+		bWasJustCreated = Root["bWasJustCreated"].asBool();
 
 	LoadResources(ProjectFolder);
 

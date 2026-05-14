@@ -368,7 +368,7 @@ public:
 		FEImGuiWindow::OnRenderEnd();
 	}
 };
-static JustTextWindow JustTextWindowObj;
+inline JustTextWindow JustTextWindowObj;
 
 class MessagePopUp : public ImGuiModalPopup
 {
