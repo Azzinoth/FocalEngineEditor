@@ -174,7 +174,7 @@ void SelectFEObjectPopUp::Render()
 		ImGui::Columns(5, "selectPopupColumns", false);
 		for (size_t i = 0; i < FilteredItemsList.size(); i++)
 		{
-			ImGui::PushID(FilteredItemsList[i]->GetName().c_str());
+			ImGui::PushID(FilteredItemsList[i]->GetObjectID().c_str());
 			if (ImGui::IsMouseDoubleClicked(0))
 			{
 				if (IndexUnderMouse != -1)

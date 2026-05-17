@@ -1375,7 +1375,7 @@ void FEEditorInspectorWindow::Render()
 				ImGui::Text("Snapped to: ");
 				ImGui::SameLine();
 
-				const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWithComponent<FETerrainComponent>();
+				const std::vector<std::string> TerrainIDList = CurrentScene->GetEntityIDListWithComponent<FETerrainComponent>();
 				static std::string CurrentTerrain = "none";
 
 				if (InstancedComponent.GetSnappedToTerrain() == nullptr)
@@ -1402,13 +1402,15 @@ void FEEditorInspectorWindow::Render()
 					if (bIsSelected)
 						ImGui::SetItemDefaultFocus();
 
-					for (size_t i = 0; i < TerrainList.size(); i++)
+					for (size_t i = 0; i < TerrainIDList.size(); i++)
 					{
-						const bool bIsSelected = (CurrentTerrain == TerrainList[i]);
-						if (ImGui::Selectable(CurrentScene->GetEntity(TerrainList[i])->GetName().c_str(), bIsSelected))
+						const bool bIsSelected = (CurrentTerrain == TerrainIDList[i]);
+						ImGui::PushID(TerrainIDList[i].c_str());
+						if (ImGui::Selectable(CurrentScene->GetEntity(TerrainIDList[i])->GetName().c_str(), bIsSelected))
 						{
-							TERRAIN_SYSTEM.SnapInstancedEntity(CurrentScene->GetEntity(TerrainList[i]), EntitySelected);
+							TERRAIN_SYSTEM.SnapInstancedEntity(CurrentScene->GetEntity(TerrainIDList[i]), EntitySelected);
 						}
+						ImGui::PopID();
 
 						if (bIsSelected)
 							ImGui::SetItemDefaultFocus();
@@ -2354,11 +2356,13 @@ void HandleScriptVariable(FENativeScriptComponent& Component, const std::string 
 				{
 					FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabIDList[i]);
 					bool bIsSelected = PrefabName == CurrentPrefab->GetName();
+					ImGui::PushID(PrefabIDList[i].c_str());
 					if (ImGui::Selectable(CurrentPrefab->GetName().c_str(), bIsSelected))
 					{
 						Value = RESOURCE_MANAGER.GetPrefab(PrefabIDList[i]);
 						Component.SetVariableValue(VariableName, Value);
 					}
+					ImGui::PopID();
 
 					if (bIsSelected)
 						ImGui::SetItemDefaultFocus();
@@ -2428,11 +2432,13 @@ void HandleScriptArrayVariable(FENativeScriptComponent& Component, const std::st
 					{
 						FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabIDList[j]);
 						bool bIsSelected = PrefabName == CurrentPrefab->GetName();
+						ImGui::PushID(PrefabIDList[j].c_str());
 						if (ImGui::Selectable(CurrentPrefab->GetName().c_str(), bIsSelected))
 						{
 							Value[i] = RESOURCE_MANAGER.GetPrefab(PrefabIDList[j]);
 							Component.SetVariableValue(VariableName, Value);
 						}
+						ImGui::PopID();
 
 						if (bIsSelected)
 							ImGui::SetItemDefaultFocus();

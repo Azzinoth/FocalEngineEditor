@@ -120,6 +120,10 @@ void FEEditorSceneWindow::Render()
 	if (!IsVisible())
 		return;
 
+	Scene = SCENE_MANAGER.GetSceneByID(SceneID);
+	if (Scene == nullptr)
+		return;
+
 	if (bJustAdded)
 	{
 		ImGui::SetWindowFocus();
@@ -209,7 +213,7 @@ void FEEditorSceneWindow::OnRenderEnd()
 
 FEScene* FEEditorSceneWindow::GetScene() const
 {
-	return Scene;
+	return SCENE_MANAGER.GetSceneByID(SceneID);
 }
 
 glm::vec2 FEEditorSceneWindow::GetSize() const
