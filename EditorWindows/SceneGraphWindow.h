@@ -56,6 +56,7 @@ class FEEditorSceneGraphWindow
     SceneGraphUI::TreeView* SceneGraphUI = nullptr;
 	FESceneGraphBackend* SceneGraphBackend = nullptr;
 	std::string LastFrameRootNodeID = "";
+	std::string LastFrameSelectedEntityID = "";
     static void OnNodeClicked(SceneGraphUI::NodeHandle Node, ImGuiMouseButton_ MouseButton);
     static bool IsSelected(SceneGraphUI::NodeHandle Node);
     static std::string GetDisplayedName(SceneGraphUI::NodeHandle Node);
