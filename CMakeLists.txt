@@ -12,6 +12,10 @@ project(FocalEngineEditor)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(FOCAL_ENGINE_EDITOR_ENABLE_TESTS "Enable tests" OFF)
+
+set(TEST_SOURCE_FILES)
+
 # Set compiler flags based on USE_STATIC_RUNTIME
 if(MSVC)
     # Disable C4251 warning
@@ -108,8 +112,10 @@ configure_file(${ENGINE_FOLDER}/ResourceManager/Config.h.in ${ENGINE_FOLDER}/Res
 # *************** EDITOR ***************
 
 set(EDITOR_SOURCE_FILES "")
+if(NOT FOCAL_ENGINE_EDITOR_ENABLE_TESTS)
+	list(APPEND EDITOR_SOURCE_FILES "main.cpp")
+endif()
 list(APPEND EDITOR_SOURCE_FILES
-    "main.cpp"
 	"FEEditor.cpp"
 	"FEEditor.h"
 	"FEEditorDragAndDropManager.cpp"
@@ -216,6 +222,23 @@ file(GLOB VisualNodeSystem_CustomNodes_SRC
 	"SubSystems/NodeSystem/CustomNodes/FEEditorTextureCreatingNode.h"
 )
 
+if(FOCAL_ENGINE_EDITOR_ENABLE_TESTS)
+	file(GLOB Tests_SRC
+		"Tests/RunAllTests.h"
+		"Tests/RunAllTests.cpp"
+	)
+
+	file(GLOB Tests_VirtualFileSystem_SRC
+		"Tests/VirtualFileSystem/VirtualFileSystemTest.h"
+		"Tests/VirtualFileSystem/VirtualFileSystemTest.cpp"
+	)
+
+	list(APPEND TEST_SOURCE_FILES
+		${Tests_SRC}
+		${Tests_VirtualFileSystem_SRC}
+	)
+endif()
+
 # *************** THIRD_PARTY ***************
 
 file(GLOB textEditor_SRC
@@ -238,6 +261,7 @@ add_executable(FocalEngineEditor WIN32
 								 ${ProjectManagment_SRC}
 								 # *************** THIRD_PARTY ***************
 								 ${textEditor_SRC}
+								 ${TEST_SOURCE_FILES}
 )
 
 target_link_libraries(FocalEngineEditor
@@ -251,6 +275,10 @@ target_link_libraries(FocalEngineEditor
         ${GLEW_LIBRARY}
         opengl32.lib
 )
+
+if(FOCAL_ENGINE_EDITOR_ENABLE_TESTS)
+	target_link_libraries(FocalEngineEditor PRIVATE FocalEngine::GTest)
+endif()
 
 target_compile_definitions(FocalEngineEditor PRIVATE SCENE_GRAPH_UI_WITH_FOCAL_ENGINE)
 
@@ -269,6 +297,10 @@ source_group("Source Files/NodeSystem/CustomNodes" FILES ${VisualNodeSystem_Cust
 source_group("Source Files/ProjectManagment" FILES ${ProjectManagment_SRC})
 # *************** THIRD_PARTY ***************
 source_group("Source Files/ThirdParty/textEditor" FILES ${textEditor_SRC})
+if(FOCAL_ENGINE_EDITOR_ENABLE_TESTS)
+	source_group("Source Files/Tests" FILES ${Tests_SRC})
+	source_group("Source Files/Tests/VirtualFileSystemTests" FILES ${Tests_VirtualFileSystem_SRC})
+endif()
 
 # set the startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT FocalEngineEditor)
