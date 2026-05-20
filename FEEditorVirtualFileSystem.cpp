@@ -154,7 +154,7 @@ void FEVFSDirectory::SetReadOnly(const bool NewValue)
 FEVirtualFileSystem::FEVirtualFileSystem()
 {
 	Root = new FEVFSDirectory();
-	Root->Parent = Root;
+	Root->Parent = nullptr;
 	Root->SetName("/");
 }
 
@@ -288,7 +288,10 @@ bool FEVirtualFileSystem::CreateFile(FEObject* Data, const std::string Path)
 	{
 		LOG.Add("File already exists in function FEVirtualFileSystem::CreateFile.", "FE_VIRTUAL_FILE_SYSTEM", FE_LOG_WARNING);
 		return false;
-	}	
+	}
+
+	if (Directory->IsReadOnly())
+		return false;
 
 	Directory->Files.push_back(FEVFSFile(Data->GetObjectID(), Directory));
 	return true;
@@ -323,6 +326,9 @@ bool FEVirtualFileSystem::CreateDirectory(const std::string Name, const std::str
 	if (Directory == nullptr)
 		return false;
 
+	if (Directory->IsReadOnly())
+		return false;
+
 	if (Directory->HasSubDirectory(Name))
 		return false;
 
@@ -338,6 +344,9 @@ std::string FEVirtualFileSystem::CreateDirectory(const std::string Path)
 {
 	FEVFSDirectory* Directory = PathToDirectory(Path);
 	if (Directory == nullptr)
+		return "";
+
+	if (Directory->IsReadOnly())
 		return "";
 
 	int Count = 1;
@@ -360,6 +369,7 @@ std::string FEVirtualFileSystem::CreateDirectory(const std::string Path)
 void FEVirtualFileSystem::Clear()
 {
 	Root->Clear();
+	CurrentPath = "/";
 }
 
 bool FEVirtualFileSystem::RenameDirectory(const std::string NewName, const std::string Path)
@@ -371,10 +381,19 @@ bool FEVirtualFileSystem::RenameDirectory(const std::string NewName, const std::
 	if (Directory == nullptr)
 		return false;
 
-	if (Directory->HasSubDirectory(NewName))
+	if (Directory->Parent == nullptr)
+		return false;
+
+	if (NewName == Directory->GetName())
+		return true;
+
+	if (Directory->Parent->HasSubDirectory(NewName))
 		return false;
 
 	if (Directory->IsReadOnly())
+		return false;
+
+	if (Directory->Parent->IsReadOnly())
 		return false;
 
 	Directory->SetName(NewName);
@@ -397,6 +416,18 @@ std::string FEVirtualFileSystem::GetCurrentPath()
 bool FEVirtualFileSystem::SetCurrentPath(const std::string Path)
 {
 	if (!IsPathCorrect(Path))
+		return false;
+
+	FEVFSDirectory* Directory = PathToDirectory(Path);
+	if (Directory == nullptr)
+		return false;
+
+	// PathToDirectory returns the parent directory given file path, so here we need additionally check if given path is directory path or file path.
+	std::string Normalized = Path;
+	if (Normalized.size() > 1 && Normalized.back() == '/')
+		Normalized.pop_back();
+
+	if (DirectoryToPath(Directory) != Normalized)
 		return false;
 
 	CurrentPath = Path;
@@ -422,6 +453,12 @@ bool FEVirtualFileSystem::MoveFile(FEObject* Data, const std::string OldPath, co
 	if (NewDirectory->HasFile(Data))
 		return false;
 
+	if (NewDirectory->IsReadOnly())
+		return false;
+
+	if (OldDirectory->IsReadOnly())
+		return false;
+
 	if (!OldDirectory->DeleteFile(Data))
 		return false;
 	NewDirectory->AddFile(Data);
@@ -439,13 +476,25 @@ bool FEVirtualFileSystem::MoveDirectory(const std::string DirectoryPath, const s
 	if (NewDirectory == nullptr)
 		return false;
 
-	if (Directory == NewDirectory)
-		return false;
+	FEVFSDirectory* Ancestor = NewDirectory;
+	while (Ancestor != nullptr)
+	{
+		if (Ancestor == Directory)
+			return false;
+
+		Ancestor = Ancestor->Parent;
+	}
 
 	if (NewDirectory->HasSubDirectory(Directory->GetName()))
 		return false;
 
 	if (Directory->IsReadOnly())
+		return false;
+
+	if (NewDirectory->IsReadOnly())
+		return false;
+
+	if (Directory->Parent->IsReadOnly())
 		return false;
 
 	for (size_t i = 0; i < Directory->Parent->SubDirectories.size(); i++)
@@ -457,7 +506,7 @@ bool FEVirtualFileSystem::MoveDirectory(const std::string DirectoryPath, const s
 		}
 	}
 
-	Directory->Parent = PathToDirectory(NewPath);
+	Directory->Parent = NewDirectory;
 	NewDirectory->SubDirectories.push_back(Directory);
 
 	return true;
@@ -483,6 +532,12 @@ void FEVirtualFileSystem::DeleteDirectory(FEVFSDirectory* Directory)
 	if (Directory->IsReadOnly())
 		return;
 
+	if (Directory->Parent == nullptr)
+		return;
+
+	if (Directory->Parent->IsReadOnly())
+		return;
+
 	for (size_t i = 0; i < Directory->Parent->SubDirectories.size(); i++)
 	{
 		if (Directory->Parent->SubDirectories[i]->GetObjectID() == Directory->GetObjectID())
@@ -505,6 +560,9 @@ bool FEVirtualFileSystem::DeleteEmptyDirectory(const std::string Path)
 	if (Directory->IsReadOnly())
 		return false;
 
+	if (Directory->Parent != nullptr && Directory->Parent->IsReadOnly())
+		return false;
+
 	DeleteDirectory(Directory);
 	return true;
 }
@@ -512,19 +570,18 @@ bool FEVirtualFileSystem::DeleteEmptyDirectory(const std::string Path)
 std::string FEVirtualFileSystem::DirectoryToPath(FEVFSDirectory* Directory)
 {
 	if (Directory == nullptr)
-		return "/";
+		return "";
 
 	std::string Result = Directory->GetName();
 	FEVFSDirectory* CurrentDirectory = Directory;
 
-	while (CurrentDirectory->Parent != CurrentDirectory)
+	while (CurrentDirectory->Parent != nullptr)
 	{
 		CurrentDirectory = CurrentDirectory->Parent;
 		if (CurrentDirectory != Root)
 			Result.insert(0, "/");
 		
 		Result.insert(0, CurrentDirectory->GetName());
-		
 	}
 
 	return Result;
@@ -534,7 +591,10 @@ std::string FEVirtualFileSystem::GetDirectoryParent(const std::string Path)
 {
 	const FEVFSDirectory* Directory = PathToDirectory(Path);
 	if (Directory == nullptr)
-		return "/";
+		return "";
+
+	if (Directory->Parent == nullptr)
+		return "";
 
 	return DirectoryToPath(Directory->Parent);
 }
@@ -557,9 +617,7 @@ bool FEVirtualFileSystem::DeleteFile(const FEObject* Data, const std::string Pat
 	if (Directory->IsReadOnly())
 		return false;
 
-	Directory->DeleteFile(Data);
-
-	return true;
+	return Directory->DeleteFile(Data);
 }
 
 std::string FEVirtualFileSystem::LocateFileRecursive(FEVFSDirectory* Directory, FEObject* File)
@@ -628,14 +686,15 @@ void FEVirtualFileSystem::LocateAndDeleteFile(FEObject* File)
 
 void FEVirtualFileSystem::SaveStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Directory)
 {
-	LocalRoot->operator[](Directory->GetObjectID())["name"] = Directory->GetName();
-	
+	LocalRoot->operator[](Directory->GetObjectID())["Name"] = Directory->GetName();
+	LocalRoot->operator[](Directory->GetObjectID())["ReadOnly"] = Directory->IsReadOnly();
+
 	Json::Value Files;
 	for (size_t i = 0; i < Directory->Files.size(); i++)
 	{
-		Files[Directory->Files[i].DataID];
+		Files[Directory->Files[i].DataID]["ReadOnly"] = Directory->Files[i].IsReadOnly();
 	}
-	LocalRoot->operator[](Directory->GetObjectID())["files"] = Files;
+	LocalRoot->operator[](Directory->GetObjectID())["Files"] = Files;
 
 	Json::Value SubDirectories;
 	for (size_t i = 0; i < Directory->SubDirectories.size(); i++)
@@ -643,7 +702,7 @@ void FEVirtualFileSystem::SaveStateRecursive(Json::Value* LocalRoot, FEVFSDirect
 		SaveStateRecursive(&SubDirectories, Directory->SubDirectories[i]);
 	}
 
-	LocalRoot->operator[](Directory->GetObjectID())["subDirectories"] = SubDirectories;
+	LocalRoot->operator[](Directory->GetObjectID())["SubDirectories"] = SubDirectories;
 }
 
 void FEVirtualFileSystem::SaveState(const std::string FileName)
@@ -665,20 +724,22 @@ void FEVirtualFileSystem::SaveState(const std::string FileName)
 void FEVirtualFileSystem::LoadStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Parent, FEVFSDirectory* Directory, const std::string ForceObjectID)
 {
 	Directory->SetIDOfUnTyped(ForceObjectID);
-	Directory->SetName(LocalRoot->operator[]("name").asCString());
+	Directory->SetName(LocalRoot->operator[]("Name").asCString());
+	Directory->SetReadOnly(LocalRoot->operator[]("ReadOnly").asBool());
 	Directory->Parent = Parent;
 
-	const std::vector<Json::String> Files = LocalRoot->operator[]("files").getMemberNames();
+	const std::vector<Json::String> Files = LocalRoot->operator[]("Files").getMemberNames();
 	for (size_t j = 0; j < Files.size(); j++)
 	{
-		Directory->AddFile(OBJECT_MANAGER.GetFEObject(Files[j]));
+		if (Directory->AddFile(OBJECT_MANAGER.GetFEObject(Files[j])))
+			Directory->Files.back().SetReadOnly(LocalRoot->operator[]("Files")[Files[j]]["ReadOnly"].asBool());
 	}
 
-	const std::vector<Json::String> SubDirectories = LocalRoot->operator[]("subDirectories").getMemberNames();
+	const std::vector<Json::String> SubDirectories = LocalRoot->operator[]("SubDirectories").getMemberNames();
 	for (size_t j = 0; j < SubDirectories.size(); j++)
 	{
-		Directory->AddSubDirectory(LocalRoot->operator[]("subDirectories")[SubDirectories[j]]["name"].asCString(), SubDirectories[j]);
-		LoadStateRecursive(&LocalRoot->operator[]("subDirectories")[SubDirectories[j]], Directory, Directory->SubDirectories.back(), SubDirectories[j]);
+		Directory->AddSubDirectory(LocalRoot->operator[]("SubDirectories")[SubDirectories[j]]["Name"].asCString(), SubDirectories[j]);
+		LoadStateRecursive(&LocalRoot->operator[]("SubDirectories")[SubDirectories[j]], Directory, Directory->SubDirectories.back(), SubDirectories[j]);
 	}
 }
 
@@ -701,18 +762,22 @@ void FEVirtualFileSystem::LoadState(std::string FileName)
 	float FileVersion = JsonRoot["version"].asFloat();
 	if (FileVersion != VIRTUAL_FILE_SYSTEM_VERSION)
 	{
-		//
+		LOG.Add("State file version " + std::to_string(FileVersion) + " does not match current version " + std::to_string(VIRTUAL_FILE_SYSTEM_VERSION) + " in function FEVirtualFileSystem::LoadState.", "FE_VIRTUAL_FILE_SYSTEM", FE_LOG_ERROR);
+		StateFile.close();
+		return;
 	}
+
+	Clear();
 
 	std::vector<Json::String> Values = JsonRoot.getMemberNames();
 	for (size_t i = 0; i < Values.size(); i++)
 	{
 		if (Values[i] != "version")
 		{
-			LoadStateRecursive(&JsonRoot[Values[i]], Root, Root, Values[i]);
+			LoadStateRecursive(&JsonRoot[Values[i]], nullptr, Root, Values[i]);
 		}
 	}
-	
+
 	StateFile.close();
 }
 
@@ -755,6 +820,15 @@ void FEVirtualFileSystem::SetDirectoryReadOnly(const bool NewValue, const std::s
 	Directory->SetReadOnly(NewValue);
 }
 
+bool FEVirtualFileSystem::IsDirectoryReadOnly(const std::string Path)
+{
+	FEVFSDirectory* Directory = PathToDirectory(Path);
+	if (Directory == nullptr)
+		return false;
+
+	return Directory->IsReadOnly();
+}
+
 void FEVirtualFileSystem::SetFileReadOnly(const bool NewValue, const FEObject* Data, const std::string Path)
 {
 	FEVFSDirectory* Directory = PathToDirectory(Path);
@@ -786,4 +860,42 @@ bool FEVirtualFileSystem::DoesFileExist(FEObject* Data, std::string Path)
 bool FEVirtualFileSystem::DoesFileExistAnywhere(FEObject* Data)
 {
 	return !LocateFile(Data).empty();
+}
+
+std::string FEVirtualFileSystem::GetTreeAsString()
+{
+	std::string Result = Root->GetName() + "\n";
+	BuildTreeStringRecursive(Root, "", Result);
+	return Result;
+}
+
+void FEVirtualFileSystem::BuildTreeStringRecursive(FEVFSDirectory* Directory, std::string Prefix, std::string& Output)
+{
+	if (Directory == nullptr)
+		return;
+
+	const size_t SubDirectoryCount = Directory->SubDirectories.size();
+	const size_t FileCount = Directory->Files.size();
+	const size_t TotalCount = SubDirectoryCount + FileCount;
+
+	for (size_t i = 0; i < SubDirectoryCount; i++)
+	{
+		const bool bIsLast = (i + 1 == TotalCount);
+		FEVFSDirectory* SubDirectory = Directory->SubDirectories[i];
+		const std::string ReadOnlyTag = SubDirectory->IsReadOnly() ? " [ro]" : "";
+		Output += Prefix + (bIsLast ? "\\-- " : "+-- ") + SubDirectory->GetName() + "/" + ReadOnlyTag + "\n";
+		BuildTreeStringRecursive(SubDirectory, Prefix + (bIsLast ? "    " : "|   "), Output);
+	}
+
+	for (size_t i = 0; i < FileCount; i++)
+	{
+		const bool bIsLast = (i + 1 == FileCount);
+		std::string FileDisplayName = Directory->Files[i].DataID;
+		FEObject* FileObject = OBJECT_MANAGER.GetFEObject(Directory->Files[i].DataID);
+		if (FileObject != nullptr)
+			FileDisplayName = FileObject->GetName();
+
+		const std::string ReadOnlyTag = Directory->Files[i].IsReadOnly() ? " [ro]" : "";
+		Output += Prefix + (bIsLast ? "\\-- " : "+-- ") + FileDisplayName + ReadOnlyTag + "\n";
+	}
 }

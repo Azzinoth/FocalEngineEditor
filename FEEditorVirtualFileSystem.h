@@ -65,6 +65,7 @@ public:
 	std::vector<std::string> GetDirectoryContentIDs(std::string Path);
 	std::string GetDirectoryParent(std::string Path);
 	void SetDirectoryReadOnly(bool NewValue, std::string Path);
+	bool IsDirectoryReadOnly(std::string Path);
 
 	void Clear();
 	bool AcceptableName(std::string Name);
@@ -76,6 +77,8 @@ public:
 	void LoadState(std::string FileName);
 
 	bool IsReadOnly(const FEObject* Data, std::string Path);
+
+	std::string GetTreeAsString();
 private:
 	SINGLETON_PRIVATE_PART(FEVirtualFileSystem)
 	FEVFSDirectory* Root;
@@ -84,10 +87,11 @@ private:
 	void DeleteDirectory(FEVFSDirectory* Directory);
 	std::string CurrentPath = "/";
 	std::string LocateFileRecursive(FEVFSDirectory* Directory, FEObject* File);
+	void BuildTreeStringRecursive(FEVFSDirectory* Directory, std::string Prefix, std::string& Output);
 
 	void SaveStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Directory);
 	void LoadStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Parent, FEVFSDirectory* Directory, std::string ForceObjectID);
 };
 
-#define VIRTUAL_FILE_SYSTEM_VERSION 0.01f
+#define VIRTUAL_FILE_SYSTEM_VERSION 0.02f
 #define VIRTUAL_FILE_SYSTEM FEVirtualFileSystem::GetInstance()

@@ -850,7 +850,8 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		NameFilter = "";
 	}
 	ImGui::PopStyleVar();
-	VFSBackButtonTarget->StickToItem();
+	if (!VIRTUAL_FILE_SYSTEM.IsDirectoryReadOnly(VFSBackButtonInfo.DirectoryPath))
+		VFSBackButtonTarget->StickToItem();
 
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
@@ -1226,7 +1227,11 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		}
 		
 		if (CurrentResource->GetType() == FE_NULL && DirectoriesTargets.size() > (size_t)DirectoryIndex)
-			DirectoriesTargets[DirectoryIndex++]->StickToItem();
+		{
+			if (DirectoriesTargets[DirectoryIndex] != nullptr)
+				DirectoriesTargets[DirectoryIndex]->StickToItem();
+			DirectoryIndex++;
+		}
 
 		if (ImGui::IsItemHovered())
 		{
@@ -1433,9 +1438,16 @@ void FEEditorContentBrowserWindow::UpdateDirectoryDragAndDropTargets()
 			info.DirectoryPath += CurrentResource->GetName() + "/";
 			DirectoryDragAndDropInfo[SubDirectoryIndex] = info;
 
-			DirectoriesTargets.push_back(DRAG_AND_DROP_MANAGER.AddTarget(std::vector<FE_OBJECT_TYPE> { FE_NULL, FE_SHADER, FE_TEXTURE, FE_MESH, FE_MATERIAL, FE_GAMEMODEL, FE_PREFAB },
-				DirectoryDragAndDropCallback, reinterpret_cast<void**>(&DirectoryDragAndDropInfo[SubDirectoryIndex]),
-				std::vector<std::string> { "Drop to move to folder", "Drop to move to folder", "Drop to move to folder", "Drop to move to folder", "Drop to move to folder", "Drop to move to folder", "Drop to move to folder" }));
+			if (VIRTUAL_FILE_SYSTEM.IsDirectoryReadOnly(info.DirectoryPath))
+			{
+				DirectoriesTargets.push_back(nullptr);
+			}
+			else
+			{
+				DirectoriesTargets.push_back(DRAG_AND_DROP_MANAGER.AddTarget(std::vector<FE_OBJECT_TYPE> { FE_NULL, FE_SHADER, FE_TEXTURE, FE_MESH, FE_MATERIAL, FE_GAMEMODEL, FE_PREFAB },
+					DirectoryDragAndDropCallback, reinterpret_cast<void**>(&DirectoryDragAndDropInfo[SubDirectoryIndex]),
+					std::vector<std::string> { "Drop to move to folder", "Drop to move to folder", "Drop to move to folder", "Drop to move to folder", "Drop to move to folder", "Drop to move to folder", "Drop to move to folder" }));
+			}
 			SubDirectoryIndex++;
 		}
 	}
