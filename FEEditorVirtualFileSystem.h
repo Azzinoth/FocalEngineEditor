@@ -8,7 +8,6 @@ struct FEVFSFile
 {
 	FEVFSFile();
 	FEVFSFile(std::string DataID, FEVFSDirectory* InDirectory);
-	FEVFSDirectory* InDirectory;
 	std::string DataID;
 	bool bReadOnly = false;
 	bool IsReadOnly();
@@ -47,6 +46,7 @@ public:
 	SINGLETON_PUBLIC_PART(FEVirtualFileSystem)
 
 	bool IsPathCorrect(std::string Path);
+	bool IsPathToFile(std::string Path);
 	bool CreateFile(FEObject* Data, std::string Path);
 	bool MoveFile(FEObject* Data, std::string OldPath, std::string NewPath);
 	bool DeleteFile(const FEObject* Data, std::string Path);
@@ -91,6 +91,7 @@ private:
 
 	void SaveStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Directory);
 	void LoadStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Parent, FEVFSDirectory* Directory, std::string ForceObjectID);
+	bool DirectoryHasFileWithName(FEVFSDirectory* Directory, const std::string Name);
 };
 
 #define VIRTUAL_FILE_SYSTEM_VERSION 0.02f
