@@ -212,7 +212,7 @@ void DeletePointCloudPopup::DeletePointCloud(FEPointCloud* PointCloud)
 	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneList[i]);
+		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
 		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEPointCloudComponent>();
 		for (size_t j = 0; j < EntitiesList.size(); j++)
 		{
@@ -306,7 +306,7 @@ int DeletePointCloudPopup::TimesPointCloudUsed(const FEPointCloud* PointCloud)
 	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneList[i]);
+		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
 		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEPointCloudComponent>();
 		for (size_t j = 0; j < EntitiesList.size(); j++)
 		{
@@ -417,7 +417,7 @@ int DeleteGameModelPopup::TimesGameModelUsed(const FEGameModel* GameModel)
 	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneList[i]);
+		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
 		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEGameModelComponent>();
 		for (size_t j = 0; j < EntitiesList.size(); j++)
 		{
@@ -510,7 +510,7 @@ int DeletePrefabPopup::TimesPrefabUsed(const FEPrefab* Prefab)
 	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneList[i]);
+		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
 		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEPrefabInstanceComponent>();
 		for (size_t j = 0; j < EntitiesList.size(); j++)
 		{
@@ -659,41 +659,45 @@ void DeleteDirectoryPopup::Show(const std::string DirectoryName)
 
 void DeleteDirectoryPopup::RecursiveDeletion(const std::string Path)
 {
-	const auto DirectoryContent = VIRTUAL_FILE_SYSTEM.GetDirectoryContent(Path);
+	const auto DirectoryContent = VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs(Path);
 	for (size_t i = 0; i < DirectoryContent.size(); i++)
 	{
-		if (DirectoryContent[i]->GetType() == FE_NULL)
-		{
-			std::string TempPath = Path;
-			if (TempPath.back() != '/')
-				TempPath += '/';
+		FEObject* CurrentObject = OBJECT_MANAGER.GetFEObject(DirectoryContent[i]);
+		if (CurrentObject == nullptr)
+			continue;
 
-			TempPath += DirectoryContent[i]->GetName();
-			RecursiveDeletion(TempPath);
+		if (CurrentObject->GetType() == FE_NULL)
+		{
+			std::string TemporaryPath = Path;
+			if (TemporaryPath.back() != '/')
+				TemporaryPath += '/';
+
+			TemporaryPath += CurrentObject->GetName();
+			RecursiveDeletion(TemporaryPath);
 		}
-		else if (DirectoryContent[i]->GetType() == FE_SHADER)
+		else if (CurrentObject->GetType() == FE_SHADER)
 		{
 			//RESOURCE_MANAGER.deleteShader(RESOURCE_MANAGER.getShader(content[i]->getObjectID()));
 		}
-		else if (DirectoryContent[i]->GetType() == FE_MESH)
+		else if (CurrentObject->GetType() == FE_MESH)
 		{
-			DeleteMeshPopup::DeleteMesh(RESOURCE_MANAGER.GetMesh(DirectoryContent[i]->GetObjectID()));
+			DeleteMeshPopup::DeleteMesh(RESOURCE_MANAGER.GetMesh(CurrentObject->GetObjectID()));
 		}
-		else if (DirectoryContent[i]->GetType() == FE_POINT_CLOUD)
+		else if (CurrentObject->GetType() == FE_POINT_CLOUD)
 		{
-			DeletePointCloudPopup::DeletePointCloud(RESOURCE_MANAGER.GetPointCloud(DirectoryContent[i]->GetObjectID()));
+			DeletePointCloudPopup::DeletePointCloud(RESOURCE_MANAGER.GetPointCloud(CurrentObject->GetObjectID()));
 		}
-		else if (DirectoryContent[i]->GetType() == FE_TEXTURE)
+		else if (CurrentObject->GetType() == FE_TEXTURE)
 		{
-			DeleteTexturePopup::DeleteTexture(RESOURCE_MANAGER.GetTexture(DirectoryContent[i]->GetObjectID()));
+			DeleteTexturePopup::DeleteTexture(RESOURCE_MANAGER.GetTexture(CurrentObject->GetObjectID()));
 		}
-		else if (DirectoryContent[i]->GetType() == FE_MATERIAL)
+		else if (CurrentObject->GetType() == FE_MATERIAL)
 		{
-			DeleteMaterialPopup::DeleteMaterial(RESOURCE_MANAGER.GetMaterial(DirectoryContent[i]->GetObjectID()));
+			DeleteMaterialPopup::DeleteMaterial(RESOURCE_MANAGER.GetMaterial(CurrentObject->GetObjectID()));
 		}
-		else if (DirectoryContent[i]->GetType() == FE_GAMEMODEL)
+		else if (CurrentObject->GetType() == FE_GAMEMODEL)
 		{
-			DeleteGameModelPopup::DeleteGameModel(RESOURCE_MANAGER.GetGameModel(DirectoryContent[i]->GetObjectID()));
+			DeleteGameModelPopup::DeleteGameModel(RESOURCE_MANAGER.GetGameModel(CurrentObject->GetObjectID()));
 		}
 	}
 
@@ -704,7 +708,7 @@ void DeleteDirectoryPopup::Render()
 {
 	ImGuiModalPopup::Render();
 
-	if (!PathToDirectory.empty() && VIRTUAL_FILE_SYSTEM.GetDirectoryContent(PathToDirectory).empty())
+	if (!PathToDirectory.empty() && VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs(PathToDirectory).empty())
 	{
 		VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(PathToDirectory);
 		ObjToWorkWith = "";

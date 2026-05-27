@@ -4,3 +4,6 @@
 [submodule "VisualNodeSystem"]
 	path = SubSystems/NodeSystem/VisualNodeSystem
 	url = https://github.com/Azzinoth/VisualNodeSystem
+[submodule "SubSystems/FESceneGraphUI"]
+	path = SubSystems/FESceneGraphUI
+	url = https://github.com/Azzinoth/FESceneGraphUI

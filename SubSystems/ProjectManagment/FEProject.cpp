@@ -15,7 +15,7 @@ FEProject::FEProject(const std::string Name, const std::string ProjectFolder)
 }
 	else
 	{
-		SceneScreenshot = RESOURCE_MANAGER.LoadFETextureUnmanaged((this->GetProjectFolder() + "Thumbnail.texture").c_str());
+		SceneScreenshot = RESOURCE_MANAGER.LoadFETextureUnmanaged((this->GetProjectFolder() + "Thumbnail.texture"));
 	}
 	ScreenshotFile.close();
 }
@@ -64,7 +64,7 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 				{
 					FEMesh* MeshToSave = RESOURCE_MANAGER.GetMesh(UnSavedObjects[i]->GetObjectID());
 					if (MeshToSave != nullptr)
-						RESOURCE_MANAGER.SaveFEMesh(MeshToSave, (DirectoryPath + MeshToSave->GetObjectID() + std::string(".model")).c_str());
+						RESOURCE_MANAGER.SaveFEMesh(MeshToSave, (DirectoryPath + MeshToSave->GetObjectID() + std::string(".model")));
 					break;
 				}
 
@@ -80,7 +80,7 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 				{
 					FETexture* TextureToSave = RESOURCE_MANAGER.GetTexture(UnSavedObjects[i]->GetObjectID());
 					if (TextureToSave != nullptr)
-						RESOURCE_MANAGER.SaveFETexture(TextureToSave, (DirectoryPath + TextureToSave->GetObjectID() + std::string(".texture")).c_str());
+						RESOURCE_MANAGER.SaveFETexture(TextureToSave, (DirectoryPath + TextureToSave->GetObjectID() + std::string(".texture")));
 					break;
 				}
 			}
@@ -101,7 +101,7 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 		MeshData[Mesh->GetObjectID()]["FileName"] = Mesh->GetObjectID() + ".model";
 
 		if (bFullSave)
-			RESOURCE_MANAGER.SaveFEMesh(Mesh, (DirectoryPath + Mesh->GetObjectID() + std::string(".model")).c_str());
+			RESOURCE_MANAGER.SaveFEMesh(Mesh, (DirectoryPath + Mesh->GetObjectID() + std::string(".model")));
 
 		Mesh->SetDirtyFlag(false);
 	}
@@ -141,7 +141,7 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 		TexturesData[Texture->GetObjectID()]["FileName"] = Texture->GetObjectID() + ".texture";
 
 		if (bFullSave)
-			RESOURCE_MANAGER.SaveFETexture(Texture, (DirectoryPath + Texture->GetObjectID() + std::string(".texture")).c_str());
+			RESOURCE_MANAGER.SaveFETexture(Texture, (DirectoryPath + Texture->GetObjectID() + std::string(".texture")));
 
 		Texture->SetDirtyFlag(false);
 	}
@@ -285,7 +285,7 @@ FEAssetPackage* FEProject::SaveResourcesToAssetPackage()
 		}
 	}
 
-	if (!FILE_SYSTEM.CreateDirectory(TemporaryFolder))
+	if (!FILE_SYSTEM.MakeDirectory(TemporaryFolder))
 	{
 		LOG.Add("FEProject::SaveResourcesToAssetPackage: Error creating Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
 		return nullptr;
@@ -337,7 +337,7 @@ void FEProject::LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage)
 		}
 	}
 
-	if (!FILE_SYSTEM.CreateDirectory(TemporaryFolder))
+	if (!FILE_SYSTEM.MakeDirectory(TemporaryFolder))
 	{
 		LOG.Add("FEProject::LoadResourcesFromAssetPackage: Error creating Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
 		return;
@@ -371,6 +371,7 @@ void FEProject::SaveProject(bool bFullSave)
 	Root["Version"] = PROJECTS_FILE_VER;
 	Root["ID"] = ID;
 	Root["Name"] = Name;
+	Root["bWasJustCreated"] = bWasJustCreated;
 
 	FEScene* SceneForScreenshot = EDITOR.GetFocusedScene();
 	if (SceneForScreenshot != nullptr)
@@ -391,7 +392,7 @@ void FEProject::SaveProject(bool bFullSave)
 	std::vector<std::string> EditorSceneIDs = EDITOR.GetEditorOpenedScenesIDs();
 	for (size_t i = 0; i < EditorSceneIDs.size(); i++)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetScene(EditorSceneIDs[i]);
+		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(EditorSceneIDs[i]);
 		if (CurrentScene == nullptr)
 			continue;
 
@@ -440,7 +441,7 @@ void FEProject::SaveProject(bool bFullSave)
 	auto EditorCameraIterator = SceneIDToEditorCameraID.begin();
 	while (EditorCameraIterator != SceneIDToEditorCameraID.end())
 	{
-		FEScene* Scene = SCENE_MANAGER.GetScene(EditorCameraIterator->first);
+		FEScene* Scene = SCENE_MANAGER.GetSceneByID(EditorCameraIterator->first);
 		if (Scene == nullptr)
 		{
 			EditorCameraIterator++;
@@ -478,7 +479,7 @@ void FEProject::SaveProject(bool bFullSave)
 
 	for (size_t i = 0; i < FilesToDelete.size(); i++)
 	{
-		FILE_SYSTEM.DeleteFile(FilesToDelete[i].c_str());
+		FILE_SYSTEM.RemoveFile(FilesToDelete[i].c_str());
 	}
 
 	VIRTUAL_FILE_SYSTEM.SaveState(ProjectFolder + "VFS.txt");
@@ -514,7 +515,7 @@ void FEProject::LoadResources(std::string DirectoryPath)
 	for (size_t i = 0; i < MeshList.size(); i++)
 	{
 		FEObjectLoadedData LoadedObjectData = RESOURCE_MANAGER.LoadFEObjectPart(Root["Meshes"][MeshList[i]]["FEObjectData"]);
-		RESOURCE_MANAGER.LoadFEMesh((DirectoryPath + Root["Meshes"][MeshList[i]]["FileName"].asCString()).c_str(), LoadedObjectData.Name);
+		RESOURCE_MANAGER.LoadFEMesh((DirectoryPath + Root["Meshes"][MeshList[i]]["FileName"].asCString()), LoadedObjectData.Name);
 	}
 
 	// Loading point clouds.
@@ -533,11 +534,11 @@ void FEProject::LoadResources(std::string DirectoryPath)
 		// Terrain textures should be loaded right away, not async.
 		if (LoadedObjectData.Tag == TERRAIN_SYSTEM_RESOURCE_TAG)
 		{
-			RESOURCE_MANAGER.LoadFETexture((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()).c_str());
+			RESOURCE_MANAGER.LoadFETexture((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()));
 		}
 		else
 		{
-			RESOURCE_MANAGER.LoadFETextureAsync((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()).c_str(), LoadedObjectData.Name, nullptr, LoadedObjectData.ID);
+			RESOURCE_MANAGER.LoadFETextureAsync((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()), LoadedObjectData.Name, nullptr, LoadedObjectData.ID);
 		}
 	}
 
@@ -561,7 +562,7 @@ void FEProject::LoadResources(std::string DirectoryPath)
 	std::vector<Json::String> NativeScriptModulesList = Root["NativeScriptModules"].getMemberNames();
 	for (size_t i = 0; i < NativeScriptModulesList.size(); i++)
 	{
-		FENativeScriptModule* LoadedNativeScriptModule = RESOURCE_MANAGER.LoadFENativeScriptModule((DirectoryPath + Root["NativeScriptModules"][NativeScriptModulesList[i]]["FileName"].asCString()).c_str());
+		FENativeScriptModule* LoadedNativeScriptModule = RESOURCE_MANAGER.LoadFENativeScriptModule((DirectoryPath + Root["NativeScriptModules"][NativeScriptModulesList[i]]["FileName"].asCString()));
 		if (LoadedNativeScriptModule == nullptr)
 			continue;
 		
@@ -627,6 +628,8 @@ void FEProject::LoadProject()
 
 	ID = Root["ID"].asCString();
 	Name = Root["Name"].asCString();
+	if (Root.isMember("bWasJustCreated"))
+		bWasJustCreated = Root["bWasJustCreated"].asBool();
 
 	LoadResources(ProjectFolder);
 
@@ -638,7 +641,7 @@ void FEProject::LoadProject()
 	for (size_t i = 0; i < EditorCamerasData.size(); i++)
 	{
 		std::string SceneID = EditorCamerasData[static_cast<int>(i)]["SceneID"].asCString();
-		FEScene* Scene = SCENE_MANAGER.GetScene(SceneID);
+		FEScene* Scene = SCENE_MANAGER.GetSceneByID(SceneID);
 		if (Scene == nullptr)
 			continue;
 
@@ -660,7 +663,7 @@ void FEProject::LoadProject()
 		Json::Value OpenedScenes = Root["EditorScenes"]["Opened"];
 		for (size_t i = 0; i < OpenedScenes.size(); i++)
 		{
-			FEScene* Scene = SCENE_MANAGER.GetScene(OpenedScenes[std::to_string(i)]["ID"].asCString());
+			FEScene* Scene = SCENE_MANAGER.GetSceneByID(OpenedScenes[std::to_string(i)]["ID"].asCString());
 			if (Scene == nullptr)
 				continue;
 
@@ -689,7 +692,7 @@ void FEProject::LoadProject()
 		}
 
 		std::string FocusedSceneID = Root["EditorScenes"]["FocusedSceneID"].asCString();
-		FEScene* FocusedScene = SCENE_MANAGER.GetScene(FocusedSceneID);
+		FEScene* FocusedScene = SCENE_MANAGER.GetSceneByID(FocusedSceneID);
 		if (FocusedScene != nullptr)
 			EDITOR.SetFocusedScene(FocusedScene);
 	}
@@ -711,10 +714,12 @@ bool FEProject::LoadVFSData(std::string FilePath)
 	VIRTUAL_FILE_SYSTEM.LoadState(FilePath);
 	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(false, "/Shaders");
 
-	auto Files = VIRTUAL_FILE_SYSTEM.GetDirectoryContent("/Shaders");
+	auto Files = VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs("/Shaders");
 	for (size_t i = 0; i < Files.size(); i++)
 	{
-		VIRTUAL_FILE_SYSTEM.DeleteFile(Files[i], "/Shaders");
+		FEObject* ShaderObject = OBJECT_MANAGER.GetFEObject(Files[i]);
+		if (ShaderObject == nullptr)
+			VIRTUAL_FILE_SYSTEM.DeleteFile(ShaderObject, "/Shaders");
 	}
 
 	std::vector<std::string> ShaderList = RESOURCE_MANAGER.GetShaderIDList();
@@ -774,7 +779,7 @@ void FEProject::AddMissingVFSData()
 	// Filter prefab scenes.
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		FEScene* Scene = SCENE_MANAGER.GetScene(SceneList[i]);
+		FEScene* Scene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
 		if (Scene->GetTag() == PREFAB_SCENE_DESCRIPTION_TAG)
 			continue;
 
@@ -814,7 +819,7 @@ void FEProject::CreateDummyScreenshot()
 	}
 
 	FETexture* TempTexture = RESOURCE_MANAGER.RawDataToFETexture(Pixels, static_cast<int>(Width), static_cast<int>(Height));
-	RESOURCE_MANAGER.SaveFETexture(TempTexture, (GetProjectFolder() + "/Thumbnail.texture").c_str());
+	RESOURCE_MANAGER.SaveFETexture(TempTexture, (GetProjectFolder() + "/Thumbnail.texture"));
 	RESOURCE_MANAGER.DeleteFETexture(TempTexture);
 	delete[] Pixels;
 }
@@ -953,7 +958,7 @@ std::string FEProject::GetProperMainCameraIDBySceneID(std::string SceneID)
 
 bool FEProject::SetProperMainCameraIDBySceneID(std::string SceneID, std::string CameraID)
 {
-	FEScene* Scene = SCENE_MANAGER.GetScene(SceneID);
+	FEScene* Scene = SCENE_MANAGER.GetSceneByID(SceneID);
 	if (Scene == nullptr)
 	{
 		LOG.Add("FEProject::SetProperMainCameraIDBySceneID: Scene " + SceneID + " not found!", "FE_LOG_LOADING", FE_LOG_WARNING);
@@ -985,7 +990,7 @@ void FEProject::SetProperMainCamerasInsteadOfEditorCameras()
 	auto Iterator = SceneIDToProperMainCameraID.begin();
 	while (Iterator != SceneIDToProperMainCameraID.end())
 	{
-		FEScene* Scene = SCENE_MANAGER.GetScene(Iterator->first);
+		FEScene* Scene = SCENE_MANAGER.GetSceneByID(Iterator->first);
 		if (Scene != nullptr)
 		{
 			FEEntity* CurrentMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(Scene);
@@ -1003,7 +1008,7 @@ void FEProject::SetEditorCamerasInsteadOfProperMainCameras()
 	auto Iterator = SceneIDToEditorCameraID.begin();
 	while (Iterator != SceneIDToEditorCameraID.end())
 	{
-		FEScene* Scene = SCENE_MANAGER.GetScene(Iterator->first);
+		FEScene* Scene = SCENE_MANAGER.GetSceneByID(Iterator->first);
 		if (Scene != nullptr)
 		{
 			FEEntity* CurrentMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(Scene);
@@ -1021,7 +1026,7 @@ void FEProject::SaveProperMainCameras()
 	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
-		FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneList[i]);
+		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
 		if (CurrentScene == nullptr)
 			continue;
 

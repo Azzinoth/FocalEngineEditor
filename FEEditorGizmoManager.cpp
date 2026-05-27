@@ -8,7 +8,7 @@ GizmoManager::~GizmoManager() {}
 void GizmoManager::InitializeResources()
 {
 	SELECTED.SetOnUpdateFunction(OnSelectedObjectUpdate);
-	FEMesh* TransformationGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "45191B6F172E3B531978692E.model").c_str(), "transformationGizmoMesh");
+	FEMesh* TransformationGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "45191B6F172E3B531978692E.model"), "transformationGizmoMesh");
 	RESOURCE_MANAGER.SetTag(TransformationGizmoMesh, EDITOR_RESOURCE_TAG);
 
 	// TransformationXGizmo
@@ -70,7 +70,7 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.SetTag(TransformationXZGizmoGM, EDITOR_RESOURCE_TAG);
 
 	// Scale gizmos.
-	FEMesh* ScaleGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "637C784B2E5E5C6548190E1B.model").c_str(), "scaleGizmoMesh");
+	FEMesh* ScaleGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "637C784B2E5E5C6548190E1B.model"), "scaleGizmoMesh");
 	RESOURCE_MANAGER.SetTag(ScaleGizmoMesh, EDITOR_RESOURCE_TAG);
 
 	// ScaleXGizmo
@@ -104,7 +104,7 @@ void GizmoManager::InitializeResources()
 	RESOURCE_MANAGER.SetTag(ScaleZGizmoGM, EDITOR_RESOURCE_TAG);
 
 	// RotateAroundAxis gizmos
-	FEMesh* RotateGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "19622421516E5B317E1B5360.model").c_str(), "rotateGizmoMesh");
+	FEMesh* RotateGizmoMesh = RESOURCE_MANAGER.LoadFEMesh((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "19622421516E5B317E1B5360.model"), "rotateGizmoMesh");
 	RESOURCE_MANAGER.SetTag(RotateGizmoMesh, EDITOR_RESOURCE_TAG);
 
 	// RotateXGizmo
@@ -137,11 +137,11 @@ void GizmoManager::InitializeResources()
 	RotateZGizmoGM = RESOURCE_MANAGER.CreateGameModel(RotateGizmoMesh, CurrentMaterial, "RotateZGizmoGM");
 	RESOURCE_MANAGER.SetTag(RotateZGizmoGM, EDITOR_RESOURCE_TAG);
 
-	TransformationGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "456A31026A1C3152181A6064.texture").c_str(), "transformationGizmoIcon");
+	TransformationGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "456A31026A1C3152181A6064.texture"), "transformationGizmoIcon");
 	RESOURCE_MANAGER.SetTag(TransformationGizmoIcon, EDITOR_RESOURCE_TAG);
-	ScaleGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "3F2118296C1E4533506A472E.texture").c_str(), "scaleGizmoIcon");
+	ScaleGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "3F2118296C1E4533506A472E.texture"), "scaleGizmoIcon");
 	RESOURCE_MANAGER.SetTag(ScaleGizmoIcon, EDITOR_RESOURCE_TAG);
-	RotateGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "7F6057403249580D73311B54.texture").c_str(), "rotateGizmoIcon");
+	RotateGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "7F6057403249580D73311B54.texture"), "rotateGizmoIcon");
 	RESOURCE_MANAGER.SetTag(RotateGizmoIcon, EDITOR_RESOURCE_TAG);
 }
 
@@ -154,13 +154,13 @@ void GizmoManager::HideAllGizmo(FEScene* Scene)
 	if (GizmoSceneData == nullptr)
 		return;
 
-	GizmoSceneData->TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-	GizmoSceneData->TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-	GizmoSceneData->TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	GizmoSceneData->TransformationXGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
+	GizmoSceneData->TransformationYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
+	GizmoSceneData->TransformationZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
 
-	GizmoSceneData->TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-	GizmoSceneData->TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-	GizmoSceneData->TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	GizmoSceneData->TransformationXYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
+	GizmoSceneData->TransformationYZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
+	GizmoSceneData->TransformationXZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
 
 	GizmoSceneData->bTransformationXGizmoActive = false;
 	GizmoSceneData->bTransformationYGizmoActive = false;
@@ -170,17 +170,17 @@ void GizmoManager::HideAllGizmo(FEScene* Scene)
 	GizmoSceneData->bTransformationYZGizmoActive = false;
 	GizmoSceneData->bTransformationXZGizmoActive = false;
 
-	GizmoSceneData->ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-	GizmoSceneData->ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-	GizmoSceneData->ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	GizmoSceneData->ScaleXGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
+	GizmoSceneData->ScaleYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
+	GizmoSceneData->ScaleZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
 
 	GizmoSceneData->bScaleXGizmoActive = false;
 	GizmoSceneData->bScaleYGizmoActive = false;
 	GizmoSceneData->bScaleZGizmoActive = false;
 
-	GizmoSceneData->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-	GizmoSceneData->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-	GizmoSceneData->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+	GizmoSceneData->RotateXGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
+	GizmoSceneData->RotateYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
+	GizmoSceneData->RotateZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
 
 	GizmoSceneData->bRotateXGizmoActive = false;
 	GizmoSceneData->bRotateYGizmoActive = false;
@@ -215,29 +215,29 @@ void GizmoManager::UpdateGizmoState(int NewState, FEScene* Scene)
 	{
 		case TRANSFORM_GIZMOS:
 		{
-			GizmoSceneData->TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GizmoSceneData->TransformationXGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->TransformationYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->TransformationZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
 
-			GizmoSceneData->TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GizmoSceneData->TransformationXYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->TransformationYZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->TransformationXZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
 
 			break;
 		}
 		case SCALE_GIZMOS:
 		{
-			GizmoSceneData->ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GizmoSceneData->ScaleXGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->ScaleYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->ScaleZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
 			
 			break;
 		}
 		case ROTATE_GIZMOS:
 		{
-			GizmoSceneData->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GizmoSceneData->RotateXGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->RotateYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->RotateZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
 		
 			break;
 		}
@@ -277,7 +277,7 @@ void GizmoManager::Update()
 	auto PerSceneIterator = PerSceneData.begin();
 	while (PerSceneIterator != PerSceneData.end())
 	{
-		if (SCENE_MANAGER.GetScene(PerSceneIterator->first) == nullptr)
+		if (SCENE_MANAGER.GetSceneByID(PerSceneIterator->first) == nullptr)
 		{
 			PerSceneIterator = PerSceneData.erase(PerSceneIterator);
 			continue;
@@ -290,7 +290,7 @@ void GizmoManager::Update()
 			continue;
 		}
 		
-		FEScene* Scene = SCENE_MANAGER.GetScene(GizmoSceneData->SceneID);
+		FEScene* Scene = SCENE_MANAGER.GetSceneByID(GizmoSceneData->SceneID);
 		if (SELECTED.GetSelected(Scene) == nullptr || CAMERA_SYSTEM.GetMainCamera(Scene) == nullptr)
 		{
 			HideAllGizmo(Scene);
@@ -358,9 +358,9 @@ void GizmoManager::Update()
 		{
 			if (SELECTED.SELECTED.GetSelected(Scene) != nullptr)
 			{
-				GizmoSceneData->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-				GizmoSceneData->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-				GizmoSceneData->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+				GizmoSceneData->RotateXGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+				GizmoSceneData->RotateYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+				GizmoSceneData->RotateZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
 			}
 
 			// X Gizmos
@@ -368,8 +368,8 @@ void GizmoManager::Update()
 			if (GizmoSceneData->bRotateXGizmoActive)
 			{
 				GizmoSceneData->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
-				GizmoSceneData->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-				GizmoSceneData->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+				GizmoSceneData->RotateYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
+				GizmoSceneData->RotateZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
 			}
 
 			// Y Gizmos
@@ -377,8 +377,8 @@ void GizmoManager::Update()
 			if (GizmoSceneData->bRotateYGizmoActive)
 			{
 				GizmoSceneData->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
-				GizmoSceneData->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-				GizmoSceneData->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+				GizmoSceneData->RotateXGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
+				GizmoSceneData->RotateZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
 			}
 
 			// Z Gizmos
@@ -386,8 +386,8 @@ void GizmoManager::Update()
 			if (GizmoSceneData->bRotateZGizmoActive)
 			{
 				GizmoSceneData->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Material->SetBaseColor(glm::vec3(1.5f, 1.5f, 0.2f));
-				GizmoSceneData->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
-				GizmoSceneData->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(false);
+				GizmoSceneData->RotateXGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
+				GizmoSceneData->RotateYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
 			}
 		}
 
@@ -852,24 +852,24 @@ void GizmoManager::OnSelectedObjectUpdate(FEScene* Scene)
 
 		if (GizmoSceneData->GizmosState == TRANSFORM_GIZMOS)
 		{
-			GizmoSceneData->TransformationXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->TransformationYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->TransformationZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->TransformationXYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->TransformationYZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->TransformationXZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GizmoSceneData->TransformationXGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->TransformationYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->TransformationZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->TransformationXYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->TransformationYZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->TransformationXZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
 		}
 		else if (GizmoSceneData->GizmosState == SCALE_GIZMOS)
 		{
-			GizmoSceneData->ScaleXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->ScaleYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->ScaleZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GizmoSceneData->ScaleXGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->ScaleYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->ScaleZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
 		}
 		else if (GizmoSceneData->GizmosState == ROTATE_GIZMOS)
 		{
-			GizmoSceneData->RotateXGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->RotateYGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
-			GizmoSceneData->RotateZGizmoEntity->GetComponent<FEGameModelComponent>().SetVisibility(true);
+			GizmoSceneData->RotateXGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->RotateYGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			GizmoSceneData->RotateZGizmoEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
 		}
 	}
 }
@@ -943,7 +943,7 @@ void GizmoManager::ClearSceneData(const std::string& SceneID)
 
 void GizmoManager::AddSceneData(const std::string& SceneID)
 {
-	FEScene* CurrentScene = SCENE_MANAGER.GetScene(SceneID);
+	FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneID);
 	if (CurrentScene == nullptr)
 		return;
 

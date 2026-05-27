@@ -9,8 +9,8 @@ NodeArea* CombineChannelsToTexturePopUp::CurrentNodeArea = nullptr;
 
 CombineChannelsToTexturePopUp::CombineChannelsToTexturePopUp()
 {
-	const std::string TempCaption = "Choose what channels/textures to combine";
-	strcpy_s(Caption, TempCaption.size() + 1, TempCaption.c_str());
+	const std::string TemporaryCaption = "Choose what channels/textures to combine";
+	strcpy_s(Caption, TemporaryCaption.size() + 1, TemporaryCaption.c_str());
 
 	NodeAreaTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_TEXTURE, DragAndDropNodeAreaTargetCallback, reinterpret_cast<void**>(&DragAndDropCallbackInfo), "Drop to add texture");
 }

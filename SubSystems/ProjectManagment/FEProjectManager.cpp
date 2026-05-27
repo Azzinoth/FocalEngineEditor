@@ -1,7 +1,11 @@
 #include "FEProjectManager.h"
 #include "../../FEEditor.h"
 
-FEProjectManager::FEProjectManager() {}
+FEProjectManager::FEProjectManager()
+{
+	CustomProjectFolder = FILE_SYSTEM.GetCurrentWorkingPath();
+}
+
 FEProjectManager::~FEProjectManager() {}
 
 void FEProjectManager::InitializeResources()
@@ -56,6 +60,7 @@ void FEProjectManager::CloseCurrentProject()
 	LoadProjectList();
 
 	VIRTUAL_FILE_SYSTEM.SetCurrentPath("/");
+	SCENE_MANAGER.Clear();
 }
 
 void FEProjectManager::OpenProject(const int ProjectIndex)
@@ -67,7 +72,15 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 	}
 
 	PROJECT_MANAGER.SetCurrent(List[ProjectIndex]);
-	PROJECT_MANAGER.GetCurrent()->LoadProject();
+	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+	CurrentProject->LoadProject();
+	if (CurrentProject->bWasJustCreated)
+	{
+		CurrentProject->bWasJustCreated = false;
+		FEScene* StartScene = SCENE_MANAGER.GetStartingScene();
+		if (StartScene != nullptr)
+			EDITOR.CreateEditorWindowForScene(StartScene->GetObjectID(), CurrentProject);
+	}
 	IndexChosen = -1;
 
 	// After loading project we should update our previews
@@ -117,11 +130,12 @@ void FEProjectManager::DisplayProjectSelection()
 				}
 			}
 
-			if (ImGui::ImageButton((void*)static_cast<intptr_t>(List[i]->SceneScreenshot->GetTextureID()), ImVec2(512.0f, 288.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), 8, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
+			if (ImGui::ImageButton(List[i]->GetID().c_str(), List[i]->SceneScreenshot->GetTextureID(), ImVec2(512.0f, 288.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
 				IndexChosen = static_cast<int>(i);
 			}
-
+			ImGui::PopStyleVar();
 			ImGui::Text(List[i]->GetName().c_str());
 
 			if (bPushedStyle)
@@ -174,7 +188,7 @@ void FEProjectManager::DisplayProjectSelection()
 			// so we are deleting only files.
 			for (size_t i = 0; i < FileList.size(); i++)
 			{
-				FILE_SYSTEM.DeleteFile((List[IndexChosen]->GetProjectFolder() + FileList[i]).c_str());
+				FILE_SYSTEM.RemoveFile((List[IndexChosen]->GetProjectFolder() + FileList[i]).c_str());
 			}
 			// Then we can try to delete project folder, but if user created some folders in it we will fail.
 			FILE_SYSTEM.DeleteDirectory(ProjectFolder.c_str());
@@ -234,7 +248,7 @@ void FEProjectManager::DisplayProjectSelection()
 
 				if (strlen(ProjectName) != 0 && !bAlreadyCreated)
 				{
-					FILE_SYSTEM.CreateDirectory((std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/").c_str());
+					FILE_SYSTEM.MakeDirectory((std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/").c_str());
 					List.push_back(new FEProject(ProjectName, std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/"));
 					List.back()->CreateDummyScreenshot();
 
@@ -290,7 +304,8 @@ void FEProjectManager::CreateNewProject(std::string ProjectName, std::string Pro
 	SkyDome->GetComponent<FETransformComponent>().SetScale(glm::vec3(150.0f));
 	SkyDome->AddComponent<FESkyDomeComponent>();
 
-	EDITOR.CreateEditorWindowForScene(NewScene->GetObjectID(), NewProject);
+	NewProject->bWasJustCreated = true;
+	SCENE_MANAGER.SetStartingScene(NewScene->GetObjectID());
 	NewProject->InjectEditorCamera(NewScene);
 	NewProject->AddMissingVFSData();
 	NewProject->SaveProject(true);

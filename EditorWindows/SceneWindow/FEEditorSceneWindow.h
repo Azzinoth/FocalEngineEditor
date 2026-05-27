@@ -7,6 +7,7 @@
 class FEEditorSceneWindow : public FEImGuiWindow
 {
 	friend class FEEditor;
+	friend class FEEditorSceneWindowManager;
 private:
 	static bool DragAndDropCallBack(FEObject* Object, void** UserData);
 protected:
@@ -17,11 +18,11 @@ protected:
 	 std::string SceneID = "";
 	 DragAndDropTarget* SceneWindowTarget = nullptr;
 	 
+	 bool bShouldDockToCentralNode = false;
 	 bool bJustAdded = true;
 	 bool bWindowHovered = false;
 
 	 bool bSelfContained = true;
-	 bool bWaitingForRemoval = false;
 
 	 std::vector<FE_OBJECT_TYPE> AcceptedTypes;
 	 std::vector<std::string> ToolTipTexts;

@@ -13,7 +13,7 @@ class FEProjectManager
 	std::vector<FEProject*> List;
 	int IndexChosen = -1;
 	FEProject* Current = nullptr;
-	std::string CustomProjectFolder = "../FocalEngineProjects-master";
+	std::string CustomProjectFolder;
 
 	void CreateNewProject(std::string ProjectName, std::string ProjectPath);
 public:

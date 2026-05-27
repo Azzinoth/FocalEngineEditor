@@ -12,6 +12,10 @@ project(FocalEngineEditor)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(FOCAL_ENGINE_EDITOR_ENABLE_TESTS "Enable tests" OFF)
+
+set(TEST_SOURCE_FILES)
+
 # Set compiler flags based on USE_STATIC_RUNTIME
 if(MSVC)
     # Disable C4251 warning
@@ -21,10 +25,12 @@ if(MSVC)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 		set(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME ON CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" FORCE)
+		set(FE_SCENE_GRAPH_UI_USE_STATIC_RUNTIME ON CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for FESceneGraphUI" FORCE)
     else()
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
 		set(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME OFF CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" FORCE)
+		set(FE_SCENE_GRAPH_UI_USE_STATIC_RUNTIME OFF CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for FESceneGraphUI" FORCE)
     endif()
 
     # Always add /MP for multi-processor compilation
@@ -32,7 +38,7 @@ if(MSVC)
 endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /ZI /W3 /Od /JMC /sdl /FC /D IMGUI_IMPL_OPENGL_LOADER_GLEW /D WIN32 /D _WINDOWS /D _DEBUG /D FE_DEBUG_ENABLED")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W3 /O2 /Oi /Gy /sdl /FC /GL /OPT:REF /OPT:ICF /D IMGUI_IMPL_OPENGL_LOADER_GLEW /D NDEBUG /D WIN32 /D _WINDOWS")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W3 /Gy /sdl /D IMGUI_IMPL_OPENGL_LOADER_GLEW /D NDEBUG /D WIN32 /D _WINDOWS")
 
 # Turn on the ability to create folders to organize projects (.vcproj)
 # It creates "CMakePredefinedTargets" folder by default and adds CMake
@@ -47,9 +53,12 @@ set(USE_STATIC_RUNTIME OFF CACHE BOOL "Use static runtime (/MT) instead of dynam
 set(DEAR_IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/imgui CACHE PATH "Path to Dear ImGui directory." FORCE)
 if(BUILD_SHARED_LIBS)
 	set(VISUAL_NODE_SYSTEM_BUILD_SHARED_LIBS ON CACHE BOOL "Build VisualNodeSystem as a shared library" FORCE)
+	set(FE_SCENE_GRAPH_UI_BUILD_SHARED_LIBS ON CACHE BOOL "Build FESceneGraphUI as a shared library" FORCE)
 	# Set options for VisualNodeSystem
 	set(VISUAL_NODE_SYSTEM_USE_EXTERNAL_IMGUI ON CACHE BOOL "Use external ImGui from FEBasicApplication" FORCE)
 	set(EXTERNAL_IMGUI_LIBRARY FEBasicApplication CACHE FILEPATH "Path to external ImGui library" FORCE)
+	# Options for FESceneGraphUI
+	set(FE_SCENE_GRAPH_UI_USE_EXTERNAL_IMGUI ON CACHE BOOL "Link against an external ImGui library instead of vendoring sources" FORCE)
 
     if(USE_STATIC_RUNTIME)
         message(WARNING "Building a shared library with static runtime is uncommon and may lead to issues.")
@@ -61,6 +70,7 @@ if(BUILD_SHARED_LIBS)
     set(VISUAL_NODE_SYSTEM_GLFW_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/ CACHE PATH "Path to GLFW include directory.")
 else()
 	set(VISUAL_NODE_SYSTEM_BUILD_SHARED_LIBS OFF CACHE BOOL "Build VisualNodeSystem as a shared library" FORCE)
+	set(FE_SCENE_GRAPH_UI_BUILD_SHARED_LIBS OFF CACHE BOOL "Build FESceneGraphUI as a shared library" FORCE)
 	
     if(USE_STATIC_RUNTIME)
         set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/GLFW/lib/x64/glfw3_mt.lib CACHE PATH "Path to GLFW library." FORCE)
@@ -75,6 +85,11 @@ endif()
 
 if(NOT TARGET FocalEngine)
 	add_subdirectory(SubSystems/FocalEngine)
+endif()
+
+if(NOT TARGET FESceneGraphUI)
+	set(FE_SCENE_GRAPH_UI_WITH_FOCAL_BACKEND ON CACHE BOOL "" FORCE)
+    add_subdirectory(SubSystems/FESceneGraphUI)
 endif()
 
 if(USE_STATIC_RUNTIME)
@@ -97,8 +112,10 @@ configure_file(${ENGINE_FOLDER}/ResourceManager/Config.h.in ${ENGINE_FOLDER}/Res
 # *************** EDITOR ***************
 
 set(EDITOR_SOURCE_FILES "")
+if(NOT FOCAL_ENGINE_EDITOR_ENABLE_TESTS)
+	list(APPEND EDITOR_SOURCE_FILES "main.cpp")
+endif()
 list(APPEND EDITOR_SOURCE_FILES
-    "main.cpp"
 	"FEEditor.cpp"
 	"FEEditor.h"
 	"FEEditorDragAndDropManager.cpp"
@@ -137,9 +154,16 @@ file(GLOB FEDearImguiWrapper_SRC
 	"FEDearImguiWrapper/FEDearImguiWrapper.h"
 )
 
-file(GLOB EditorWindows_BaseWindowClasses_SRC
-	"EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.h"
-	"EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.cpp"
+file(GLOB FESceneGraphUI_SRC
+	"SubSystems/FESceneGraphUI/FocalEngineBackend.cpp"
+	"SubSystems/FESceneGraphUI/FocalEngineBackend.h"
+)
+
+file(GLOB SceneWindow_SRC
+	"EditorWindows/SceneWindow/FEEditorSceneWindow.h"
+	"EditorWindows/SceneWindow/FEEditorSceneWindow.cpp"
+	"EditorWindows/SceneWindow/FEEditorSceneWindowManager.h"
+	"EditorWindows/SceneWindow/FEEditorSceneWindowManager.cpp"
 )
 
 file(GLOB EditorWindows_SRC
@@ -198,6 +222,23 @@ file(GLOB VisualNodeSystem_CustomNodes_SRC
 	"SubSystems/NodeSystem/CustomNodes/FEEditorTextureCreatingNode.h"
 )
 
+if(FOCAL_ENGINE_EDITOR_ENABLE_TESTS)
+	file(GLOB Tests_SRC
+		"Tests/RunAllTests.h"
+		"Tests/RunAllTests.cpp"
+	)
+
+	file(GLOB Tests_VirtualFileSystem_SRC
+		"Tests/VirtualFileSystem/VirtualFileSystemTest.h"
+		"Tests/VirtualFileSystem/VirtualFileSystemTest.cpp"
+	)
+
+	list(APPEND TEST_SOURCE_FILES
+		${Tests_SRC}
+		${Tests_VirtualFileSystem_SRC}
+	)
+endif()
+
 # *************** THIRD_PARTY ***************
 
 file(GLOB textEditor_SRC
@@ -211,7 +252,8 @@ link_directories(${GLFW_LIB_DIR})
 add_executable(FocalEngineEditor WIN32
 								 ${EDITOR_SOURCE_FILES}
 								 ${FEDearImguiWrapper_SRC}
-								 ${EditorWindows_BaseWindowClasses_SRC}
+								 ${FESceneGraphUI_SRC}
+								 ${SceneWindow_SRC}
 								 ${EditorWindows_SRC}
 								 ${Editor_Materials_SRC}
 								 ${VisualNodeSystem_CustomNodes_SRC}
@@ -219,6 +261,7 @@ add_executable(FocalEngineEditor WIN32
 								 ${ProjectManagment_SRC}
 								 # *************** THIRD_PARTY ***************
 								 ${textEditor_SRC}
+								 ${TEST_SOURCE_FILES}
 )
 
 target_link_libraries(FocalEngineEditor
@@ -226,10 +269,18 @@ target_link_libraries(FocalEngineEditor
         FEBasicApplication
 		VisualNodeSystem
         FocalEngine
+		FESceneGraphUI
+		FESceneGraphUI_FocalBackend
         ${GLFW_LIBRARY}
         ${GLEW_LIBRARY}
         opengl32.lib
 )
+
+if(FOCAL_ENGINE_EDITOR_ENABLE_TESTS)
+	target_link_libraries(FocalEngineEditor PRIVATE FocalEngine::GTest)
+endif()
+
+target_compile_definitions(FocalEngineEditor PRIVATE SCENE_GRAPH_UI_WITH_FOCAL_ENGINE)
 
 # *************** EDITOR ***************
 source_group("Source Files/" FILES ${EDITOR_SOURCE_FILES})
@@ -237,7 +288,8 @@ if(USE_STATIC_RUNTIME)
 	source_group("Source Files/FocalEngine/2B7956623302254F620A675F" FILES ${Unpacked_NativeScript_2B7956623302254F620A675F_SRC})
 endif()
 source_group("Source Files/FEDearImguiWrapper" FILES ${FEDearImguiWrapper_SRC})
-source_group("Source Files/EditorWindows/BaseWindowClasses" FILES ${EditorWindows_BaseWindowClasses_SRC})
+source_group("Source Files/SubSystems/FESceneGraphUI" FILES ${FESceneGraphUI_SRC})
+source_group("Source Files/EditorWindows/SceneWindow" FILES ${SceneWindow_SRC})
 source_group("Source Files/EditorWindows" FILES ${EditorWindows_SRC})
 source_group("Source Files/Materials" FILES ${Editor_Materials_SRC})
 source_group("Source Files/NodeSystem/CustomNodes" FILES ${VisualNodeSystem_CustomNodes_SRC})
@@ -245,6 +297,10 @@ source_group("Source Files/NodeSystem/CustomNodes" FILES ${VisualNodeSystem_Cust
 source_group("Source Files/ProjectManagment" FILES ${ProjectManagment_SRC})
 # *************** THIRD_PARTY ***************
 source_group("Source Files/ThirdParty/textEditor" FILES ${textEditor_SRC})
+if(FOCAL_ENGINE_EDITOR_ENABLE_TESTS)
+	source_group("Source Files/Tests" FILES ${Tests_SRC})
+	source_group("Source Files/Tests/VirtualFileSystemTests" FILES ${Tests_VirtualFileSystem_SRC})
+endif()
 
 # set the startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT FocalEngineEditor)
@@ -273,6 +329,9 @@ if(BUILD_SHARED_LIBS)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE_DIR:FocalEngine>/FocalEngine.dll"
             "$<TARGET_FILE_DIR:FocalEngineEditor>"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"$<TARGET_FILE_DIR:FESceneGraphUI>/FESceneGraphUI.dll"
+			"$<TARGET_FILE_DIR:FocalEngineEditor>"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${OpenXRLoader_DLL}
             "$<TARGET_FILE_DIR:FocalEngineEditor>"
@@ -295,3 +354,13 @@ if(NOT USE_STATIC_RUNTIME)
             "$<TARGET_FILE_DIR:FocalEngineEditor>"
     )
 endif()
+
+add_custom_command(TARGET FocalEngineEditor PRE_BUILD
+    COMMAND ${CMAKE_COMMAND}
+        -D PROJECT_VERSION_PREFIX=FE_EDITOR_
+        -D PROJECT_VERSION_MAJOR=0
+        -D PROJECT_VERSION_MINOR=1
+        -D PROJECT_VERSION_PATCH=7
+        -D PROJECT_VERSION_DIR=${CMAKE_CURRENT_SOURCE_DIR}/VersionInfo
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/VersionInfo/UpdateProjectVersion.cmake
+)

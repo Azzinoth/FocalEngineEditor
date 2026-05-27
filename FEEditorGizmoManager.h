@@ -11,6 +11,7 @@ const int ROTATE_GIZMOS = 2;
 class FEGizmoSceneData
 {
 	friend class FEEditor;
+	friend class FEEditorSceneWindowManager;
 	friend class FEEditorSelectedObject;
 	friend class GizmoManager;
 	friend class FEEditorInspectorWindow;
@@ -70,6 +71,7 @@ class FEGizmoSceneData
 class GizmoManager
 {
 	friend class FEEditor;
+	friend class FEEditorSceneWindowManager;
 	friend class FEProjectManager;
 	friend class GizmosSettingsWindow;
 	friend class FEEditorSceneWindow;

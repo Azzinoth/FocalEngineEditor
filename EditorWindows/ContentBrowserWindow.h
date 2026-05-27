@@ -8,6 +8,11 @@
 		{ L"Wavefront OBJ files (*.obj)", L"*.obj" }
 	};
 
+    const COMDLG_FILTERSPEC GLTF_FILTER[] =
+    {
+        { L"GL Transmission Format (*.gltf)", L"*.gltf" }
+    };
+
 	const COMDLG_FILTERSPEC TEXTURE_LOAD_FILTER[] =
 	{
 		{ L"Image files (*.png; *.jpg; *.bmp)", L"*.png;*.jpg;*.bmp" }
@@ -30,9 +35,10 @@
 
 	const COMDLG_FILTERSPEC ALL_IMPORT_LOAD_FILTER[] =
 	{
-		{ L"All files (*.png; *.jpg; *.bmp; *.obj)", L"*.png;*.jpg;*.bmp;*.obj" },
+		{ L"All files (*.png; *.jpg; *.bmp; *.obj; *.gltf)", L"*.png;*.jpg;*.bmp;*.obj;*.gltf" },
 		{ L"Image files (*.png; *.jpg; *.bmp)", L"*.png;*.jpg;*.bmp" },
 		{ L"Wavefront OBJ files (*.obj)", L"*.obj" },
+        { L"GL Transmission Format (*.gltf)", L"*.gltf" },
 		{ L"Stanford PLY (*.ply)", L"*.ply" }
 	};
 #endif
@@ -82,18 +88,18 @@
     public:
         int ItemUnderMouse = -1;
         int RenameIndex = -1;
-        char RenameBuffer[1024];
+		std::string RenameBuffer = "";
         bool bLastFrameRenameEditWasVisible = false;
         static FEObject* ItemInFocus;
 
         // Resource filtering
-        std::vector<FEObject*> AllResources;
-        std::vector<FEObject*> FilteredResources;
-        char NameFilter[1024];
+        std::vector<std::string> AllResourcesIDs;
+        std::vector<std::string> FilteredResourcesIDs;
+		std::string NameFilter = "";
         std::vector<std::string> ObjectTypeFilters;
 		std::vector<std::string> ObjectTagNegativeFilters;
         bool AnyFilterActive();
-		bool ShouldPassVisibilityFilter(FEObject* Object);
+		bool ShouldPassVisibilityFilter(std::string ObjectID);
         void UpdateFilterForResources();
 
         // Filter buttons

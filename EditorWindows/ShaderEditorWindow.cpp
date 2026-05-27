@@ -70,18 +70,18 @@ void ShaderDebugWindow::Render()
 			}
 
 			SelectedDebugData = OccurrenceList[0];
-			std::string text;
+			std::string Text;
 			const std::vector<std::string> DebugVariables = ShaderToWorkWith->GetDebugVariables();
 			for (size_t i = 1; i < DataDump[0].size(); i++)
 			{
 				const float t = DataDump[0][i];
-				text += DebugVariables[(i - 1) % DebugVariables.size()];
-				text += " : ";
-				text += std::to_string(t);
+				Text += DebugVariables[(i - 1) % DebugVariables.size()];
+				Text += " : ";
+				Text += std::to_string(t);
 				if (i < DataDump[0].size() - 1)
-					text += "\n";
+					Text += "\n";
 			}
-			Editor.SetText(text);
+			Editor.SetText(Text);
 		}
 	}
 
@@ -90,25 +90,25 @@ void ShaderDebugWindow::Render()
 		for (size_t n = 0; n < OccurrenceList.size(); n++)
 		{
 			ImGui::PushID(static_cast<int>(n));
-			const bool is_selected = (SelectedDebugData == OccurrenceList[n]);
-			if (ImGui::Selectable(OccurrenceList[n].c_str(), is_selected))
+			const bool bIsSelected = (SelectedDebugData == OccurrenceList[n]);
+			if (ImGui::Selectable(OccurrenceList[n].c_str(), bIsSelected))
 			{
 				SelectedDebugData = OccurrenceList[n];
-				std::string text;
+				std::string Text;
 				std::vector<std::string> DebugVariables = ShaderToWorkWith->GetDebugVariables();
 				for (size_t i = 1; i < DataDump[n].size(); i++)
 				{
 					const float t = DataDump[n][i];
-					text += DebugVariables[(i - 1) % DebugVariables.size()];
-					text += " : ";
-					text += std::to_string(t);
+					Text += DebugVariables[(i - 1) % DebugVariables.size()];
+					Text += " : ";
+					Text += std::to_string(t);
 					if (i < DataDump[n].size() - 1)
-						text += "\n";
+						Text += "\n";
 				}
-				Editor.SetText(text);
+				Editor.SetText(Text);
 			}
 
-			if (is_selected)
+			if (bIsSelected)
 				ImGui::SetItemDefaultFocus();
 
 			ImGui::PopID();
@@ -166,9 +166,9 @@ ShaderEditorWindow::~ShaderEditorWindow()
 void ShaderEditorWindow::Show(FEShader* Shader)
 {
 	ShaderToEdit = Shader;
-	std::string TempCaption = "Edit shader: ";
-	TempCaption += ShaderToEdit->GetName();
-	strcpy_s(Caption, TempCaption.size() + 1, TempCaption.c_str());
+	std::string TemporaryCaption = "Edit shader: ";
+	TemporaryCaption += ShaderToEdit->GetName();
+	strcpy_s(Caption, TemporaryCaption.size() + 1, TemporaryCaption.c_str());
 
 	FEImGuiWindow::Show();
 	CurrentEditor->SetText("");
@@ -263,25 +263,25 @@ void ShaderEditorWindow::Render()
 	{
 		if (ImGui::BeginMenu("Edit"))
 		{
-			bool ro = CurrentEditor->IsReadOnly();
-			if (ImGui::MenuItem("Read-only mode", nullptr, &ro))
-				CurrentEditor->SetReadOnly(ro);
+			bool bReadOnly = CurrentEditor->IsReadOnly();
+			if (ImGui::MenuItem("Read-only mode", nullptr, &bReadOnly))
+				CurrentEditor->SetReadOnly(bReadOnly);
 			ImGui::Separator();
 
-			if (ImGui::MenuItem("Undo", "ALT-Backspace", nullptr, !ro && CurrentEditor->CanUndo()))
+			if (ImGui::MenuItem("Undo", "ALT-Backspace", nullptr, !bReadOnly && CurrentEditor->CanUndo()))
 				CurrentEditor->Undo();
-			if (ImGui::MenuItem("Redo", "Ctrl-Y", nullptr, !ro && CurrentEditor->CanRedo()))
+			if (ImGui::MenuItem("Redo", "Ctrl-Y", nullptr, !bReadOnly && CurrentEditor->CanRedo()))
 				CurrentEditor->Redo();
 
 			ImGui::Separator();
 
 			if (ImGui::MenuItem("Copy", "Ctrl-C", nullptr, CurrentEditor->HasSelection()))
 				CurrentEditor->Copy();
-			if (ImGui::MenuItem("Cut", "Ctrl-X", nullptr, !ro && CurrentEditor->HasSelection()))
+			if (ImGui::MenuItem("Cut", "Ctrl-X", nullptr, !bReadOnly && CurrentEditor->HasSelection()))
 				CurrentEditor->Cut();
-			if (ImGui::MenuItem("Delete", "Del", nullptr, !ro && CurrentEditor->HasSelection()))
+			if (ImGui::MenuItem("Delete", "Del", nullptr, !bReadOnly && CurrentEditor->HasSelection()))
 				CurrentEditor->Delete();
-			if (ImGui::MenuItem("Paste", "Ctrl-V", nullptr, !ro && ImGui::GetClipboardText() != nullptr))
+			if (ImGui::MenuItem("Paste", "Ctrl-V", nullptr, !bReadOnly && ImGui::GetClipboardText() != nullptr))
 				CurrentEditor->Paste();
 
 			ImGui::Separator();
@@ -305,8 +305,8 @@ void ShaderEditorWindow::Render()
 		ImGui::EndMenuBar();
 	}
 
-	const auto cpos = CurrentEditor->GetCursorPosition();
-	ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s | %s", cpos.mLine + 1, cpos.mColumn + 1, CurrentEditor->GetTotalLines(),
+	const auto CursorPosition = CurrentEditor->GetCursorPosition();
+	ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s | %s", CursorPosition.mLine + 1, CursorPosition.mColumn + 1, CurrentEditor->GetTotalLines(),
 		CurrentEditor->IsOverwrite() ? "Ovr" : "Ins",
 		CurrentEditor->CanUndo() ? "*" : " ",
 		CurrentEditor->GetLanguageDefinition().mName.c_str(), "none");
@@ -446,20 +446,20 @@ void ShaderEditorWindow::ReplaceShader(FEShader* OldShader, FEShader* NewShader)
 	std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 	for (size_t i = 0; i < MaterialList.size(); i++)
 	{
-		FEMaterial* TempMaterial = RESOURCE_MANAGER.GetMaterial(MaterialList[i]);
-		if (TempMaterial->Shader->GetNameHash() == OldShader->GetNameHash())
+		FEMaterial* TemporaryMaterial = RESOURCE_MANAGER.GetMaterial(MaterialList[i]);
+		if (TemporaryMaterial->Shader->GetNameHash() == OldShader->GetNameHash())
 		{
-			TempMaterial->Shader = NewShader;
+			TemporaryMaterial->Shader = NewShader;
 		}
 	}
 
 	MaterialList = RESOURCE_MANAGER.GetEnginePrivateMaterialIDList();
 	for (size_t i = 0; i < MaterialList.size(); i++)
 	{
-		FEMaterial* TempMaterial = RESOURCE_MANAGER.GetMaterial(MaterialList[i]);
-		if (TempMaterial->Shader->GetNameHash() == OldShader->GetNameHash())
+		FEMaterial* TemporaryMaterial = RESOURCE_MANAGER.GetMaterial(MaterialList[i]);
+		if (TemporaryMaterial->Shader->GetNameHash() == OldShader->GetNameHash())
 		{
-			TempMaterial->Shader = NewShader;
+			TemporaryMaterial->Shader = NewShader;
 		}
 	}
 
@@ -469,8 +469,8 @@ void ShaderEditorWindow::ReplaceShader(FEShader* OldShader, FEShader* NewShader)
 		const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWithComponent<FETerrainComponent>();
 		for (size_t i = 0; i < TerrainList.size(); i++)
 		{
-			FEEntity* TempTerrain = CurrentScene->GetEntity(TerrainList[i]);
-			FETerrainComponent& TerrainComponent = TempTerrain->GetComponent<FETerrainComponent>();
+			FEEntity* TemporaryTerrain = CurrentScene->GetEntity(TerrainList[i]);
+			FETerrainComponent& TerrainComponent = TemporaryTerrain->GetComponent<FETerrainComponent>();
 			if (TerrainComponent.Shader->GetNameHash() == OldShader->GetNameHash())
 			{
 				TerrainComponent.Shader = NewShader;

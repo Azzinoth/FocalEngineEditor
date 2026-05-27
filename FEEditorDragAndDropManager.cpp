@@ -40,7 +40,7 @@ void DragAndDropManager::DrawToolTip() const
 	ImGui::Text(ActionText.c_str());
 	ImGui::TextUnformatted(("Name: " + Object->GetName() + "\nType: " + FEObjectTypeToString(Object->GetType())).c_str());
 	if (PreviewTexture != nullptr)
-		ImGui::Image((void*)(intptr_t)PreviewTexture->GetTextureID(), ImVec2(128, 128), UV0, UV1);
+		ImGui::Image(PreviewTexture->GetTextureID(), ImVec2(128, 128), UV0, UV1);
 
 	ImGui::End();
 }
@@ -92,11 +92,11 @@ void DragAndDropManager::Render() const
 
 	if (ObjectCanBeDroped())
 	{
-		ImGui::Image((void*)(intptr_t)HandCursor->GetTextureID(), ImVec2(32, 32), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+		ImGui::Image(HandCursor->GetTextureID(), ImVec2(32, 32), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 	}
 	else
 	{
-		ImGui::Image((void*)(intptr_t)HandCursorUnavailable->GetTextureID(), ImVec2(32, 32), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+		ImGui::Image(HandCursorUnavailable->GetTextureID(), ImVec2(32, 32), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 	}
 	ImGui::End();
 

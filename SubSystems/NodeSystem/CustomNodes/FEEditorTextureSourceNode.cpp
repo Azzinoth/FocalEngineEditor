@@ -52,7 +52,7 @@ void FEEditorTextureSourceNode::Draw()
 	float Zoom = ParentArea->GetZoomFactor();
 
 	ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x + 10.0f * Zoom, ImGui::GetCursorScreenPos().y + NODE_TITLE_HEIGHT * Zoom + 10.0f * Zoom));
-	ImGui::Image((void*)(intptr_t)Texture->GetTextureID(), ImVec2(128, 128) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+	ImGui::Image(Texture->GetTextureID(), ImVec2(128, 128) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 
 	if (bContextMenu)
 	{

@@ -7,9 +7,8 @@ class FEVFSDirectory;
 struct FEVFSFile
 {
 	FEVFSFile();
-	FEVFSFile(FEObject* Data, FEVFSDirectory* InDirectory);
-	FEVFSDirectory* InDirectory;
-	FEObject* Data;
+	FEVFSFile(std::string DataID, FEVFSDirectory* InDirectory);
+	std::string DataID;
 	bool bReadOnly = false;
 	bool IsReadOnly();
 	void SetReadOnly(bool NewValue);
@@ -47,6 +46,7 @@ public:
 	SINGLETON_PUBLIC_PART(FEVirtualFileSystem)
 
 	bool IsPathCorrect(std::string Path);
+	bool IsPathToFile(std::string Path);
 	bool CreateFile(FEObject* Data, std::string Path);
 	bool MoveFile(FEObject* Data, std::string OldPath, std::string NewPath);
 	bool DeleteFile(const FEObject* Data, std::string Path);
@@ -62,9 +62,10 @@ public:
 	bool MoveDirectory(std::string DirectoryPath, std::string NewPath);
 	bool DeleteEmptyDirectory(std::string Path);
 	int SubDirectoriesCount(std::string Path);
-	std::vector<FEObject*> GetDirectoryContent(std::string Path);
+	std::vector<std::string> GetDirectoryContentIDs(std::string Path);
 	std::string GetDirectoryParent(std::string Path);
 	void SetDirectoryReadOnly(bool NewValue, std::string Path);
+	bool IsDirectoryReadOnly(std::string Path);
 
 	void Clear();
 	bool AcceptableName(std::string Name);
@@ -76,6 +77,8 @@ public:
 	void LoadState(std::string FileName);
 
 	bool IsReadOnly(const FEObject* Data, std::string Path);
+
+	std::string GetTreeAsString();
 private:
 	SINGLETON_PRIVATE_PART(FEVirtualFileSystem)
 	FEVFSDirectory* Root;
@@ -84,10 +87,12 @@ private:
 	void DeleteDirectory(FEVFSDirectory* Directory);
 	std::string CurrentPath = "/";
 	std::string LocateFileRecursive(FEVFSDirectory* Directory, FEObject* File);
+	void BuildTreeStringRecursive(FEVFSDirectory* Directory, std::string Prefix, std::string& Output);
 
 	void SaveStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Directory);
 	void LoadStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Parent, FEVFSDirectory* Directory, std::string ForceObjectID);
+	bool DirectoryHasFileWithName(FEVFSDirectory* Directory, const std::string Name);
 };
 
-#define VIRTUAL_FILE_SYSTEM_VERSION 0.01f
+#define VIRTUAL_FILE_SYSTEM_VERSION 0.02f
 #define VIRTUAL_FILE_SYSTEM FEVirtualFileSystem::GetInstance()

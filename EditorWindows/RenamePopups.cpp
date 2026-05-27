@@ -50,7 +50,7 @@ void RenamePopUp::Show(FEObject* ObjToWorkWith)
 {
 	bShouldOpen = true;
 	this->ObjToWorkWith = ObjToWorkWith;
-	strcpy_s(NewName, ObjToWorkWith->GetName().size() + 1, ObjToWorkWith->GetName().c_str());
+	NewName = ObjToWorkWith->GetName();
 }
 
 void RenamePopUp::Render()
@@ -69,15 +69,15 @@ void RenamePopUp::Render()
 
 		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		ImGui::Text("New object name :");
-		ImGui::InputText("##New object name", NewName, IM_ARRAYSIZE(NewName));
+		ImGui::InputText(("##New object name " + ObjToWorkWith->GetObjectID()).c_str(), &NewName);
 
 		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 4.0f - 120.0f / 2.0f);
 		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10.0f);
 		if (ImGui::Button("Apply", ImVec2(120, 0)))
 		{
 			std::string OldName = ObjToWorkWith->GetName();
-			// if new name is acceptable
-			if (strlen(NewName) > 0)
+			// If new name is acceptable.
+			if (!NewName.empty())
 			{
 				ObjToWorkWith->SetDirtyFlag(true);
 				PROJECT_MANAGER.GetCurrent()->SetModified(true);
@@ -93,7 +93,7 @@ void RenamePopUp::Render()
 				}
 
 				ImGuiModalPopup::Close();
-				strcpy_s(NewName, "");
+				NewName = "";
 			}
 			else
 			{

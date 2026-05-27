@@ -95,11 +95,12 @@ public:
 class ImGuiImageButton
 {
 protected:
+	std::string ID;
 	ImVec2 Position = ImVec2(-1.0f, -1.0f);
 	ImVec2 Size = ImVec2(32.0f, 32.0f);
 	ImVec2 UV0 = ImVec2(0.0f, 0.0f);
 	ImVec2 UV1 = ImVec2(1.0f, 1.0f);
-	int FramePadding = 4;
+	float FramePadding = 4.0f;
 	ImVec4 BackgroundColor = ImColor(0.0f, 0.0f, 0.0f, 0.0f);
 	ImVec4 TintColor = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -138,8 +139,8 @@ public:
 	ImVec2 GetUV1() const;
 	void SetUV1(ImVec2 NewValue);
 	
-	int GetFramePadding() const;
-	void SetFramePadding(int NewFramePadding);
+	float GetFramePadding() const;
+	void SetFramePadding(float NewFramePadding);
 
 	ImVec4 GetBackgroundColor() const;
 	void SetBackgroundColor(ImVec4 NewBackgroundColor);
@@ -168,6 +169,10 @@ protected:
 	FEImGuiWindow();
 	ImGuiWindow* Window = nullptr;
 
+	bool bHaveCloseButton = false;
+	bool bUserWantsWindowToBeOpen = true;
+	bool bUserRequestedClose = false;
+
 	float BorderSize = 2.0f;
 	glm::vec2 Padding = glm::vec2(15.0f, 15.0f);
 public:
@@ -180,9 +185,12 @@ public:
 	bool IsVisible() const;
 	void SetVisible(bool NewValue);
 
+	bool GetUserRequestedClose() const;
+
 	bool IsMouseHovered() const;
 
 	virtual void SetCaption(std::string NewCaption);
+	std::string GetCaption() const;
 
 	ImGuiWindow* GetWindow() const;
 
@@ -360,7 +368,7 @@ public:
 		FEImGuiWindow::OnRenderEnd();
 	}
 };
-static JustTextWindow JustTextWindowObj;
+inline JustTextWindow JustTextWindowObj;
 
 class MessagePopUp : public ImGuiModalPopup
 {

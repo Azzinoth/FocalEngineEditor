@@ -1,5 +1,24 @@
 #include "FEEditor.h"
 
+void OnTriggerRelease()
+{
+	int y = 0;
+	y++;
+
+	FEOpenXR_INPUT.TriggerHapticFeedback(0.5f, 0.5f, 0.5f, false);
+
+	//std::string test = FEOpenXR_INPUT.CurrentlyActiveInteractionProfile(true);
+	//test = ";";
+}
+
+void OnSomething(float Value)
+{
+	int y = 0;
+	y++;
+
+	FEOpenXR_INPUT.TriggerHapticFeedback(0.5f, 0.5f, 0.5f, false);
+}
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	ENGINE.InitWindow();
@@ -16,6 +35,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	double AverageGpuFrameDuration = 0.0;
 
 	bool bPutThisFrameToTimeline = false;
+
+	/*FEOpenXR_INPUT.SetLeftTriggerReleaseCallBack(OnTriggerRelease);
+	FEOpenXR_INPUT.SetRightTriggerReleaseCallBack(OnTriggerRelease);*/
+
+	FEOpenXR_INPUT.SetLeftValveSqueezeValueCallBack(OnSomething);
 
 	while (ENGINE.IsNotTerminated())
 	{
@@ -48,7 +72,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				}
 				ImGui::Text(EntityUnderMouse.c_str());
 
-				ImGui::Image((void*)(intptr_t)SelectedData->PixelAccurateSelectionFB->GetColorAttachment()->GetTextureID(), ImVec2(256 * 4, 256 * 4), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+				ImGui::Image(SelectedData->PixelAccurateSelectionFB->GetColorAttachment()->GetTextureID(), ImVec2(256 * 4, 256 * 4), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 			}
 		}
 #endif
@@ -63,6 +87,71 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			if (ImGui::Button("Build"))
 			{
 				EDITOR_PROJECT_BUILD_SYSTEM.BuildExecutable(PROJECT_MANAGER.GetCurrent());
+			}
+		}
+
+		bool bVRMode = ENGINE.IsVREnabled();
+		if (ImGui::Checkbox("Enter VR mode", &bVRMode))
+		{
+			if (bVRMode)
+			{
+				if (ENGINE.EnableVR())
+				{
+
+					std::vector<FEOpenXRExtensionInfo> ExtensionsInfo = FEOpenXR_CORE.GetAvailableExtensionsInfo();
+
+					int y = 0;
+					y++;
+					//glm::vec2 VRResolution = OpenXR_MANAGER.EyeResolution();
+					//POINT_MANAGER.RenderTargetResize(static_cast<int>(VRResolution.x), static_cast<int>(VRResolution.y));
+
+					//AddVirtualUI();
+				}
+
+			}
+			else
+			{
+				ENGINE.DisableVR();
+
+				//POINT_MANAGER.RenderTargetResize(static_cast<int>(ENGINE.GetRenderTargetWidth()), static_cast<int>(ENGINE.GetRenderTargetHeight()));
+			}
+		}
+
+		if (bVRMode)
+		{
+			glm::vec3 ControllerPosition = FEOpenXR_INPUT.GetLeftControllerPosition();
+			ImGui::Text("Left Controller Position : ");
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(70);
+			ImGui::DragFloat("##X Left Controller", &ControllerPosition[0], 0.01f);
+
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(70);
+			ImGui::DragFloat("##Y Left Controller", &ControllerPosition[1], 0.01f);
+
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(70);
+			ImGui::DragFloat("##Z Left Controller", &ControllerPosition[2], 0.01f);
+
+
+			ControllerPosition = FEOpenXR_INPUT.GetRightControllerPosition();
+
+			ImGui::Text("Right Controller Position : ");
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(70);
+			ImGui::DragFloat("##X Right Controller", &ControllerPosition[0], 0.01f);
+
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(70);
+			ImGui::DragFloat("##Y Right Controller", &ControllerPosition[1], 0.01f);
+
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(70);
+			ImGui::DragFloat("##Z Right Controller", &ControllerPosition[2], 0.01f);
+
+			if (ImGui::Button("Haptic"))
+			{
+				FEOpenXR_INPUT.TriggerHapticFeedback(0.5f, 0.5f, 0.5f, false);
 			}
 		}
 
@@ -86,7 +175,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 			AverageCpuFrameDuration /= FrameCountTillMeasure;
 			AverageGpuFrameDuration /= FrameCountTillMeasure;
-			
+
 			FrameCounter = 0;
 		}
 
@@ -99,17 +188,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		std::string FrameMs = std::to_string(AverageCpuFrameDuration + AverageGpuFrameDuration);
 		FrameMs.erase(FrameMs.begin() + 4, FrameMs.end());
 
-		std::string caption = "CPU time : ";
-		caption += CPUMs;
-		caption += " ms";
-		caption += "  GPU time : ";
-		caption += GPUMs;
-		caption += " ms";
-		caption += "  Frame time : ";
-		caption += FrameMs;
-		caption += " ms";
+		std::string Caption = "CPU time : ";
+		Caption += CPUMs;
+		Caption += " ms";
+		Caption += "  GPU time : ";
+		Caption += GPUMs;
+		Caption += " ms";
+		Caption += "  Frame time : ";
+		Caption += FrameMs;
+		Caption += " ms";
 
-		ENGINE.SetWindowCaption(caption.c_str());
+		ENGINE.SetWindowCaption(Caption.c_str());
 
 		PROFILING.StopProfiling();
 		if (bPutThisFrameToTimeline)
@@ -118,6 +207,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			bPutThisFrameToTimeline = false;
 		}
 	}
-	
+
 	return 0;
 }

@@ -25,6 +25,8 @@ FEEditorSceneWindow::FEEditorSceneWindow(FEScene* Scene)
 	ToolTipTexts.push_back("Drop to add to scene");
 	ToolTipTexts.push_back("Drop to add to scene");
 	CurrentDragAndDropCallback = DragAndDropCallBack;
+
+	bHaveCloseButton = true;
 }
 
 bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
@@ -115,6 +117,13 @@ void FEEditorSceneWindow::Show()
 
 void FEEditorSceneWindow::Render()
 {
+	if (!IsVisible())
+		return;
+
+	Scene = SCENE_MANAGER.GetSceneByID(SceneID);
+	if (Scene == nullptr)
+		return;
+
 	if (bJustAdded)
 	{
 		ImGui::SetWindowFocus();
@@ -122,10 +131,18 @@ void FEEditorSceneWindow::Render()
 		bJustAdded = false;
 	}
 
-	FEImGuiWindow::Render();
+	ImGuiID DockspaceID = APPLICATION.GetMainWindow()->GetDefaultDockspaceID();
+	if (DockspaceID != 0 && bShouldDockToCentralNode)
+	{
+		ImGuiDockNode* CentralNode = ImGui::DockBuilderGetCentralNode(DockspaceID);
+		if (CentralNode != nullptr)
+		{
+			ImGui::SetNextWindowDockID(CentralNode->ID, ImGuiCond_Appearing);
+			bShouldDockToCentralNode = false;
+		}
+	}
 
-	if (!IsVisible())
-		return;
+	FEImGuiWindow::Render();
 
 	if (SceneWindowTarget != nullptr)
 		SceneWindowTarget->StickToCurrentWindow();
@@ -151,7 +168,6 @@ void FEEditorSceneWindow::Render()
 	if (CameraEntity != nullptr)
 	{
 		FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
-
 		if (CameraComponent.GetViewport() == nullptr || CameraComponent.GetViewport()->GetType() == FE_VIEWPORT_VIRTUAL)
 		{
 			std::string NewViewportID = ENGINE.CreateViewport(GetWindow());
@@ -164,6 +180,13 @@ void FEEditorSceneWindow::Render()
 				ToolTipTexts);
 		}
 
+		// It could be the case that viewport or camera was not ready when we set the viewport above, so we need to check again.
+		if (SELECTED.GetSceneData(Scene->GetObjectID()) == nullptr)
+			SELECTED.AddSceneData(Scene->GetObjectID());
+		
+		if (GIZMO_MANAGER.GetSceneData(Scene->GetObjectID()) == nullptr)
+			GIZMO_MANAGER.AddSceneData(Scene->GetObjectID());
+
 		ImGuiStyle& Style = ImGui::GetStyle();
 		Style.WindowBorderSize = 0.0f;
 		Style.WindowPadding = ImVec2(0.0f, 0.0f);
@@ -171,7 +194,7 @@ void FEEditorSceneWindow::Render()
 		FETexture* CameraResult = RENDERER.GetCameraResult(CAMERA_SYSTEM.GetMainCamera(Scene));
 		if (CameraResult != nullptr)
 		{
-			ImGui::Image((void*)(intptr_t)CameraResult->GetTextureID(), ImVec2(GetWindow()->ContentRegionRect.GetWidth(), GetWindow()->ContentRegionRect.GetHeight()), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+			ImGui::Image(CameraResult->GetTextureID(), ImVec2(GetWindow()->ContentRegionRect.GetWidth(), GetWindow()->ContentRegionRect.GetHeight()), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 		}
 	}
 	else
@@ -190,7 +213,7 @@ void FEEditorSceneWindow::OnRenderEnd()
 
 FEScene* FEEditorSceneWindow::GetScene() const
 {
-	return Scene;
+	return SCENE_MANAGER.GetSceneByID(SceneID);
 }
 
 glm::vec2 FEEditorSceneWindow::GetSize() const

@@ -56,13 +56,13 @@ void FEEditor::DisplayLogWindow() const
 
 	if (SelectedChannel.empty())
 	{
-		std::vector<LogItem> TempItems;
+		std::vector<LogItem> TemporaryItems;
 		for (int i = 0; i < int(TopicList.size()); i++)
 		{
-			TempItems = LOG.GetLogItems(TopicList[i]);
-			for (size_t j = 0; j < TempItems.size(); j++)
+			TemporaryItems = LOG.GetLogItems(TopicList[i]);
+			for (size_t j = 0; j < TemporaryItems.size(); j++)
 			{
-				LogItems.push_back(TempItems[j]);
+				LogItems.push_back(TemporaryItems[j]);
 			}
 		}
 	}

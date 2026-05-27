@@ -1,7 +1,8 @@
 ﻿#pragma once
 
 #include "EditorWindows/InspectorWindow.h"
-#include "EditorWindows/EditorBaseWindowClasses/FEEditorSceneWindow.h"
+#include "EditorWindows/SceneWindow/FEEditorSceneWindow.h"
+#include "EditorWindows/SceneWindow/FEEditorSceneWindowManager.h"
 #include <functional>
 
 class FEEditor
@@ -12,8 +13,15 @@ class FEEditor
 public:
     SINGLETON_PUBLIC_PART(FEEditor)
 
+    std::string GetEditorVersion();        // "1.0.0"
+    std::string GetEditorBuildInfo();      // "build 231+52 (dev, ed4c7ce-dirty)"
+	std::string GetEditorFullVersion();    // "Focal Engine Editor 1.0.0 build 231+52 (dev, ed4c7ce-dirty)"
+    std::string GetEditorBuildTimestamp(); // "20260207232613"
+    int GetEditorBuildNumber();            // 231
+
     // Initialization and rendering
     void InitializeResources();
+	bool HadImGuiIniFileAtStartup() const;
     void Render();
 
     // Mouse and input
@@ -31,7 +39,7 @@ public:
     void SetSceneEntityIDInClipboard(std::string NewValue);
 
     void CreateEditorWindowForScene(const std::string& SceneID, FEProject* CurrentProject = nullptr);
-    void CreateCustomEditorWindowForScene(FEEditorSceneWindow* SceneWindow);
+    void RegisterEditorSceneWindow(FEEditorSceneWindow* SceneWindow);
     FEEditorSceneWindow* GetEditorSceneWindow(std::string SceneID);
 
     std::vector<std::string> GetEditorOpenedScenesIDs() const;
@@ -44,21 +52,14 @@ public:
     void SetGameMode(bool GameMode);
 
     void UpdateBeforeRender();
+
+	void RenderTemporaryDebugWindow();
 private:
     SINGLETON_PRIVATE_PART(FEEditor)
 
     // Mouse and input
     double LastMouseX, LastMouseY;
     double MouseX, MouseY;
-
-    std::string FocusedEditorSceneID = "";
-    ImGuiID DockspaceID = 0;
-
-    std::vector<FEEditorSceneWindow*> EditorSceneWindows;
-
-	// TO-DO: Make it more general, so it would be possible to be used by user.
-    // When winodow close set FESceneFlag::Active | FESceneFlag::Renderable false.
-	void DeleteScene(std::string SceneID);
 
     // Clipboard
     std::string SceneEntityIDInClipboard;
@@ -80,6 +81,11 @@ private:
     bool bLogWindowVisible = true;
     void DisplayLogWindow() const;
 
+	// About window
+    bool bShouldOpenAboutWindow = false;
+    void ShowAboutDialog();
+    void RenderAboutWindow();
+
     // Resource under mouse
     int TextureUnderMouse = -1;
     int MeshUnderMouse = -1;
@@ -98,12 +104,12 @@ private:
     void RenderAllSubWindows();
 
     // ImGui setup
-    void SetUpImgui();
-    void SetImguiStyle();
+    bool bHadImGuiIniFileAtStartup = false;
+	void SetUpDocking();
+    void SetUpImGui();
+    void SetImGuiStyle();
 
-    void OnProjectClose();
-
-    void BeforeChangeOfFocusedScene(FEScene* NewSceneInFocus);
+    void CloseProjectAndCleanup();
 
     std::unordered_map<std::string, std::string> SceneIDToOldMainCameraID;
 };

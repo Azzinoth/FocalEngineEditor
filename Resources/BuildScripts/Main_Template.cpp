@@ -22,7 +22,7 @@ void LoadResources(std::string DirectoryPath)
 	for (size_t i = 0; i < MeshList.size(); i++)
 	{
 		FEObjectLoadedData LoadedObjectData = RESOURCE_MANAGER.LoadFEObjectPart(Root["Meshes"][MeshList[i]]["FEObjectData"]);
-		RESOURCE_MANAGER.LoadFEMesh((DirectoryPath + Root["Meshes"][MeshList[i]]["FileName"].asCString()).c_str(), LoadedObjectData.Name);
+		RESOURCE_MANAGER.LoadFEMesh((DirectoryPath + Root["Meshes"][MeshList[i]]["FileName"].asCString()), LoadedObjectData.Name);
 	}
 
 	// Loading textures.
@@ -33,11 +33,11 @@ void LoadResources(std::string DirectoryPath)
 		// Terrain textures should be loaded right away, not async.
 		if (LoadedObjectData.Tag == TERRAIN_SYSTEM_RESOURCE_TAG)
 		{
-			RESOURCE_MANAGER.LoadFETexture((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()).c_str());
+			RESOURCE_MANAGER.LoadFETexture((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()));
 		}
 		else
 		{
-			RESOURCE_MANAGER.LoadFETextureAsync((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()).c_str(), LoadedObjectData.Name, nullptr, LoadedObjectData.ID);
+			RESOURCE_MANAGER.LoadFETextureAsync((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()), LoadedObjectData.Name, nullptr, LoadedObjectData.ID);
 		}
 	}
 
@@ -61,7 +61,7 @@ void LoadResources(std::string DirectoryPath)
 	std::vector<Json::String> NativeScriptModulesList = Root["NativeScriptModules"].getMemberNames();
 	for (size_t i = 0; i < NativeScriptModulesList.size(); i++)
 	{
-		FENativeScriptModule* LoadedNativeScriptModule = RESOURCE_MANAGER.LoadFENativeScriptModule((DirectoryPath + Root["NativeScriptModules"][NativeScriptModulesList[i]]["FileName"].asCString()).c_str());
+		FENativeScriptModule* LoadedNativeScriptModule = RESOURCE_MANAGER.LoadFENativeScriptModule((DirectoryPath + Root["NativeScriptModules"][NativeScriptModulesList[i]]["FileName"].asCString()));
 		if (LoadedNativeScriptModule == nullptr)
 			continue;
 
@@ -121,7 +121,7 @@ void LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage)
 		}
 	}
 
-	if (!FILE_SYSTEM.CreateDirectory(TemporaryFolder))
+	if (!FILE_SYSTEM.MakeDirectory(TemporaryFolder))
 	{
 		LOG.Add("FEProject::LoadResourcesFromAssetPackage: Error creating Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
 		return;

@@ -15,8 +15,8 @@ GizmosSettingsWindow::~GizmosSettingsWindow()
 
 void GizmosSettingsWindow::Show()
 {
-	const std::string TempCaption = "##GizmosSettingsWindow";
-	strcpy_s(Caption, TempCaption.size() + 1, TempCaption.c_str());
+	const std::string TemporaryCaption = "##GizmosSettingsWindow";
+	strcpy_s(Caption, TemporaryCaption.size() + 1, TemporaryCaption.c_str());
 	Size = ImVec2(146.0f, 48.0f);
 	Position = ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - 150.0f / 2.0f, 10.0f);
 	FEImGuiWindow::Show();

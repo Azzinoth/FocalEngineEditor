@@ -42,7 +42,7 @@ class FEEditorInspectorWindow
     int HoveredTerrainLayerItem = -1;
     void DisplayTerrainSettings(FEEntity* TerrainEntity);
     int TerrainLayerRenameIndex = -1;
-    char TerrainLayerRename[1024];
+	std::string TerrainLayerRenameBuffer = "";
     bool bLastFrameTerrainLayerRenameEditWasVisible = false;
 
     // Brush icons

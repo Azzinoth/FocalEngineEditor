@@ -147,6 +147,7 @@ void ImGuiButton::Render()
 ImGuiImageButton::ImGuiImageButton(FETexture* Texture)
 {
 	this->Texture = Texture;
+	ID = APPLICATION.GetUniqueHexID();
 }
 
 ImVec2 ImGuiImageButton::GetPosition() const
@@ -219,15 +220,16 @@ void ImGuiImageButton::SetUV1(const ImVec2 NewValue)
 	UV1 = NewValue;
 }
 
-int ImGuiImageButton::GetFramePadding() const
+float ImGuiImageButton::GetFramePadding() const
 {
 	return FramePadding;
 }
 
-void ImGuiImageButton::SetFramePadding(int NewFramePadding)
+void ImGuiImageButton::SetFramePadding(float NewFramePadding)
 {
-	if (NewFramePadding < 0)
-		NewFramePadding = 0;
+	if (NewFramePadding < 0.0f)
+		NewFramePadding = 0.0f;
+
 	FramePadding = NewFramePadding;
 }
 
@@ -282,7 +284,9 @@ void ImGuiImageButton::RenderBegin()
 
 	bHovered = false;
 
-	ImGui::ImageButton((void*)static_cast<intptr_t>(Texture->GetTextureID()), Size, UV0, UV1, FramePadding, BackgroundColor, TintColor);
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(FramePadding, FramePadding));
+	ImGui::ImageButton(ID.c_str(), Texture->GetTextureID(), Size, UV0, UV1, BackgroundColor, TintColor);
+	ImGui::PopStyleVar();
 
 	// flag important for drag and drop functionality
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem))
@@ -368,7 +372,7 @@ void FEImGuiWindow::Render()
 		if (GetPadding().x != 0.0f || GetPadding().y != 0.0f)
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(GetPadding().x, GetPadding().y));
 
-		ImGui::Begin(Caption, nullptr, Flags);
+		ImGui::Begin(Caption, (bHaveCloseButton ? &bUserWantsWindowToBeOpen : nullptr), Flags);
 		Window = FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl();
 	}
 }
@@ -387,7 +391,15 @@ void FEImGuiWindow::OnRenderEnd()
 			ImGui::PopStyleVar();
 
 		ImGui::End();
+
+		if (!bUserWantsWindowToBeOpen)
+			bUserRequestedClose = true;
 	}
+}
+
+bool FEImGuiWindow::GetUserRequestedClose() const
+{
+	return bUserRequestedClose;
 }
 
 bool FEImGuiWindow::IsVisible() const
@@ -409,6 +421,11 @@ void FEImGuiWindow::Close()
 
 		ImGui::End();
 	}
+}
+
+std::string FEImGuiWindow::GetCaption() const
+{
+	return std::string(Caption);
 }
 
 void FEImGuiWindow::SetCaption(const std::string NewCaption)
@@ -855,7 +872,7 @@ FEArrowScroller::FEArrowScroller(const bool Horizontal)
 	Color = ImColor(10, 10, 40, 255);
 	SelectedColor = ImColor(115, 115, 255, 255);
 
-	AvailableRange = ImVec2(-FLT_MAX, FLT_MAX);
+	AvailableRange = ImVec2(-std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
 }
 
 ImVec2 FEArrowScroller::GetPosition() const
@@ -1027,5 +1044,5 @@ void FEArrowScroller::SetAvailableRange(const ImVec2 NewValue)
 
 void FEArrowScroller::LiftRangeRestrictions()
 {
-	AvailableRange = ImVec2(-FLT_MAX, FLT_MAX);
+	AvailableRange = ImVec2(-std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
 }

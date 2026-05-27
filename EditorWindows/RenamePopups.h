@@ -15,7 +15,7 @@ private:
 class RenamePopUp : public ImGuiModalPopup
 {
 	FEObject* ObjToWorkWith;
-	char NewName[512];
+	std::string NewName;
 public:
 	SINGLETON_PUBLIC_PART(RenamePopUp)
 
