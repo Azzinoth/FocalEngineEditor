@@ -1093,3 +1093,144 @@ TEST(VirtualFileSystem, DeepNesting_PathOperationsHandleLongChains)
 		EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(Paths[i]));
 	std::remove(SaveFile.c_str());
 }
+
+TEST(VirtualFileSystem, DeleteEmptyDirectory_RejectsRoot)
+{
+	ASSERT_FALSE(VIRTUAL_FILE_SYSTEM.IsDirectoryReadOnly("/"));
+	const std::vector<std::string> InitialContents = VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs("/");
+
+	// If root is not empty, skip.
+	if (!InitialContents.empty())
+		return;
+
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory("/"));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.IsPathCorrect("/"));
+}
+
+TEST(VirtualFileSystem, Clear_ResetsRootReadOnlyFlag)
+{
+	ASSERT_FALSE(VIRTUAL_FILE_SYSTEM.IsDirectoryReadOnly("/"));
+	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(true, "/");
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.IsDirectoryReadOnly("/"));
+	VIRTUAL_FILE_SYSTEM.Clear();
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.IsDirectoryReadOnly("/"));
+}
+
+TEST(VirtualFileSystem, CreateFile_RejectsNameContainingSlash)
+{
+	const std::string Directory = "vfs_create_slash_dir";
+	const std::string DirectoryPath = "/" + Directory;
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Directory, "/"));
+
+	FEObject* Bad = new FEObject(FE_TEXTURE, "has/slash");
+	const bool Accepted = VIRTUAL_FILE_SYSTEM.CreateFile(Bad, DirectoryPath);
+	if (Accepted)
+		VIRTUAL_FILE_SYSTEM.DeleteFile(Bad, DirectoryPath);
+	delete Bad;
+	EXPECT_FALSE(Accepted);
+
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirectoryPath));
+}
+
+TEST(VirtualFileSystem, CreateFile_RejectsEmptyName)
+{
+	const std::string Directory = "vfs_create_empty_dir";
+	const std::string DirectoryPath = "/" + Directory;
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Directory, "/"));
+
+	FEObject* Bad = new FEObject(FE_TEXTURE, "");
+	const bool Accepted = VIRTUAL_FILE_SYSTEM.CreateFile(Bad, DirectoryPath);
+	if (Accepted)
+		VIRTUAL_FILE_SYSTEM.DeleteFile(Bad, DirectoryPath);
+	delete Bad;
+	EXPECT_FALSE(Accepted);
+
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirectoryPath));
+}
+
+TEST(VirtualFileSystem, ReadOnly_AncestorBlocksCreateInDescendant)
+{
+	const std::string Parent = "vfs_ro_parent";
+	const std::string Child = "vfs_ro_child";
+	const std::string ParentPath = "/" + Parent;
+	const std::string ChildPath = ParentPath + "/" + Child;
+
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Parent, "/"));
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Child, ParentPath));
+	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(true, ParentPath);
+
+	FEObject* CurrentFile = new FEObject(FE_TEXTURE, "vfs_ro_smuggled");
+	const bool Created = VIRTUAL_FILE_SYSTEM.CreateFile(CurrentFile, ChildPath);
+	EXPECT_FALSE(Created);
+
+	if (Created)
+		VIRTUAL_FILE_SYSTEM.DeleteFile(CurrentFile, ChildPath);
+	delete CurrentFile;
+	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(false, ParentPath);
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(ChildPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(ParentPath));
+}
+
+TEST(VirtualFileSystem, ReadOnly_AncestorBlocksMoveOutOfLockedSubtree)
+{
+	const std::string Locked = "vfs_ro_locked";
+	const std::string Inner = "vfs_ro_inner";
+	const std::string Leaf = "vfs_ro_leaf";
+	const std::string Elsewhere = "vfs_ro_elsewhere";
+	const std::string LockedPath = "/" + Locked;
+	const std::string InnerPath = LockedPath + "/" + Inner;
+	const std::string LeafPath = InnerPath + "/" + Leaf;
+	const std::string ElsewherePath = "/" + Elsewhere;
+
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Locked, "/"));
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Inner, LockedPath));
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Leaf, InnerPath));
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Elsewhere, "/"));
+
+	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(true, LockedPath);
+
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.MoveDirectory(LeafPath, ElsewherePath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.IsPathCorrect(LeafPath));
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.IsPathCorrect(ElsewherePath + "/" + Leaf));
+
+	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(false, LockedPath);
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(LeafPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(InnerPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(LockedPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(ElsewherePath));
+}
+
+TEST(VirtualFileSystem, SetCurrentPath_CanonicalizesTrailingSlash)
+{
+	const std::string Directory = "vfs_cp_canon_dir";
+	const std::string DirectoryPath = "/" + Directory;
+	const std::string Original = VIRTUAL_FILE_SYSTEM.GetCurrentPath();
+
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Directory, "/"));
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.SetCurrentPath(DirectoryPath + "/"));
+	const std::string Stored = VIRTUAL_FILE_SYSTEM.GetCurrentPath();
+
+	VIRTUAL_FILE_SYSTEM.SetCurrentPath(Original);
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirectoryPath));
+
+	EXPECT_EQ(Stored, DirectoryPath);
+}
+
+TEST(VirtualFileSystem, IsPathCorrect_RejectsTrailingSlashOnFilePath)
+{
+	const std::string Directory = "vfs_path_trail_dir";
+	const std::string DirectoryPath = "/" + Directory;
+
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Directory, "/"));
+
+	FEObject* CurrentFile = new FEObject(FE_TEXTURE, "vfs_trail_file");
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateFile(CurrentFile, DirectoryPath));
+	const std::string FilePath = DirectoryPath + "/" + CurrentFile->GetName();
+
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.IsPathCorrect(FilePath));
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.IsPathCorrect(FilePath + "/"));
+
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteFile(CurrentFile, DirectoryPath));
+	delete CurrentFile;
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirectoryPath));
+}

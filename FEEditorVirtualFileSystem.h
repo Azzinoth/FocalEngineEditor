@@ -92,6 +92,7 @@ private:
 	void SaveStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Directory);
 	void LoadStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Parent, FEVFSDirectory* Directory, std::string ForceObjectID);
 	bool DirectoryHasFileWithName(FEVFSDirectory* Directory, const std::string Name);
+	bool IsAnyAncestorReadOnly(const FEVFSDirectory* Directory);
 };
 
 #define VIRTUAL_FILE_SYSTEM_VERSION 0.02f

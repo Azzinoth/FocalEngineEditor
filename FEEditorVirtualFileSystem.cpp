@@ -193,7 +193,13 @@ bool FEVirtualFileSystem::IsPathCorrect(std::string Path)
 			{
 				FEObject* FileObject = OBJECT_MANAGER.GetFEObject(CurrentDirectory->Files[j].DataID);
 				if (FileObject != nullptr && FileObject->GetName() == TokenizedPath[i])
+				{
+					// Trailing slash indicates a directory, if it is a file it should not have trailing slash.	
+					if (!Path.empty() && Path.back() == '/')
+						return false;
+
 					return true;
+				}
 			}
 
 			return false;
@@ -204,7 +210,7 @@ bool FEVirtualFileSystem::IsPathCorrect(std::string Path)
 		if (CurrentDirectory == nullptr)
 			return false;
 	}
-	
+
 	return true;
 }
 
@@ -274,6 +280,12 @@ bool FEVirtualFileSystem::CreateFile(FEObject* Data, const std::string Path)
 		return false;
 	}
 
+	if (!AcceptableName(Data->GetName()))
+	{
+		LOG.Add("File name is not acceptable in function FEVirtualFileSystem::CreateFile.", "FE_VIRTUAL_FILE_SYSTEM", FE_LOG_ERROR);
+		return false;
+	}
+
 	if (!IsPathCorrect(Path))
 	{
 		LOG.Add("Path is not correct in function FEVirtualFileSystem::CreateFile.", "FE_VIRTUAL_FILE_SYSTEM", FE_LOG_ERROR);
@@ -303,7 +315,7 @@ bool FEVirtualFileSystem::CreateFile(FEObject* Data, const std::string Path)
 		return false;
 	}
 
-	if (Directory->IsReadOnly())
+	if (Directory->IsReadOnly() || IsAnyAncestorReadOnly(Directory))
 		return false;
 
 	Directory->Files.push_back(FEVFSFile(Data->GetObjectID(), Directory));
@@ -319,6 +331,20 @@ bool FEVirtualFileSystem::DirectoryHasFileWithName(FEVFSDirectory* Directory, co
 	{
 		FEObject* Existing = OBJECT_MANAGER.GetFEObject(Directory->Files[i].DataID);
 		if (Existing != nullptr && Existing->GetName() == Name)
+			return true;
+	}
+
+	return false;
+}
+
+bool FEVirtualFileSystem::IsAnyAncestorReadOnly(const FEVFSDirectory* Directory)
+{
+	if (Directory == nullptr)
+		return false;
+
+	for (FEVFSDirectory* Ancestor = Directory->Parent; Ancestor != nullptr; Ancestor = Ancestor->Parent)
+	{
+		if (Ancestor->IsReadOnly())
 			return true;
 	}
 
@@ -360,7 +386,7 @@ bool FEVirtualFileSystem::CreateDirectory(const std::string Name, const std::str
 	if (Directory == nullptr)
 		return false;
 
-	if (Directory->IsReadOnly())
+	if (Directory->IsReadOnly() || IsAnyAncestorReadOnly(Directory))
 		return false;
 
 	if (Directory->HasSubDirectory(Name))
@@ -386,7 +412,7 @@ std::string FEVirtualFileSystem::CreateDirectory(const std::string Path)
 	if (Directory == nullptr)
 		return "";
 
-	if (Directory->IsReadOnly())
+	if (Directory->IsReadOnly() || IsAnyAncestorReadOnly(Directory))
 		return "";
 
 	int Count = 1;
@@ -409,6 +435,7 @@ std::string FEVirtualFileSystem::CreateDirectory(const std::string Path)
 void FEVirtualFileSystem::Clear()
 {
 	Root->Clear();
+	Root->SetReadOnly(false);
 	CurrentPath = "/";
 }
 
@@ -439,7 +466,7 @@ bool FEVirtualFileSystem::RenameDirectory(const std::string NewName, const std::
 	if (Directory->IsReadOnly())
 		return false;
 
-	if (Directory->Parent->IsReadOnly())
+	if (Directory->Parent->IsReadOnly() || IsAnyAncestorReadOnly(Directory->Parent))
 		return false;
 
 	Directory->SetName(NewName);
@@ -484,7 +511,7 @@ bool FEVirtualFileSystem::SetCurrentPath(const std::string Path)
 	if (IsPathToFile(Path))
 		return false;
 
-	CurrentPath = Path;
+	CurrentPath = DirectoryToPath(PathToDirectory(Path));
 	return true;
 }
 
@@ -516,10 +543,10 @@ bool FEVirtualFileSystem::MoveFile(FEObject* Data, const std::string OldPath, co
 	if (NewDirectory->HasSubDirectory(Data->GetName()))
 		return false;
 
-	if (NewDirectory->IsReadOnly())
+	if (NewDirectory->IsReadOnly() || IsAnyAncestorReadOnly(NewDirectory))
 		return false;
 
-	if (OldDirectory->IsReadOnly())
+	if (OldDirectory->IsReadOnly() || IsAnyAncestorReadOnly(OldDirectory))
 		return false;
 
 	if (!OldDirectory->DeleteFile(Data))
@@ -557,10 +584,10 @@ bool FEVirtualFileSystem::MoveDirectory(const std::string DirectoryPath, const s
 	if (DirectoryHasFileWithName(NewDirectory, Directory->GetName()))
 		return false;
 
-	if (Directory->IsReadOnly())
+	if (Directory->IsReadOnly() || IsAnyAncestorReadOnly(Directory))
 		return false;
 
-	if (NewDirectory->IsReadOnly())
+	if (NewDirectory->IsReadOnly() || IsAnyAncestorReadOnly(NewDirectory))
 		return false;
 
 	if (Directory->Parent->IsReadOnly())
@@ -627,13 +654,16 @@ bool FEVirtualFileSystem::DeleteEmptyDirectory(const std::string Path)
 	if (Directory == nullptr)
 		return false;
 
+	if (Directory->Parent == nullptr)
+		return false;
+
 	if (!Directory->SubDirectories.empty() || !Directory->Files.empty())
 		return false;
 
 	if (Directory->IsReadOnly())
 		return false;
 
-	if (Directory->Parent != nullptr && Directory->Parent->IsReadOnly())
+	if (Directory->Parent->IsReadOnly() || IsAnyAncestorReadOnly(Directory->Parent))
 		return false;
 
 	DeleteDirectory(Directory);
@@ -693,7 +723,7 @@ bool FEVirtualFileSystem::DeleteFile(const FEObject* Data, const std::string Pat
 	if (!Directory->HasFile(Data))
 		return false;
 
-	if (Directory->IsReadOnly())
+	if (Directory->IsReadOnly() || IsAnyAncestorReadOnly(Directory))
 		return false;
 
 	return Directory->DeleteFile(Data);
