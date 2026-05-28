@@ -67,6 +67,7 @@
 		FETexture* ShaderSmallIcon = nullptr;
         FETexture* VFSBackIcon = nullptr;
         FETexture* TextureIcon = nullptr;
+        FETexture* Texture3DIcon = nullptr;
         FETexture* MeshIcon = nullptr;
         FETexture* MaterialIcon = nullptr;
         FETexture* GameModelIcon = nullptr;

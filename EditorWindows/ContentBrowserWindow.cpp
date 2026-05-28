@@ -1,4 +1,5 @@
 #include "ContentBrowserWindow.h"
+#include "TextureViewWindow.h"
 #include "../FEEditor.h"
 using namespace FocalEngine;
 
@@ -653,6 +654,9 @@ void FEEditorContentBrowserWindow::InitializeResources()
 	TextureIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/textureContentBrowserIcon.png", "textureContentBrowserIcon");
 	RESOURCE_MANAGER.SetTag(TextureIcon, EDITOR_RESOURCE_TAG);
 
+	Texture3DIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/Texture3DContentBrowserIcon.png", "texture3DContentBrowserIcon");
+	RESOURCE_MANAGER.SetTag(Texture3DIcon, EDITOR_RESOURCE_TAG);
+
 	MeshIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/meshContentBrowserIcon.png", "meshContentBrowserIcon");
 	RESOURCE_MANAGER.SetTag(MeshIcon, EDITOR_RESOURCE_TAG);
 
@@ -763,8 +767,14 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 	{
 		PreviewTexture = RESOURCE_MANAGER.GetTexture(Item->GetObjectID());
 		if (PreviewTexture->GetType() == FE_TEXTURE_TYPE::FE_TEXTURE_3D)
+		{
 			PreviewTexture = RESOURCE_MANAGER.NoTexture;
-		SmallAdditionTypeIcon = TextureIcon;
+			SmallAdditionTypeIcon = Texture3DIcon;
+		}
+		else
+		{
+			SmallAdditionTypeIcon = TextureIcon;
+		}
 	}
 	else if (Item->GetType() == FE_MATERIAL)
 	{
@@ -1242,8 +1252,19 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 				std::string AdditionalTypeInfo;
 				if (CurrentResource->GetType() == FE_TEXTURE)
 				{
+					FETexture* CurrentTexture = RESOURCE_MANAGER.GetTexture(CurrentResource->GetObjectID());
 					AdditionalTypeInfo += "\nTexture type: ";
-					AdditionalTypeInfo += FETexture::TextureInternalFormatToString(RESOURCE_MANAGER.GetTexture(CurrentResource->GetObjectID())->GetInternalFormat());
+					switch (CurrentTexture->GetType())
+					{
+						case FE_TEXTURE_TYPE::FE_TEXTURE_1D:   AdditionalTypeInfo += "1D"; break;
+						case FE_TEXTURE_TYPE::FE_TEXTURE_2D:   AdditionalTypeInfo += "2D"; break;
+						case FE_TEXTURE_TYPE::FE_TEXTURE_3D:   AdditionalTypeInfo += "3D"; break;
+						case FE_TEXTURE_TYPE::FE_TEXTURE_CUBE: AdditionalTypeInfo += "Cube"; break;
+						default: break;
+					}
+					std::string InternalFormatString = FETexture::TextureInternalFormatToString(CurrentTexture->GetInternalFormat());
+					if (!InternalFormatString.empty())
+						AdditionalTypeInfo += ", " + InternalFormatString;
 				}
 				else if (CurrentResource->GetType() == FE_NATIVE_SCRIPT_MODULE)
 				{
@@ -1393,6 +1414,28 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 				bool bIsAlreadyOpened = EDITOR.GetEditorSceneWindow(SceneID) != nullptr;
 				if (!bIsAlreadyOpened)
 					EDITOR.CreateEditorWindowForScene(SceneID);
+			}
+		}
+		else if (ClickedItem->GetType() == FE_TEXTURE)
+		{
+			if (!bContextMenuOpened)
+			{
+				FETexture* ClickedTexture = RESOURCE_MANAGER.GetTexture(ClickedItem->GetObjectID());
+				if (ClickedTexture != nullptr)
+				{
+					const std::string WindowCaption = "Texture: " + ClickedTexture->GetName();
+					FEImGuiWindow* ExistingWindow = FE_IMGUI_WINDOW_MANAGER.GetWindowByCaption(WindowCaption);
+					if (ExistingWindow != nullptr)
+					{
+						ExistingWindow->Show();
+					}
+					else
+					{
+						TextureViewWindow* NewWindow = new TextureViewWindow(ClickedTexture);
+						NewWindow->SetCaption(WindowCaption);
+						NewWindow->Show();
+					}
+				}
 			}
 		}
 		else if (ClickedItem->GetType() == FE_ASSET_PACKAGE)

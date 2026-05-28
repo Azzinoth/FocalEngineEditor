@@ -201,8 +201,19 @@ void SelectFEObjectPopUp::Render()
 				std::string AdditionalTypeInfo;
 				if (FilteredItemsList[i]->GetType() == FE_TEXTURE)
 				{
+					FETexture* CurrentTexture = RESOURCE_MANAGER.GetTexture(FilteredItemsList[i]->GetObjectID());
 					AdditionalTypeInfo += "\nTexture type: ";
-					AdditionalTypeInfo += FETexture::TextureInternalFormatToString(RESOURCE_MANAGER.GetTexture(FilteredItemsList[i]->GetObjectID())->GetInternalFormat());
+					switch (CurrentTexture->GetType())
+					{
+						case FE_TEXTURE_TYPE::FE_TEXTURE_1D:   AdditionalTypeInfo += "1D"; break;
+						case FE_TEXTURE_TYPE::FE_TEXTURE_2D:   AdditionalTypeInfo += "2D"; break;
+						case FE_TEXTURE_TYPE::FE_TEXTURE_3D:   AdditionalTypeInfo += "3D"; break;
+						case FE_TEXTURE_TYPE::FE_TEXTURE_CUBE: AdditionalTypeInfo += "Cube"; break;
+						default: break;
+					}
+					std::string InternalFormatString = FETexture::TextureInternalFormatToString(CurrentTexture->GetInternalFormat());
+					if (!InternalFormatString.empty())
+						AdditionalTypeInfo += ", " + InternalFormatString;
 				}
 
 				ImGui::BeginTooltip();
