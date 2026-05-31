@@ -52,7 +52,7 @@ public:
 	bool DeleteFile(const FEObject* Data, std::string Path);
 	void SetFileReadOnly(bool NewValue, const FEObject* Data, std::string Path);
 	std::string LocateFile(FEObject* File);
-	void LocateAndDeleteFile(FEObject* File);
+	bool LocateAndDeleteFile(FEObject* File);
 	bool DoesFileExist(FEObject* Data, std::string Path);
 	bool DoesFileExistAnywhere(FEObject* Data);
 
@@ -84,7 +84,7 @@ private:
 	FEVFSDirectory* Root;
 	FEVFSDirectory* PathToDirectory(std::string Path);
 	std::string DirectoryToPath(FEVFSDirectory* Directory);
-	void DeleteDirectory(FEVFSDirectory* Directory);
+	bool DeleteDirectory(FEVFSDirectory* Directory);
 	std::string CurrentPath = "/";
 	std::string LocateFileRecursive(FEVFSDirectory* Directory, FEObject* File);
 	void BuildTreeStringRecursive(FEVFSDirectory* Directory, std::string Prefix, std::string& Output);

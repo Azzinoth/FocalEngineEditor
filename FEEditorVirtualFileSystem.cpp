@@ -454,9 +454,6 @@ bool FEVirtualFileSystem::RenameDirectory(const std::string NewName, const std::
 	if (Directory->Parent == nullptr)
 		return false;
 
-	if (NewName == Directory->GetName())
-		return true;
-
 	if (Directory->Parent->HasSubDirectory(NewName))
 		return false;
 
@@ -468,6 +465,9 @@ bool FEVirtualFileSystem::RenameDirectory(const std::string NewName, const std::
 
 	if (Directory->Parent->IsReadOnly() || IsAnyAncestorReadOnly(Directory->Parent))
 		return false;
+
+	if (NewName == Directory->GetName())
+		return true;
 
 	Directory->SetName(NewName);
 	return true;
@@ -620,32 +620,37 @@ int FEVirtualFileSystem::SubDirectoriesCount(const std::string Path)
 	return static_cast<int>(Directory->SubDirectories.size());
 }
 
-void FEVirtualFileSystem::DeleteDirectory(FEVFSDirectory* Directory)
+bool FEVirtualFileSystem::DeleteDirectory(FEVFSDirectory* Directory)
 {
 	if (Directory == nullptr)
 	{
 		LOG.Add("Directory is nullptr in function FEVirtualFileSystem::DeleteDirectory.", "FE_VIRTUAL_FILE_SYSTEM", FE_LOG_ERROR);
-		return;
+		return false;
 	}
 
 	if (Directory->IsReadOnly())
-		return;
+		return false;
 
 	if (Directory->Parent == nullptr)
-		return;
+		return false;
 
 	if (Directory->Parent->IsReadOnly())
-		return;
+		return false;
 
 	for (size_t i = 0; i < Directory->Parent->SubDirectories.size(); i++)
 	{
 		if (Directory->Parent->SubDirectories[i]->GetObjectID() == Directory->GetObjectID())
 		{
+			if (GetCurrentPath() == DirectoryToPath(Directory))
+				SetCurrentPath(DirectoryToPath(Directory->Parent));
+			
 			Directory->Parent->SubDirectories.erase(Directory->Parent->SubDirectories.begin() + i, Directory->Parent->SubDirectories.begin() + i + 1);
 			delete Directory;
-			return;
+			return true;
 		}
 	}
+
+	return false;
 }
 
 bool FEVirtualFileSystem::DeleteEmptyDirectory(const std::string Path)
@@ -666,8 +671,7 @@ bool FEVirtualFileSystem::DeleteEmptyDirectory(const std::string Path)
 	if (Directory->Parent->IsReadOnly() || IsAnyAncestorReadOnly(Directory->Parent))
 		return false;
 
-	DeleteDirectory(Directory);
-	return true;
+	return DeleteDirectory(Directory);
 }
 
 std::string FEVirtualFileSystem::DirectoryToPath(FEVFSDirectory* Directory)
@@ -775,22 +779,22 @@ std::string FEVirtualFileSystem::LocateFile(FEObject* File)
 	return LocateFileRecursive(Root, File);
 }
 
-void FEVirtualFileSystem::LocateAndDeleteFile(FEObject* File)
+bool FEVirtualFileSystem::LocateAndDeleteFile(FEObject* File)
 {
 	if (File == nullptr)
 	{
 		LOG.Add("File is nullptr in function FEVirtualFileSystem::LocateAndDeleteFile.", "FE_VIRTUAL_FILE_SYSTEM", FE_LOG_ERROR);
-		return;
+		return false;
 	}
 
 	const std::string Path = LocateFile(File);
 	if (Path.empty())
-		return;
+		return false;
 
-	if (IsReadOnly(File, Path))
-		return;
+	if (IsReadOnly(File, Path) || IsAnyAncestorReadOnly(PathToDirectory(Path)))
+		return false;
 
-	PathToDirectory(Path)->DeleteFile(File);
+	return PathToDirectory(Path)->DeleteFile(File);
 }
 
 void FEVirtualFileSystem::SaveStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Directory)

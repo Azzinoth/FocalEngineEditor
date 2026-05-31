@@ -1234,3 +1234,57 @@ TEST(VirtualFileSystem, IsPathCorrect_RejectsTrailingSlashOnFilePath)
 	delete CurrentFile;
 	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirectoryPath));
 }
+
+TEST(VirtualFileSystem, LocateAndDeleteFile_HonorsReadOnlyAncestor)
+{
+	VIRTUAL_FILE_SYSTEM.Clear();
+
+	const std::string Ancestor = "Ancestor";
+	const std::string Child = "Child";
+	const std::string AncestorPath = "/" + Ancestor;
+	const std::string ChildPath = AncestorPath + "/" + Child;
+
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Ancestor, "/"));
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Child, AncestorPath));
+
+	FEObject* File = new FEObject(FE_TEXTURE, "LockedAsset");
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateFile(File, ChildPath));
+
+	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(true, AncestorPath);
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.LocateAndDeleteFile(File));
+
+	delete File;
+	VIRTUAL_FILE_SYSTEM.Clear();
+}
+
+TEST(VirtualFileSystem, CurrentPath_StaysValidAfterDeletingCurrentDirectory)
+{
+	VIRTUAL_FILE_SYSTEM.Clear();
+
+	const std::string Original = VIRTUAL_FILE_SYSTEM.GetCurrentPath();
+	const std::string Directory = "SomeDirectory";
+	const std::string DirectoryPath = "/" + Directory;
+
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Directory, "/"));
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.SetCurrentPath(DirectoryPath));
+	ASSERT_EQ(VIRTUAL_FILE_SYSTEM.GetCurrentPath(), DirectoryPath);
+
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirectoryPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.IsPathCorrect(VIRTUAL_FILE_SYSTEM.GetCurrentPath()));
+
+	VIRTUAL_FILE_SYSTEM.Clear();
+}
+
+TEST(VirtualFileSystem, RenameDirectory_OnReadOnlyDirectory_ReportsFailure)
+{
+	VIRTUAL_FILE_SYSTEM.Clear();
+
+	const std::string Directory = "ReadOnlyDirectory";
+	const std::string DirectoryPath = "/" + Directory;
+
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Directory, "/"));
+	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(true, DirectoryPath);
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.RenameDirectory(Directory, DirectoryPath));
+
+	VIRTUAL_FILE_SYSTEM.Clear();
+}
