@@ -1,5 +1,6 @@
 #include "ContentBrowserWindow.h"
 #include "TextureViewWindow.h"
+#include "VolumetricTextureViewWindow.h"
 #include "../FEEditor.h"
 using namespace FocalEngine;
 
@@ -1431,9 +1432,21 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 					}
 					else
 					{
-						TextureViewWindow* NewWindow = new TextureViewWindow(ClickedTexture);
-						NewWindow->SetCaption(WindowCaption);
-						NewWindow->Show();
+						if (ClickedTexture->GetType() == FE_TEXTURE_TYPE::FE_TEXTURE_3D)
+						{
+							VolumetricTextureViewWindow* NewWindow = new VolumetricTextureViewWindow(ClickedTexture);
+							NewWindow->SetCaption(WindowCaption);
+							NewWindow->Show();
+							EDITOR.RegisterEditorSceneWindow(NewWindow);
+						}
+						else
+						{
+							TextureViewWindow* NewWindow = new TextureViewWindow(ClickedTexture);
+							NewWindow->SetCaption(WindowCaption);
+							NewWindow->Show();
+						}
+						
+						
 					}
 				}
 			}

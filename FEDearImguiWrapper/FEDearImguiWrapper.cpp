@@ -331,6 +331,9 @@ void FEImGuiWindow::Show()
 {
 	bVisible = true;
 	bWasClosedLastFrame = true;
+
+	bUserRequestedClose = false;
+	bUserWantsWindowToBeOpen = true;
 }
 
 bool FEImGuiWindow::IsMouseHovered() const

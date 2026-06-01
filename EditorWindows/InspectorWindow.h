@@ -85,6 +85,7 @@ class FEEditorInspectorWindow
 	static void AddInstancedComponent(FEEntity* Entity);
     static void AddVirtualUIComponent(FEEntity* Entity);
 	static void AddNativeScriptComponent(FEEntity* Entity);
+	static void AddVolumeComponent(FEEntity* Entity);
 public:
     SINGLETON_PUBLIC_PART(FEEditorInspectorWindow)
 };

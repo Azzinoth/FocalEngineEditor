@@ -191,6 +191,8 @@ file(GLOB EditorWindows_SRC
 	"EditorWindows/DebugTextureViewWindow.h"
 	"EditorWindows/TextureViewWindow.cpp"
 	"EditorWindows/TextureViewWindow.h"
+	"EditorWindows/VolumetricTextureViewWindow.cpp"
+	"EditorWindows/VolumetricTextureViewWindow.h"
 	"EditorWindows/SceneGraphWindow.cpp"
 	"EditorWindows/SceneGraphWindow.h"
 	"EditorWindows/InspectorWindow.cpp"

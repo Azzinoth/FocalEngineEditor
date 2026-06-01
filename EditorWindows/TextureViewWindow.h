@@ -6,11 +6,12 @@ class TextureViewWindow : public FEImGuiWindow
 {
 	FETexture* TextureToView = nullptr;
 	std::string SourceTextureObjectID;
-	FETexture* TemporaryFlipbookTexture = nullptr;
-	int FlipbookColumns = 0;
-	int FlipbookRows = 0;
-	bool bSourceIsVolumetric = false;
-	bool bFlipbookConversionFailed = false;
+
+	// 2D flipbook => 3D texture conversion.
+	int ConvertColumns = 1;
+	int ConvertRows = 1;
+	std::string ConvertStatusMessage;
+	bool bConvertSucceeded = false;
 
 	// If texture is not 8-bit, we should display range that is actually used in the texture, otherwise the image will look completely black or white.
 	FETexture* DisplayTexture = nullptr;
@@ -39,7 +40,6 @@ class TextureViewWindow : public FEImGuiWindow
 	void RenderDetailsPanel(const ImVec2& PanelSize);
 
 	bool RenderChannelToggle(const char* Label, bool& Toggle, const ImVec4& ActiveColor);
-	std::string ReadableSize(size_t Bytes) const;
 
 	void BuildDisplayTexture(FETexture* RawDataSource);
 	void RebuildDisplayTexture(FETexture* RawDataSource);
@@ -50,4 +50,7 @@ public:
 	~TextureViewWindow();
 
 	void Render() override;
+
+	static std::string ReadableSize(size_t Bytes);
+	static size_t EstimateBytesPerPixel(GLint InternalFormat);
 };

@@ -1,4 +1,5 @@
 #include "TextureViewWindow.h"
+#include "../SubSystems/ProjectManagment/FEProjectManager.h"
 
 namespace
 {
@@ -49,24 +50,6 @@ namespace
 		}
 	}
 
-	size_t EstimateBytesPerPixel(GLint InternalFormat)
-	{
-		switch (InternalFormat)
-		{
-			case GL_RED: return 1;
-			case GL_R16: return 2;
-			case GL_RG16F: return 4;
-			case GL_RGB: return 3;
-			case GL_RGBA: return 4;
-			case GL_RGBA16F: return 8;
-			case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT: return 1;
-			case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT: return 1;
-			case GL_DEPTH_COMPONENT32: return 4;
-			case GL_DEPTH24_STENCIL8: return 4;
-			default: return 4;
-		}
-	}
-
 	void ComputeChannelMapping(GLint Out[4], bool ShowRed, bool ShowGreen, bool ShowBlue, bool ShowAlpha)
 	{
 		const int RGBCount = (ShowRed ? 1 : 0) + (ShowGreen ? 1 : 0) + (ShowBlue ? 1 : 0);
@@ -100,6 +83,13 @@ namespace
 
 TextureViewWindow::TextureViewWindow(FETexture* InTextureToView)
 {
+	// 3D (volumetric) textures are viewed in VolumetricTextureViewWindow, not here.
+	if (InTextureToView != nullptr && InTextureToView->GetType() == FE_TEXTURE_TYPE::FE_TEXTURE_3D)
+	{
+		LOG.Add("TextureViewWindow does not support 3D textures; use VolumetricTextureViewWindow instead.", "FE_LOG_GENERAL", FE_LOG_WARNING);
+		InTextureToView = nullptr;
+	}
+
 	if (InTextureToView != nullptr)
 	{
 		SourceTextureObjectID = InTextureToView->GetObjectID();
@@ -111,21 +101,9 @@ TextureViewWindow::TextureViewWindow(FETexture* InTextureToView)
 			bShowBlue = false;
 		}
 
-		if (InTextureToView->GetType() == FE_TEXTURE_TYPE::FE_TEXTURE_3D)
-		{
-			bSourceIsVolumetric = true;
-			TemporaryFlipbookTexture = RESOURCE_MANAGER.Convert3DTextureToFlipbook2D(InTextureToView, FlipbookColumns, FlipbookRows);
-			if (TemporaryFlipbookTexture == nullptr)
-				bFlipbookConversionFailed = true;
+		TextureToView = InTextureToView;
 
-			TextureToView = TemporaryFlipbookTexture;
-		}
-		else
-		{
-			TextureToView = InTextureToView;
-		}
-
-		if (TextureToView != nullptr && (SourceInternalFormat == GL_R16 || SourceInternalFormat == GL_R32F))
+		if (SourceInternalFormat == GL_R16 || SourceInternalFormat == GL_R32F)
 		{
 			BuildDisplayTexture(TextureToView);
 			if (DisplayTexture != nullptr)
@@ -153,19 +131,10 @@ TextureViewWindow::~TextureViewWindow()
 		RESOURCE_MANAGER.DeleteFETexture(DisplayTexture);
 		DisplayTexture = nullptr;
 	}
-
-	if (TemporaryFlipbookTexture != nullptr)
-	{
-		RESOURCE_MANAGER.DeleteFETexture(TemporaryFlipbookTexture);
-		TemporaryFlipbookTexture = nullptr;
-	}
 }
 
 FETexture* TextureViewWindow::GetRawDataSourceTexture() const
 {
-	if (TemporaryFlipbookTexture != nullptr)
-		return TemporaryFlipbookTexture;
-
 	return RESOURCE_MANAGER.GetTexture(SourceTextureObjectID);
 }
 
@@ -330,7 +299,7 @@ bool TextureViewWindow::RenderChannelToggle(const char* Label, bool& Toggle, con
 	return bClicked;
 }
 
-std::string TextureViewWindow::ReadableSize(size_t Bytes) const
+std::string TextureViewWindow::ReadableSize(size_t Bytes)
 {
 	const double KB = 1024.0;
 	const double MB = KB * 1024.0;
@@ -350,6 +319,24 @@ std::string TextureViewWindow::ReadableSize(size_t Bytes) const
 
 	snprintf(Buffer, sizeof(Buffer), "%zu B", Bytes);
 	return std::string(Buffer);
+}
+
+size_t TextureViewWindow::EstimateBytesPerPixel(GLint InternalFormat)
+{
+	switch (InternalFormat)
+	{
+		case GL_RED: return 1;
+		case GL_R16: return 2;
+		case GL_RG16F: return 4;
+		case GL_RGB: return 3;
+		case GL_RGBA: return 4;
+		case GL_RGBA16F: return 8;
+		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT: return 1;
+		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT: return 1;
+		case GL_DEPTH_COMPONENT32: return 4;
+		case GL_DEPTH24_STENCIL8: return 4;
+		default: return 4;
+	}
 }
 
 void TextureViewWindow::RenderToolbar()
@@ -443,9 +430,7 @@ void TextureViewWindow::RenderImageCanvas(const ImVec2& CanvasSize)
 
 	if (TextureToView == nullptr)
 	{
-		const char* Message = bFlipbookConversionFailed
-			? "Unsupported 3D texture format, flipbook conversion failed."
-			: "No texture available.";
+		const char* Message = "No texture available.";
 		const ImVec2 InnerSizeEmpty = ImGui::GetContentRegionAvail();
 		const ImVec2 TextSize = ImGui::CalcTextSize(Message);
 		ImGui::SetCursorPos(ImVec2((InnerSizeEmpty.x - TextSize.x) * 0.5f, (InnerSizeEmpty.y - TextSize.y) * 0.5f));
@@ -551,11 +536,10 @@ void TextureViewWindow::RenderDetailsPanel(const ImVec2& PanelSize)
 
 	const int Width = SourceTexture->GetWidth();
 	const int Height = SourceTexture->GetHeight();
-	const int Depth = bSourceIsVolumetric ? SourceTexture->GetDepth() : 1;
 	const GLint InternalFormat = SourceTexture->GetInternalFormat();
 	const std::string ResolvedFormatString = FETexture::TextureInternalFormatToString(InternalFormat);
 	const std::string FormatString = ResolvedFormatString.empty() ? ("Unknown (" + std::to_string(InternalFormat) + ")") : ResolvedFormatString;
-	const size_t ResourceSizeBytes = static_cast<size_t>(Width) * static_cast<size_t>(Height) * static_cast<size_t>(Depth) * EstimateBytesPerPixel(InternalFormat);
+	const size_t ResourceSizeBytes = static_cast<size_t>(Width) * static_cast<size_t>(Height) * EstimateBytesPerPixel(InternalFormat);
 
 	std::string ChannelsString;
 	if (bShowRed)
@@ -587,8 +571,7 @@ void TextureViewWindow::RenderDetailsPanel(const ImVec2& PanelSize)
 
 	const char* AllLabels[] = {
 		"Name:", "Object ID:", "Dimensions:", "Format:",
-		"Resource size:", "Flipbook size:", "Grid:",
-		"Data range:", "Display range:", "Zoom:", "Channels:"
+		"Resource size:", "Data range:", "Display range:", "Zoom:", "Channels:"
 	};
 	float LabelColumnWidth = 0.0f;
 	for (const char* CurrentLabel : AllLabels)
@@ -610,10 +593,7 @@ void TextureViewWindow::RenderDetailsPanel(const ImVec2& PanelSize)
 		DrawRow("Name:", SourceTexture->GetName());
 		DrawRow("Object ID:", SourceTexture->GetObjectID());
 
-		std::string DimensionsString = std::to_string(Width) + " x " + std::to_string(Height);
-		if (bSourceIsVolumetric)
-			DimensionsString += " x " + std::to_string(Depth);
-		DrawRow("Dimensions:", DimensionsString);
+		DrawRow("Dimensions:", std::to_string(Width) + " x " + std::to_string(Height));
 		DrawRow("Format:", FormatString);
 		DrawRow("Resource size:", ReadableSize(ResourceSizeBytes));
 
@@ -627,33 +607,6 @@ void TextureViewWindow::RenderDetailsPanel(const ImVec2& PanelSize)
 		}
 
 		ImGui::EndTable();
-	}
-
-	if (bSourceIsVolumetric)
-	{
-		ImGui::Spacing();
-		ImGui::Separator();
-		ImGui::Spacing();
-
-		DrawSectionHeader("Flipbook");
-		if (TemporaryFlipbookTexture != nullptr)
-		{
-			if (ImGui::BeginTable("##FlipbookTable", 2, TableFlags))
-			{
-				ImGui::TableSetupColumn("##Label", ImGuiTableColumnFlags_WidthFixed, LabelColumnWidth);
-				ImGui::TableSetupColumn("##Value", ImGuiTableColumnFlags_WidthStretch);
-
-				DrawRow("Flipbook size:", std::to_string(TemporaryFlipbookTexture->GetWidth()) + " x " + std::to_string(TemporaryFlipbookTexture->GetHeight()));
-				DrawRow("Grid:", std::to_string(FlipbookColumns) + " x " + std::to_string(FlipbookRows));
-
-				ImGui::EndTable();
-			}
-		}
-		else
-		{
-			ImGui::TextColored(ImVec4(0.95f, 0.5f, 0.5f, 1.0f), "Flipbook conversion failed.");
-			ImGui::TextWrapped("Internal format not supported by the converter.");
-		}
 	}
 
 	ImGui::Spacing();
@@ -671,6 +624,84 @@ void TextureViewWindow::RenderDetailsPanel(const ImVec2& PanelSize)
 
 		ImGui::EndTable();
 	}
+
+	// Offer 2D flipbook => 3D conversion.
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	DrawSectionHeader("Convert to 3D");
+
+	// R16/R32F keep their format; GL_RED is 8-bit single channel; RGBA / DXT1 / DXT5 are
+	// reduced to a single 8-bit red channel (GetRawData decompresses the DXT formats to RGBA8).
+	const bool bFormatSupported = (InternalFormat == GL_R16 || InternalFormat == GL_R32F || InternalFormat == GL_RED ||
+								   InternalFormat == GL_RGBA || InternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT || InternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT);
+
+	ImGui::TextWrapped("Interpret this texture as a flipbook grid and build a 3D texture from its slices.");
+	ImGui::Spacing();
+
+	ImGui::SetNextItemWidth(120.0f);
+	ImGui::InputInt("Columns", &ConvertColumns);
+	ImGui::SetNextItemWidth(120.0f);
+	ImGui::InputInt("Rows", &ConvertRows);
+
+	if (ConvertColumns < 1)
+		ConvertColumns = 1;
+
+	if (ConvertRows < 1)
+		ConvertRows = 1;
+
+	const bool bColumnsDivide = (Width % ConvertColumns) == 0;
+	const bool bRowsDivide = (Height % ConvertRows) == 0;
+	const bool bCanConvert = bFormatSupported && bColumnsDivide && bRowsDivide;
+
+	if (!bFormatSupported)
+	{
+		ImGui::TextColored(ImVec4(0.95f, 0.5f, 0.5f, 1.0f), "This texture's format cannot be converted (use R16, R32F, R8/RED, RGBA, or DXT1/DXT5).");
+	}
+	else if (!bColumnsDivide || !bRowsDivide)
+	{
+		ImGui::TextColored(ImVec4(0.95f, 0.5f, 0.5f, 1.0f), "Width must divide evenly by Columns and Height by Rows.");
+	}
+	else
+	{
+		ImGui::TextDisabled("%d slices of %d x %d", ConvertColumns* ConvertRows, Width / ConvertColumns, Height / ConvertRows);
+	}
+
+	ImGui::Spacing();
+	ImGui::BeginDisabled(!bCanConvert);
+	if (ImGui::Button("Convert to 3D Texture", ImVec2(-1.0f, 0.0f)))
+	{
+		FETexture* ResultTexture = RESOURCE_MANAGER.ConvertFlipbook2DTo3DTexture(SourceTexture, ConvertColumns, ConvertRows);
+		if (ResultTexture != nullptr)
+		{
+			bConvertSucceeded = true;
+
+			const bool bAddedToContentBrowser = VIRTUAL_FILE_SYSTEM.CreateFile(ResultTexture, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
+			if (PROJECT_MANAGER.GetCurrent() != nullptr)
+			{
+				PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(ResultTexture);
+				PROJECT_MANAGER.GetCurrent()->SetModified(true);
+			}
+
+			ConvertStatusMessage = "Created 3D texture \"" + ResultTexture->GetName() + "\" (" + std::to_string(ConvertColumns * ConvertRows) + " slices).";
+		}
+		else
+		{
+			bConvertSucceeded = false;
+			ConvertStatusMessage = "Conversion failed. See the log for details.";
+		}
+	}
+	ImGui::EndDisabled();
+
+	if (!ConvertStatusMessage.empty())
+	{
+		const ImVec4 StatusColor = bConvertSucceeded ? ImVec4(0.4f, 0.9f, 0.4f, 1.0f) : ImVec4(0.95f, 0.5f, 0.5f, 1.0f);
+		ImGui::PushStyleColor(ImGuiCol_Text, StatusColor);
+		ImGui::TextWrapped("%s", ConvertStatusMessage.c_str());
+		ImGui::PopStyleColor();
+	}
+	
 
 	ImGui::EndChild();
 	ImGui::PopStyleColor();
@@ -694,10 +725,6 @@ void TextureViewWindow::Render()
 	if (DisplayTexture != nullptr)
 	{
 		TextureToView = DisplayTexture;
-	}
-	else if (bSourceIsVolumetric)
-	{
-		TextureToView = TemporaryFlipbookTexture;
 	}
 	else
 	{

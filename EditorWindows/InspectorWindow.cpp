@@ -15,6 +15,7 @@ FEEditorInspectorWindow::FEEditorInspectorWindow()
 	AddComponentHandlers[typeid(FETerrainComponent)] = &FEEditorInspectorWindow::AddTerrainComponent;
 	AddComponentHandlers[typeid(FEVirtualUIComponent)] = &FEEditorInspectorWindow::AddVirtualUIComponent;
 	AddComponentHandlers[typeid(FENativeScriptComponent)] = &FEEditorInspectorWindow::AddNativeScriptComponent;
+	AddComponentHandlers[typeid(FEVolumeComponent)] = &FEEditorInspectorWindow::AddVolumeComponent;
 
 	RemoveComponentHandlers[typeid(FECameraComponent)] = [](FEEntity* ParentEntity) -> void {
 		ParentEntity->RemoveComponent<FECameraComponent>();
@@ -45,6 +46,9 @@ FEEditorInspectorWindow::FEEditorInspectorWindow()
 	};
 	RemoveComponentHandlers[typeid(FENativeScriptComponent)] = [](FEEntity* ParentEntity) -> void {
 		ParentEntity->RemoveComponent<FENativeScriptComponent>();
+	};
+	RemoveComponentHandlers[typeid(FEVolumeComponent)] = [](FEEntity* ParentEntity) -> void {
+		ParentEntity->RemoveComponent<FEVolumeComponent>();
 	};
 }
 
@@ -1311,6 +1315,64 @@ void FEEditorInspectorWindow::Render()
 		}
 	}
 
+	if (EntitySelected->HasComponent<FEVolumeComponent>())
+	{
+		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FEVolumeComponent>()))
+		{
+			ImGui::PopStyleVar();
+			ImGui::End();
+			return;
+		}
+
+		if (ImGui::CollapsingHeader("Volumetric", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			FEVolumeComponent& VolumeComponent = EntitySelected->GetComponent<FEVolumeComponent>();
+
+			// 3D volume texture selector. Only sampler3D textures are offered.
+			ImGui::Text("Volume texture (3D) : ");
+			std::string CurrentTextureCaption = VolumeComponent.GetVolumetricTexture() != nullptr ? VolumeComponent.GetVolumetricTexture()->GetName() : "None";
+			if (ImGui::BeginCombo("##VolumeTexture", CurrentTextureCaption.c_str(), ImGuiWindowFlags_None))
+			{
+				std::vector<std::string> TextureIDList = RESOURCE_MANAGER.GetTextureIDList();
+				for (size_t i = 0; i < TextureIDList.size(); i++)
+				{
+					FETexture* Texture = RESOURCE_MANAGER.GetTexture(TextureIDList[i]);
+					if (Texture == nullptr || Texture->GetType() != FE_TEXTURE_TYPE::FE_TEXTURE_3D)
+						continue;
+
+					bool bSelected = (Texture == VolumeComponent.GetVolumetricTexture());
+					if (ImGui::Selectable(Texture->GetName().c_str(), bSelected))
+						VolumeComponent.SetVolumetricTexture(Texture);
+
+					if (bSelected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			// Shader selector, populated from the volume system's shader list.
+			ImGui::Text("Volume shader : ");
+			std::string CurrentShaderCaption = VolumeComponent.GetVolumetricShader() != nullptr ? VolumeComponent.GetVolumetricShader()->GetName() : "None";
+			if (ImGui::BeginCombo("##VolumeShader", CurrentShaderCaption.c_str(), ImGuiWindowFlags_None))
+			{
+				std::vector<FEShader*> VolumetricShaders = VOLUME_SYSTEM.GetVolumetricShaders();
+				for (size_t i = 0; i < VolumetricShaders.size(); i++)
+				{
+					if (VolumetricShaders[i] == nullptr)
+						continue;
+
+					bool bSelected = (VolumetricShaders[i] == VolumeComponent.GetVolumetricShader());
+					if (ImGui::Selectable(VolumetricShaders[i]->GetName().c_str(), bSelected))
+						VolumeComponent.SetVolumetricShader(VolumetricShaders[i]);
+
+					if (bSelected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+		}
+	}
+
 	if (EntitySelected->HasComponent<FEPrefabInstanceComponent>())
 	{
 		if (RenderComponentDeleteButton(EntitySelected, COMPONENTS_TOOL.GetComponentInfo<FEPrefabInstanceComponent>()))
@@ -1719,7 +1781,8 @@ void FEEditorInspectorWindow::Render()
 	{
 		for (size_t i = 0; i < AvailableComponentTypes.size(); i++)
 		{
-			if (ImGui::Selectable(AvailableComponentTypes[i].c_str(), false))
+			std::string ComponentLabel = (AvailableComponentTypes[i] == "Volume") ? "Volumetric" : AvailableComponentTypes[i];
+			if (ImGui::Selectable((ComponentLabel + "##" + AvailableComponentTypes[i]).c_str(), false))
 			{
 				AddComponent(EntitySelected, AvailableComponentTypes[i]);
 			}
@@ -2309,6 +2372,11 @@ void FEEditorInspectorWindow::AddInstancedComponent(FEEntity* Entity)
 void FEEditorInspectorWindow::AddNativeScriptComponent(FEEntity* Entity)
 {
 	Entity->AddComponent<FENativeScriptComponent>();
+}
+
+void FEEditorInspectorWindow::AddVolumeComponent(FEEntity* Entity)
+{
+	Entity->AddComponent<FEVolumeComponent>();
 }
 
 // FE_TO_DO: Make it more general with more templated magic.

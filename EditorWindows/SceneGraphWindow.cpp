@@ -58,6 +58,9 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	NativeScriptIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/NativeScriptSceneGraphIcon.png", "NativeScriptSceneGraphIcon");
 	RESOURCE_MANAGER.SetTag(NativeScriptIcon, EDITOR_RESOURCE_TAG);
 
+	VolumeIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/VolumetricSceneGraphIcon.png", "VolumetricSceneGraphIcon");
+	RESOURCE_MANAGER.SetTag(VolumeIcon, EDITOR_RESOURCE_TAG);
+
 	VisibilityOnIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/VisibilityOn.png", "VisibilityOnIcon");
 	RESOURCE_MANAGER.SetTag(VisibilityOnIcon, EDITOR_RESOURCE_TAG);
 	VisibilityOffIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/VisibilityOff.png", "VisibilityOffIcon");
@@ -274,6 +277,23 @@ void FEEditorSceneGraphWindow::InitializeResources()
 		return false;
 	};
 	SceneGraphUI->AddNodeWidget(NativeScriptComponentIndicator);
+
+	VolumeComponentIndicator.Icon = VolumeIcon->GetTextureID();
+	VolumeComponentIndicator.bIsInteractive = false;
+	VolumeComponentIndicator.bIsVisibleByDefault = false;
+	VolumeComponentIndicator.TooltipText = "Volumetric component";
+
+	VolumeComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
+		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
+		if (CurrentEntity == nullptr)
+			return false;
+
+		if (CurrentEntity->HasComponent<FEVolumeComponent>())
+			return true;
+
+		return false;
+	};
+	SceneGraphUI->AddNodeWidget(VolumeComponentIndicator);
 
 	VisibilityToggleWidget.Icon = VisibilityOnIcon->GetTextureID();
 	VisibilityToggleWidget.DynamicIconProvider = [this](SceneGraphUI::NodeHandle Node) -> ImTextureID {
