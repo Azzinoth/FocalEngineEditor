@@ -769,7 +769,10 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 		PreviewTexture = RESOURCE_MANAGER.GetTexture(Item->GetObjectID());
 		if (PreviewTexture->GetType() == FE_TEXTURE_TYPE::FE_TEXTURE_3D)
 		{
-			PreviewTexture = RESOURCE_MANAGER.NoTexture;
+			UV0 = ImVec2(0.0f, 1.0f);
+			UV1 = ImVec2(1.0f, 0.0f);
+
+			PreviewTexture = PREVIEW_MANAGER.GetTexture3DPreview(Item->GetObjectID());
 			SmallAdditionTypeIcon = Texture3DIcon;
 		}
 		else

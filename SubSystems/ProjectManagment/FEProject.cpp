@@ -532,7 +532,9 @@ void FEProject::LoadResources(std::string DirectoryPath)
 	{
 		FEObjectLoadedData LoadedObjectData = RESOURCE_MANAGER.LoadFEObjectPart(Root["Textures"][TexturesList[i]]["FEObjectData"]);
 		// Terrain textures should be loaded right away, not async.
-		if (LoadedObjectData.Tag == TERRAIN_SYSTEM_RESOURCE_TAG)
+		// 3D_TEXTURE also should be loaded right away.
+		// FE_FIX_ME: That is a temporary hack.
+		if (LoadedObjectData.Tag == TERRAIN_SYSTEM_RESOURCE_TAG || LoadedObjectData.Tag == "3D_TEXTURE")
 		{
 			RESOURCE_MANAGER.LoadFETexture((DirectoryPath + Root["Textures"][TexturesList[i]]["FileName"].asCString()));
 		}
