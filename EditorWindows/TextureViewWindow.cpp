@@ -223,7 +223,10 @@ void TextureViewWindow::BuildDisplayTexture(FETexture* RawDataSource)
 
 	DisplayTexture = RESOURCE_MANAGER.RawDataToFETexture(DisplayData, Width, Height, GL_RED, GL_RED, GL_UNSIGNED_BYTE);
 	if (DisplayTexture != nullptr)
+	{
 		DisplayTexture->SetName(RawDataSource->GetName() + "_DisplayCopy");
+		DisplayTexture->SetFilterType(RawDataSource->GetFilterType());
+	}
 
 	delete[] DisplayData;
 }
@@ -624,6 +627,31 @@ void TextureViewWindow::RenderDetailsPanel(const ImVec2& PanelSize)
 
 		ImGui::EndTable();
 	}
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	DrawSectionHeader("Sampling");
+
+	const char* FilterOptions[] = { "Nearest", "Linear" };
+	int CurrentFilter = static_cast<int>(SourceTexture->GetFilterType());
+	if (ImGui::Combo("Filtering", &CurrentFilter, FilterOptions, IM_ARRAYSIZE(FilterOptions)))
+	{
+		SourceTexture->SetFilterType(static_cast<FE_TEXTURE_MINMAG_FILTER_TYPE>(CurrentFilter));
+		if (DisplayTexture != nullptr)
+			DisplayTexture->SetFilterType(static_cast<FE_TEXTURE_MINMAG_FILTER_TYPE>(CurrentFilter));
+	}
+
+	const char* WrapOptions[] = { "Repeat", "Mirrored repeat", "Clamp to edge", "Clamp to border" };
+
+	int CurrentWrapU = static_cast<int>(SourceTexture->GetUWrapType());
+	if (ImGui::Combo("Wrap U", &CurrentWrapU, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
+		SourceTexture->SetUWrapType(static_cast<FE_TEXTURE_WRAP_TYPE>(CurrentWrapU));
+
+	int CurrentWrapV = static_cast<int>(SourceTexture->GetVWrapType());
+	if (ImGui::Combo("Wrap V", &CurrentWrapV, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
+		SourceTexture->SetVWrapType(static_cast<FE_TEXTURE_WRAP_TYPE>(CurrentWrapV));
 
 	// Offer 2D flipbook => 3D conversion.
 	ImGui::Spacing();

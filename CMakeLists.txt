@@ -197,6 +197,8 @@ file(GLOB EditorWindows_SRC
 	"EditorWindows/SceneGraphWindow.h"
 	"EditorWindows/InspectorWindow.cpp"
 	"EditorWindows/InspectorWindow.h"
+	"EditorWindows/VolumeTransferFunctionWidget.cpp"
+	"EditorWindows/VolumeTransferFunctionWidget.h"
 	"EditorWindows/ContentBrowserWindow.cpp"
 	"EditorWindows/ContentBrowserWindow.h"
 	"EditorWindows/LogWindow.cpp"

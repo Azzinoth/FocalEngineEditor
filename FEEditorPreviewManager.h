@@ -76,6 +76,7 @@ private:
 	void CreateScenePreview(std::string SceneID);
 	FETexture* GetScenePreview(std::string SceneID);
 
+	FENewMaterial* MaterialFor3DTextures = nullptr;
 	void CreateTexture3DPreview(std::string TextureID);
 	FETexture* GetTexture3DPreview(std::string TextureID);
 

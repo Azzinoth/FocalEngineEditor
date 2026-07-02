@@ -50,6 +50,12 @@ void FEEditorPreviewManager::InitializeResources()
 
 	PreviewScene->SetFlag(FESceneFlag::Active | FESceneFlag::Renderable, false);
 	PreviewScene->SetFlag(FESceneFlag::EditorMode, true);
+
+	MaterialFor3DTextures = RESOURCE_MANAGER.CreateNewMaterial("MaterialFor3DTexturesPreview");
+	MaterialFor3DTextures->SetMaterialType(FEMaterialType::Volumetric);
+	MaterialFor3DTextures->SetBlendMode(FEMaterialBlendMode::Additive);
+	MaterialFor3DTextures->SetShader(VOLUME_SYSTEM.GetVolumetricShaders()[0]);
+	RESOURCE_MANAGER.SetTag(MaterialFor3DTextures, EDITOR_RESOURCE_TAG);
 }
 
 void FEEditorPreviewManager::ReCreateAll()
@@ -653,12 +659,12 @@ void FEEditorPreviewManager::CreateTexture3DPreview(std::string TextureID)
 	if (VolumetricShaders.empty())
 		return;
 
+	BeforePreviewActions();
+
 	PreviewEntity->AddComponent<FEVolumeComponent>();
 	FEVolumeComponent& VolumeComponent = PreviewEntity->GetComponent<FEVolumeComponent>();
-	VolumeComponent.SetVolumetricShader(VolumetricShaders[0]);
-	VolumeComponent.SetVolumetricTexture(Texture);
-
-	BeforePreviewActions();
+	VolumeComponent.SetMaterial(MaterialFor3DTextures);
+	VolumeComponent.GetMaterial()->SetTextureOverride("VolumeTexture", Texture->GetObjectID());
 
 	FEAABB VolumeAABB = PreviewScene->GetEntityAABB(PreviewEntity);
 	const glm::vec3 Min = VolumeAABB.GetMin();

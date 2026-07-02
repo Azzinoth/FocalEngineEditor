@@ -153,6 +153,9 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 	for (size_t i = 0; i < MaterialList.size(); i++)
 	{
 		FEMaterial* Material = RESOURCE_MANAGER.GetMaterial(MaterialList[i]);
+		if (Material == nullptr)
+			continue;
+
 		if (Material->GetTag() == ENGINE_RESOURCE_TAG ||
 			Material->GetTag() == EDITOR_RESOURCE_TAG)
 			continue;
@@ -161,6 +164,24 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 		Material->SetDirtyFlag(false);
 	}
 	Root["Materials"] = MaterialData;
+
+	// Saving new materials.
+	std::vector<std::string> NewMaterialList = RESOURCE_MANAGER.GetNewMaterialIDList();
+	Json::Value NewMaterialData;
+	for (size_t i = 0; i < NewMaterialList.size(); i++)
+	{
+		FENewMaterial* Material = RESOURCE_MANAGER.GetNewMaterial(NewMaterialList[i]);
+		if (Material == nullptr)
+			continue;
+
+		if (Material->GetTag() == ENGINE_RESOURCE_TAG ||
+			Material->GetTag() == EDITOR_RESOURCE_TAG)
+			continue;
+
+		NewMaterialData[Material->GetObjectID()] = RESOURCE_MANAGER.SaveNewMaterialToJSON(Material);
+		Material->SetDirtyFlag(false);
+	}
+	Root["NewMaterials"] = NewMaterialData;
 
 	// Saving GameModels.
 	std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
@@ -550,6 +571,14 @@ void FEProject::LoadResources(std::string DirectoryPath)
 	{
 		if (RESOURCE_MANAGER.LoadMaterialFromJSON(Root["Materials"][MaterialsList[i]]) == nullptr)
 			LOG.Add("FEProject::LoadResources: Error loading material " + MaterialsList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
+	}
+
+	// Loading new materials.
+	std::vector<Json::String> NewMaterialsList = Root["NewMaterials"].getMemberNames();
+	for (size_t i = 0; i < NewMaterialsList.size(); i++)
+	{
+		if (RESOURCE_MANAGER.LoadNewMaterialFromJSON(Root["NewMaterials"][NewMaterialsList[i]]) == nullptr)
+			LOG.Add("FEProject::LoadResources: Error loading new material " + NewMaterialsList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
 	}
 
 	// Loading game models.

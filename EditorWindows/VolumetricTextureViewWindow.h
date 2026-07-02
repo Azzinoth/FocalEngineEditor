@@ -13,6 +13,7 @@ class VolumetricTextureViewWindow : public FEEditorSceneWindow
 	std::string ConvertStatusMessage;
 	bool bConvertSucceeded = false;
 
+	FENewMaterial* MaterialFor3DTextures = nullptr;
 	static FEScene* CreateViewScene(FETexture* TextureToView);
 	FEEntity* InjectModelViewCamera(FEScene* Scene);
 

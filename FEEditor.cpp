@@ -578,16 +578,16 @@ void FEEditor::RenderAboutWindow()
 	ImGui::SetNextWindowSizeConstraints(ImVec2(400.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
 	if (ImGui::BeginPopupModal("About", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
 	{
-		int WindowW = 0;
-		int WindowH = 0;
-		APPLICATION.GetMainWindow()->GetSize(&WindowW, &WindowH);
+		int WindowWidth = 0;
+		int WindowHeight = 0;
+		APPLICATION.GetMainWindow()->GetSize(&WindowWidth, &WindowHeight);
 
-		ImGui::SetWindowPos(ImVec2(WindowW / 2.0f - ImGui::GetWindowWidth() / 2.0f, WindowH / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		ImGui::SetWindowPos(ImVec2(WindowWidth / 2.0f - ImGui::GetWindowWidth() / 2.0f, WindowHeight / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 
-		float ContentW = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
-		auto CenteredText = [ContentW](const std::string& Text) {
+		float ContentWidth = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+		auto CenteredText = [ContentWidth](const std::string& Text) {
 			ImVec2 TextSize = ImGui::CalcTextSize(Text.c_str());
-			ImGui::SetCursorPosX((ContentW - TextSize.x) / 2.0f + ImGui::GetWindowContentRegionMin().x);
+			ImGui::SetCursorPosX((ContentWidth - TextSize.x) / 2.0f + ImGui::GetWindowContentRegionMin().x);
 			ImGui::Text("%s", Text.c_str());
 		};
 		CenteredText(GetEditorFullVersion());
@@ -607,9 +607,9 @@ void FEEditor::RenderAboutWindow()
 
 		ImGui::Separator();
 
-		float ButtonW = 210.0f;
-		ImGui::SetCursorPosX((ContentW - ButtonW) / 2.0f + ImGui::GetWindowContentRegionMin().x);
-		if (ImGui::Button("Close", ImVec2(ButtonW, 25.0f)))
+		float ButtonWidth = 210.0f;
+		ImGui::SetCursorPosX((ContentWidth - ButtonWidth) / 2.0f + ImGui::GetWindowContentRegionMin().x);
+		if (ImGui::Button("Close", ImVec2(ButtonWidth, 25.0f)))
 			ImGui::CloseCurrentPopup();
 
 		ImGui::EndPopup();

@@ -32,9 +32,7 @@ static void AddTransparencyToTextureCallback(const std::vector<FEObject*> Select
 		const int MaxDimension = std::max(OriginalTexture->GetWidth(), OriginalTexture->GetHeight());
 		const size_t MipCount = size_t(floor(log2(MaxDimension)) + 1);
 		OriginalTexture->UpdateRawData(NewRawData, MipCount);
-		FE_GL_ERROR(glGenerateMipmap(GL_TEXTURE_2D));
-		FE_GL_ERROR(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f));
-		FE_GL_ERROR(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, 0.0f));
+		OriginalTexture->SetMipmappingEnabled(true);
 		PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(OriginalTexture);
 
 		delete[] NewRawData;

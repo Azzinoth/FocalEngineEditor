@@ -1327,48 +1327,182 @@ void FEEditorInspectorWindow::Render()
 		if (ImGui::CollapsingHeader("Volumetric", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			FEVolumeComponent& VolumeComponent = EntitySelected->GetComponent<FEVolumeComponent>();
-
-			// 3D volume texture selector. Only sampler3D textures are offered.
-			ImGui::Text("Volume texture (3D) : ");
-			std::string CurrentTextureCaption = VolumeComponent.GetVolumetricTexture() != nullptr ? VolumeComponent.GetVolumetricTexture()->GetName() : "None";
-			if (ImGui::BeginCombo("##VolumeTexture", CurrentTextureCaption.c_str(), ImGuiWindowFlags_None))
+			FENewMaterial* VolumeMaterial = VolumeComponent.GetMaterial();
+			
+			if (VolumeMaterial != nullptr)
 			{
-				std::vector<std::string> TextureIDList = RESOURCE_MANAGER.GetTextureIDList();
-				for (size_t i = 0; i < TextureIDList.size(); i++)
+				// Shader selector, populated from the volume system's shader list.
+				ImGui::Text("Volume shader : ");
+				std::string CurrentShaderCaption = VolumeComponent.GetMaterial() != nullptr ? VolumeComponent.GetMaterial()->GetShader()->GetName() : "None";
+				if (ImGui::BeginCombo("##VolumeShader", CurrentShaderCaption.c_str(), ImGuiWindowFlags_None))
 				{
-					FETexture* Texture = RESOURCE_MANAGER.GetTexture(TextureIDList[i]);
-					if (Texture == nullptr || Texture->GetType() != FE_TEXTURE_TYPE::FE_TEXTURE_3D)
+					std::vector<FEShader*> VolumetricShaders = VOLUME_SYSTEM.GetVolumetricShaders();
+					for (size_t i = 0; i < VolumetricShaders.size(); i++)
+					{
+						if (VolumetricShaders[i] == nullptr)
+							continue;
+
+						bool bSelected = (VolumetricShaders[i] == VolumeComponent.GetMaterial()->GetShader());
+						ImGui::PushID(VolumetricShaders[i]->GetObjectID().c_str());
+						if (ImGui::Selectable(VolumetricShaders[i]->GetName().c_str(), bSelected))
+							VolumeComponent.GetMaterial()->SetShader(VolumetricShaders[i]);
+
+						if (bSelected)
+							ImGui::SetItemDefaultFocus();
+						ImGui::PopID();
+					}
+					ImGui::EndCombo();
+				}
+
+				const std::vector<std::string> UniformOverrideNames = VolumeMaterial->GetUniformOverrideNameList();
+				bool bShownParametersHeader = false;
+				for (size_t i = 0; i < UniformOverrideNames.size(); i++)
+				{
+					const std::string& UniformName = UniformOverrideNames[i];
+
+					FEShaderUniformValue* UniformValue = VolumeMaterial->GetUniformOverride(UniformName);
+					if (UniformValue == nullptr)
 						continue;
 
-					bool bSelected = (Texture == VolumeComponent.GetVolumetricTexture());
-					if (ImGui::Selectable(Texture->GetName().c_str(), bSelected))
-						VolumeComponent.SetVolumetricTexture(Texture);
+					if (VolumeMaterial->GetShader()->IsUniformProvidedByEngine(UniformName))
+						continue;
 
-					if (bSelected)
-						ImGui::SetItemDefaultFocus();
+					// Only scalar/vector uniforms are editable here; samplers and matrices are skipped by type.
+					const bool bIsEditableType = UniformValue->IsType<float>() || UniformValue->IsType<int>() ||
+												 UniformValue->IsType<bool>() || UniformValue->IsType<glm::vec2>() ||
+												 UniformValue->IsType<glm::vec3>() || UniformValue->IsType<glm::vec4>();
+					if (!bIsEditableType)
+						continue;
+
+					if (!bShownParametersHeader)
+					{
+						ImGui::Separator();
+						ImGui::Text("Shader parameters : ");
+						bShownParametersHeader = true;
+					}
+
+					const std::string WidgetID = "##VolumeUniform_" + UniformName;
+
+					if (UniformValue->IsType<float>())
+					{
+						float Data = UniformValue->GetValue<float>();
+						ImGui::Text("%s", UniformName.c_str());
+						if (ImGui::DragFloat(WidgetID.c_str(), &Data, 0.01f))
+							VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
+					}
+					else if (UniformValue->IsType<int>())
+					{
+						int Data = UniformValue->GetValue<int>();
+						ImGui::Text("%s", UniformName.c_str());
+						if (ImGui::DragInt(WidgetID.c_str(), &Data, 1.0f, 1, 4096))
+							VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
+					}
+					else if (UniformValue->IsType<bool>())
+					{
+						bool Data = UniformValue->GetValue<bool>();
+						if (ImGui::Checkbox(UniformName.c_str(), &Data))
+							VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
+					}
+					else if (UniformValue->IsType<glm::vec2>())
+					{
+						glm::vec2 Data = UniformValue->GetValue<glm::vec2>();
+						ImGui::Text("%s", UniformName.c_str());
+						if (ImGui::DragFloat2(WidgetID.c_str(), &Data.x, 0.01f))
+							VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
+					}
+					else if (UniformValue->IsType<glm::vec3>())
+					{
+						glm::vec3 Data = UniformValue->GetValue<glm::vec3>();
+						ImGui::Text("%s", UniformName.c_str());
+						if (ImGui::DragFloat3(WidgetID.c_str(), &Data.x, 0.01f))
+							VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
+					}
+					else if (UniformValue->IsType<glm::vec4>())
+					{
+						glm::vec4 Data = UniformValue->GetValue<glm::vec4>();
+						ImGui::Text("%s", UniformName.c_str());
+						if (ImGui::DragFloat4(WidgetID.c_str(), &Data.x, 0.01f))
+							VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
+					}
 				}
-				ImGui::EndCombo();
+
+				// All textures except LUT.
+				ImGui::Text("Shader volume textures : ");
+				const std::vector<std::pair<std::string, FETexture*>> TextureOverrides = VolumeMaterial->GetAllTextureOverridePair();
+				for (size_t i = 0; i < TextureOverrides.size(); i++)
+				{
+					if (TextureOverrides[i].first == "TransferFunctionTexture")
+						continue;
+
+					FETexture* CurrentTexture = TextureOverrides[i].second;
+					std::string CurrentTextureCaption = CurrentTexture != nullptr ? CurrentTexture->GetName() : "None";
+					std::string ComboLabel = "##VolumeTexture" + std::to_string(i) + (CurrentTexture != nullptr ? CurrentTexture->GetObjectID() : "None");
+					if (ImGui::BeginCombo(ComboLabel.c_str(), CurrentTextureCaption.c_str(), ImGuiWindowFlags_None))
+					{
+						std::vector<std::string> TextureIDList = RESOURCE_MANAGER.GetTextureIDList();
+						for (size_t j = 0; j < TextureIDList.size(); j++)
+						{
+							FETexture* Texture = RESOURCE_MANAGER.GetTexture(TextureIDList[j]);
+							if (Texture == nullptr || Texture->GetType() != FE_TEXTURE_TYPE::FE_TEXTURE_3D)
+								continue;
+
+							bool bSelected = Texture == CurrentTexture;
+							ImGui::PushID(Texture->GetObjectID().c_str());
+							if (ImGui::Selectable(Texture->GetName().c_str(), bSelected))
+								VolumeMaterial->SetTextureOverride(TextureOverrides[i].first, Texture->GetObjectID());
+
+							if (bSelected)
+								ImGui::SetItemDefaultFocus();
+							ImGui::PopID();
+						}
+						ImGui::EndCombo();
+					}
+				}
+
+				// Transfer function editor, only for shaders that sample the LUT (TransferFunctionTexture).
+				if (VOLUME_SYSTEM.DoesVolumeComponentHaveTransferFunction(VolumeComponent))
+				{
+					ImGui::Separator();
+					ImGui::Text("Transfer function :");
+
+					// Show volume non-normalized value range.
+					FETexture* VolumeTexture = VolumeMaterial != nullptr ? VolumeMaterial->GetTextureOverride("VolumeTexture") : nullptr;
+					const float DataValueLow = VolumeTexture != nullptr ? VolumeTexture->GetMinValue().x : 0.0f;
+					const float DataValueHigh = VolumeTexture != nullptr ? VolumeTexture->GetMaxValue().x : 1.0f;
+					TransferFunctionWidget.Render(EntitySelected, DataValueLow, DataValueHigh);
+				}
 			}
-
-			// Shader selector, populated from the volume system's shader list.
-			ImGui::Text("Volume shader : ");
-			std::string CurrentShaderCaption = VolumeComponent.GetVolumetricShader() != nullptr ? VolumeComponent.GetVolumetricShader()->GetName() : "None";
-			if (ImGui::BeginCombo("##VolumeShader", CurrentShaderCaption.c_str(), ImGuiWindowFlags_None))
+			else
 			{
-				std::vector<FEShader*> VolumetricShaders = VOLUME_SYSTEM.GetVolumetricShaders();
-				for (size_t i = 0; i < VolumetricShaders.size(); i++)
+				if (ImGui::Button("Create new volume material"))
 				{
-					if (VolumetricShaders[i] == nullptr)
-						continue;
-
-					bool bSelected = (VolumetricShaders[i] == VolumeComponent.GetVolumetricShader());
-					if (ImGui::Selectable(VolumetricShaders[i]->GetName().c_str(), bSelected))
-						VolumeComponent.SetVolumetricShader(VolumetricShaders[i]);
-
-					if (bSelected)
-						ImGui::SetItemDefaultFocus();
+					FENewMaterial* DefaultStartingMaterial = RESOURCE_MANAGER.CreateNewMaterial();
+					DefaultStartingMaterial->SetMaterialType(FEMaterialType::Volumetric);
+					DefaultStartingMaterial->SetBlendMode(FEMaterialBlendMode::Additive);
+					DefaultStartingMaterial->SetShader(VOLUME_SYSTEM.GetVolumetricShaders()[0]);
+					VolumeComponent.SetMaterial(DefaultStartingMaterial);
 				}
-				ImGui::EndCombo();
+
+				std::vector<std::string> ListOfVolumetricMaterials = RESOURCE_MANAGER.GetNewMaterialIDList();
+				for (size_t i = 0; i < ListOfVolumetricMaterials.size(); i++)
+				{
+					FENewMaterial* CurrentMaterial = RESOURCE_MANAGER.GetNewMaterial(ListOfVolumetricMaterials[i]);
+					if (CurrentMaterial == nullptr)
+					{
+						ListOfVolumetricMaterials.erase(ListOfVolumetricMaterials.begin() + i);
+						i--;
+						continue;
+					}
+
+					if (CurrentMaterial->GetMaterialType() != FEMaterialType::Volumetric)
+					{
+						ListOfVolumetricMaterials.erase(ListOfVolumetricMaterials.begin() + i);
+						i--;
+						continue;
+					}
+				}
+
+				// FE_TO_DO: Add combo box to select a volumetric material.
 			}
 		}
 	}

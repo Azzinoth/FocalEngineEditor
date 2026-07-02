@@ -104,6 +104,18 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 
 		FilterOutTags(TemporaryList, std::vector<std::string>{ ENGINE_RESOURCE_TAG, EDITOR_RESOURCE_TAG});
 
+		if (CurrentType == FE_MESH)
+		{
+			if (!RESOURCE_MANAGER.GetMeshByName("FEPlane").empty())
+				TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.GetMeshByName("FEPlane")[0]->GetObjectID());
+
+			if (!RESOURCE_MANAGER.GetMeshByName("FECube").empty())
+				TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.GetMeshByName("FECube")[0]->GetObjectID());
+
+			if (!RESOURCE_MANAGER.GetMeshByName("FESphere").empty())
+				TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.GetMeshByName("FESphere")[0]->GetObjectID());
+		}
+
 		if (CurrentType == FE_TEXTURE)
 			TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.NoTexture->GetObjectID());
 

@@ -19,9 +19,16 @@ VolumetricTextureViewWindow::VolumetricTextureViewWindow(FETexture* TextureToVie
 	TextureToViewID = TextureToView->GetObjectID();
 	bSelfContained = false;
 
+	MaterialFor3DTextures = RESOURCE_MANAGER.CreateNewMaterial("MaterialFor3DTexturesView");
+	MaterialFor3DTextures->SetMaterialType(FEMaterialType::Volumetric);
+	MaterialFor3DTextures->SetBlendMode(FEMaterialBlendMode::Additive);
+	MaterialFor3DTextures->SetShader(VOLUME_SYSTEM.GetVolumetricShaders()[0]);
+	MaterialFor3DTextures->SetTextureOverride("VolumeTexture", TextureToView->GetObjectID());
+	RESOURCE_MANAGER.SetTag(MaterialFor3DTextures, EDITOR_RESOURCE_TAG);
+
 	FEEntity* VolumeEntity = Scene->CreateEntity("Volumetric texture");
 	VolumeEntity->AddComponent<FEVolumeComponent>();
-	VolumeEntity->GetComponent<FEVolumeComponent>().SetVolumetricTexture(TextureToView);
+	VolumeEntity->GetComponent<FEVolumeComponent>().SetMaterial(MaterialFor3DTextures);
 
 	FEEntity* SkyDomeEntity = Scene->CreateEntity("Volumetric view skydome");
 	RESOURCE_MANAGER.SetTag(SkyDomeEntity, EDITOR_RESOURCE_TAG);
@@ -71,6 +78,8 @@ VolumetricTextureViewWindow::~VolumetricTextureViewWindow()
 
 	// Using ID instead of Scene pointer because it's possible that scene was already deleted.
 	SCENE_MANAGER.DeleteScene(SceneID);
+
+	delete MaterialFor3DTextures;
 }
 
 void VolumetricTextureViewWindow::Render()
@@ -120,9 +129,9 @@ void VolumetricTextureViewWindow::RenderInfoOverlay()
 	const float PanelWidth  = 480.0f;
 	const float PanelMargin = 8.0f;
 	float PanelHeight = ImGui::GetStyle().WindowPadding.y * 2.0f
-					  + LineHeight * 8.0f
-					  + LineHeight * 1.5f
-					  + ImGui::GetFrameHeightWithSpacing();
+					  + LineHeight * 9.0f
+					  + LineHeight * 2.5f
+					  + ImGui::GetFrameHeightWithSpacing() * 5.0f;
 	if (!bFormatSupported)
 		PanelHeight += LineHeight;
 	if (!ConvertStatusMessage.empty())
@@ -161,6 +170,31 @@ void VolumetricTextureViewWindow::RenderInfoOverlay()
 
 		ImGui::EndTable();
 	}
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	ImGui::TextColored(ImVec4(0.95f, 0.90f, 0.0f, 1.0f), "Sampling");
+
+	const char* FilterOptions[] = { "Nearest", "Linear" };
+	int CurrentFilter = static_cast<int>(Texture->GetFilterType());
+	if (ImGui::Combo("Filtering", &CurrentFilter, FilterOptions, IM_ARRAYSIZE(FilterOptions)))
+		Texture->SetFilterType(static_cast<FE_TEXTURE_MINMAG_FILTER_TYPE>(CurrentFilter));
+
+	const char* WrapOptions[] = { "Repeat", "Mirrored repeat", "Clamp to edge", "Clamp to border" };
+
+	int CurrentWrapU = static_cast<int>(Texture->GetUWrapType());
+	if (ImGui::Combo("Wrap U", &CurrentWrapU, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
+		Texture->SetUWrapType(static_cast<FE_TEXTURE_WRAP_TYPE>(CurrentWrapU));
+
+	int CurrentWrapV = static_cast<int>(Texture->GetVWrapType());
+	if (ImGui::Combo("Wrap V", &CurrentWrapV, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
+		Texture->SetVWrapType(static_cast<FE_TEXTURE_WRAP_TYPE>(CurrentWrapV));
+
+	int CurrentWrapW = static_cast<int>(Texture->GetWWrapType());
+	if (ImGui::Combo("Wrap W", &CurrentWrapW, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
+		Texture->SetWWrapType(static_cast<FE_TEXTURE_WRAP_TYPE>(CurrentWrapW));
 
 	ImGui::Spacing();
 	ImGui::Separator();
