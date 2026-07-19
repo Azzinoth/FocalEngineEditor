@@ -50,6 +50,12 @@ void FEEditorPreviewManager::InitializeResources()
 
 	PreviewScene->SetFlag(FESceneFlag::Active | FESceneFlag::Renderable, false);
 	PreviewScene->SetFlag(FESceneFlag::EditorMode, true);
+
+	MaterialFor3DTextures = RESOURCE_MANAGER.CreateNewMaterial("MaterialFor3DTexturesPreview");
+	MaterialFor3DTextures->SetMaterialType(FEMaterialType::Volumetric);
+	MaterialFor3DTextures->SetBlendMode(FEMaterialBlendMode::Additive);
+	MaterialFor3DTextures->SetShader(VOLUME_SYSTEM.GetVolumetricShaders()[0]);
+	RESOURCE_MANAGER.SetTag(MaterialFor3DTextures, EDITOR_RESOURCE_TAG);
 }
 
 void FEEditorPreviewManager::ReCreateAll()
@@ -97,6 +103,39 @@ void FEEditorPreviewManager::AfterPreviewActions()
 	PreviewGameModel->Material = nullptr;
 }
 
+void FEEditorPreviewManager::StorePreview(const std::string& ObjectID, FETexture* CameraResult)
+{
+	// If we are updating an existing preview we should delete the old texture.
+	if (PreviewTextures.find(ObjectID) != PreviewTextures.end())
+		delete PreviewTextures[ObjectID];
+
+	if (CameraResult != nullptr)
+		PreviewTextures[ObjectID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
+}
+
+void FEEditorPreviewManager::RemovePreview(const std::string& ObjectID)
+{
+	const auto PreviewIterator = PreviewTextures.find(ObjectID);
+	if (PreviewIterator == PreviewTextures.end())
+		return;
+
+	delete PreviewIterator->second;
+	PreviewTextures.erase(PreviewIterator);
+}
+
+FETexture* FEEditorPreviewManager::GetCachedPreview(const std::string& ObjectID, const std::function<void()>& CreateFunction)
+{
+	// If we somehow could not find the preview, we will create it.
+	if (PreviewTextures.find(ObjectID) == PreviewTextures.end())
+		CreateFunction();
+
+	// If we still don't have it.
+	if (PreviewTextures.find(ObjectID) == PreviewTextures.end())
+		return RESOURCE_MANAGER.NoTexture;
+
+	return PreviewTextures[ObjectID];
+}
+
 void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 {
 	FEMesh* PreviewMesh = RESOURCE_MANAGER.GetMesh(MeshID);
@@ -126,13 +165,7 @@ void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 
 	AfterPreviewActions();
 
-	// if we are updating preview we should delete old texture.
-	if (MeshPreviewTextures.find(MeshID) != MeshPreviewTextures.end())
-		delete MeshPreviewTextures[MeshID];
-
-	FETexture* CameraResult = RENDERER.GetCameraResult(LocalCameraEntity);
-	if (CameraResult != nullptr)
-		MeshPreviewTextures[MeshID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
+	StorePreview(MeshID, RENDERER.GetCameraResult(LocalCameraEntity));
 
 	CheckAndUpdateIfNeededGameModelPreview(MeshID);
 }
@@ -157,15 +190,7 @@ FETexture* FEEditorPreviewManager::GetMeshPreview(const std::string MeshID)
 		RESOURCE_MANAGER.GetMesh(MeshID)->SetDirtyFlag(false);
 	}
 
-	// if we somehow could not find preview, we will create it.
-	if (MeshPreviewTextures.find(MeshID) == MeshPreviewTextures.end())
-		CreateMeshPreview(MeshID);
-
-	// if still we don't have it
-	if (MeshPreviewTextures.find(MeshID) == MeshPreviewTextures.end())
-		return RESOURCE_MANAGER.NoTexture;
-
-	return MeshPreviewTextures[MeshID];
+	return GetCachedPreview(MeshID, [&]() { CreateMeshPreview(MeshID); });
 }
 
 void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
@@ -186,15 +211,7 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 
 	AfterPreviewActions();
 
-	// if we are updating preview we should delete old texture.
-	if (MaterialPreviewTextures.find(MaterialID) != MaterialPreviewTextures.end())
-		delete MaterialPreviewTextures[MaterialID];
-
-	FETexture* CameraResult = RENDERER.GetCameraResult(LocalCameraEntity);
-	if (CameraResult != nullptr)
-	{
-		MaterialPreviewTextures[MaterialID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
-	}
+	StorePreview(MaterialID, RENDERER.GetCameraResult(LocalCameraEntity));
 
 	// Looking for all gameModels that uses this material to also update them.
 	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
@@ -248,15 +265,7 @@ FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string Material
 		RESOURCE_MANAGER.GetMaterial(MaterialID)->SetDirtyFlag(false);
 	}	
 
-	// if we somehow could not find preview, we will create it.
-	if (MaterialPreviewTextures.find(MaterialID) == MaterialPreviewTextures.end())
-		CreateMaterialPreview(MaterialID);
-
-	// if still we don't have it
-	if (MaterialPreviewTextures.find(MaterialID) == MaterialPreviewTextures.end())
-		return RESOURCE_MANAGER.NoTexture;
-
-	return MaterialPreviewTextures[MaterialID];
+	return GetCachedPreview(MaterialID, [&]() { CreateMaterialPreview(MaterialID); });
 }
 
 void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelID)
@@ -288,13 +297,7 @@ void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelI
 
 	AfterPreviewActions();
 
-	// if we are updating preview we should delete old texture.
-	if (GameModelPreviewTextures.find(GameModelID) != GameModelPreviewTextures.end())
-		delete GameModelPreviewTextures[GameModelID];
-
-	FETexture* CameraResult = RENDERER.GetCameraResult(LocalCameraEntity);
-	if (CameraResult != nullptr)
-		GameModelPreviewTextures[GameModelID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
+	StorePreview(GameModelID, RENDERER.GetCameraResult(LocalCameraEntity));
 
 	CheckAndUpdateIfNeededPrefabPreview(GameModelID);
 }
@@ -410,15 +413,7 @@ FETexture* FEEditorPreviewManager::GetGameModelPreview(const std::string GameMod
 		//createGameModelPreview(gameModelID);
 	}
 
-	// if we somehow could not find preview, we will create it.
-	if (GameModelPreviewTextures.find(GameModelID) == GameModelPreviewTextures.end())
-		CreateGameModelPreview(GameModelID);
-
-	// if still we don't have it
-	if (GameModelPreviewTextures.find(GameModelID) == GameModelPreviewTextures.end())
-		return RESOURCE_MANAGER.NoTexture;
-
-	return GameModelPreviewTextures[GameModelID];
+	return GetCachedPreview(GameModelID, [&]() { CreateGameModelPreview(GameModelID); });
 }
 
 void FEEditorPreviewManager::UpdateAllGameModelPreviews()
@@ -459,13 +454,7 @@ void FEEditorPreviewManager::CreatePointCloudPreview(std::string PointCloudID)
 	PreviewEntity->RemoveComponent<FEPointCloudComponent>();
 	AfterPreviewActions();
 
-	// if we are updating preview we should delete old texture.
-	if (PointCloudPreviewTextures.find(PointCloudID) != PointCloudPreviewTextures.end())
-		delete PointCloudPreviewTextures[PointCloudID];
-
-	FETexture* CameraResult = RENDERER.GetCameraResult(LocalCameraEntity);
-	if (CameraResult != nullptr)
-		PointCloudPreviewTextures[PointCloudID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
+	StorePreview(PointCloudID, RENDERER.GetCameraResult(LocalCameraEntity));
 }
 
 FETexture* FEEditorPreviewManager::GetPointCloudPreview(std::string PointCloudID)
@@ -484,15 +473,7 @@ FETexture* FEEditorPreviewManager::GetPointCloudPreview(std::string PointCloudID
 		PointCloud->SetDirtyFlag(false);
 	}
 
-	// If we somehow could not find preview, we will create it.
-	if (PointCloudPreviewTextures.find(PointCloudID) == PointCloudPreviewTextures.end())
-		CreatePointCloudPreview(PointCloudID);
-
-	// Ff still we don't have it.
-	if (PointCloudPreviewTextures.find(PointCloudID) == PointCloudPreviewTextures.end())
-		return RESOURCE_MANAGER.NoTexture;
-
-	return PointCloudPreviewTextures[PointCloudID];
+	return GetCachedPreview(PointCloudID, [&]() { CreatePointCloudPreview(PointCloudID); });
 }
 
 void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
@@ -557,13 +538,7 @@ void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
 
 	RENDERER.Render(CurrentPrefabScene);
 
-	// If we are updating preview we should delete old texture.
-	if (PrefabPreviewTextures.find(PrefabID) != PrefabPreviewTextures.end())
-		delete PrefabPreviewTextures[PrefabID];
-
-	FETexture* CameraResult = RENDERER.GetCameraResult(Camera);
-	if (CameraResult != nullptr)
-		PrefabPreviewTextures[PrefabID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
+	StorePreview(PrefabID, RENDERER.GetCameraResult(Camera));
 
 	SCENE_MANAGER.DeleteScene(CurrentPrefabScene);
 }
@@ -589,42 +564,18 @@ FETexture* FEEditorPreviewManager::GetPrefabPreview(const std::string PrefabID)
 		CurrentPrefab->SetDirtyFlag(false);
 	}
 
-	// If we somehow could not find preview, we will create it.
-	if (PrefabPreviewTextures.find(PrefabID) == PrefabPreviewTextures.end())
-		CreatePrefabPreview(PrefabID);
-
-	// If still we don't have it
-	if (PrefabPreviewTextures.find(PrefabID) == PrefabPreviewTextures.end())
-		return RESOURCE_MANAGER.NoTexture;
-
-	return PrefabPreviewTextures[PrefabID];
+	return GetCachedPreview(PrefabID, [&]() { CreatePrefabPreview(PrefabID); });
 }
 
 void FEEditorPreviewManager::Clear()
 {
-	auto MeshIterator = MeshPreviewTextures.begin();
-	while (MeshIterator != MeshPreviewTextures.end())
+	auto PreviewIterator = PreviewTextures.begin();
+	while (PreviewIterator != PreviewTextures.end())
 	{
-		delete MeshIterator->second;
-		MeshIterator++;
+		delete PreviewIterator->second;
+		PreviewIterator++;
 	}
-	MeshPreviewTextures.clear();
-
-	auto MaterialIterator = MaterialPreviewTextures.begin();
-	while (MaterialIterator != MaterialPreviewTextures.end())
-	{
-		delete MaterialIterator->second;
-		MaterialIterator++;
-	}
-	MaterialPreviewTextures.clear();
-
-	auto GameModelIterator = GameModelPreviewTextures.begin();
-	while (GameModelIterator != GameModelPreviewTextures.end())
-	{
-		delete GameModelIterator->second;
-		GameModelIterator++;
-	}
-	GameModelPreviewTextures.clear();
+	PreviewTextures.clear();
 }
 
 void FEEditorPreviewManager::CreateScenePreview(std::string SceneID)
@@ -671,13 +622,7 @@ void FEEditorPreviewManager::CreateScenePreview(std::string SceneID)
 
 	RENDERER.Render(Scene);
 
-	// If we are updating preview we should delete old texture.
-	if (ScenePreviewTextures.find(SceneID) != ScenePreviewTextures.end())
-		delete ScenePreviewTextures[SceneID];
-
-	FETexture* CameraResult = RENDERER.GetCameraResult(TemporaryCamera);
-	if (CameraResult != nullptr)
-		ScenePreviewTextures[SceneID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
+	StorePreview(SceneID, RENDERER.GetCameraResult(TemporaryCamera));
 
 	CAMERA_SYSTEM.SetMainCamera(PreviousMainCamera);
 	Scene->DeleteEntity(TemporaryCamera);
@@ -701,15 +646,54 @@ FETexture* FEEditorPreviewManager::GetScenePreview(std::string SceneID)
 		Scene->SetDirtyFlag(false);
 	}
 
-	// If we somehow could not find preview, we will create it.
-	if (ScenePreviewTextures.find(SceneID) == ScenePreviewTextures.end())
-		CreateScenePreview(SceneID);
+	return GetCachedPreview(SceneID, [&]() { CreateScenePreview(SceneID); });
+}
 
-	// If still we don't have it.
-	if (ScenePreviewTextures.find(SceneID) == ScenePreviewTextures.end())
+void FEEditorPreviewManager::CreateTexture3DPreview(std::string TextureID)
+{
+	FETexture* Texture = RESOURCE_MANAGER.GetTexture(TextureID);
+	if (Texture == nullptr || Texture->GetType() != FE_TEXTURE_TYPE::FE_TEXTURE_3D)
+		return;
+
+	const std::vector<FEShader*> VolumetricShaders = VOLUME_SYSTEM.GetVolumetricShaders();
+	if (VolumetricShaders.empty())
+		return;
+
+	BeforePreviewActions();
+
+	PreviewEntity->AddComponent<FEVolumeComponent>();
+	FEVolumeComponent& VolumeComponent = PreviewEntity->GetComponent<FEVolumeComponent>();
+	VolumeComponent.SetMaterial(MaterialFor3DTextures);
+	VolumeComponent.GetMaterial()->SetTextureOverride("VolumeTexture", Texture->GetObjectID());
+
+	FEAABB VolumeAABB = PreviewScene->GetEntityAABB(PreviewEntity);
+	const glm::vec3 Min = VolumeAABB.GetMin();
+	const glm::vec3 Max = VolumeAABB.GetMax();
+
+	const float XSize = sqrt((Max.x - Min.x) * (Max.x - Min.x));
+	const float YSize = sqrt((Max.y - Min.y) * (Max.y - Min.y));
+	const float ZSize = sqrt((Max.z - Min.z) * (Max.z - Min.z));
+
+	// Invert center point to get required translation vector for centering the volume at origin.
+	PreviewEntity->GetComponent<FETransformComponent>().SetPosition(-glm::vec3(Max.x - XSize / 2.0f, Max.y - YSize / 2.0f, Max.z - ZSize / 2.0f));
+	LocalCameraEntity->GetComponent<FETransformComponent>().SetPosition(glm::vec3(0.0, 0.0, std::max(std::max(XSize, YSize), ZSize) * 1.75f));
+	CAMERA_SYSTEM.IndividualUpdate(LocalCameraEntity, 0.0);
+
+	RENDERER.Render(PreviewScene);
+
+	PreviewEntity->RemoveComponent<FEVolumeComponent>();
+	AfterPreviewActions();
+
+	StorePreview(TextureID, RENDERER.GetCameraResult(LocalCameraEntity));
+}
+
+FETexture* FEEditorPreviewManager::GetTexture3DPreview(std::string TextureID)
+{
+	FETexture* Texture = RESOURCE_MANAGER.GetTexture(TextureID);
+	if (Texture == nullptr || Texture->GetType() != FE_TEXTURE_TYPE::FE_TEXTURE_3D)
 		return RESOURCE_MANAGER.NoTexture;
 
-	return ScenePreviewTextures[SceneID];
+	return GetCachedPreview(TextureID, [&]() { CreateTexture3DPreview(TextureID); });
 }
 
 FETexture* FEEditorPreviewManager::GetPreview(FEObject* Object)
@@ -717,7 +701,13 @@ FETexture* FEEditorPreviewManager::GetPreview(FEObject* Object)
 	switch (Object->GetType())
 	{
 		case FE_TEXTURE:
-			return reinterpret_cast<FETexture*>(Object);
+		{
+			FETexture* Texture = reinterpret_cast<FETexture*>(Object);
+			if (Texture->GetType() == FE_TEXTURE_TYPE::FE_TEXTURE_3D)
+				return GetTexture3DPreview(Object->GetObjectID());
+
+			return Texture;
+		}
 
 		case FE_MESH:
 			return GetMeshPreview(Object->GetObjectID());

@@ -91,12 +91,12 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 void FEProjectManager::DisplayProjectSelection()
 {
 	static float LowerPanelHeight = 90.0f;
-	const float MainWindowW = static_cast<float>(APPLICATION.GetMainWindow()->GetWidth());
-	const float MainWindowH = static_cast<float>(APPLICATION.GetMainWindow()->GetHeight());
+	const float MainWindowWidth = static_cast<float>(APPLICATION.GetMainWindow()->GetWidth());
+	const float MainWindowHeight = static_cast<float>(APPLICATION.GetMainWindow()->GetHeight());
 
 	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
 	ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
-	ImGui::SetNextWindowSize(ImVec2(MainWindowW, MainWindowH - LowerPanelHeight));
+	ImGui::SetNextWindowSize(ImVec2(MainWindowWidth, MainWindowHeight - LowerPanelHeight));
 	ImGui::Begin("Project Browser", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
 	{
 		ImGui::SetWindowFontScale(2.0f);
@@ -107,7 +107,7 @@ void FEProjectManager::DisplayProjectSelection()
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::ImColor(0.95f, 0.90f, 0.0f)));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::ImColor(0.1f, 1.0f, 0.1f, 1.0f)));
 
-		const int ColumnCount = static_cast<int>(MainWindowW / (512.0f + 32.0f));
+		const int ColumnCount = static_cast<int>(MainWindowWidth / (512.0f + 32.0f));
 		ImGui::Columns(ColumnCount, "projectColumns", false);
 		static bool bPushedStyle = false;
 		for (size_t i = 0; i < List.size(); i++)
@@ -159,8 +159,8 @@ void FEProjectManager::DisplayProjectSelection()
 	ImGui::PopStyleVar();
 
 	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
-	ImGui::SetNextWindowPos(ImVec2(0.0f, MainWindowH - LowerPanelHeight));
-	ImGui::SetNextWindowSize(ImVec2(MainWindowW, LowerPanelHeight));
+	ImGui::SetNextWindowPos(ImVec2(0.0f, MainWindowHeight - LowerPanelHeight));
+	ImGui::SetNextWindowSize(ImVec2(MainWindowWidth, LowerPanelHeight));
 	ImGui::Begin("##create project", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
 	{
 		ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor(0.0f, 162.0f / 255.0f, 232.0f / 255.0f, 1.0f)));

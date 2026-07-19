@@ -112,7 +112,7 @@ FEEditorSceneWindow::~FEEditorSceneWindow()
 
 void FEEditorSceneWindow::Show()
 {
-	
+	FEImGuiWindow::Show();
 }
 
 void FEEditorSceneWindow::Render()

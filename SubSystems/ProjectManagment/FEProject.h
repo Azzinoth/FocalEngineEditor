@@ -11,6 +11,7 @@ class FEProject
 	friend class FEProjectBuildSystem;
 	friend class FEPrefabEditorManager;
 	friend class FEEditorContentBrowserWindow;
+	friend class VolumetricTextureViewWindow;
 public:
 	FEProject(std::string Name, std::string ProjectFolder);
 	~FEProject();

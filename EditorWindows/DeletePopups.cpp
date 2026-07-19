@@ -235,8 +235,7 @@ void DeletePointCloudPopup::DeletePointCloud(FEPointCloud* PointCloud)
 	PROJECT_MANAGER.GetCurrent()->AddFileToDeleteList(PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + PointCloud->GetObjectID() + ".pointcloud");
 	RESOURCE_MANAGER.DeleteFEPointCloud(PointCloud);
 
-	delete PREVIEW_MANAGER.PointCloudPreviewTextures[Name];
-	PREVIEW_MANAGER.PointCloudPreviewTextures.erase(Name);
+	PREVIEW_MANAGER.RemovePreview(Name);
 }
 
 DeletePointCloudPopup::DeletePointCloudPopup()
@@ -345,8 +344,7 @@ void DeleteMeshPopup::DeleteMesh(FEMesh* Mesh)
 	for (size_t i = 0; i < GameModelListToUpdate.size(); i++)
 		PREVIEW_MANAGER.CreateGameModelPreview(GameModelListToUpdate[i]);
 
-	delete PREVIEW_MANAGER.MeshPreviewTextures[Name];
-	PREVIEW_MANAGER.MeshPreviewTextures.erase(Name);
+	PREVIEW_MANAGER.RemovePreview(Name);
 }
 
 DeleteGameModelPopup::DeleteGameModelPopup()
@@ -635,8 +633,7 @@ void DeleteMaterialPopup::DeleteMaterial(FEMaterial* Material)
 	for (size_t i = 0; i < GameModelListToUpdate.size(); i++)
 		PREVIEW_MANAGER.CreateGameModelPreview(GameModelListToUpdate[i]);
 
-	delete PREVIEW_MANAGER.MaterialPreviewTextures[Name];
-	PREVIEW_MANAGER.MaterialPreviewTextures.erase(Name);
+	PREVIEW_MANAGER.RemovePreview(Name);
 }
 
 DeleteDirectoryPopup::DeleteDirectoryPopup()

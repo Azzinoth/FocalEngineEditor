@@ -31,17 +31,17 @@ FEEditorTextureSourceNode::FEEditorTextureSourceNode(FETexture* Texture) : Node(
 
 	if (this->Texture->GetInternalFormat() == GL_RED)
 	{
-		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "r", true));
+		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "r", NodeSocket::SocketFlow::Output));
 	}
 	else
 	{
-		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "r", true));
-		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "g", true));
-		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "b", true));
-		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "a", true));
+		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "r", NodeSocket::SocketFlow::Output));
+		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "g", NodeSocket::SocketFlow::Output));
+		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "b", NodeSocket::SocketFlow::Output));
+		AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "a", NodeSocket::SocketFlow::Output));
 
-		AddSocket(new NodeSocket(this, "RGB", "rgb", true));
-		AddSocket(new NodeSocket(this, "RGBA", "rgba", true));
+		AddSocket(new NodeSocket(this, "RGB", "rgb", NodeSocket::SocketFlow::Output));
+		AddSocket(new NodeSocket(this, "RGBA", "rgba", NodeSocket::SocketFlow::Output));
 	}
 }
 

@@ -25,6 +25,7 @@ class FEEditorSceneGraphWindow
 	FETexture* VirtualUIIcon = nullptr;
 	FETexture* PointCloudIcon = nullptr;
 	FETexture* NativeScriptIcon = nullptr;
+	FETexture* VolumeIcon = nullptr;
 
     FETexture* VisibilityOnIcon = nullptr;
     FETexture* VisibilityOffIcon = nullptr;
@@ -76,6 +77,7 @@ class FEEditorSceneGraphWindow
     SceneGraphUI::NodeWidget VirtualUIComponentIndicator;
     SceneGraphUI::NodeWidget PointCloudComponentIndicator;
     SceneGraphUI::NodeWidget NativeScriptComponentIndicator;
+    SceneGraphUI::NodeWidget VolumeComponentIndicator;
 
     SceneGraphUI::NodeWidget VisibilityToggleWidget;
 public:

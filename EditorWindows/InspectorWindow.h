@@ -3,6 +3,7 @@
 #include "ContentBrowserWindow.h"
 #include "../FEEditorScriptingSystem.h"
 #include "../FEProjectBuildSystem.h"
+#include "VolumeTransferFunctionWidget.h"
 
 class FEEditorInspectorWindow
 {
@@ -56,6 +57,8 @@ class FEEditorInspectorWindow
     // Context menu
     bool bShouldOpenContextMenu = false;
 
+    VolumeTransferFunctionWidget TransferFunctionWidget;
+
     bool bLeftMousePressed = false;
     bool bShiftPressed = false;
 
@@ -85,6 +88,7 @@ class FEEditorInspectorWindow
 	static void AddInstancedComponent(FEEntity* Entity);
     static void AddVirtualUIComponent(FEEntity* Entity);
 	static void AddNativeScriptComponent(FEEntity* Entity);
+	static void AddVolumeComponent(FEEntity* Entity);
 public:
     SINGLETON_PUBLIC_PART(FEEditorInspectorWindow)
 };

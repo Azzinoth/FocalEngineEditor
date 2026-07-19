@@ -43,12 +43,11 @@ private:
 	// Saved scene settings
 	bool bIsRegularFogEnabled = false;
 
-	std::unordered_map<std::string, FETexture*> MeshPreviewTextures;
-	std::unordered_map<std::string, FETexture*> MaterialPreviewTextures;
-	std::unordered_map<std::string, FETexture*> GameModelPreviewTextures;
-	std::unordered_map<std::string, FETexture*> PointCloudPreviewTextures;
-	std::unordered_map<std::string, FETexture*> PrefabPreviewTextures;
-	std::unordered_map<std::string, FETexture*> ScenePreviewTextures;
+	std::unordered_map<std::string, FETexture*> PreviewTextures;
+
+	void StorePreview(const std::string& ObjectID, FETexture* CameraResult);
+	void RemovePreview(const std::string& ObjectID);
+	FETexture* GetCachedPreview(const std::string& ObjectID, const std::function<void()>& CreateFunction);
 
 	static glm::vec4 OriginalClearColor;
 	static FETransformComponent OriginalTransform;
@@ -76,6 +75,10 @@ private:
 
 	void CreateScenePreview(std::string SceneID);
 	FETexture* GetScenePreview(std::string SceneID);
+
+	FENewMaterial* MaterialFor3DTextures = nullptr;
+	void CreateTexture3DPreview(std::string TextureID);
+	FETexture* GetTexture3DPreview(std::string TextureID);
 
 	FETexture* GetPreview(FEObject* Object);
 	FETexture* GetPreview(std::string ObjectID);

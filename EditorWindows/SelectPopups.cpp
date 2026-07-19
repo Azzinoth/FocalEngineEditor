@@ -104,6 +104,18 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 
 		FilterOutTags(TemporaryList, std::vector<std::string>{ ENGINE_RESOURCE_TAG, EDITOR_RESOURCE_TAG});
 
+		if (CurrentType == FE_MESH)
+		{
+			if (!RESOURCE_MANAGER.GetMeshByName("FEPlane").empty())
+				TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.GetMeshByName("FEPlane")[0]->GetObjectID());
+
+			if (!RESOURCE_MANAGER.GetMeshByName("FECube").empty())
+				TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.GetMeshByName("FECube")[0]->GetObjectID());
+
+			if (!RESOURCE_MANAGER.GetMeshByName("FESphere").empty())
+				TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.GetMeshByName("FESphere")[0]->GetObjectID());
+		}
+
 		if (CurrentType == FE_TEXTURE)
 			TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.NoTexture->GetObjectID());
 
@@ -201,8 +213,19 @@ void SelectFEObjectPopUp::Render()
 				std::string AdditionalTypeInfo;
 				if (FilteredItemsList[i]->GetType() == FE_TEXTURE)
 				{
+					FETexture* CurrentTexture = RESOURCE_MANAGER.GetTexture(FilteredItemsList[i]->GetObjectID());
 					AdditionalTypeInfo += "\nTexture type: ";
-					AdditionalTypeInfo += FETexture::TextureInternalFormatToString(RESOURCE_MANAGER.GetTexture(FilteredItemsList[i]->GetObjectID())->GetInternalFormat());
+					switch (CurrentTexture->GetType())
+					{
+						case FE_TEXTURE_TYPE::FE_TEXTURE_1D:   AdditionalTypeInfo += "1D"; break;
+						case FE_TEXTURE_TYPE::FE_TEXTURE_2D:   AdditionalTypeInfo += "2D"; break;
+						case FE_TEXTURE_TYPE::FE_TEXTURE_3D:   AdditionalTypeInfo += "3D"; break;
+						case FE_TEXTURE_TYPE::FE_TEXTURE_CUBE: AdditionalTypeInfo += "Cube"; break;
+						default: break;
+					}
+					std::string InternalFormatString = FETexture::TextureInternalFormatToString(CurrentTexture->GetInternalFormat());
+					if (!InternalFormatString.empty())
+						AdditionalTypeInfo += ", " + InternalFormatString;
 				}
 
 				ImGui::BeginTooltip();
