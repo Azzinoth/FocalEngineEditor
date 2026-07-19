@@ -14,19 +14,19 @@ FEEditorMaterialNode::FEEditorMaterialNode(FEMaterial* Material) : Node()
 	TitleBackgroundColor = ImColor(200, 50, 200);
 	TitleBackgroundColorHovered = ImColor(245, 50, 245);
 	
-	AddSocket(new NodeSocket(this, "RGBA", "albedo", false));
-	AddSocket(new NodeSocket(this, "RGBA", "normal", false));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "AO", false));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "Roughness", false));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "Metalness", false));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "Displacement", false));
+	AddSocket(new NodeSocket(this, "RGBA", "albedo", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "RGBA", "normal", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "AO", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "Roughness", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "Metalness", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "Displacement", NodeSocket::SocketFlow::Input));
 
-	AddSocket(new NodeSocket(this, "RGBA", "albedo_1", false));
-	AddSocket(new NodeSocket(this, "RGBA", "normal_1", false));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "AO_1", false));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "Roughness_1", false));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "Metalness_1", false));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "Displacement_1", false));
+	AddSocket(new NodeSocket(this, "RGBA", "albedo_1", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "RGBA", "normal_1", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "AO_1", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "Roughness_1", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "Metalness_1", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "Displacement_1", NodeSocket::SocketFlow::Input));
 }
 
 void FEEditorMaterialNode::Draw()

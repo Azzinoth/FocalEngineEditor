@@ -11,19 +11,19 @@ FEEditorTextureCreatingNode::FEEditorTextureCreatingNode() : Node()
 	SetSize(ImVec2(280, 180));
 	SetName(ResultTexture->GetName());
 
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "r", false));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "g", false));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "b", false));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "a", false));
-	AddSocket(new NodeSocket(this, "RGB", "rgb", false));
-	AddSocket(new NodeSocket(this, "RGBA", "rgba", false));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "r", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "g", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "b", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "a", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "RGB", "rgb", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "RGBA", "rgba", NodeSocket::SocketFlow::Input));
 
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "r", true));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "g", true));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "b", true));
-	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "a", true));
-	AddSocket(new NodeSocket(this, "RGB", "rgb", true));
-	AddSocket(new NodeSocket(this, "RGBA", "rgba", true));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "r", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "g", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "b", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "COLOR_CHANNEL", "a", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "RGB", "rgb", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "RGBA", "rgba", NodeSocket::SocketFlow::Output));
 }
 
 void FEEditorTextureCreatingNode::Draw()
