@@ -155,6 +155,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 
+#ifdef FOCAL_ENGINE_LEIA_3D_MONITOR
+		bool b3DMonitorMode = LEIA_3D_MANAGER.Is3DModeEnabled();
+		if (ImGui::Checkbox("Leia 3D monitor mode", &b3DMonitorMode))
+		{
+			LEIA_3D_MANAGER.Set3DModeEnabled(b3DMonitorMode);
+		}
+#endif
+
 		//ImGui::ShowDemoWindow();
 		EDITOR.Render();
 		ENGINE.EndFrame();
