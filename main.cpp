@@ -22,6 +22,7 @@ void OnSomething(float Value)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	ENGINE.InitWindow();
+	ENGINE.SetVsyncEnabled(true);
 	EDITOR.InitializeResources();
 	THREAD_POOL.SetConcurrentThreadCount(10);
 	NODE_SYSTEM.Initialize();
@@ -48,6 +49,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ENGINE.BeginFrame();
 		EDITOR.UpdateBeforeRender();
 		ENGINE.Render();
+		LEIA_3D_MANAGER.Render();
 
 #ifdef EDITOR_SELECTION_DEBUG_MODE
 		if (EDITOR.GetFocusedScene() != nullptr)
@@ -160,6 +162,45 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		if (ImGui::Checkbox("Leia 3D monitor mode", &b3DMonitorMode))
 		{
 			LEIA_3D_MANAGER.Set3DModeEnabled(b3DMonitorMode);
+		}
+
+		static FEViewport* LeiaViewport = nullptr;
+		if (ImGui::Begin("Leia 3D monitor rendering", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+		{
+			if (LeiaViewport == nullptr)
+			{
+				std::string ViewPortID = ENGINE.CreateViewport(FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl());
+				LeiaViewport = ENGINE.GetViewport(ViewPortID);
+			}
+
+			FETexture* FinalResult = LEIA_3D_MANAGER.GetFinalResult();
+			// Whole pixels, because each "3D" pixel should be shown exactly on the pixel it was meant for.
+			const ImVec2 Position = ImFloor(ImGui::GetCursorScreenPos());
+			const ImVec2 Size = ImFloor(ImGui::GetContentRegionAvail());
+			if (FinalResult != nullptr && Size.x > 0.0f && Size.y > 0.0f)
+			{
+				// Final result has the size of the main window, so each screen pixel shows the texel at the same position.
+				const ImVec2 Scale = ImGui::GetIO().DisplayFramebufferScale;
+				const float TextureWidth = static_cast<float>(FinalResult->GetWidth());
+				const float TextureHeight = static_cast<float>(FinalResult->GetHeight());
+				// Texture is upside down for ImGui, so V of the top edge is bigger than V of the bottom edge.
+				const ImVec2 TopLeftUV = ImVec2(Position.x * Scale.x / TextureWidth, 1.0f - Position.y * Scale.y / TextureHeight);
+				const ImVec2 BottomRightUV = ImVec2((Position.x + Size.x) * Scale.x / TextureWidth, 1.0f - (Position.y + Size.y) * Scale.y / TextureHeight);
+
+				ImGui::SetCursorScreenPos(Position);
+				ImGui::Image(FinalResult->GetTextureID(), Size, TopLeftUV, BottomRightUV);
+			}
+		}
+		ImGui::End();
+
+		if (ImGui::Button("Set scene in focus current scene for Leia 3D"))
+		{
+			FEScene* FocusedScene = EDITOR.GetFocusedScene();
+			if (FocusedScene != nullptr)
+			{
+				if (LeiaViewport != nullptr)
+					LEIA_3D_MANAGER.Initialize(FocusedScene->GetObjectID(), LeiaViewport->GetID());
+			}
 		}
 #endif
 
