@@ -22,7 +22,7 @@ void OnSomething(float Value)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	ENGINE.InitWindow();
-	ENGINE.SetVsyncEnabled(true);
+	//ENGINE.SetVsyncEnabled(true);
 	EDITOR.InitializeResources();
 	THREAD_POOL.SetConcurrentThreadCount(10);
 	NODE_SYSTEM.Initialize();
@@ -162,6 +162,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		if (ImGui::Checkbox("Leia 3D monitor mode", &b3DMonitorMode))
 		{
 			LEIA_3D_MANAGER.Set3DModeEnabled(b3DMonitorMode);
+		}
+
+		bool bEyeFrustumsVisible = LEIA_3D_MANAGER.AreEyeFrustumsVisible();
+		if (ImGui::Checkbox("Show Leia eye frustums", &bEyeFrustumsVisible))
+		{
+			LEIA_3D_MANAGER.SetEyeFrustumsVisible(bEyeFrustumsVisible);
+		}
+
+		bool bMonitorVisible = LEIA_3D_MANAGER.IsMonitorVisible();
+		if (ImGui::Checkbox("Show Leia monitor", &bMonitorVisible))
+		{
+			LEIA_3D_MANAGER.SetMonitorVisible(bMonitorVisible);
+		}
+
+		// Useful values differ by orders of magnitude, so slider is logarithmic.
+		float WorldUnitsPerMillimeter = LEIA_3D_MANAGER.GetWorldUnitsPerMillimeter();
+		if (ImGui::SliderFloat("Leia world units per millimeter", &WorldUnitsPerMillimeter, 0.0001f, 1.0f, "%.5f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp))
+		{
+			LEIA_3D_MANAGER.SetWorldUnitsPerMillimeter(WorldUnitsPerMillimeter);
 		}
 
 		static FEViewport* LeiaViewport = nullptr;
