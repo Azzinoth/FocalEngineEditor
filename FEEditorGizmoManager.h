@@ -17,7 +17,7 @@ class FEGizmoSceneData
 	friend class FEEditorInspectorWindow;
 	friend class GizmosSettingsWindow;
 
-	std::string SceneID = "";
+	FEUUID SceneID;
 	
 	int GizmosState = TRANSFORM_GIZMOS;
 
@@ -130,11 +130,11 @@ private:
 	FETransformComponent& GetTransformComponentOfSelectedObject(FEScene* Scene);
 	void ApplyChangesToSelectedObject(FETransformComponent& Changes, FEScene* Scene);
 
-	std::unordered_map<std::string, FEGizmoSceneData*> PerSceneData;
+	std::unordered_map<FEUUID, FEGizmoSceneData*> PerSceneData;
 	void ClearAllSceneData();
-	void ClearSceneData(const std::string& SceneID);
-	void AddSceneData(const std::string& SceneID);
-	FEGizmoSceneData* GetSceneData(const std::string& SceneID);
+	void ClearSceneData(const FEUUID& SceneID);
+	void AddSceneData(const FEUUID& SceneID);
+	FEGizmoSceneData* GetSceneData(const FEUUID& SceneID);
 
 	FETransformComponent DummyTransformComponent;
 };

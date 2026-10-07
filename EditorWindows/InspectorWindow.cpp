@@ -114,7 +114,7 @@ bool FEEditorInspectorWindow::EntityChangeGameModelTargetCallback(FEObject* Obje
 		return false;
 
 	FEGameModelComponent& GameModelComponent = Entity->GetComponent<FEGameModelComponent>();
-	FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Object->GetObjectID());
+	FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Object->GetID());
 	if (GameModel == nullptr)
 		return false;
 
@@ -136,7 +136,7 @@ bool FEEditorInspectorWindow::EntityChangePointCloudTargetCallback(FEObject* Obj
 		return false;
 
 	FEPointCloudComponent& PointCloudComponent = Entity->GetComponent<FEPointCloudComponent>();
-	FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(Object->GetObjectID());
+	FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(Object->GetID());
 	if (PointCloud == nullptr)
 		return false;
 
@@ -155,7 +155,7 @@ bool FEEditorInspectorWindow::TerrainChangeMaterialTargetCallback(FEObject* Obje
 	if (SELECTED.GetSelected(CurrentScene) == nullptr || !SELECTED.GetSelected(CurrentScene)->HasComponent<FETerrainComponent>())
 		return false;
 
-	FEMaterial* MaterialToAssign = RESOURCE_MANAGER.GetMaterial(Object->GetObjectID());
+	FEMaterial* MaterialToAssign = RESOURCE_MANAGER.GetMaterial(Object->GetID());
 	if (!MaterialToAssign->IsCompactPacking())
 		return false;
 
@@ -499,17 +499,17 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 		return;
 
 	// Because of editor camera system, we need to check if it is main camera in a different way.
-	std::string MainCameraID = PROJECT_MANAGER.GetCurrent()->GetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetObjectID());
-	bool bIsMainCamera = MainCameraID == CameraEntity->GetObjectID();
+	FEUUID MainCameraID = PROJECT_MANAGER.GetCurrent()->GetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetID());
+	bool bIsMainCamera = MainCameraID == CameraEntity->GetID();
 	if (ImGui::Checkbox("Main camera", &bIsMainCamera))
 	{
 		if (bIsMainCamera)
 		{
-			PROJECT_MANAGER.GetCurrent()->SetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetObjectID(), CameraEntity->GetObjectID());
+			PROJECT_MANAGER.GetCurrent()->SetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetID(), CameraEntity->GetID());
 		}
 		else
 		{
-			PROJECT_MANAGER.GetCurrent()->SetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetObjectID(), "");
+			PROJECT_MANAGER.GetCurrent()->SetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetID(), FEUUID());
 		}
 	}
 
@@ -528,7 +528,7 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	FETexture* CameraPreviewTexture = nullptr;
 
 	// If it is an editor camera, we do not need to render scene again.
-	if (CameraEntity->GetObjectID() == PROJECT_MANAGER.GetCurrent()->GetEditorCameraIDBySceneID(CurrentScene->GetObjectID()))
+	if (CameraEntity->GetID() == PROJECT_MANAGER.GetCurrent()->GetEditorCameraIDBySceneID(CurrentScene->GetID()))
 	{
 		CameraPreviewTexture = RENDERER.GetCameraResult(CameraEntity);
 	}
@@ -1014,7 +1014,7 @@ void FEEditorInspectorWindow::ChangeGameModelOfEntityCallback(const std::vector<
 
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_GAMEMODEL)
 	{
-		FEGameModel* SelectedGameModel = RESOURCE_MANAGER.GetGameModel(SelectionsResult[0]->GetObjectID());
+		FEGameModel* SelectedGameModel = RESOURCE_MANAGER.GetGameModel(SelectionsResult[0]->GetID());
 		if (SelectedGameModel == nullptr)
 			return;
 
@@ -1030,7 +1030,7 @@ void FEEditorInspectorWindow::ChangePointCloudOfEntityCallback(const std::vector
 
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_POINT_CLOUD)
 	{
-		FEPointCloud* SelectedPointCloud = RESOURCE_MANAGER.GetPointCloud(SelectionsResult[0]->GetObjectID());
+		FEPointCloud* SelectedPointCloud = RESOURCE_MANAGER.GetPointCloud(SelectionsResult[0]->GetID());
 		if (SelectedPointCloud == nullptr)
 			return;
 
@@ -1158,7 +1158,7 @@ void FEEditorInspectorWindow::Render()
 
 	FEEntity* EntitySelected = SELECTED.GetSelected(CurrentScene);
 
-	ImGui::Text("ID : %s", EntitySelected->GetObjectID().c_str());
+	ImGui::Text("ID : %s", UNIQUE_ID.ToString(EntitySelected->GetID()).c_str());
 	ImGui::Text("Name : %s", EntitySelected->GetName().c_str());
 
 	if (EntitySelected->HasComponent<FETagComponent>())
@@ -1174,7 +1174,7 @@ void FEEditorInspectorWindow::Render()
 		{
 			FETagComponent& TagComponent = EntitySelected->GetComponent<FETagComponent>();
 			std::string CurrentTag = TagComponent.GetTag();
-			if (ImGui::InputText(("##Tag Edit" + EntitySelected->GetObjectID()).c_str(), &CurrentTag))
+			if (ImGui::InputText(("##Tag Edit" + UNIQUE_ID.ToString(EntitySelected->GetID())).c_str(), &CurrentTag))
 				TagComponent.SetTag(CurrentTag);
 		}
 	}
@@ -1216,7 +1216,7 @@ void FEEditorInspectorWindow::Render()
 			GameModelComponent.SetWireframeMode(bActive);
 
 			ImGui::Text("Game Model : ");
-			FETexture* PreviewTexture = PREVIEW_MANAGER.GetGameModelPreview(GameModelComponent.GetGameModel()->GetObjectID());
+			FETexture* PreviewTexture = PREVIEW_MANAGER.GetGameModelPreview(GameModelComponent.GetGameModel()->GetID());
 
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
 			if (ImGui::ImageButton("GameModelPreviewButton", PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
@@ -1276,7 +1276,7 @@ void FEEditorInspectorWindow::Render()
 			ImGui::Text("Point Cloud : ");
 			FETexture* PreviewTexture = RESOURCE_MANAGER.NoTexture;
 			if (PointCloudComponent.GetPointCloud() != nullptr)
-				PreviewTexture = PREVIEW_MANAGER.GetPreview(PointCloudComponent.GetPointCloud()->GetObjectID());
+				PreviewTexture = PREVIEW_MANAGER.GetPreview(PointCloudComponent.GetPointCloud()->GetID());
 
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
 			if (ImGui::ImageButton("PointCloudPreviewButton", PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
@@ -1343,7 +1343,7 @@ void FEEditorInspectorWindow::Render()
 							continue;
 
 						bool bSelected = (VolumetricShaders[i] == VolumeComponent.GetMaterial()->GetShader());
-						ImGui::PushID(VolumetricShaders[i]->GetObjectID().c_str());
+						ImGui::PushID(UNIQUE_ID.ToString(VolumetricShaders[i]->GetID()).c_str());
 						if (ImGui::Selectable(VolumetricShaders[i]->GetName().c_str(), bSelected))
 							VolumeComponent.GetMaterial()->SetShader(VolumetricShaders[i]);
 
@@ -1436,10 +1436,10 @@ void FEEditorInspectorWindow::Render()
 
 					FETexture* CurrentTexture = TextureOverrides[i].second;
 					std::string CurrentTextureCaption = CurrentTexture != nullptr ? CurrentTexture->GetName() : "None";
-					std::string ComboLabel = "##VolumeTexture" + std::to_string(i) + (CurrentTexture != nullptr ? CurrentTexture->GetObjectID() : "None");
+					std::string ComboLabel = "##VolumeTexture" + std::to_string(i) + (CurrentTexture != nullptr ? UNIQUE_ID.ToString(CurrentTexture->GetID()) : "None");
 					if (ImGui::BeginCombo(ComboLabel.c_str(), CurrentTextureCaption.c_str(), ImGuiWindowFlags_None))
 					{
-						std::vector<std::string> TextureIDList = RESOURCE_MANAGER.GetTextureIDList();
+						std::vector<FEUUID> TextureIDList = RESOURCE_MANAGER.GetTextureIDList();
 						for (size_t j = 0; j < TextureIDList.size(); j++)
 						{
 							FETexture* Texture = RESOURCE_MANAGER.GetTexture(TextureIDList[j]);
@@ -1447,9 +1447,9 @@ void FEEditorInspectorWindow::Render()
 								continue;
 
 							bool bSelected = Texture == CurrentTexture;
-							ImGui::PushID(Texture->GetObjectID().c_str());
+							ImGui::PushID(UNIQUE_ID.ToString(Texture->GetID()).c_str());
 							if (ImGui::Selectable(Texture->GetName().c_str(), bSelected))
-								VolumeMaterial->SetTextureOverride(TextureOverrides[i].first, Texture->GetObjectID());
+								VolumeMaterial->SetTextureOverride(TextureOverrides[i].first, Texture->GetID());
 
 							if (bSelected)
 								ImGui::SetItemDefaultFocus();
@@ -1483,7 +1483,7 @@ void FEEditorInspectorWindow::Render()
 					VolumeComponent.SetMaterial(DefaultStartingMaterial);
 				}
 
-				std::vector<std::string> ListOfVolumetricMaterials = RESOURCE_MANAGER.GetNewMaterialIDList();
+				std::vector<FEUUID> ListOfVolumetricMaterials = RESOURCE_MANAGER.GetNewMaterialIDList();
 				for (size_t i = 0; i < ListOfVolumetricMaterials.size(); i++)
 				{
 					FENewMaterial* CurrentMaterial = RESOURCE_MANAGER.GetNewMaterial(ListOfVolumetricMaterials[i]);
@@ -1518,7 +1518,7 @@ void FEEditorInspectorWindow::Render()
 
 		if (ImGui::CollapsingHeader("Prefab Instance", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			ImGui::Text("Prefab ID : %s", EntitySelected->GetComponent<FEPrefabInstanceComponent>().GetPrefab()->GetObjectID().c_str());
+			ImGui::Text("Prefab ID : %s", UNIQUE_ID.ToString(EntitySelected->GetComponent<FEPrefabInstanceComponent>().GetPrefab()->GetID()).c_str());
 		}
 	}
 
@@ -1533,7 +1533,7 @@ void FEEditorInspectorWindow::Render()
 
 		if (ImGui::CollapsingHeader("Instanced", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			FESelectionData* CurrentSelectionData = SELECTED.GetSceneData(CurrentScene->GetObjectID());
+			FESelectionData* CurrentSelectionData = SELECTED.GetSceneData(CurrentScene->GetID());
 			FEInstancedComponent& InstancedComponent = EntitySelected->GetComponent<FEInstancedComponent>();
 
 			if (CurrentSelectionData->InstancedSubObjectIndexSelected != -1)
@@ -1571,7 +1571,7 @@ void FEEditorInspectorWindow::Render()
 				ImGui::Text("Snapped to: ");
 				ImGui::SameLine();
 
-				const std::vector<std::string> TerrainIDList = CurrentScene->GetEntityIDListWithComponent<FETerrainComponent>();
+				const std::vector<FEUUID> TerrainIDList = CurrentScene->GetEntityIDListWithComponent<FETerrainComponent>();
 				static std::string CurrentTerrain = "none";
 
 				if (InstancedComponent.GetSnappedToTerrain() == nullptr)
@@ -1586,7 +1586,7 @@ void FEEditorInspectorWindow::Render()
 				ImGui::SetNextItemWidth(220);
 				if (ImGui::BeginCombo("##Terrain", CurrentTerrain.c_str(), ImGuiWindowFlags_None))
 				{
-					const bool bIsSelected = (CurrentTerrain == "none");
+					const bool bIsSelected = (InstancedComponent.GetSnappedToTerrain() == nullptr);
 					if (ImGui::Selectable("none", bIsSelected))
 					{
 						if (InstancedComponent.GetSnappedToTerrain() != nullptr)
@@ -1600,8 +1600,8 @@ void FEEditorInspectorWindow::Render()
 
 					for (size_t i = 0; i < TerrainIDList.size(); i++)
 					{
-						const bool bIsSelected = (CurrentTerrain == TerrainIDList[i]);
-						ImGui::PushID(TerrainIDList[i].c_str());
+						const bool bIsSelected = (InstancedComponent.GetSnappedToTerrain() != nullptr && InstancedComponent.GetSnappedToTerrain()->GetID() == TerrainIDList[i]);
+						ImGui::PushID(UNIQUE_ID.ToString(TerrainIDList[i]).c_str());
 						if (ImGui::Selectable(CurrentScene->GetEntity(TerrainIDList[i])->GetName().c_str(), bIsSelected))
 						{
 							TERRAIN_SYSTEM.SnapInstancedEntity(CurrentScene->GetEntity(TerrainIDList[i]), EntitySelected);
@@ -1649,7 +1649,7 @@ void FEEditorInspectorWindow::Render()
 								break;
 
 							const bool bIsSelected = (CurrentLayer == i);
-							ImGui::PushID(/*Layer->GetObjectID().c_str()*/static_cast<int>(i));
+							ImGui::PushID(/*Layer->GetID().c_str()*/static_cast<int>(i));
 							if (ImGui::Selectable(Layer->GetName().c_str(), bIsSelected))
 							{
 								TERRAIN_SYSTEM.ConnectInstancedEntityToLayer(TerrainEntity, EntitySelected, static_cast<int>(i));
@@ -1935,7 +1935,7 @@ void FEEditorInspectorWindow::CreateNewTerrainLayerWithMaterialCallback(std::vec
 		if (TerrainToWorkWith == nullptr)
 			return;
 
-		FEMaterial* SelectedMaterial = RESOURCE_MANAGER.GetMaterial(SelectionsResult[0]->GetObjectID());
+		FEMaterial* SelectedMaterial = RESOURCE_MANAGER.GetMaterial(SelectionsResult[0]->GetID());
 		if (SelectedMaterial == nullptr)
 			return;
 
@@ -1953,7 +1953,7 @@ void FEEditorInspectorWindow::ChangeMaterialInTerrainLayerCallback(std::vector<F
 		if (TemporaryLayerIndex == -1)
 			return;
 
-		FEMaterial* SelectedMaterial = RESOURCE_MANAGER.GetMaterial(SelectionsResult[0]->GetObjectID());
+		FEMaterial* SelectedMaterial = RESOURCE_MANAGER.GetMaterial(SelectionsResult[0]->GetID());
 		if (SelectedMaterial == nullptr)
 			return;
 
@@ -1993,12 +1993,12 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 			TerrainComponent.SetWireframeMode(bActive);
 
 			FEShaderUniformValue CurrentValue;
-			if (RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/)->GetUniformData("debugFlag", CurrentValue))
+			if (RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::PBRShader)->GetUniformData("debugFlag", CurrentValue))
 			{
 
 				int IData = CurrentValue.GetValue<int>();
 				ImGui::SliderInt("debugFlag", &IData, 0, 10);
-				RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/)->UpdateUniformData("debugFlag", IData);
+				RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::PBRShader)->UpdateUniformData("debugFlag", IData);
 			}
 
 			float DisplacementScale = TerrainComponent.GetDisplacementScale();
@@ -2260,7 +2260,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 				ImGui::SetCursorPos(PostionBeforeDraw);
 				ImColor ImageTint = ImGui::IsItemHovered() ? ImColor(1.0f, 1.0f, 1.0f, 0.5f) : ImColor(1.0f, 1.0f, 1.0f, 1.0f);
-				FETexture* PreviewTexture = PREVIEW_MANAGER.GetMaterialPreview(Layer->GetMaterial()->GetObjectID());
+				FETexture* PreviewTexture = PREVIEW_MANAGER.GetMaterialPreview(Layer->GetMaterial()->GetID());
 				ImGui::Image(PreviewTexture->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 			}
 
@@ -2286,7 +2286,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 				if (ImGui::MenuItem("Add layer..."))
 				{
-					std::vector<std::string> TemporaryMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
+					std::vector<FEUUID> TemporaryMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 					std::vector<FEObject*> FinalMaterialList;
 					for (size_t i = 0; i < TemporaryMaterialList.size(); i++)
 					{
@@ -2347,7 +2347,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 						if (ImGui::MenuItem("Change material..."))
 						{
-							std::vector<std::string> TemporaryMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
+							std::vector<FEUUID> TemporaryMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 							std::vector<FEObject*> FinalMaterialList;
 							for (size_t i = 0; i < TemporaryMaterialList.size(); i++)
 							{
@@ -2473,7 +2473,7 @@ void FEEditorInspectorWindow::AddNewGameModelComponentCallback(const std::vector
 {
 	if (!SelectionsResult.empty() && SelectionsResult[0]->GetType() == FE_GAMEMODEL)
 	{
-		FEGameModel* SelectedGameModel = RESOURCE_MANAGER.GetGameModel(SelectionsResult[0]->GetObjectID());
+		FEGameModel* SelectedGameModel = RESOURCE_MANAGER.GetGameModel(SelectionsResult[0]->GetID());
 		if (SelectedGameModel == nullptr)
 		{
 			LOG.Add("Can't add game model component. Game model is not loaded.", "FE_LOG_LOADING", FE_LOG_ERROR);
@@ -2553,12 +2553,12 @@ void HandleScriptVariable(FENativeScriptComponent& Component, const std::string 
 				PrefabName = Value->GetName();
 			if (ImGui::BeginCombo(VariableName.c_str(), PrefabName.c_str()))
 			{
-				std::vector<std::string> PrefabIDList = RESOURCE_MANAGER.GetPrefabIDList();
+				std::vector<FEUUID> PrefabIDList = RESOURCE_MANAGER.GetPrefabIDList();
 				for (size_t i = 0; i < PrefabIDList.size(); i++)
 				{
 					FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabIDList[i]);
 					bool bIsSelected = PrefabName == CurrentPrefab->GetName();
-					ImGui::PushID(PrefabIDList[i].c_str());
+					ImGui::PushID(UNIQUE_ID.ToString(PrefabIDList[i]).c_str());
 					if (ImGui::Selectable(CurrentPrefab->GetName().c_str(), bIsSelected))
 					{
 						Value = RESOURCE_MANAGER.GetPrefab(PrefabIDList[i]);
@@ -2629,12 +2629,12 @@ void HandleScriptArrayVariable(FENativeScriptComponent& Component, const std::st
 					PrefabName = Value[i]->GetName();
 				if (ImGui::BeginCombo((VariableName + "[" + std::to_string(i) + "]").c_str(), PrefabName.c_str()))
 				{
-					std::vector<std::string> PrefabIDList = RESOURCE_MANAGER.GetPrefabIDList();
+					std::vector<FEUUID> PrefabIDList = RESOURCE_MANAGER.GetPrefabIDList();
 					for (size_t j = 0; j < PrefabIDList.size(); j++)
 					{
 						FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabIDList[j]);
 						bool bIsSelected = PrefabName == CurrentPrefab->GetName();
-						ImGui::PushID(PrefabIDList[j].c_str());
+						ImGui::PushID(UNIQUE_ID.ToString(PrefabIDList[j]).c_str());
 						if (ImGui::Selectable(CurrentPrefab->GetName().c_str(), bIsSelected))
 						{
 							Value[i] = RESOURCE_MANAGER.GetPrefab(PrefabIDList[j]);
@@ -2669,7 +2669,7 @@ void FEEditorInspectorWindow::DisplayNativeScriptProperties(FEEntity* NativeScri
 		{
 			ImGui::Text("Script failed to load.");
 			FENativeScriptFailedToLoadData* FailedToLoadData = NativeScriptComponent.GetFailedToLoadData();
-			ImGui::Text(("Module ID: " + FailedToLoadData->GetModuleID()).c_str());
+			ImGui::Text(("Module ID: " + UNIQUE_ID.ToString(FailedToLoadData->GetModuleID())).c_str());
 			// And show raw data in multiline text box.
 			Json::Value Data = FailedToLoadData->GetRawData();
 			std::string RawData = Data.toStyledString();
@@ -2683,11 +2683,11 @@ void FEEditorInspectorWindow::DisplayNativeScriptProperties(FEEntity* NativeScri
 		}
 		else
 		{
-			std::vector<std::string> ModuleList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleIDList();
+			std::vector<FEUUID> ModuleList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleIDList();
 
 			for (size_t i = 0; i < ModuleList.size(); i++)
 			{
-				ImGui::Text(("Module ID: " + ModuleList[i]).c_str());
+				ImGui::Text(("Module ID: " + UNIQUE_ID.ToString(ModuleList[i])).c_str());
 
 				ImGui::Text("Script list: ");
 				std::vector<std::string> ScriptList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleScriptNameList(ModuleList[i]);
@@ -2695,7 +2695,7 @@ void FEEditorInspectorWindow::DisplayNativeScriptProperties(FEEntity* NativeScri
 				{
 					ImGui::Text(ScriptList[j].c_str());
 					ImGui::SameLine();
-					if (ImGui::Button(("Add##" + ModuleList[i] + "_" + ScriptList[j]).c_str()))
+					if (ImGui::Button(("Add##" + UNIQUE_ID.ToString(ModuleList[i]) + "_" + ScriptList[j]).c_str()))
 					{
 						NATIVE_SCRIPT_SYSTEM.InitializeScriptComponent(NativeScriptEntity, ModuleList[i], ScriptList[j]);
 					}
@@ -2705,11 +2705,11 @@ void FEEditorInspectorWindow::DisplayNativeScriptProperties(FEEntity* NativeScri
 	}
 	else
 	{
-		std::string ModuleID = NativeScriptComponent.GetModuleID();
+		FEUUID ModuleID = NativeScriptComponent.GetModuleID();
 		const FEScriptData* ScriptData = NativeScriptComponent.GetScriptData();
 
 		// Showing general information.
-		ImGui::Text(("Module: " + ModuleID).c_str());
+		ImGui::Text(("Module: " + UNIQUE_ID.ToString(ModuleID)).c_str());
 		ImGui::Text(("Script name: " + ScriptData->Name).c_str());
 		ImGui::Text((std::string("Run in editor: ") + std::string(ScriptData->bRunInEditor ? "Yes" : "No")).c_str());
 

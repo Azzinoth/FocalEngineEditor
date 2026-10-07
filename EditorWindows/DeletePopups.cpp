@@ -64,7 +64,7 @@ void DeleteTexturePopup::Render()
 std::vector<FEMaterial*> DeleteTexturePopup::MaterialsThatUsesTexture(const FETexture* Texture)
 {
 	std::vector<FEMaterial*> Result;
-	const std::vector<std::string> MaterialsList = RESOURCE_MANAGER.GetMaterialIDList();
+	const std::vector<FEUUID> MaterialsList = RESOURCE_MANAGER.GetMaterialIDList();
 
 	for (size_t i = 0; i < MaterialsList.size(); i++)
 	{
@@ -82,12 +82,12 @@ std::vector<FEMaterial*> DeleteTexturePopup::MaterialsThatUsesTexture(const FETe
 
 	if (EDITOR.GetFocusedScene() != nullptr)
 	{
-		const std::vector<std::string> TerrainList = EDITOR.GetFocusedScene()->GetEntityIDListWithComponent<FETerrainComponent>();
+		const std::vector<FEUUID> TerrainList = EDITOR.GetFocusedScene()->GetEntityIDListWithComponent<FETerrainComponent>();
 		for (size_t i = 0; i < TerrainList.size(); i++)
 		{
 			/*FEEntity* CurrentTerrain = SCENE.GetEntity(TerrainList[i]);
 			FETerrainComponent& TerrainComponent = CurrentTerrain->GetComponent<FETerrainComponent>();
-			if (TerrainComponent.HeightMap != nullptr && TerrainComponent.HeightMap->GetObjectID() == Texture->GetObjectID())
+			if (TerrainComponent.HeightMap != nullptr && TerrainComponent.HeightMap->GetID() == Texture->GetID())
 			{
 				Result.push_back(nullptr);
 			}*/
@@ -104,27 +104,27 @@ void DeleteTexturePopup::DeleteTexture(FETexture* Texture)
 	// check if this texture is used in some materials
 	// TO-DO: should be done through counter, not by searching each time.
 	const std::vector<FEMaterial*> MaterialsThatUseTexture = MaterialsThatUsesTexture(Texture);
-	std::vector<std::string> GameModelListToUpdate;
+	std::vector<FEUUID> GameModelListToUpdate;
 
 	std::string Name = Texture->GetName();
 	// re-create game model preview that was using material that uses this texture
 	if (!MaterialsThatUseTexture.empty())
 	{
-		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
+		const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 		for (size_t i = 0; i < GameModelList.size(); i++)
 		{
 			const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
 			for (size_t j = 0; j < MaterialsThatUseTexture.size(); j++)
 			{
 				if (CurrentGameModel->Material == MaterialsThatUseTexture[j])
-					GameModelListToUpdate.push_back(CurrentGameModel->GetObjectID());
+					GameModelListToUpdate.push_back(CurrentGameModel->GetID());
 			}
 		}
 	}
 
 	Texture->SetDirtyFlag(true);
 	PROJECT_MANAGER.GetCurrent()->SetModified(true);
-	PROJECT_MANAGER.GetCurrent()->AddFileToDeleteList(PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + Texture->GetObjectID() + ".texture");
+	PROJECT_MANAGER.GetCurrent()->AddFileToDeleteList(PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + UNIQUE_ID.ToString(Texture->GetID()) + ".texture");
 	RESOURCE_MANAGER.DeleteFETexture(Texture);
 
 	// re-create game model preview
@@ -195,7 +195,7 @@ void DeleteMeshPopup::Render()
 int DeleteMeshPopup::TimesMeshUsed(const FEMesh* Mesh)
 {
 	int Result = 0;
-	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
+	const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
@@ -209,11 +209,11 @@ int DeleteMeshPopup::TimesMeshUsed(const FEMesh* Mesh)
 
 void DeletePointCloudPopup::DeletePointCloud(FEPointCloud* PointCloud)
 {
-	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
+	std::vector<FEUUID> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
 		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
-		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEPointCloudComponent>();
+		std::vector<FEUUID> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEPointCloudComponent>();
 		for (size_t j = 0; j < EntitiesList.size(); j++)
 		{
 			FEEntity* CurrentEntity = CurrentScene->GetEntity(EntitiesList[j]);
@@ -225,17 +225,17 @@ void DeletePointCloudPopup::DeletePointCloud(FEPointCloud* PointCloud)
 		}
 	}
 
-	std::string Name = PointCloud->GetName();
+	const FEUUID PointCloudID = PointCloud->GetID();
 
 	VIRTUAL_FILE_SYSTEM.LocateAndDeleteFile(PointCloud);
 
 	PointCloud->SetDirtyFlag(true);
 	PROJECT_MANAGER.GetCurrent()->SetModified(true);
 	// FIX ME! Check if it is working
-	PROJECT_MANAGER.GetCurrent()->AddFileToDeleteList(PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + PointCloud->GetObjectID() + ".pointcloud");
+	PROJECT_MANAGER.GetCurrent()->AddFileToDeleteList(PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + UNIQUE_ID.ToString(PointCloud->GetID()) + ".pointcloud");
 	RESOURCE_MANAGER.DeleteFEPointCloud(PointCloud);
 
-	PREVIEW_MANAGER.RemovePreview(Name);
+	PREVIEW_MANAGER.RemovePreview(PointCloudID);
 }
 
 DeletePointCloudPopup::DeletePointCloudPopup()
@@ -302,11 +302,11 @@ int DeletePointCloudPopup::TimesPointCloudUsed(const FEPointCloud* PointCloud)
 {
 	int Result = 0;
 
-	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
+	std::vector<FEUUID> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
 		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
-		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEPointCloudComponent>();
+		std::vector<FEUUID> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEPointCloudComponent>();
 		for (size_t j = 0; j < EntitiesList.size(); j++)
 		{
 			FEEntity* CurrentEntity = CurrentScene->GetEntity(EntitiesList[j]);
@@ -323,28 +323,28 @@ void DeleteMeshPopup::DeleteMesh(FEMesh* Mesh)
 {
 	VIRTUAL_FILE_SYSTEM.LocateAndDeleteFile(Mesh);
 
-	const std::string Name = Mesh->GetName();
+	const FEUUID MeshID = Mesh->GetID();
 
 	// re-create game model preview
-	std::vector<std::string> GameModelListToUpdate;
-	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
+	std::vector<FEUUID> GameModelListToUpdate;
+	const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
 		const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
 		if (CurrentGameModel->Mesh == Mesh)
-			GameModelListToUpdate.push_back(CurrentGameModel->GetObjectID());
+			GameModelListToUpdate.push_back(CurrentGameModel->GetID());
 	}
 
 	Mesh->SetDirtyFlag(true);
 	PROJECT_MANAGER.GetCurrent()->SetModified(true);
-	PROJECT_MANAGER.GetCurrent()->AddFileToDeleteList(PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + Mesh->GetObjectID() + ".model");
+	PROJECT_MANAGER.GetCurrent()->AddFileToDeleteList(PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + UNIQUE_ID.ToString(Mesh->GetID()) + ".model");
 	RESOURCE_MANAGER.DeleteFEMesh(Mesh);
 
 	// re-create game model preview
 	for (size_t i = 0; i < GameModelListToUpdate.size(); i++)
 		PREVIEW_MANAGER.CreateGameModelPreview(GameModelListToUpdate[i]);
 
-	PREVIEW_MANAGER.RemovePreview(Name);
+	PREVIEW_MANAGER.RemovePreview(MeshID);
 }
 
 DeleteGameModelPopup::DeleteGameModelPopup()
@@ -412,11 +412,11 @@ int DeleteGameModelPopup::TimesGameModelUsed(const FEGameModel* GameModel)
 {
 	int Result = 0;
 
-	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
+	std::vector<FEUUID> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
 		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
-		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEGameModelComponent>();
+		std::vector<FEUUID> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEGameModelComponent>();
 		for (size_t j = 0; j < EntitiesList.size(); j++)
 		{
 			FEEntity* CurrentEntity = CurrentScene->GetEntity(EntitiesList[j]);
@@ -505,11 +505,11 @@ void DeletePrefabPopup::Render()
 int DeletePrefabPopup::TimesPrefabUsed(const FEPrefab* Prefab)
 {
 	int Result = 0;
-	std::vector<std::string> SceneList = SCENE_MANAGER.GetSceneIDList();
+	std::vector<FEUUID> SceneList = SCENE_MANAGER.GetSceneIDList();
 	for (size_t i = 0; i < SceneList.size(); i++)
 	{
 		FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneList[i]);
-		std::vector<std::string> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEPrefabInstanceComponent>();
+		std::vector<FEUUID> EntitiesList = CurrentScene->GetEntityIDListWithComponent<FEPrefabInstanceComponent>();
 		for (size_t j = 0; j < EntitiesList.size(); j++)
 		{
 			FEEntity* CurrentEntity = CurrentScene->GetEntity(EntitiesList[j]);
@@ -598,7 +598,7 @@ void DeleteMaterialPopup::Render()
 int DeleteMaterialPopup::TimesMaterialUsed(const FEMaterial* Material)
 {
 	int Result = 0;
-	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
+	const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
@@ -614,15 +614,15 @@ void DeleteMaterialPopup::DeleteMaterial(FEMaterial* Material)
 {
 	VIRTUAL_FILE_SYSTEM.LocateAndDeleteFile(Material);
 
-	const std::string Name = Material->GetName();
+	const FEUUID MaterialID = Material->GetID();
 	// re-create game model preview
-	std::vector<std::string> GameModelListToUpdate;
-	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
+	std::vector<FEUUID> GameModelListToUpdate;
+	const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
 		const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
 		if (CurrentGameModel->Material == Material)
-			GameModelListToUpdate.push_back(CurrentGameModel->GetObjectID());
+			GameModelListToUpdate.push_back(CurrentGameModel->GetID());
 	}
 
 	Material->SetDirtyFlag(true);
@@ -633,7 +633,7 @@ void DeleteMaterialPopup::DeleteMaterial(FEMaterial* Material)
 	for (size_t i = 0; i < GameModelListToUpdate.size(); i++)
 		PREVIEW_MANAGER.CreateGameModelPreview(GameModelListToUpdate[i]);
 
-	PREVIEW_MANAGER.RemovePreview(Name);
+	PREVIEW_MANAGER.RemovePreview(MaterialID);
 }
 
 DeleteDirectoryPopup::DeleteDirectoryPopup()
@@ -678,23 +678,23 @@ void DeleteDirectoryPopup::RecursiveDeletion(const std::string Path)
 		}
 		else if (CurrentObject->GetType() == FE_MESH)
 		{
-			DeleteMeshPopup::DeleteMesh(RESOURCE_MANAGER.GetMesh(CurrentObject->GetObjectID()));
+			DeleteMeshPopup::DeleteMesh(RESOURCE_MANAGER.GetMesh(CurrentObject->GetID()));
 		}
 		else if (CurrentObject->GetType() == FE_POINT_CLOUD)
 		{
-			DeletePointCloudPopup::DeletePointCloud(RESOURCE_MANAGER.GetPointCloud(CurrentObject->GetObjectID()));
+			DeletePointCloudPopup::DeletePointCloud(RESOURCE_MANAGER.GetPointCloud(CurrentObject->GetID()));
 		}
 		else if (CurrentObject->GetType() == FE_TEXTURE)
 		{
-			DeleteTexturePopup::DeleteTexture(RESOURCE_MANAGER.GetTexture(CurrentObject->GetObjectID()));
+			DeleteTexturePopup::DeleteTexture(RESOURCE_MANAGER.GetTexture(CurrentObject->GetID()));
 		}
 		else if (CurrentObject->GetType() == FE_MATERIAL)
 		{
-			DeleteMaterialPopup::DeleteMaterial(RESOURCE_MANAGER.GetMaterial(CurrentObject->GetObjectID()));
+			DeleteMaterialPopup::DeleteMaterial(RESOURCE_MANAGER.GetMaterial(CurrentObject->GetID()));
 		}
 		else if (CurrentObject->GetType() == FE_GAMEMODEL)
 		{
-			DeleteGameModelPopup::DeleteGameModel(RESOURCE_MANAGER.GetGameModel(CurrentObject->GetObjectID()));
+			DeleteGameModelPopup::DeleteGameModel(RESOURCE_MANAGER.GetGameModel(CurrentObject->GetID()));
 		}
 	}
 

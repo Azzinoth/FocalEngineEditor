@@ -1,4 +1,5 @@
 #include "FEEditorHaloSelectionEffect.h"
+#include "FEEditorResourceIDs.h"
 #include "FEEditor.h"
 using namespace FocalEngine;
 
@@ -45,7 +46,7 @@ void FEEditorHaloSelectionEffect::InitializeResources()
 																				 nullptr,
 																				 nullptr,
 																				 nullptr,
-																				 "E4F5165B2E1B05321A182C77"/*"HaloDrawObjectShader"*/);
+																				 FEEditorResourceIDs::HaloDrawObjectShader);
 	
 	RESOURCE_MANAGER.SetTag(HaloDrawObjectShader, EDITOR_RESOURCE_TAG);
 	HaloMaterial->Shader = HaloDrawObjectShader;
@@ -56,7 +57,7 @@ void FEEditorHaloSelectionEffect::InitializeResources()
 																								   nullptr,
 																								   nullptr,
 																								   nullptr,
-																								   "16A2A65B2C1B013217219C67"/*"HaloDrawInstancedObjectShader"*/);
+																								   FEEditorResourceIDs::HaloDrawInstancedObjectShader);
 	RESOURCE_MANAGER.SetTag(HaloDrawInstancedObjectShader, EDITOR_RESOURCE_TAG);
 
 	HaloFinalShader = RESOURCE_MANAGER.CreateShader("HaloFinalShader", RESOURCE_MANAGER.LoadGLSL("SubSystems//FocalEngine//CoreExtensions//PostProcessEffects//FE_ScreenQuad_VS.glsl").c_str(),
@@ -65,7 +66,7 @@ void FEEditorHaloSelectionEffect::InitializeResources()
 																	   nullptr,
 																	   nullptr,
 																	   nullptr,
-																	   "4AC7365B2C1B07324721A127"/*"HaloFinalShader"*/);
+																	   FEEditorResourceIDs::HaloFinalShader);
 
 	RESOURCE_MANAGER.SetTag(HaloFinalShader, EDITOR_RESOURCE_TAG);
 }
@@ -75,7 +76,7 @@ void FEEditorHaloSelectionEffect::UpdateResources(FEScene* Scene)
 	if (Scene == nullptr)
 		return;
 
-	FEHaloSelectionData* CurrentHaloSelectionData = GetSceneData(Scene->GetObjectID());
+	FEHaloSelectionData* CurrentHaloSelectionData = GetSceneData(Scene->GetID());
 	if (CurrentHaloSelectionData == nullptr)
 		return;
 
@@ -89,7 +90,7 @@ void FEEditorHaloSelectionEffect::UpdateResources(FEScene* Scene)
 	CurrentHaloSelectionData->HaloObjectsFB = RESOURCE_MANAGER.CreateFramebuffer(FE_COLOR_ATTACHMENT, CameraData->SceneToTextureFB->GetWidth(), CameraData->SceneToTextureFB->GetHeight());
 	CurrentHaloSelectionData->PostProcess = ENGINE.CreatePostProcess("selectionHaloEffect", CameraData->SceneToTextureFB->GetWidth() / 4, CameraData->SceneToTextureFB->GetHeight() / 4);
 
-	FEShader* BlurShader = RESOURCE_MANAGER.GetShader("7F3E4F5C130B537F0846274F"/*"FEBloomBlur"*/);
+	FEShader* BlurShader = RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::BloomBlurShader);
 	CurrentHaloSelectionData->PostProcess->AddStage(new FEPostProcessStage(FE_POST_PROCESS_OWN_TEXTURE, BlurShader));
 	CurrentHaloSelectionData->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("FEBlurDirection", glm::vec2(1.0f, 0.0f)));
 	// because input texture at first stage is full resolution, we should blur harder to get simular blur on both sides.
@@ -139,7 +140,7 @@ void FEEditorHaloSelectionEffect::ClearAllSceneData()
 	PerSceneData.clear();
 }
 
-void FEEditorHaloSelectionEffect::ClearSceneData(const std::string& SceneID)
+void FEEditorHaloSelectionEffect::ClearSceneData(const FEUUID& SceneID)
 {
 	auto FoundSceneData = PerSceneData.find(SceneID);
 	if (FoundSceneData != PerSceneData.end())
@@ -149,7 +150,7 @@ void FEEditorHaloSelectionEffect::ClearSceneData(const std::string& SceneID)
 	}
 }
 
-void FEEditorHaloSelectionEffect::AddSceneData(const std::string& SceneID)
+void FEEditorHaloSelectionEffect::AddSceneData(const FEUUID& SceneID)
 {
 	FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneID);
 	if (CurrentScene == nullptr)
@@ -170,7 +171,7 @@ void FEEditorHaloSelectionEffect::AddSceneData(const std::string& SceneID)
 	PerSceneData[SceneID]->HaloObjectsFB = RESOURCE_MANAGER.CreateFramebuffer(FE_COLOR_ATTACHMENT, CameraData->SceneToTextureFB->GetWidth(), CameraData->SceneToTextureFB->GetHeight());
 	PerSceneData[SceneID]->PostProcess = ENGINE.CreatePostProcess("selectionHaloEffect", CameraData->SceneToTextureFB->GetWidth() / 4, CameraData->SceneToTextureFB->GetHeight() / 4);
 
-	FEShader* BlurShader = RESOURCE_MANAGER.GetShader("7F3E4F5C130B537F0846274F"/*"FEBloomBlur"*/);
+	FEShader* BlurShader = RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::BloomBlurShader);
 	PerSceneData[SceneID]->PostProcess->AddStage(new FEPostProcessStage(FE_POST_PROCESS_OWN_TEXTURE, BlurShader));
 	PerSceneData[SceneID]->PostProcess->Stages.back()->StageSpecificUniformValues.push_back(FEShaderUniformValue("FEBlurDirection", glm::vec2(1.0f, 0.0f)));
 	// because input texture at first stage is full resolution, we should blur harder to get simular blur on both sides.
@@ -208,7 +209,7 @@ void FEEditorHaloSelectionEffect::AddSceneData(const std::string& SceneID)
 	RENDERER.AddPostProcess(CameraData, PerSceneData[SceneID]->PostProcess, true);
 }
 
-FEHaloSelectionData* FEEditorHaloSelectionEffect::GetSceneData(const std::string& SceneID)
+FEHaloSelectionData* FEEditorHaloSelectionEffect::GetSceneData(const FEUUID& SceneID)
 {
 	auto FoundScene = PerSceneData.find(SceneID);
 	if (FoundScene != PerSceneData.end())

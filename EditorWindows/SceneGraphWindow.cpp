@@ -339,7 +339,7 @@ static void CreateInstancedEntityCallback(const std::vector<FEObject*> Selection
 
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_PREFAB)
 	{
-		FEGameModel* SelectedGameModel = RESOURCE_MANAGER.GetGameModel(SelectionsResult[0]->GetObjectID());
+		FEGameModel* SelectedGameModel = RESOURCE_MANAGER.GetGameModel(SelectionsResult[0]->GetID());
 		if (SelectedGameModel == nullptr)
 			return;
 
@@ -362,7 +362,7 @@ static void CreateEntityCallback(const std::vector<FEObject*> SelectionsResult)
 
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_PREFAB)
 	{
-		FEPrefab* SelectedPrefab = RESOURCE_MANAGER.GetPrefab(SelectionsResult[0]->GetObjectID());
+		FEPrefab* SelectedPrefab = RESOURCE_MANAGER.GetPrefab(SelectionsResult[0]->GetID());
 		if (SelectedPrefab == nullptr)
 			return;
 
@@ -378,8 +378,8 @@ static void CreateEntityCallback(const std::vector<FEObject*> SelectionsResult)
 
 DragAndDropTarget* FEEditorSceneGraphWindow::GetSceneNodeDragAndDropTarget(FENaiveSceneGraphNode* NodeToFind)
 {
-	std::string NewNodeID = NodeToFind->GetObjectID();
-	int64_t UniqueID = static_cast<int64_t>(std::hash<std::string>{}(NewNodeID.c_str()));
+	FEUUID NewNodeID = NodeToFind->GetID();
+	int64_t UniqueID = static_cast<int64_t>(std::hash<FEUUID>{}(NewNodeID));
 
 	if (SceneNodeDragAndDropTargets.find(UniqueID) == SceneNodeDragAndDropTargets.end())
 	{
@@ -419,13 +419,13 @@ void FEEditorSceneGraphWindow::Render()
 	// TreeView's built-in ExpandToNode only runs from IsNodeSelected, which is not called on nodes hidden under a collapsed ancestor.
 	// So when selection changes from outside the tree (e.g. scene window pick), we expand the path here before TreeView iterates.
 	FEEntity* CurrentlySelected = SELECTED.GetSelected(CurrentScene);
-	std::string CurrentSelectedID = CurrentlySelected == nullptr ? "" : CurrentlySelected->GetObjectID();
+	FEUUID CurrentSelectedID = CurrentlySelected == nullptr ? FEUUID() : CurrentlySelected->GetID();
 	if (CurrentSelectedID != LastFrameSelectedEntityID)
 	{
 		LastFrameSelectedEntityID = CurrentSelectedID;
 		if (CurrentlySelected != nullptr)
 		{
-			FENaiveSceneGraphNode* SelectedNode = CurrentScene->SceneGraph.GetNodeByEntityID(CurrentSelectedID);
+			FENaiveSceneGraphNode* SelectedNode = CurrentScene->SceneGraph.GetNodeByEntityID(CurrentlySelected->GetID());
 			if (SelectedNode != nullptr)
 				SceneGraphUI->ExpandToNode(SceneGraphUI::NodeHandle(SelectedNode, SceneGraphBackend));
 		}
@@ -434,11 +434,11 @@ void FEEditorSceneGraphWindow::Render()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 	if (ImGui::Begin("Scene Graph", nullptr, ImGuiWindowFlags_None))
 	{
-		SceneGraphBackend->SetSceneID(CurrentScene->GetObjectID());
+		SceneGraphBackend->SetSceneID(CurrentScene->GetID());
 		SceneGraphUI->Render(SceneGraphUI::NodeHandle(CurrentScene->SceneGraph.GetRoot(), SceneGraphBackend));
-		if (LastFrameRootNodeID != CurrentScene->SceneGraph.GetRoot()->GetObjectID())
+		if (LastFrameRootNodeID != CurrentScene->SceneGraph.GetRoot()->GetID())
 		{
-			LastFrameRootNodeID = CurrentScene->SceneGraph.GetRoot()->GetObjectID();
+			LastFrameRootNodeID = CurrentScene->SceneGraph.GetRoot()->GetID();
 			SceneGraphUI->SetNodeExpanded(SceneGraphUI::NodeHandle(CurrentScene->SceneGraph.GetRoot(), SceneGraphBackend), true);
 		}
 	}
@@ -466,7 +466,7 @@ bool FEEditorSceneGraphWindow::IsSelected(SceneGraphUI::NodeHandle Node)
 
 	if (SELECTED.GetSelected(EDITOR.GetFocusedScene()) != nullptr && CurrentEntity != nullptr)
 	{
-		if (SELECTED.GetSelected(EDITOR.GetFocusedScene())->GetObjectID() == CurrentEntity->GetObjectID())
+		if (SELECTED.GetSelected(EDITOR.GetFocusedScene())->GetID() == CurrentEntity->GetID())
 			return true;
 	}
 

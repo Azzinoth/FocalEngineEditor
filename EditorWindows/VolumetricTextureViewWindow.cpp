@@ -8,7 +8,7 @@ FEScene* VolumetricTextureViewWindow::CreateViewScene(FETexture* TextureToView)
 	if (TextureToView == nullptr || TextureToView->GetType() != FE_TEXTURE_TYPE::FE_TEXTURE_3D)
 		return nullptr;
 
-	return SCENE_MANAGER.CreateScene("Volumetric Texture View Scene", "", FESceneFlag::Active | FESceneFlag::EditorMode | FESceneFlag::Renderable);
+	return SCENE_MANAGER.CreateScene("Volumetric Texture View Scene", FEUUID(), FESceneFlag::Active | FESceneFlag::EditorMode | FESceneFlag::Renderable);
 }
 
 VolumetricTextureViewWindow::VolumetricTextureViewWindow(FETexture* TextureToView) : FEEditorSceneWindow(CreateViewScene(TextureToView))
@@ -16,14 +16,14 @@ VolumetricTextureViewWindow::VolumetricTextureViewWindow(FETexture* TextureToVie
 	if (TextureToView == nullptr || TextureToView->GetType() != FE_TEXTURE_TYPE::FE_TEXTURE_3D)
 		return;
 
-	TextureToViewID = TextureToView->GetObjectID();
+	TextureToViewID = TextureToView->GetID();
 	bSelfContained = false;
 
 	MaterialFor3DTextures = RESOURCE_MANAGER.CreateNewMaterial("MaterialFor3DTexturesView");
 	MaterialFor3DTextures->SetMaterialType(FEMaterialType::Volumetric);
 	MaterialFor3DTextures->SetBlendMode(FEMaterialBlendMode::Additive);
 	MaterialFor3DTextures->SetShader(VOLUME_SYSTEM.GetVolumetricShaders()[0]);
-	MaterialFor3DTextures->SetTextureOverride("VolumeTexture", TextureToView->GetObjectID());
+	MaterialFor3DTextures->SetTextureOverride("VolumeTexture", TextureToView->GetID());
 	RESOURCE_MANAGER.SetTag(MaterialFor3DTextures, EDITOR_RESOURCE_TAG);
 
 	FEEntity* VolumeEntity = Scene->CreateEntity("Volumetric texture");
@@ -46,7 +46,7 @@ VolumetricTextureViewWindow::VolumetricTextureViewWindow(FETexture* TextureToVie
 	FEEntity* ViewCamera = InjectModelViewCamera(Scene);
 	if (ViewCamera != nullptr)
 	{
-		ViewCameraID = ViewCamera->GetObjectID();
+		ViewCameraID = ViewCamera->GetID();
 
 		FEAABB VolumeAABB = Scene->GetEntityAABB(VolumeEntity);
 		float LongestAxis = VolumeAABB.GetLongestAxisLength();
@@ -84,7 +84,7 @@ VolumetricTextureViewWindow::~VolumetricTextureViewWindow()
 
 void VolumetricTextureViewWindow::Render()
 {
-	if (TextureToViewID.empty() || RESOURCE_MANAGER.GetTexture(TextureToViewID) == nullptr)
+	if (UNIQUE_ID.IsNull(TextureToViewID) || RESOURCE_MANAGER.GetTexture(TextureToViewID) == nullptr)
 		return;
 
 	FEEditorSceneWindow::Render();
@@ -162,7 +162,7 @@ void VolumetricTextureViewWindow::RenderInfoOverlay()
 		ImGui::TableSetupColumn("##Value", ImGuiTableColumnFlags_WidthStretch);
 
 		DrawRow("Name:", Texture->GetName());
-		DrawRow("Object ID:", Texture->GetObjectID());
+		DrawRow("Object ID:", UNIQUE_ID.ToString(Texture->GetID()));
 		DrawRow("Dimensions:", std::to_string(Width) + " x " + std::to_string(Height) + " x " + std::to_string(Depth));
 		DrawRow("Format:", FormatString);
 		DrawRow("Voxels:", std::to_string(VoxelCount));
@@ -255,9 +255,9 @@ FEEntity* VolumetricTextureViewWindow::InjectModelViewCamera(FEScene* Scene)
 		return nullptr;
 	}
 
-	if (CurrentProject->SceneIDToEditorCameraID.find(Scene->GetObjectID()) != CurrentProject->SceneIDToEditorCameraID.end())
+	if (CurrentProject->SceneIDToEditorCameraID.find(Scene->GetID()) != CurrentProject->SceneIDToEditorCameraID.end())
 	{
-		FEEntity* CameraEntity = Scene->GetEntity(CurrentProject->SceneIDToEditorCameraID[Scene->GetObjectID()]);
+		FEEntity* CameraEntity = Scene->GetEntity(CurrentProject->SceneIDToEditorCameraID[Scene->GetID()]);
 		if (CameraEntity != nullptr)
 		{
 			LOG.Add("VolumetricTextureViewWindow::InjectModelViewCamera: Editor camera already exists in scene " + Scene->GetName(), "FE_LOG_LOADING", FE_LOG_WARNING);
@@ -265,7 +265,7 @@ FEEntity* VolumetricTextureViewWindow::InjectModelViewCamera(FEScene* Scene)
 		}
 		else
 		{
-			CurrentProject->SceneIDToEditorCameraID.erase(Scene->GetObjectID());
+			CurrentProject->SceneIDToEditorCameraID.erase(Scene->GetID());
 		}
 	}
 
@@ -312,7 +312,7 @@ FEEntity* VolumetricTextureViewWindow::InjectModelViewCamera(FEScene* Scene)
 	CAMERA_SYSTEM.SetMainCamera(CameraEntity);
 
 	// FEEditorSceneWindow::Render resolves the camera for EditorMode scenes through this map.
-	CurrentProject->SceneIDToEditorCameraID[Scene->GetObjectID()] = CameraEntity->GetObjectID();
+	CurrentProject->SceneIDToEditorCameraID[Scene->GetID()] = CameraEntity->GetID();
 
 	return CameraEntity;
 }

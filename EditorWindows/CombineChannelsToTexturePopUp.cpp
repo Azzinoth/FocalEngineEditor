@@ -104,7 +104,7 @@ void CombineChannelsToTexturePopUp::Render()
 
 bool CombineChannelsToTexturePopUp::DragAndDropNodeAreaTargetCallback(FEObject* Object, void** CallbackInfo)
 {
-	FEEditorTextureSourceNode* NewNode = new FEEditorTextureSourceNode(RESOURCE_MANAGER.GetTexture(Object->GetObjectID()));
+	FEEditorTextureSourceNode* NewNode = new FEEditorTextureSourceNode(RESOURCE_MANAGER.GetTexture(Object->GetID()));
 	
 	ImVec2 PositionOnCanvas;
 	PositionOnCanvas.x = ImGui::GetMousePos().x - (WindowPosition.x + NodeGridRelativePosition.x) - NewNode->GetSize().x / 2.0f;

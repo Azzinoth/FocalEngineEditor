@@ -69,7 +69,7 @@ void RenamePopUp::Render()
 
 		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
 		ImGui::Text("New object name :");
-		ImGui::InputText(("##New object name " + ObjToWorkWith->GetObjectID()).c_str(), &NewName);
+		ImGui::InputText(("##New object name " + UNIQUE_ID.ToString(ObjToWorkWith->GetID())).c_str(), &NewName);
 
 		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 4.0f - 120.0f / 2.0f);
 		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10.0f);

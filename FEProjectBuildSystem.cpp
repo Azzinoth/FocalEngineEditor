@@ -120,7 +120,7 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 		return false;
 	}
 
-	VSProjectDirectory += ProjectToBuild->GetID() + "/";
+	VSProjectDirectory += UNIQUE_ID.ToString(ProjectToBuild->GetID()) + "/";
 	if (!FILE_SYSTEM.MakeDirectory(VSProjectDirectory))
 	{
 		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error creating project directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
@@ -265,7 +265,7 @@ bool FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles(FEProject* ProjectT
 		return false;
 	}
 
-	std::vector<std::string> NativeScriptModuleIDList = RESOURCE_MANAGER.GetNativeScriptModuleIDList();
+	std::vector<FEUUID> NativeScriptModuleIDList = RESOURCE_MANAGER.GetNativeScriptModuleIDList();
 
 	std::string CMakeFilePath = VSProjectDirectory + "CMakeLists.txt";
 
@@ -285,33 +285,33 @@ bool FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles(FEProject* ProjectT
 		FENativeScriptModule* CurrentModule = RESOURCE_MANAGER.GetNativeScriptModule(NativeScriptModuleIDList[i]);
 		if (CurrentModule == nullptr)
 		{
-			LOG.Add("FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles: Error getting native script module with ID: " + NativeScriptModuleIDList[i], "FE_BUILD_EXECUTABLE", FE_LOG_WARNING);
+			LOG.Add("FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles: Error getting native script module with ID: " + UNIQUE_ID.ToString(NativeScriptModuleIDList[i]), "FE_BUILD_EXECUTABLE", FE_LOG_WARNING);
 			continue;
 		}
 			
 		if (CurrentModule->GetProject() == nullptr)
 		{
-			LOG.Add("FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles: Error getting project of native script module with ID: " + NativeScriptModuleIDList[i], "FE_BUILD_EXECUTABLE", FE_LOG_WARNING);
+			LOG.Add("FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles: Error getting project of native script module with ID: " + UNIQUE_ID.ToString(NativeScriptModuleIDList[i]), "FE_BUILD_EXECUTABLE", FE_LOG_WARNING);
 			continue;
 		}
 
 		if (!CurrentModule->GetProject()->HasRecoverableVSProjectData())
 		{
-			LOG.Add("FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles: Project of native script module with ID: " + NativeScriptModuleIDList[i] + " does not have recoverable VS project data", "FE_BUILD_EXECUTABLE", FE_LOG_WARNING);
+			LOG.Add("FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles: Project of native script module with ID: " + UNIQUE_ID.ToString(NativeScriptModuleIDList[i]) + " does not have recoverable VS project data", "FE_BUILD_EXECUTABLE", FE_LOG_WARNING);
 			continue;
 		}
 		
 		std::vector<std::string> SourceFileList = CurrentModule->GetProject()->GetSourceFileList();
 		if (SourceFileList.empty())
 		{
-			LOG.Add("FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles: SourceFileList is empty for native script module with ID: " + NativeScriptModuleIDList[i], "FE_BUILD_EXECUTABLE", FE_LOG_WARNING);
+			LOG.Add("FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles: SourceFileList is empty for native script module with ID: " + UNIQUE_ID.ToString(NativeScriptModuleIDList[i]), "FE_BUILD_EXECUTABLE", FE_LOG_WARNING);
 			continue;
 		}
 
-		std::string CurrentString = "file(GLOB Script_Module_" + CurrentModule->GetObjectID() + "_SRC\n";
+		std::string CurrentString = "file(GLOB Script_Module_" + UNIQUE_ID.ToString(CurrentModule->GetID()) + "_SRC\n";
 		for (size_t i = 0; i < SourceFileList.size(); i++)
 		{
-			CurrentString += std::string("\t\"") + "ScriptModules/" + CurrentModule->GetObjectID() + "/" + SourceFileList[i] + "\"\n";
+			CurrentString += std::string("\t\"") + "ScriptModules/" + UNIQUE_ID.ToString(CurrentModule->GetID()) + "/" + SourceFileList[i] + "\"\n";
 		}
 		
 		CurrentString += ")\n";
@@ -320,14 +320,14 @@ bool FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles(FEProject* ProjectT
 		SourceFileListString += CurrentString;
 
 		// Replace the placeholder in add_executable list.
-		CurrentString = std::string("\t\t") + "${Script_Module_" + CurrentModule->GetObjectID() + "_SRC}\n";
+		CurrentString = std::string("\t\t") + "${Script_Module_" + UNIQUE_ID.ToString(CurrentModule->GetID()) + "_SRC}\n";
 		ExecutableListString += CurrentString;
 
 		// Add the folder to the list of folders in VS project.
-		FolderListInVSProjectString += "source_group(\"Source Files/ScriptModules/" + CurrentModule->GetObjectID() + "/\" FILES ${Script_Module_" + CurrentModule->GetObjectID() + "_SRC})\n";
+		FolderListInVSProjectString += "source_group(\"Source Files/ScriptModules/" + UNIQUE_ID.ToString(CurrentModule->GetID()) + "/\" FILES ${Script_Module_" + UNIQUE_ID.ToString(CurrentModule->GetID()) + "_SRC})\n";
 
 		// Now we will create the directories and copy the files to the destination directory.
-		std::string ScriptModuleDirectory = VSProjectDirectory + "ScriptModules/" + CurrentModule->GetObjectID() + "/";
+		std::string ScriptModuleDirectory = VSProjectDirectory + "ScriptModules/" + UNIQUE_ID.ToString(CurrentModule->GetID()) + "/";
 		if (!FILE_SYSTEM.MakeDirectory(ScriptModuleDirectory))
 		{
 			LOG.Add("FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles: Error creating directory " + ScriptModuleDirectory, "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
@@ -374,7 +374,7 @@ bool FEProjectBuildSystem::ConfigureAndBuildCMake(const std::string& VSProjectDi
 		return false;
 	}
 
-	std::string Generator = "Visual Studio 17 2022";
+	std::string Generator = "Visual Studio 18 2026";
 
 	// CMake configure command.
 	std::string ConfigureCommand = "cmake -S \"" + VSProjectDirectory + "\" -B \"" + VSProjectDirectory + "\" -G \"" + Generator + "\"";
@@ -425,21 +425,21 @@ bool FEProjectBuildSystem::CreateFinalExecutableDirectory(FEProject* ProjectToBu
 		return false;
 	}
 
-	std::string ExecutablePath = FILE_SYSTEM.GetCurrentWorkingPath() + "/BuildProjects_Temporary/" + ProjectToBuild->GetID() + "/Release/" + GetVSProjectName(ProjectToBuild) + ".exe";
+	std::string ExecutablePath = FILE_SYSTEM.GetCurrentWorkingPath() + "/BuildProjects_Temporary/" + UNIQUE_ID.ToString(ProjectToBuild->GetID()) + "/Release/" + GetVSProjectName(ProjectToBuild) + ".exe";
 	if (!FILE_SYSTEM.DoesFileExist(ExecutablePath))
 	{
 		LOG.Add("FEProjectBuildSystem::CreateFinalExecutableDirectory: Executable does not exist!", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;
 	}
 
-	std::string EngineResourcesPath = FILE_SYSTEM.GetCurrentWorkingPath() + "/BuildProjects_Temporary/" + ProjectToBuild->GetID() + "/EngineResources.fepackage";
+	std::string EngineResourcesPath = FILE_SYSTEM.GetCurrentWorkingPath() + "/BuildProjects_Temporary/" + UNIQUE_ID.ToString(ProjectToBuild->GetID()) + "/EngineResources.fepackage";
 	if (!FILE_SYSTEM.DoesFileExist(EngineResourcesPath))
 	{
 		LOG.Add("FEProjectBuildSystem::CreateFinalExecutableDirectory: EngineResources.fepackage does not exist!", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;
 	}
 
-	std::string ProjectResourcesPath = FILE_SYSTEM.GetCurrentWorkingPath() + "/BuildProjects_Temporary/" + ProjectToBuild->GetID() + "/Resources.fepackage";
+	std::string ProjectResourcesPath = FILE_SYSTEM.GetCurrentWorkingPath() + "/BuildProjects_Temporary/" + UNIQUE_ID.ToString(ProjectToBuild->GetID()) + "/Resources.fepackage";
 	if (!FILE_SYSTEM.DoesFileExist(ProjectResourcesPath))
 	{
 		LOG.Add("FEProjectBuildSystem::CreateFinalExecutableDirectory: ProjectResources.fepackage does not exist!", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);

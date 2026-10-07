@@ -1,4 +1,5 @@
 #include "FEEditorPreviewManager.h"
+#include "FEEditorResourceIDs.h"
 #include "FEEditor.h"
 using namespace FocalEngine;
 
@@ -10,7 +11,7 @@ FETransformComponent FEEditorPreviewManager::OriginalTransform = FETransformComp
 
 void FEEditorPreviewManager::InitializeResources()
 {
-	PreviewScene = SCENE_MANAGER.CreateScene("EditorPreviewScene", "", FESceneFlag::Active);
+	PreviewScene = SCENE_MANAGER.CreateScene("EditorPreviewScene", FEUUID(), FESceneFlag::Active);
 	RESOURCE_MANAGER.SetTag(PreviewScene, EDITOR_RESOURCE_TAG);
 
 	PreviewGameModel = new FEGameModel(nullptr, nullptr, "editorPreviewGameModel");
@@ -22,7 +23,7 @@ void FEEditorPreviewManager::InitializeResources()
 																					   nullptr,
 																					   nullptr,
 																					   nullptr,
-																					   "607A53601357077F03770357"/*"FEMeshPreviewShader"*/);
+																					   FEEditorResourceIDs::MeshPreviewShader);
 
 	RESOURCE_MANAGER.SetTag(MeshPreviewMaterial->Shader, EDITOR_RESOURCE_TAG);
 
@@ -62,13 +63,13 @@ void FEEditorPreviewManager::ReCreateAll()
 {
 	Clear();
 
-	const std::vector<std::string> MeshList = RESOURCE_MANAGER.GetMeshIDList();
+	const std::vector<FEUUID> MeshList = RESOURCE_MANAGER.GetMeshIDList();
 	for (size_t i = 0; i < MeshList.size(); i++)
 	{
 		CreateMeshPreview(MeshList[i]);
 	}
 
-	const std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialIDList();
+	const std::vector<FEUUID> MaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 	for (size_t i = 0; i < MaterialList.size(); i++)
 	{
 		FEObject* CurrentMaterial = OBJECT_MANAGER.GetFEObject(MaterialList[i]);
@@ -76,7 +77,7 @@ void FEEditorPreviewManager::ReCreateAll()
 			CreateMaterialPreview(MaterialList[i]);
 	}
 
-	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
+	const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
 		FEObject* CurrentGameModel = OBJECT_MANAGER.GetFEObject(GameModelList[i]);
@@ -103,7 +104,7 @@ void FEEditorPreviewManager::AfterPreviewActions()
 	PreviewGameModel->Material = nullptr;
 }
 
-void FEEditorPreviewManager::StorePreview(const std::string& ObjectID, FETexture* CameraResult)
+void FEEditorPreviewManager::StorePreview(const FEUUID& ObjectID, FETexture* CameraResult)
 {
 	// If we are updating an existing preview we should delete the old texture.
 	if (PreviewTextures.find(ObjectID) != PreviewTextures.end())
@@ -113,7 +114,7 @@ void FEEditorPreviewManager::StorePreview(const std::string& ObjectID, FETexture
 		PreviewTextures[ObjectID] = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
 }
 
-void FEEditorPreviewManager::RemovePreview(const std::string& ObjectID)
+void FEEditorPreviewManager::RemovePreview(const FEUUID& ObjectID)
 {
 	const auto PreviewIterator = PreviewTextures.find(ObjectID);
 	if (PreviewIterator == PreviewTextures.end())
@@ -123,7 +124,7 @@ void FEEditorPreviewManager::RemovePreview(const std::string& ObjectID)
 	PreviewTextures.erase(PreviewIterator);
 }
 
-FETexture* FEEditorPreviewManager::GetCachedPreview(const std::string& ObjectID, const std::function<void()>& CreateFunction)
+FETexture* FEEditorPreviewManager::GetCachedPreview(const FEUUID& ObjectID, const std::function<void()>& CreateFunction)
 {
 	// If we somehow could not find the preview, we will create it.
 	if (PreviewTextures.find(ObjectID) == PreviewTextures.end())
@@ -136,7 +137,7 @@ FETexture* FEEditorPreviewManager::GetCachedPreview(const std::string& ObjectID,
 	return PreviewTextures[ObjectID];
 }
 
-void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
+void FEEditorPreviewManager::CreateMeshPreview(const FEUUID& MeshID)
 {
 	FEMesh* PreviewMesh = RESOURCE_MANAGER.GetMesh(MeshID);
 	if (PreviewMesh == nullptr)
@@ -170,21 +171,21 @@ void FEEditorPreviewManager::CreateMeshPreview(const std::string MeshID)
 	CheckAndUpdateIfNeededGameModelPreview(MeshID);
 }
 
-FETexture* FEEditorPreviewManager::GetMeshPreview(const std::string MeshID)
+FETexture* FEEditorPreviewManager::GetMeshPreview(const FEUUID& MeshID)
 {
 	// if mesh's dirty flag is set we need to update preview
 	if (RESOURCE_MANAGER.GetMesh(MeshID)->IsDirty())
 	{
 		CreateMeshPreview(MeshID);
 		// if some game model uses this mesh we should also update its preview
-		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
+		const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 
 		for (size_t i = 0; i < GameModelList.size(); i++)
 		{
 			const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
 
 			if (CurrentGameModel->Mesh == RESOURCE_MANAGER.GetMesh(MeshID))
-				CreateGameModelPreview(CurrentGameModel->GetObjectID());
+				CreateGameModelPreview(CurrentGameModel->GetID());
 		}
 
 		RESOURCE_MANAGER.GetMesh(MeshID)->SetDirtyFlag(false);
@@ -193,13 +194,13 @@ FETexture* FEEditorPreviewManager::GetMeshPreview(const std::string MeshID)
 	return GetCachedPreview(MeshID, [&]() { CreateMeshPreview(MeshID); });
 }
 
-void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
+void FEEditorPreviewManager::CreateMaterialPreview(const FEUUID& MaterialID)
 {
 	FEMaterial* PreviewMaterial = RESOURCE_MANAGER.GetMaterial(MaterialID);
 	if (PreviewMaterial == nullptr)
 		return;
 
-	PreviewGameModel->Mesh = RESOURCE_MANAGER.GetMesh("7F251E3E0D08013E3579315F"/*"sphere"*/);
+	PreviewGameModel->Mesh = RESOURCE_MANAGER.GetMesh(FEEngineResourceIDs::SphereMesh);
 	PreviewGameModel->Material = PreviewMaterial;
 	PreviewEntity->GetComponent<FEGameModelComponent>().SetReceivingShadows(false);
 	BeforePreviewActions();
@@ -214,50 +215,50 @@ void FEEditorPreviewManager::CreateMaterialPreview(const std::string MaterialID)
 	StorePreview(MaterialID, RENDERER.GetCameraResult(LocalCameraEntity));
 
 	// Looking for all gameModels that uses this material to also update them.
-	const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
+	const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
 		const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
 		if (CurrentGameModel->Material == PreviewMaterial && CurrentGameModel != PreviewGameModel)
-			CreateGameModelPreview(CurrentGameModel->GetObjectID());
+			CreateGameModelPreview(CurrentGameModel->GetID());
 	}
 
 	CheckAndUpdateIfNeededGameModelPreview(MaterialID);
 
 	//// Looking for all prefabs that uses this material to also update them.
-	//const std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
+	//const std::vector<FEUUID> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
 	//for (size_t i = 0; i < PrefabList.size(); i++)
 	//{
 	//	FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[i]);
 	//	if (CurrentPrefab->IsUsingMaterial(MaterialID))
-	//		CreatePrefabPreview(CurrentPrefab->GetObjectID());
+	//		CreatePrefabPreview(CurrentPrefab->GetID());
 	//}
 }
 
-FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string MaterialID)
+FETexture* FEEditorPreviewManager::GetMaterialPreview(const FEUUID& MaterialID)
 {
 	// if material's dirty flag is set we need to update preview
 	if (RESOURCE_MANAGER.GetMaterial(MaterialID)->IsDirty())
 	{
 		CreateMaterialPreview(MaterialID);
 		// if some game model uses this material we should also update its preview
-		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
+		const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 		for (size_t i = 0; i < GameModelList.size(); i++)
 		{
 			const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
 
 			if (CurrentGameModel->Material == RESOURCE_MANAGER.GetMaterial(MaterialID))
 			{
-				CreateGameModelPreview(CurrentGameModel->GetObjectID());
+				CreateGameModelPreview(CurrentGameModel->GetID());
 
 				// If some Prefab uses this game model we should also update its preview.
-				std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
+				std::vector<FEUUID> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
 				for (size_t j = 0; j < PrefabList.size(); j++)
 				{
 					FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[j]);
 					
-					if (CurrentPrefab->IsUsingGameModel(CurrentGameModel->GetObjectID()))
-						CreatePrefabPreview(CurrentPrefab->GetObjectID());
+					if (CurrentPrefab->IsUsingGameModel(CurrentGameModel->GetID()))
+						CreatePrefabPreview(CurrentPrefab->GetID());
 				}
 			}
 		}
@@ -268,7 +269,7 @@ FETexture* FEEditorPreviewManager::GetMaterialPreview(const std::string Material
 	return GetCachedPreview(MaterialID, [&]() { CreateMaterialPreview(MaterialID); });
 }
 
-void FEEditorPreviewManager::CreateGameModelPreview(const std::string GameModelID)
+void FEEditorPreviewManager::CreateGameModelPreview(const FEUUID& GameModelID)
 {
 	const FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(GameModelID);
 	if (GameModel == nullptr || GameModel->Mesh == nullptr || GameModel->Material == nullptr)
@@ -335,10 +336,10 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 	if (CameraResult != nullptr)
 		*ResultingTexture = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
 
-	CheckAndUpdateIfNeededPrefabPreview(GameModel->GetObjectID());
+	CheckAndUpdateIfNeededPrefabPreview(GameModel->GetID());
 }
 
-void FEEditorPreviewManager::CheckAndUpdateIfNeededGameModelPreview(const std::string ObjectIDThatWasChanged)
+void FEEditorPreviewManager::CheckAndUpdateIfNeededGameModelPreview(const FEUUID& ObjectIDThatWasChanged)
 {
 	FEObject* ObjectThatWasChanged = OBJECT_MANAGER.GetFEObject(ObjectIDThatWasChanged);
 	if (ObjectThatWasChanged == nullptr)
@@ -346,49 +347,49 @@ void FEEditorPreviewManager::CheckAndUpdateIfNeededGameModelPreview(const std::s
 
 	if (ObjectThatWasChanged->GetType() != FE_MESH)
 	{
-		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
+		const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 		for (size_t i = 0; i < GameModelList.size(); i++)
 		{
 			const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
 			if (CurrentGameModel->Material == RESOURCE_MANAGER.GetMaterial(ObjectIDThatWasChanged))
-				CreateGameModelPreview(CurrentGameModel->GetObjectID());
+				CreateGameModelPreview(CurrentGameModel->GetID());
 		}
 		return;
 	}
 	else if (ObjectThatWasChanged->GetType() != FE_MATERIAL)
 	{
-		const std::vector<std::string> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
+		const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 		for (size_t i = 0; i < GameModelList.size(); i++)
 		{
 			const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
 			if (CurrentGameModel->Material == RESOURCE_MANAGER.GetMaterial(ObjectIDThatWasChanged))
-				CreateGameModelPreview(CurrentGameModel->GetObjectID());
+				CreateGameModelPreview(CurrentGameModel->GetID());
 		}
 		return;
 	}
 }
 
-void FEEditorPreviewManager::CheckAndUpdateIfNeededPrefabPreview(const std::string GameModelIDThatWasChanged)
+void FEEditorPreviewManager::CheckAndUpdateIfNeededPrefabPreview(const FEUUID& GameModelIDThatWasChanged)
 {
 	FEGameModel* GameModelThatWasChanged = RESOURCE_MANAGER.GetGameModel(GameModelIDThatWasChanged);
 	if (GameModelThatWasChanged == nullptr)
 		return;
 
-	std::vector<std::string> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
+	std::vector<FEUUID> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
 	for (size_t j = 0; j < PrefabList.size(); j++)
 	{
 		FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[j]);
 
-		if (CurrentPrefab->IsUsingGameModel(GameModelThatWasChanged->GetObjectID()))
-			CreatePrefabPreview(CurrentPrefab->GetObjectID());
+		if (CurrentPrefab->IsUsingGameModel(GameModelThatWasChanged->GetID()))
+			CreatePrefabPreview(CurrentPrefab->GetID());
 	}
 }
 
-FETexture* FEEditorPreviewManager::GetGameModelPreview(const std::string GameModelID)
+FETexture* FEEditorPreviewManager::GetGameModelPreview(const FEUUID& GameModelID)
 {
 	if (RESOURCE_MANAGER.GetGameModel(GameModelID) == nullptr)
 	{
-		LOG.Add("FEEditorPreviewManager::GetGameModelPreview could not find game model with ID: " + GameModelID, "FE_LOG_RENDERING", FE_LOG_ERROR);
+		LOG.Add("FEEditorPreviewManager::GetGameModelPreview could not find game model with ID: " + UNIQUE_ID.ToString(GameModelID), "FE_LOG_RENDERING", FE_LOG_ERROR);
 		return RESOURCE_MANAGER.NoTexture;
 	}
 
@@ -406,7 +407,7 @@ FETexture* FEEditorPreviewManager::GetGameModelPreview(const std::string GameMod
 	// if game model's material dirty flag is set we need to update preview
 	if (RESOURCE_MANAGER.GetGameModel(GameModelID)->GetMaterial() != nullptr && RESOURCE_MANAGER.GetGameModel(GameModelID)->GetMaterial()->IsDirty())
 	{
-		CreateMaterialPreview(RESOURCE_MANAGER.GetGameModel(GameModelID)->GetMaterial()->GetObjectID());
+		CreateMaterialPreview(RESOURCE_MANAGER.GetGameModel(GameModelID)->GetMaterial()->GetID());
 		// This material could use muiltiple GM so we should update all GMs.
 		UpdateAllGameModelPreviews();
 		RESOURCE_MANAGER.GetGameModel(GameModelID)->GetMaterial()->SetDirtyFlag(false);
@@ -426,7 +427,7 @@ void FEEditorPreviewManager::UpdateAllGameModelPreviews()
 	}
 }
 
-void FEEditorPreviewManager::CreatePointCloudPreview(std::string PointCloudID)
+void FEEditorPreviewManager::CreatePointCloudPreview(const FEUUID& PointCloudID)
 {
 	FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(PointCloudID);
 	if (PointCloud == nullptr)
@@ -457,12 +458,12 @@ void FEEditorPreviewManager::CreatePointCloudPreview(std::string PointCloudID)
 	StorePreview(PointCloudID, RENDERER.GetCameraResult(LocalCameraEntity));
 }
 
-FETexture* FEEditorPreviewManager::GetPointCloudPreview(std::string PointCloudID)
+FETexture* FEEditorPreviewManager::GetPointCloudPreview(const FEUUID& PointCloudID)
 {
 	FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(PointCloudID);
 	if (PointCloud == nullptr)
 	{
-		LOG.Add("FEEditorPreviewManager::GetPointCloudPreview could not find point cloud with ID: " + PointCloudID, "FE_LOG_RENDERING", FE_LOG_ERROR);
+		LOG.Add("FEEditorPreviewManager::GetPointCloudPreview could not find point cloud with ID: " + UNIQUE_ID.ToString(PointCloudID), "FE_LOG_RENDERING", FE_LOG_ERROR);
 		return RESOURCE_MANAGER.NoTexture;
 	}
 
@@ -476,7 +477,7 @@ FETexture* FEEditorPreviewManager::GetPointCloudPreview(std::string PointCloudID
 	return GetCachedPreview(PointCloudID, [&]() { CreatePointCloudPreview(PointCloudID); });
 }
 
-void FEEditorPreviewManager::CreatePrefabPreview(const std::string PrefabID)
+void FEEditorPreviewManager::CreatePrefabPreview(const FEUUID& PrefabID)
 {
 	FEPrefab* Prefab = RESOURCE_MANAGER.GetPrefab(PrefabID);
 	if (Prefab == nullptr || Prefab->GetScene() == nullptr)
@@ -548,12 +549,12 @@ void CreatePrefabPreview(FEPrefab* Prefab, FETexture** ResultingTexture)
 
 }
 
-FETexture* FEEditorPreviewManager::GetPrefabPreview(const std::string PrefabID)
+FETexture* FEEditorPreviewManager::GetPrefabPreview(const FEUUID& PrefabID)
 {
 	FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabID);
 	if (CurrentPrefab == nullptr)
 	{
-		LOG.Add("FEEditorPreviewManager::GetPrefabPreview could not find prefab with ID: " + PrefabID, "FE_LOG_RENDERING", FE_LOG_ERROR);
+		LOG.Add("FEEditorPreviewManager::GetPrefabPreview could not find prefab with ID: " + UNIQUE_ID.ToString(PrefabID), "FE_LOG_RENDERING", FE_LOG_ERROR);
 		return RESOURCE_MANAGER.NoTexture;
 	}
 		
@@ -578,12 +579,12 @@ void FEEditorPreviewManager::Clear()
 	PreviewTextures.clear();
 }
 
-void FEEditorPreviewManager::CreateScenePreview(std::string SceneID)
+void FEEditorPreviewManager::CreateScenePreview(const FEUUID& SceneID)
 {
 	FEScene* Scene = SCENE_MANAGER.GetSceneByID(SceneID);
 	if (Scene == nullptr)
 	{
-		LOG.Add("FEEditorPreviewManager::CreateScenePreview could not find scene with ID: " + SceneID, "FE_LOG_RENDERING", FE_LOG_ERROR);
+		LOG.Add("FEEditorPreviewManager::CreateScenePreview could not find scene with ID: " + UNIQUE_ID.ToString(SceneID), "FE_LOG_RENDERING", FE_LOG_ERROR);
 		return;
 	}
 	bool bWasActive = Scene->HasFlag(FESceneFlag::Active);
@@ -630,12 +631,12 @@ void FEEditorPreviewManager::CreateScenePreview(std::string SceneID)
 	Scene->SetFlag(FESceneFlag::Active, bWasActive);
 }
 
-FETexture* FEEditorPreviewManager::GetScenePreview(std::string SceneID)
+FETexture* FEEditorPreviewManager::GetScenePreview(const FEUUID& SceneID)
 {
 	FEScene* Scene = SCENE_MANAGER.GetSceneByID(SceneID);
 	if (Scene == nullptr)
 	{
-		LOG.Add("FEEditorPreviewManager::GetScenePreview could not find scene with ID: " + SceneID, "FE_LOG_RENDERING", FE_LOG_ERROR);
+		LOG.Add("FEEditorPreviewManager::GetScenePreview could not find scene with ID: " + UNIQUE_ID.ToString(SceneID), "FE_LOG_RENDERING", FE_LOG_ERROR);
 		return RESOURCE_MANAGER.NoTexture;
 	}
 
@@ -649,7 +650,7 @@ FETexture* FEEditorPreviewManager::GetScenePreview(std::string SceneID)
 	return GetCachedPreview(SceneID, [&]() { CreateScenePreview(SceneID); });
 }
 
-void FEEditorPreviewManager::CreateTexture3DPreview(std::string TextureID)
+void FEEditorPreviewManager::CreateTexture3DPreview(const FEUUID& TextureID)
 {
 	FETexture* Texture = RESOURCE_MANAGER.GetTexture(TextureID);
 	if (Texture == nullptr || Texture->GetType() != FE_TEXTURE_TYPE::FE_TEXTURE_3D)
@@ -664,7 +665,7 @@ void FEEditorPreviewManager::CreateTexture3DPreview(std::string TextureID)
 	PreviewEntity->AddComponent<FEVolumeComponent>();
 	FEVolumeComponent& VolumeComponent = PreviewEntity->GetComponent<FEVolumeComponent>();
 	VolumeComponent.SetMaterial(MaterialFor3DTextures);
-	VolumeComponent.GetMaterial()->SetTextureOverride("VolumeTexture", Texture->GetObjectID());
+	VolumeComponent.GetMaterial()->SetTextureOverride("VolumeTexture", Texture->GetID());
 
 	FEAABB VolumeAABB = PreviewScene->GetEntityAABB(PreviewEntity);
 	const glm::vec3 Min = VolumeAABB.GetMin();
@@ -687,7 +688,7 @@ void FEEditorPreviewManager::CreateTexture3DPreview(std::string TextureID)
 	StorePreview(TextureID, RENDERER.GetCameraResult(LocalCameraEntity));
 }
 
-FETexture* FEEditorPreviewManager::GetTexture3DPreview(std::string TextureID)
+FETexture* FEEditorPreviewManager::GetTexture3DPreview(const FEUUID& TextureID)
 {
 	FETexture* Texture = RESOURCE_MANAGER.GetTexture(TextureID);
 	if (Texture == nullptr || Texture->GetType() != FE_TEXTURE_TYPE::FE_TEXTURE_3D)
@@ -704,35 +705,35 @@ FETexture* FEEditorPreviewManager::GetPreview(FEObject* Object)
 		{
 			FETexture* Texture = reinterpret_cast<FETexture*>(Object);
 			if (Texture->GetType() == FE_TEXTURE_TYPE::FE_TEXTURE_3D)
-				return GetTexture3DPreview(Object->GetObjectID());
+				return GetTexture3DPreview(Object->GetID());
 
 			return Texture;
 		}
 
 		case FE_MESH:
-			return GetMeshPreview(Object->GetObjectID());
+			return GetMeshPreview(Object->GetID());
 
 		case FE_MATERIAL:
-			return GetMaterialPreview(Object->GetObjectID());
+			return GetMaterialPreview(Object->GetID());
 
 		case FE_GAMEMODEL:
-			return GetGameModelPreview(Object->GetObjectID());
+			return GetGameModelPreview(Object->GetID());
 
 		case FE_POINT_CLOUD:
-			return GetPointCloudPreview(Object->GetObjectID());
+			return GetPointCloudPreview(Object->GetID());
 
 		case FE_PREFAB:
-			return GetPrefabPreview(Object->GetObjectID());
+			return GetPrefabPreview(Object->GetID());
 
 		case FE_SCENE:
-			return GetScenePreview(Object->GetObjectID());
+			return GetScenePreview(Object->GetID());
 		
 		default:
 			return RESOURCE_MANAGER.NoTexture;
 	}
 }
 
-FETexture* FEEditorPreviewManager::GetPreview(const std::string ObjectID)
+FETexture* FEEditorPreviewManager::GetPreview(const FEUUID& ObjectID)
 {
 	return GetPreview(OBJECT_MANAGER.GetFEObject(ObjectID));
 }
@@ -741,7 +742,7 @@ void FEEditorPreviewManager::Update()
 {
 	// Check if any material is dirty.
 	// FIX ME! Dirty flag systems is not working properly. It should be fixed.
-	const std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialIDList();
+	const std::vector<FEUUID> MaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 	for (size_t i = 0; i < MaterialList.size(); i++)
 	{
 		FEMaterial* CurrentMaterial = RESOURCE_MANAGER.GetMaterial(MaterialList[i]);

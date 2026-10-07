@@ -43,11 +43,11 @@ private:
 	// Saved scene settings
 	bool bIsRegularFogEnabled = false;
 
-	std::unordered_map<std::string, FETexture*> PreviewTextures;
+	std::unordered_map<FEUUID, FETexture*> PreviewTextures;
 
-	void StorePreview(const std::string& ObjectID, FETexture* CameraResult);
-	void RemovePreview(const std::string& ObjectID);
-	FETexture* GetCachedPreview(const std::string& ObjectID, const std::function<void()>& CreateFunction);
+	void StorePreview(const FEUUID& ObjectID, FETexture* CameraResult);
+	void RemovePreview(const FEUUID& ObjectID);
+	FETexture* GetCachedPreview(const FEUUID& ObjectID, const std::function<void()>& CreateFunction);
 
 	static glm::vec4 OriginalClearColor;
 	static FETransformComponent OriginalTransform;
@@ -55,36 +55,36 @@ private:
 	void BeforePreviewActions();
 	void AfterPreviewActions();
 
-	void CreateMeshPreview(std::string MeshID);
-	FETexture* GetMeshPreview(std::string MeshID);
+	void CreateMeshPreview(const FEUUID& MeshID);
+	FETexture* GetMeshPreview(const FEUUID& MeshID);
 
-	void CreateMaterialPreview(std::string MaterialID);
-	FETexture* GetMaterialPreview(std::string MaterialID);
+	void CreateMaterialPreview(const FEUUID& MaterialID);
+	FETexture* GetMaterialPreview(const FEUUID& MaterialID);
 
-	void CreateGameModelPreview(std::string GameModelID);
+	void CreateGameModelPreview(const FEUUID& GameModelID);
 	void CreateGameModelPreview(const FEGameModel* GameModel, FETexture** ResultingTexture);
-	FETexture* GetGameModelPreview(std::string GameModelID);
+	FETexture* GetGameModelPreview(const FEUUID& GameModelID);
 	void UpdateAllGameModelPreviews();
 
-	void CreatePointCloudPreview(std::string PointCloudID);
-	FETexture* GetPointCloudPreview(std::string PointCloudID);
+	void CreatePointCloudPreview(const FEUUID& PointCloudID);
+	FETexture* GetPointCloudPreview(const FEUUID& PointCloudID);
 
-	void CreatePrefabPreview(std::string PrefabID);
+	void CreatePrefabPreview(const FEUUID& PrefabID);
 	void CreatePrefabPreview(FEPrefab* Prefab, FETexture** ResultingTexture);
-	FETexture* GetPrefabPreview(std::string PrefabID);
+	FETexture* GetPrefabPreview(const FEUUID& PrefabID);
 
-	void CreateScenePreview(std::string SceneID);
-	FETexture* GetScenePreview(std::string SceneID);
+	void CreateScenePreview(const FEUUID& SceneID);
+	FETexture* GetScenePreview(const FEUUID& SceneID);
 
 	FENewMaterial* MaterialFor3DTextures = nullptr;
-	void CreateTexture3DPreview(std::string TextureID);
-	FETexture* GetTexture3DPreview(std::string TextureID);
+	void CreateTexture3DPreview(const FEUUID& TextureID);
+	FETexture* GetTexture3DPreview(const FEUUID& TextureID);
 
 	FETexture* GetPreview(FEObject* Object);
-	FETexture* GetPreview(std::string ObjectID);
+	FETexture* GetPreview(const FEUUID& ObjectID);
 
-	void CheckAndUpdateIfNeededGameModelPreview(const std::string ObjectIDThatWasChanged);
-	void CheckAndUpdateIfNeededPrefabPreview(const std::string GameModelIDThatWasChanged);
+	void CheckAndUpdateIfNeededGameModelPreview(const FEUUID& ObjectIDThatWasChanged);
+	void CheckAndUpdateIfNeededPrefabPreview(const FEUUID& GameModelIDThatWasChanged);
 
 	void Clear();
 };

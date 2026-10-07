@@ -196,7 +196,7 @@ TEST(VirtualFileSystem, SaveState_PersistsFileReadOnlyFlag)
 	const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
 	ASSERT_TRUE(Reader->parse(Data.c_str(), Data.c_str() + Data.size(), &Saved, &Error));
 
-	const std::string FileID = TestFile->GetObjectID();
+	const std::string FileID = UNIQUE_ID.ToString(TestFile->GetID());
 	std::function<const Json::Value*(const Json::Value&)> Find = [&](const Json::Value& Node) -> const Json::Value* {
 		if (Node.isObject())
 		{
@@ -1097,7 +1097,7 @@ TEST(VirtualFileSystem, DeepNesting_PathOperationsHandleLongChains)
 TEST(VirtualFileSystem, DeleteEmptyDirectory_RejectsRoot)
 {
 	ASSERT_FALSE(VIRTUAL_FILE_SYSTEM.IsDirectoryReadOnly("/"));
-	const std::vector<std::string> InitialContents = VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs("/");
+	const std::vector<FEUUID> InitialContents = VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs("/");
 
 	// If root is not empty, skip.
 	if (!InitialContents.empty())

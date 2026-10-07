@@ -7,8 +7,8 @@ class VolumetricTextureViewWindow : public FEEditorSceneWindow
 {
 	friend class FEPrefabEditorManager;
 
-	std::string TextureToViewID = "";
-	std::string ViewCameraID = "";
+	FEUUID TextureToViewID;
+	FEUUID ViewCameraID;
 
 	std::string ConvertStatusMessage;
 	bool bConvertSucceeded = false;

@@ -7,8 +7,8 @@ class FEVFSDirectory;
 struct FEVFSFile
 {
 	FEVFSFile();
-	FEVFSFile(std::string DataID, FEVFSDirectory* InDirectory);
-	std::string DataID;
+	FEVFSFile(const FEUUID& DataID, FEVFSDirectory* InDirectory);
+	FEUUID DataID;
 	bool bReadOnly = false;
 	bool IsReadOnly();
 	void SetReadOnly(bool NewValue);
@@ -30,7 +30,7 @@ class FEVFSDirectory : public FEObject
 	bool DeleteFile(const FEObject* File);
 	bool HasFile(const FEObject* File);
 
-	bool AddSubDirectory(std::string Name, std::string ForceObjectID = "");
+	bool AddSubDirectory(std::string Name, const FEUUID& ForceObjectID = FEUUID());
 	bool HasSubDirectory(std::string SubDirectory);
 	FEVFSDirectory* GetSubDirectory(std::string SubDirectory);
 	void Clear();
@@ -62,7 +62,7 @@ public:
 	bool MoveDirectory(std::string DirectoryPath, std::string NewPath);
 	bool DeleteEmptyDirectory(std::string Path);
 	int SubDirectoriesCount(std::string Path);
-	std::vector<std::string> GetDirectoryContentIDs(std::string Path);
+	std::vector<FEUUID> GetDirectoryContentIDs(std::string Path);
 	std::string GetDirectoryParent(std::string Path);
 	void SetDirectoryReadOnly(bool NewValue, std::string Path);
 	bool IsDirectoryReadOnly(std::string Path);
@@ -90,7 +90,7 @@ private:
 	void BuildTreeStringRecursive(FEVFSDirectory* Directory, std::string Prefix, std::string& Output);
 
 	void SaveStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Directory);
-	void LoadStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Parent, FEVFSDirectory* Directory, std::string ForceObjectID);
+	void LoadStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Parent, FEVFSDirectory* Directory);
 	bool DirectoryHasFileWithName(FEVFSDirectory* Directory, const std::string Name);
 	bool IsAnyAncestorReadOnly(const FEVFSDirectory* Directory);
 };

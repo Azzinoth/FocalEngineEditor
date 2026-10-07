@@ -88,7 +88,7 @@ bool FEPrefabSceneEditorWindow::DragAndDropCallBack(FEObject* Object, void** Use
 
 	if (Object->GetType() == FE_GAMEMODEL)
 	{
-		FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Object->GetObjectID());
+		FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Object->GetID());
 
 		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
 		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
@@ -134,9 +134,9 @@ void FEPrefabEditorManager::Clear()
 FEEntity* FEPrefabEditorManager::InjectModelViewCamera(FEScene* Scene)
 {
 	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
-	if (CurrentProject->SceneIDToEditorCameraID.find(Scene->GetObjectID()) != CurrentProject->SceneIDToEditorCameraID.end())
+	if (CurrentProject->SceneIDToEditorCameraID.find(Scene->GetID()) != CurrentProject->SceneIDToEditorCameraID.end())
 	{
-		FEEntity* CameraEntity = Scene->GetEntity(CurrentProject->SceneIDToEditorCameraID[Scene->GetObjectID()]);
+		FEEntity* CameraEntity = Scene->GetEntity(CurrentProject->SceneIDToEditorCameraID[Scene->GetID()]);
 		if (CameraEntity != nullptr)
 		{
 			LOG.Add("FEPrefabEditorManager::InjectModelViewCamera: Editor camera already exists in scene " + Scene->GetName(), "FE_LOG_LOADING", FE_LOG_WARNING);
@@ -144,7 +144,7 @@ FEEntity* FEPrefabEditorManager::InjectModelViewCamera(FEScene* Scene)
 		}
 		else
 		{
-			CurrentProject->SceneIDToEditorCameraID.erase(Scene->GetObjectID());
+			CurrentProject->SceneIDToEditorCameraID.erase(Scene->GetID());
 		}
 	}
 
@@ -185,7 +185,7 @@ FEEntity* FEPrefabEditorManager::InjectModelViewCamera(FEScene* Scene)
 	RESOURCE_MANAGER.SetTag(CameraEntity, EDITOR_RESOURCE_TAG);
 	CAMERA_SYSTEM.SetMainCamera(CameraEntity);
 
-	CurrentProject->SceneIDToEditorCameraID[Scene->GetObjectID()] = CameraEntity->GetObjectID();
+	CurrentProject->SceneIDToEditorCameraID[Scene->GetID()] = CameraEntity->GetID();
 
 	return CameraEntity;
 }
@@ -287,7 +287,7 @@ void FEPrefabEditorManager::ApplyModificationsToPrefabScene(FEPrefabSceneEditorW
 	});
 
 	Prefab->SetDirtyFlag(true);
-	PREVIEW_MANAGER.GetPrefabPreview(Prefab->GetObjectID());
+	PREVIEW_MANAGER.GetPrefabPreview(Prefab->GetID());
 }
 
 bool FEPrefabEditorManager::IsPrefabWindowOpen(FEPrefab* Prefab)

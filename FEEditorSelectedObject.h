@@ -12,14 +12,14 @@ class FESelectionData
 	friend class GizmoManager;
 	friend class FEEditorInspectorWindow;
 
-	std::string SceneID = "";
+	FEUUID SceneID;
 public:
 	FEFramebuffer* PixelAccurateSelectionFB = nullptr;
 
 	std::vector<FEEntity*> SceneEntitiesUnderMouse;
 	FEEntity* PotentiallySelectedEntity = nullptr;
 
-	std::string SelectedEntityID = "";
+	FEUUID SelectedEntityID;
 	FEEntity* DummyEntity = nullptr;
 
 	bool CheckForSelectionisNeeded = false;
@@ -68,7 +68,7 @@ public:
 
 	void OnCameraUpdate() const;
 
-	FESelectionData* GetSceneData(const std::string& SceneID);
+	FESelectionData* GetSceneData(const FEUUID& SceneID);
 private:
 	FEShader* FEPixelAccurateInstancedSelection = nullptr;
 	FEShader* FEPixelAccurateSelection = nullptr;
@@ -78,10 +78,10 @@ private:
 
 	int DebugGetLastColorIndex(FEScene* Scene);
 
-	std::unordered_map<std::string, FESelectionData*> PerSceneData;
+	std::unordered_map<FEUUID, FESelectionData*> PerSceneData;
 	void ClearAllSceneData();
-	void ClearSceneData(const std::string& SceneID);
-	void AddSceneData(const std::string& SceneID);
+	void ClearSceneData(const FEUUID& SceneID);
+	void AddSceneData(const FEUUID& SceneID);
 
 	void RenderEntitySelectionColorID(FEEntity* Entity, glm::vec3 ColorID, FEEntity* CameraEntity, FESelectionData* CurrentSelectionData);
 	void RenderEntityHaloEffectInternal(FEEntity* Entity, glm::vec3 Color, FEEntity* CameraEntity, FESelectionData* CurrentSelectionData);

@@ -7,12 +7,12 @@ FEEditorSceneWindow::FEEditorSceneWindow(FEScene* Scene)
 		return;
 
 	this->Scene = Scene;
-	SceneID = Scene->GetObjectID();
+	SceneID = Scene->GetID();
 	Flags = ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
 	std::string WindowName = Scene->GetName();
 	// Window name must be unique.
-	WindowName += "##" + Scene->GetObjectID();
+	WindowName += "##" + UNIQUE_ID.ToString(Scene->GetID());
 
 	SetCaption(WindowName);
 	SetBorderSize(0.0f);
@@ -46,7 +46,7 @@ bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
 
 	if (Object->GetType() == FE_GAMEMODEL)
 	{
-		FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Object->GetObjectID());
+		FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(Object->GetID());
 		if (GameModel == nullptr)
 			return false;
 
@@ -68,7 +68,7 @@ bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
 		FETransformComponent& CameraTransformComponent = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene())->GetComponent<FETransformComponent>();
 		FECameraComponent& CameraComponent = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene())->GetComponent<FECameraComponent>();
 
-		FEPrefab* Prefab = RESOURCE_MANAGER.GetPrefab(Object->GetObjectID());
+		FEPrefab* Prefab = RESOURCE_MANAGER.GetPrefab(Object->GetID());
 		if (Prefab == nullptr)
 			return false;
 
@@ -87,7 +87,7 @@ bool FEEditorSceneWindow::DragAndDropCallBack(FEObject* Object, void** UserData)
 	}
 	else if (Object->GetType() == FE_POINT_CLOUD)
 	{
-		FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(Object->GetObjectID());
+		FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(Object->GetID());
 		if (PointCloud == nullptr)
 			return false;
 
@@ -157,7 +157,7 @@ void FEEditorSceneWindow::Render()
 	FEEntity* CameraEntity = nullptr;
 	if (Scene->HasFlag(FESceneFlag::EditorMode))
 	{
-		std::string EditorCameraID = CurrentProject->GetEditorCameraIDBySceneID(Scene->GetObjectID());
+		FEUUID EditorCameraID = CurrentProject->GetEditorCameraIDBySceneID(Scene->GetID());
 		CameraEntity = Scene->GetEntity(EditorCameraID);
 	}
 	else if (Scene->HasFlag(FESceneFlag::GameMode))
@@ -170,10 +170,10 @@ void FEEditorSceneWindow::Render()
 		FECameraComponent& CameraComponent = CameraEntity->GetComponent<FECameraComponent>();
 		if (CameraComponent.GetViewport() == nullptr || CameraComponent.GetViewport()->GetType() == FE_VIEWPORT_VIRTUAL)
 		{
-			std::string NewViewportID = ENGINE.CreateViewport(GetWindow());
+			FEUUID NewViewportID = ENGINE.CreateViewport(GetWindow());
 			CAMERA_SYSTEM.SetCameraViewport(CameraEntity, NewViewportID);
-			SELECTED.AddSceneData(Scene->GetObjectID());
-			GIZMO_MANAGER.AddSceneData(Scene->GetObjectID());
+			SELECTED.AddSceneData(Scene->GetID());
+			GIZMO_MANAGER.AddSceneData(Scene->GetID());
 			SceneWindowTarget = DRAG_AND_DROP_MANAGER.AddTarget(AcceptedTypes,
 				CurrentDragAndDropCallback,
 				reinterpret_cast<void**>(this),
@@ -181,11 +181,11 @@ void FEEditorSceneWindow::Render()
 		}
 
 		// It could be the case that viewport or camera was not ready when we set the viewport above, so we need to check again.
-		if (SELECTED.GetSceneData(Scene->GetObjectID()) == nullptr)
-			SELECTED.AddSceneData(Scene->GetObjectID());
+		if (SELECTED.GetSceneData(Scene->GetID()) == nullptr)
+			SELECTED.AddSceneData(Scene->GetID());
 		
-		if (GIZMO_MANAGER.GetSceneData(Scene->GetObjectID()) == nullptr)
-			GIZMO_MANAGER.AddSceneData(Scene->GetObjectID());
+		if (GIZMO_MANAGER.GetSceneData(Scene->GetID()) == nullptr)
+			GIZMO_MANAGER.AddSceneData(Scene->GetID());
 
 		ImGuiStyle& Style = ImGui::GetStyle();
 		Style.WindowBorderSize = 0.0f;

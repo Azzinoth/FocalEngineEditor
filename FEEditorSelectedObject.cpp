@@ -1,4 +1,5 @@
 #include "FEEditorSelectedObject.h"
+#include "FEEditorResourceIDs.h"
 #include "SubSystems/ProjectManagment/FEProjectManager.h"
 #include "FEEditor.h"
 using namespace FocalEngine;
@@ -19,7 +20,7 @@ void FEEditorSelectedObject::InitializeResources()
 																						 nullptr,
 																						 nullptr,
 																						 nullptr,
-																						 "4279660C7D3D27360358354E"/*"FEPixelAccurateSelection"*/);
+																						 FEEditorResourceIDs::PixelAccurateSelectionShader);
 	RESOURCE_MANAGER.SetTag(FEPixelAccurateSelection, EDITOR_RESOURCE_TAG);
 	PixelAccurateSelectionMaterial->Shader = FEPixelAccurateSelection;
 
@@ -29,7 +30,7 @@ void FEEditorSelectedObject::InitializeResources()
 																										   nullptr,
 																										   nullptr,
 																										   nullptr,
-																										   "0E213D3542135C15471F0D6B"/*"FEPixelAccurateInstancedSelection"*/);
+																										   FEEditorResourceIDs::PixelAccurateInstancedSelectionShader);
 
 	RESOURCE_MANAGER.SetTag(FEPixelAccurateInstancedSelection, EDITOR_RESOURCE_TAG);
 	PixelAccurateSelectionMaterial->SetBaseColor(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -42,7 +43,7 @@ void FEEditorSelectedObject::UpdateResources(FEScene* Scene)
 	if (Scene == nullptr)
 		return;
 
-	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetObjectID());
+	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetID());
 	if (CurrentSelectionData == nullptr)
 		return;
 
@@ -73,7 +74,7 @@ FEEntity* FEEditorSelectedObject::GetSelected(FEScene* Scene)
 	if (Scene == nullptr)
 		return nullptr;
 
-	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetObjectID());
+	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetID());
 	if (CurrentSelectionData == nullptr)
 		return nullptr;
 
@@ -89,16 +90,16 @@ void FEEditorSelectedObject::SetSelected(FEEntity* SelectedObject)
 	if (CurrentScene == nullptr)
 		return;
 
-	FESelectionData* CurrentSelectionData = GetSceneData(CurrentScene->GetObjectID());
+	FESelectionData* CurrentSelectionData = GetSceneData(CurrentScene->GetID());
 	if (CurrentSelectionData == nullptr)
 	{
-		AddSceneData(CurrentScene->GetObjectID());
-		CurrentSelectionData = GetSceneData(CurrentScene->GetObjectID());
+		AddSceneData(CurrentScene->GetID());
+		CurrentSelectionData = GetSceneData(CurrentScene->GetID());
 
 		// If the data is still null log error and return
 		if (CurrentSelectionData == nullptr)
 		{
-			LOG.Add("FEEditorSelectedObject::SetSelected: Could not create selection data for scene: " + CurrentScene->GetObjectID(), "FE_LOG_ERROR", FE_LOG_ERROR);
+			LOG.Add("FEEditorSelectedObject::SetSelected: Could not create selection data for scene: " + UNIQUE_ID.ToString(CurrentScene->GetID()), "FE_LOG_ERROR", FE_LOG_ERROR);
 			return;
 		}
 	}
@@ -108,7 +109,7 @@ void FEEditorSelectedObject::SetSelected(FEEntity* SelectedObject)
 	if (CurrentlySelectedEntity != nullptr && CurrentlySelectedEntity->HasComponent<FETerrainComponent>() && CurrentlySelectedEntity != SelectedObject)
 		TERRAIN_SYSTEM.SetBrushMode(CurrentlySelectedEntity, FE_TERRAIN_BRUSH_NONE);
 
-	CurrentSelectionData->SelectedEntityID = SelectedObject->GetObjectID();
+	CurrentSelectionData->SelectedEntityID = SelectedObject->GetID();
 	if (OnUpdateFunction != nullptr)
 		OnUpdateFunction(CurrentScene);
 }
@@ -118,7 +119,7 @@ void FEEditorSelectedObject::Clear(FEScene* Scene)
 	if (Scene == nullptr)
 		return;
 
-	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetObjectID());
+	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetID());
 	if (CurrentSelectionData == nullptr)
 		return;
 
@@ -129,7 +130,7 @@ void FEEditorSelectedObject::Clear(FEScene* Scene)
 	}
 
 	CurrentSelectionData->InstancedSubObjectIndexSelected = -1;
-	CurrentSelectionData->SelectedEntityID = "";
+	CurrentSelectionData->SelectedEntityID = FEUUID();
 
 	if (!SCENE_MANAGER.GetScenesByFlagMask(FESceneFlag::Active).empty())
 		if (OnUpdateFunction != nullptr)
@@ -138,7 +139,7 @@ void FEEditorSelectedObject::Clear(FEScene* Scene)
 
 void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, const double MouseY, FEScene* Scene)
 {
-	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetObjectID());
+	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetID());
 	if (CurrentSelectionData == nullptr)
 		return;
 
@@ -157,7 +158,7 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 															  CameraComponent.GetViewMatrix(), CameraComponent.GetProjectionMatrix(),
 															  ViewportPosition, ViewportSize);
 
-	const std::vector<std::string> EntityList = Scene->GetEntityIDList();
+	const std::vector<FEUUID> EntityList = Scene->GetEntityIDList();
 	for (size_t i = 0; i < EntityList.size(); i++)
 	{
 		float Distance = 0;
@@ -240,11 +241,11 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 			return;
 
 		FETerrainComponent& TerrainComponent = Entity->GetComponent<FETerrainComponent>();
-		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
+		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::SMTerrainShader);
 		TerrainComponent.Shader->UpdateUniformData("baseColor", ColorID);
 		RENDERER.RenderTerrainComponent(Entity, CameraEntity);
 		TerrainComponent.Shader->UpdateUniformData("baseColor", glm::vec3(1.0f));
-		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("5A3E4F5C13115856401F1D1C"/*"FETerrainShader"*/);
+		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::TerrainShader);
 	}
 	else if (Entity->HasComponent<FEInstancedComponent>() && Entity->HasComponent<FEPrefabInstanceComponent>())
 	{
@@ -322,7 +323,7 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 
 int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, const double MouseY, FEScene* Scene)
 {
-	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetObjectID());
+	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetID());
 	if (CurrentSelectionData == nullptr)
 		return -1;
 
@@ -461,7 +462,7 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			{
 				for (size_t i = 0; i < CurrentSelectionData->SceneEntitiesUnderMouse.size(); i++)
 				{
-					if (CurrentSelectionData->SceneEntitiesUnderMouse[i]->GetObjectID() == SelectedSubObjectInInstance->GetObjectID())
+					if (CurrentSelectionData->SceneEntitiesUnderMouse[i]->GetID() == SelectedSubObjectInInstance->GetID())
 					{
 						return static_cast<int>(i);
 					}
@@ -531,7 +532,7 @@ void FEEditorSelectedObject::RenderEntityHaloEffectInternal(FEEntity* Entity, gl
 	else if (Entity->HasComponent<FETerrainComponent>())
 	{
 		FETerrainComponent& TerrainComponent = Entity->GetComponent<FETerrainComponent>();
-		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("50064D3C4D0B537F0846274F"/*"FESMTerrainShader"*/);
+		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::SMTerrainShader);
 		TerrainComponent.Shader->UpdateUniformData("baseColor", Color);
 		const float RegularLODLevel = TerrainComponent.GetLODLevel();
 		TerrainComponent.SetLODLevel(0.0f);
@@ -540,7 +541,7 @@ void FEEditorSelectedObject::RenderEntityHaloEffectInternal(FEEntity* Entity, gl
 
 		TerrainComponent.SetLODLevel(RegularLODLevel);
 		TerrainComponent.Shader->UpdateUniformData("baseColor", glm::vec3(1.0f));
-		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader("5A3E4F5C13115856401F1D1C"/*"FETerrainShader"*/);
+		TerrainComponent.Shader = RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::TerrainShader);
 	}
 	else if (Entity->HasComponent<FEInstancedComponent>() && Entity->HasComponent<FEPrefabInstanceComponent>())
 	{
@@ -600,7 +601,7 @@ void FEEditorSelectedObject::RenderEntityHaloEffectInternal(FEEntity* Entity, gl
 		}
 		PointCloudComponent.SetUseGlobalColorOverride(false);
 
-		HALO_SELECTION_EFFECT.GetSceneData(Entity->GetParentScene()->GetObjectID())->SetBloomSize(0.1f);
+		HALO_SELECTION_EFFECT.GetSceneData(Entity->GetParentScene()->GetID())->SetBloomSize(0.1f);
 	}
 
 	HALO_SELECTION_EFFECT.HaloMaterial->ClearAllTexturesInfo();
@@ -621,7 +622,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 			continue;
 		}
 
-		FEHaloSelectionData* HaloSelectionData = HALO_SELECTION_EFFECT.GetSceneData(CurrentScene->GetObjectID());
+		FEHaloSelectionData* HaloSelectionData = HALO_SELECTION_EFFECT.GetSceneData(CurrentScene->GetID());
 		FEEntity* CurrentCamera = CAMERA_SYSTEM.GetMainCamera(CurrentScene);
 		if (CurrentCamera == nullptr || HaloSelectionData->PostProcess == nullptr)
 		{
@@ -680,7 +681,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 		else
 		{
 			SELECTED.RenderEntityHaloEffectInternal(SelectedEntity, glm::vec3(1.0f, 0.25f, 0.0f), CurrentCamera, CurrentSelectionData);
-			FENaiveSceneGraphNode* SelectedEntityNode = CurrentScene->SceneGraph.GetNodeByEntityID(SelectedEntity->GetObjectID());
+			FENaiveSceneGraphNode* SelectedEntityNode = CurrentScene->SceneGraph.GetNodeByEntityID(SelectedEntity->GetID());
 			std::vector<FENaiveSceneGraphNode*> AllChildren = SelectedEntityNode->GetRecursiveChildren();
 
 			for (size_t i = 0; i < AllChildren.size(); i++)
@@ -705,7 +706,7 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 
 int FEEditorSelectedObject::DebugGetLastColorIndex(FEScene* Scene)
 {
-	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetObjectID());
+	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetID());
 	if (CurrentSelectionData == nullptr)
 		return -1;
 
@@ -714,7 +715,7 @@ int FEEditorSelectedObject::DebugGetLastColorIndex(FEScene* Scene)
 
 void FEEditorSelectedObject::SetSelectedByIndex(const size_t Index, FEScene* Scene)
 {
-	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetObjectID());
+	FESelectionData* CurrentSelectionData = GetSceneData(Scene->GetID());
 	if (CurrentSelectionData == nullptr)
 		return;
 
@@ -726,7 +727,7 @@ void FEEditorSelectedObject::SetSelectedByIndex(const size_t Index, FEScene* Sce
 	{
 		if (CurrentlySelectedEntity->HasComponent<FEInstancedComponent>())
 		{
-			if (CurrentSelectionData->SceneEntitiesUnderMouse[Index]->GetObjectID() != CurrentlySelectedEntity->GetObjectID())
+			if (CurrentSelectionData->SceneEntitiesUnderMouse[Index]->GetID() != CurrentlySelectedEntity->GetID())
 			{
 				INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(CurrentlySelectedEntity, false);
 				CurrentSelectionData->InstancedSubObjectIndexSelected = -1;
@@ -734,7 +735,7 @@ void FEEditorSelectedObject::SetSelectedByIndex(const size_t Index, FEScene* Sce
 		}
 	}
 
-	CurrentSelectionData->SelectedEntityID = CurrentSelectionData->SceneEntitiesUnderMouse[Index]->GetObjectID();
+	CurrentSelectionData->SelectedEntityID = CurrentSelectionData->SceneEntitiesUnderMouse[Index]->GetID();
 	if (OnUpdateFunction != nullptr)
 		OnUpdateFunction(Scene);
 }
@@ -751,7 +752,7 @@ void FEEditorSelectedObject::ClearAllSceneData()
 	PerSceneData.clear();
 }
 
-void FEEditorSelectedObject::ClearSceneData(const std::string& SceneID)
+void FEEditorSelectedObject::ClearSceneData(const FEUUID& SceneID)
 {
 	auto FoundSceneData = PerSceneData.find(SceneID);
 	if (FoundSceneData != PerSceneData.end())
@@ -761,7 +762,7 @@ void FEEditorSelectedObject::ClearSceneData(const std::string& SceneID)
 	}
 }
 
-void FEEditorSelectedObject::AddSceneData(const std::string& SceneID)
+void FEEditorSelectedObject::AddSceneData(const FEUUID& SceneID)
 {
 	FEScene* CurrentScene = SCENE_MANAGER.GetSceneByID(SceneID);
 	if (CurrentScene == nullptr)
@@ -793,7 +794,7 @@ void FEEditorSelectedObject::AddSceneData(const std::string& SceneID)
 	HALO_SELECTION_EFFECT.AddSceneData(SceneID);
 }
 
-FESelectionData* FEEditorSelectedObject::GetSceneData(const std::string& SceneID)
+FESelectionData* FEEditorSelectedObject::GetSceneData(const FEUUID& SceneID)
 {
 	auto FoundScene = PerSceneData.find(SceneID);
 	if (FoundScene != PerSceneData.end())

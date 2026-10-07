@@ -46,7 +46,7 @@ class FEEditorSceneGraphWindow
 		FENaiveSceneGraphNode* SceneEntity = reinterpret_cast<FENaiveSceneGraphNode*>(Object);
 
         FEScene* CurrentScene = SceneEntity->GetEntity()->GetParentScene();
-        return CurrentScene->SceneGraph.MoveNode(SceneEntity->GetObjectID(), NodeTarget->GetObjectID());
+        return CurrentScene->SceneGraph.MoveNode(SceneEntity->GetID(), NodeTarget->GetID());
     }
 
     // Rendering and initialization.
@@ -56,8 +56,8 @@ class FEEditorSceneGraphWindow
 
     SceneGraphUI::TreeView* SceneGraphUI = nullptr;
 	FESceneGraphBackend* SceneGraphBackend = nullptr;
-	std::string LastFrameRootNodeID = "";
-	std::string LastFrameSelectedEntityID = "";
+	FEUUID LastFrameRootNodeID;
+	FEUUID LastFrameSelectedEntityID;
     static void OnNodeClicked(SceneGraphUI::NodeHandle Node, ImGuiMouseButton_ MouseButton);
     static bool IsSelected(SceneGraphUI::NodeHandle Node);
     static std::string GetDisplayedName(SceneGraphUI::NodeHandle Node);

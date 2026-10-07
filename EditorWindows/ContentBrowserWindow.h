@@ -33,6 +33,11 @@
 		{ L"compressed lidar point cloud files (*.laz)", L"*.laz" }
 	};
 
+	const COMDLG_FILTERSPEC NATIVE_SCRIPT_MODULE_FILTER[] =
+	{
+		{ L"Native script module (*.nativescriptmodule)", L"*.nativescriptmodule" }
+	};
+
 	const COMDLG_FILTERSPEC ALL_IMPORT_LOAD_FILTER[] =
 	{
 		{ L"All files (*.png; *.jpg; *.bmp; *.obj; *.gltf)", L"*.png;*.jpg;*.bmp;*.obj;*.gltf" },
@@ -94,13 +99,13 @@
         static FEObject* ItemInFocus;
 
         // Resource filtering
-        std::vector<std::string> AllResourcesIDs;
-        std::vector<std::string> FilteredResourcesIDs;
+        std::vector<FEUUID> AllResourcesIDs;
+        std::vector<FEUUID> FilteredResourcesIDs;
 		std::string NameFilter = "";
         std::vector<std::string> ObjectTypeFilters;
 		std::vector<std::string> ObjectTagNegativeFilters;
         bool AnyFilterActive();
-		bool ShouldPassVisibilityFilter(std::string ObjectID);
+		bool ShouldPassVisibilityFilter(const FEUUID& ObjectID);
         void UpdateFilterForResources();
 
         // Filter buttons

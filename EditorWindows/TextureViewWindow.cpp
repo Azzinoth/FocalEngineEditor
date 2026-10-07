@@ -92,7 +92,7 @@ TextureViewWindow::TextureViewWindow(FETexture* InTextureToView)
 
 	if (InTextureToView != nullptr)
 	{
-		SourceTextureObjectID = InTextureToView->GetObjectID();
+		SourceTextureObjectID = InTextureToView->GetID();
 		const GLint SourceInternalFormat = InTextureToView->GetInternalFormat();
 		bShowAlpha = FormatHasAlphaChannel(SourceInternalFormat);
 		if (FormatIsSingleChannel(SourceInternalFormat))
@@ -594,7 +594,7 @@ void TextureViewWindow::RenderDetailsPanel(const ImVec2& PanelSize)
 		ImGui::TableSetupColumn("##Value", ImGuiTableColumnFlags_WidthStretch);
 
 		DrawRow("Name:", SourceTexture->GetName());
-		DrawRow("Object ID:", SourceTexture->GetObjectID());
+		DrawRow("Object ID:", UNIQUE_ID.ToString(SourceTexture->GetID()));
 
 		DrawRow("Dimensions:", std::to_string(Width) + " x " + std::to_string(Height));
 		DrawRow("Format:", FormatString);

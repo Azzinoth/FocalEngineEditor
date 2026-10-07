@@ -11,7 +11,7 @@ class FEHaloSelectionData
 
 	~FEHaloSelectionData();
 
-	std::string SceneID = "";
+	FEUUID SceneID;
 	FEFramebuffer* HaloObjectsFB = nullptr;
 	FEPostProcess* PostProcess = nullptr;
 	
@@ -39,11 +39,11 @@ private:
 	FEShader* HaloDrawObjectShader = nullptr;
 	FEShader* HaloFinalShader = nullptr;
 
-	std::unordered_map<std::string, FEHaloSelectionData*> PerSceneData;
+	std::unordered_map<FEUUID, FEHaloSelectionData*> PerSceneData;
 	void ClearAllSceneData();
-	void ClearSceneData(const std::string& SceneID);
-	void AddSceneData(const std::string& SceneID);
-	FEHaloSelectionData* GetSceneData(const std::string& SceneID);
+	void ClearSceneData(const FEUUID& SceneID);
+	void AddSceneData(const FEUUID& SceneID);
+	FEHaloSelectionData* GetSceneData(const FEUUID& SceneID);
 };
 
 #define HALO_SELECTION_EFFECT FEEditorHaloSelectionEffect::GetInstance()

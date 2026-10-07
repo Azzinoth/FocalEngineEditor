@@ -5,7 +5,7 @@
 class TextureViewWindow : public FEImGuiWindow
 {
 	FETexture* TextureToView = nullptr;
-	std::string SourceTextureObjectID;
+	FEUUID SourceTextureObjectID;
 
 	// 2D flipbook => 3D texture conversion.
 	int ConvertColumns = 1;

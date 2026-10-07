@@ -35,17 +35,17 @@ public:
     void SetMouseY(double NewValue);
 
     // Clipboard
-    std::string GetSceneEntityIDInClipboard();
-    void SetSceneEntityIDInClipboard(std::string NewValue);
+    FEUUID GetSceneEntityIDInClipboard();
+    void SetSceneEntityIDInClipboard(const FEUUID& NewValue);
 
-    void CreateEditorWindowForScene(const std::string& SceneID, FEProject* CurrentProject = nullptr);
+    void CreateEditorWindowForScene(const FEUUID& SceneID, FEProject* CurrentProject = nullptr);
     void RegisterEditorSceneWindow(FEEditorSceneWindow* SceneWindow);
-    FEEditorSceneWindow* GetEditorSceneWindow(std::string SceneID);
+    FEEditorSceneWindow* GetEditorSceneWindow(const FEUUID& SceneID);
 
-    std::vector<std::string> GetEditorOpenedScenesIDs() const;
+    std::vector<FEUUID> GetEditorOpenedScenesIDs() const;
 
     bool SetFocusedScene(FEScene* NewSceneInFocus);
-	bool SetFocusedScene(std::string NewSceneInFocusID);
+	bool SetFocusedScene(const FEUUID& NewSceneInFocusID);
     FEScene* GetFocusedScene() const;
 
     bool IsInGameMode() const;
@@ -62,14 +62,14 @@ private:
     double MouseX, MouseY;
 
     // Clipboard
-    std::string SceneEntityIDInClipboard;
+    FEUUID SceneEntityIDInClipboard;
 
     // Callbacks
     static void AfterEngineUpdate();
     static void MouseButtonCallback(int Button, int Action, int Mods);
     static void MouseMoveCallback(double Xpos, double Ypos);
     static void KeyButtonCallback(int Key, int Scancode, int Action, int Mods);
-    static void OnViewportResize(std::string ViewportID);
+    static void OnViewportResize(FEUUID ViewportID);
     static void DropCallback(int Count, const char** Paths);
     static void CloseWindowCallBack();
 
@@ -97,7 +97,7 @@ private:
     // Game mode
     bool bGameMode = false;
 	bool SetGameModeInternal(bool GameMode);
-	std::unordered_map<std::string, FEScene*> ParentIDToScenesInGameMode;
+	std::unordered_map<FEUUID, FEScene*> ParentIDToScenesInGameMode;
 	bool DuplicateScenesForGameMode();
 
     // Sub-windows
@@ -110,8 +110,6 @@ private:
     void SetImGuiStyle();
 
     void CloseProjectAndCleanup();
-
-    std::unordered_map<std::string, std::string> SceneIDToOldMainCameraID;
 };
 
 #define EDITOR FEEditor::GetInstance()

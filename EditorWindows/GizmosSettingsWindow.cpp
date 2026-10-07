@@ -47,7 +47,7 @@ void GizmosSettingsWindow::Render()
 	if (CurrentScene == nullptr)
 		return;
 
-	FEGizmoSceneData* GizmoSceneData = GIZMO_MANAGER.GetSceneData(CurrentScene->GetObjectID());
+	FEGizmoSceneData* GizmoSceneData = GIZMO_MANAGER.GetSceneData(CurrentScene->GetID());
 	if (GizmoSceneData == nullptr)
 		return;
 

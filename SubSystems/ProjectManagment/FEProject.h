@@ -16,7 +16,7 @@ public:
 	FEProject(std::string Name, std::string ProjectFolder);
 	~FEProject();
 
-	std::string GetID();
+	FEUUID GetID();
 
 	std::string GetName();
 	void SetName(std::string NewValue);
@@ -37,12 +37,12 @@ public:
 
 	void AddUnSavedObject(FEObject* Object);
 
-	std::string GetEditorCameraIDBySceneID(std::string SceneID);
+	FEUUID GetEditorCameraIDBySceneID(const FEUUID& SceneID);
 
-	std::string GetProperMainCameraIDBySceneID(std::string SceneID);
-	bool SetProperMainCameraIDBySceneID(std::string SceneID, std::string CameraID);
+	FEUUID GetProperMainCameraIDBySceneID(const FEUUID& SceneID);
+	bool SetProperMainCameraIDBySceneID(const FEUUID& SceneID, const FEUUID& CameraID);
 private:
-	std::string ID;
+	FEUUID ID;
 	std::string Name;
 	std::string ProjectFolder;
 
@@ -54,10 +54,10 @@ private:
 
 	void SetProjectFolder(std::string NewValue);
 
-	std::unordered_map<std::string, std::string> SceneIDToEditorCameraID;
+	std::unordered_map<FEUUID, FEUUID> SceneIDToEditorCameraID;
 	void InjectEditorCamera(FEScene* Scene);
 
-	std::unordered_map<std::string, std::string> SceneIDToProperMainCameraID;
+	std::unordered_map<FEUUID, FEUUID> SceneIDToProperMainCameraID;
 
 	// FIXME: Consider moving this to RESOURCE_MANAGER
 	void LoadResources(std::string DirectoryPath);

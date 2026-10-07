@@ -13,7 +13,7 @@ void EditGameModelPopup::ChangeMeshCallback(const std::vector<FEObject*> Selecti
 
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_MESH)
 	{
-		FEMesh* SelectedMesh = RESOURCE_MANAGER.GetMesh(SelectionsResult[0]->GetObjectID());
+		FEMesh* SelectedMesh = RESOURCE_MANAGER.GetMesh(SelectionsResult[0]->GetID());
 		if (SelectedMesh == nullptr)
 			return;
 
@@ -25,7 +25,7 @@ void EditGameModelPopup::ChangeMaterialCallback(const std::vector<FEObject*> Sel
 {
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_MATERIAL)
 	{
-		FEMaterial* SelectedMaterial = RESOURCE_MANAGER.GetMaterial(SelectionsResult[0]->GetObjectID());
+		FEMaterial* SelectedMaterial = RESOURCE_MANAGER.GetMaterial(SelectionsResult[0]->GetID());
 		if (SelectedMaterial == nullptr)
 			return;
 
@@ -37,7 +37,7 @@ void EditGameModelPopup::ChangeBillboardMaterialCallback(const std::vector<FEObj
 {
 	if (SelectionsResult.size() == 1 && SelectionsResult[0]->GetType() == FE_MATERIAL)
 	{
-		FEMaterial* SelectedMaterial = RESOURCE_MANAGER.GetMaterial(SelectionsResult[0]->GetObjectID());
+		FEMaterial* SelectedMaterial = RESOURCE_MANAGER.GetMaterial(SelectionsResult[0]->GetID());
 		if (SelectedMaterial == nullptr)
 			return;
 
@@ -392,7 +392,7 @@ void EditGameModelPopup::Render()
 		ImGui::Text("Mesh component:");
 		ImGui::SetCursorPosX(Size.x / 4 - 128 / 2);
 		ImGui::SetCursorPosY(CurrentY + 210.0f);
-		ImGui::Image(PREVIEW_MANAGER.GetMeshPreview(TemporaryModel->Mesh->GetObjectID())->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		ImGui::Image(PREVIEW_MANAGER.GetMeshPreview(TemporaryModel->Mesh->GetID())->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 		LODMeshTarget[0]->StickToItem();
 
 		ChangeLODMeshButton[0]->Render();
@@ -410,7 +410,7 @@ void EditGameModelPopup::Render()
 		ImGui::Text("Material component:");
 		ImGui::SetCursorPosX(Size.x / 2 + Size.x / 4 - 128 / 2);
 		ImGui::SetCursorPosY(CurrentY + 210.0f);
-		ImGui::Image(PREVIEW_MANAGER.GetMaterialPreview(TemporaryModel->Material->GetObjectID())->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		ImGui::Image(PREVIEW_MANAGER.GetMaterialPreview(TemporaryModel->Material->GetID())->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 		MaterialTarget->StickToItem();
 		ChangeMaterialButton->Render();
 		if (ChangeMaterialButton->IsClicked())
@@ -450,8 +450,8 @@ void EditGameModelPopup::Render()
 				AddBillboard->Render();
 				if (AddBillboard->IsClicked())
 				{
-					UpdatedLODMeshes[i] = RESOURCE_MANAGER.GetMesh("1Y251E6E6T78013635793156"/*"plane"*/);
-					UpdatedBillboardMaterial = RESOURCE_MANAGER.GetMaterial("61649B9E0F08013Q3939316C"/*"FEPBRBaseMaterial"*/);
+					UpdatedLODMeshes[i] = RESOURCE_MANAGER.GetMesh(FEEngineResourceIDs::PlaneMesh);
+					UpdatedBillboardMaterial = RESOURCE_MANAGER.GetMaterial(FEEngineResourceIDs::PBRBaseMaterial);
 					TemporaryModel->SetIsLODBillboard(i, true);
 				}
 
@@ -472,7 +472,7 @@ void EditGameModelPopup::Render()
 
 				ImGui::Image(TemporaryModel->GetLODMesh(i) == nullptr
 					        ? RESOURCE_MANAGER.NoTexture->GetTextureID()
-					        : PREVIEW_MANAGER.GetMeshPreview(TemporaryModel->GetLODMesh(i)->GetObjectID())->GetTextureID(),
+					        : PREVIEW_MANAGER.GetMeshPreview(TemporaryModel->GetLODMesh(i)->GetID())->GetTextureID(),
 							ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 				LODMeshTarget[i]->StickToItem();
 
@@ -517,7 +517,7 @@ void EditGameModelPopup::Render()
 					ImGui::Text("Material component:");
 					ImGui::SetCursorPosX(Size.x / 2 - Size.x / 4 - 128 / 2);
 					ImGui::SetCursorPosY(CurrentY + 200 + 210.0f);
-					ImGui::Image(PREVIEW_MANAGER.GetMaterialPreview(TemporaryModel->GetMaterial()->GetObjectID())->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+					ImGui::Image(PREVIEW_MANAGER.GetMaterialPreview(TemporaryModel->GetMaterial()->GetID())->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 					MaterialTarget->StickToItem();
 
 					ChangeMaterialButton->SetPosition(ImVec2(Size.x / 2 - Size.x / 4 - ChangeMaterialButton->GetSize().x / 2, BaseY + 340.0f + 200.0f));
@@ -536,7 +536,7 @@ void EditGameModelPopup::Render()
 					ImGui::SetCursorPosY(CurrentY + 200 + 210.0f);
 					ImGui::Image(TemporaryModel->GetBillboardMaterial() == nullptr
 						         ? RESOURCE_MANAGER.NoTexture->GetTextureID()
-						         : PREVIEW_MANAGER.GetMaterialPreview(TemporaryModel->GetBillboardMaterial()->GetObjectID())->GetTextureID(),
+						         : PREVIEW_MANAGER.GetMaterialPreview(TemporaryModel->GetBillboardMaterial()->GetID())->GetTextureID(),
 								 ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 					BillboardMaterialTarget->StickToItem();
 
@@ -545,11 +545,11 @@ void EditGameModelPopup::Render()
 					{
 						UpdatedBillboardMaterial = TemporaryModel->GetBillboardMaterial();
 
-						const std::vector<std::string> TemporaryMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
+						const std::vector<FEUUID> TemporaryMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 						std::vector<FEObject*> FinalMaterialList;
 						for (size_t j = 0; j < TemporaryMaterialList.size(); j++)
 						{
-							if (RESOURCE_MANAGER.GetMaterial(TemporaryMaterialList[j])->Shader->GetObjectID() == "0800253C242B05321A332D09"/*"FEPBRShader"*/)
+							if (RESOURCE_MANAGER.GetMaterial(TemporaryMaterialList[j])->Shader->GetID() == FEEngineResourceIDs::PBRShader)
 							{
 								FinalMaterialList.push_back(RESOURCE_MANAGER.GetMaterial(TemporaryMaterialList[j]));
 							}
@@ -567,7 +567,7 @@ void EditGameModelPopup::Render()
 					ImGui::Text("Material component:");
 					ImGui::SetCursorPosX(Size.x / 2 - 128 / 2);
 					ImGui::SetCursorPosY(CurrentY + 200 + 210.0f);
-					ImGui::Image(PREVIEW_MANAGER.GetMaterialPreview(TemporaryModel->GetMaterial()->GetObjectID())->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+					ImGui::Image(PREVIEW_MANAGER.GetMaterialPreview(TemporaryModel->GetMaterial()->GetID())->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 
 					ChangeMaterialButton->SetPosition(ImVec2(Size.x / 2 - ChangeMaterialButton->GetSize().x / 2, BaseY + 340.0f + 200.0f));
 					ChangeMaterialButton->Render();
@@ -646,7 +646,7 @@ void EditGameModelPopup::Render()
 		ObjToWorkWith->SetBillboardMaterial(TemporaryModel->GetBillboardMaterial());
 		ObjToWorkWith->SetScaleFactor(TemporaryModel->GetScaleFactor());
 		ObjToWorkWith->SetBillboardZeroRotation(TemporaryModel->GetBillboardZeroRotation());
-		PREVIEW_MANAGER.CreateGameModelPreview(ObjToWorkWith->GetObjectID());
+		PREVIEW_MANAGER.CreateGameModelPreview(ObjToWorkWith->GetID());
 
 		FEImGuiWindow::Close();
 		return;
@@ -672,8 +672,8 @@ void EditGameModelPopup::Close()
 bool EditGameModelPopup::DragAndDropLODMeshCallback(FEObject* Object, void** CallbackInfo)
 {
 	const MeshTargetCallbackInfo* Info = reinterpret_cast<MeshTargetCallbackInfo*>(CallbackInfo);
-	Info->Window->UpdatedLODMeshes[Info->LODLevel] = RESOURCE_MANAGER.GetMesh(Object->GetObjectID());
-	Info->Window->TemporaryModel->SetLODMesh(Info->LODLevel, RESOURCE_MANAGER.GetMesh(Object->GetObjectID()));
+	Info->Window->UpdatedLODMeshes[Info->LODLevel] = RESOURCE_MANAGER.GetMesh(Object->GetID());
+	Info->Window->TemporaryModel->SetLODMesh(Info->LODLevel, RESOURCE_MANAGER.GetMesh(Object->GetID()));
 	PREVIEW_MANAGER.CreateGameModelPreview(Info->Window->TemporaryModel, &Info->Window->TemporaryPreview);
 	return true;
 }
@@ -684,13 +684,13 @@ bool EditGameModelPopup::DragAndDropMaterialCallback(FEObject* Object, void** Ca
 
 	if (Info->bBillboardMaterial)
 	{
-		Info->Window->UpdatedBillboardMaterial = RESOURCE_MANAGER.GetMaterial(Object->GetObjectID());
-		Info->Window->TemporaryModel->SetBillboardMaterial(RESOURCE_MANAGER.GetMaterial(Object->GetObjectID()));
+		Info->Window->UpdatedBillboardMaterial = RESOURCE_MANAGER.GetMaterial(Object->GetID());
+		Info->Window->TemporaryModel->SetBillboardMaterial(RESOURCE_MANAGER.GetMaterial(Object->GetID()));
 	}
 	else
 	{
-		Info->Window->UpdatedMaterial = RESOURCE_MANAGER.GetMaterial(Object->GetObjectID());
-		Info->Window->TemporaryModel->SetMaterial(RESOURCE_MANAGER.GetMaterial(Object->GetObjectID()));
+		Info->Window->UpdatedMaterial = RESOURCE_MANAGER.GetMaterial(Object->GetID());
+		Info->Window->TemporaryModel->SetMaterial(RESOURCE_MANAGER.GetMaterial(Object->GetID()));
 		PREVIEW_MANAGER.CreateGameModelPreview(Info->Window->TemporaryModel, &Info->Window->TemporaryPreview);
 	}
 
@@ -776,11 +776,11 @@ EditMaterialWindow::EditMaterialWindow()
 	CancelButton->SetActiveColor(ImVec4(0.1f, 1.0f, 0.1f, 1.0f));
 	NodeAreaTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_TEXTURE, DragAndDropNodeAreaTargetCallback, reinterpret_cast<void**>(&DragAndDropCallbackInfo), "Drop to add texture");
 
-	PreviewScene = SCENE_MANAGER.CreateScene("MaterialEditor_Scene", "", FESceneFlag::Active | FESceneFlag::EditorMode);
+	PreviewScene = SCENE_MANAGER.CreateScene("MaterialEditor_Scene", FEUUID(), FESceneFlag::Active | FESceneFlag::EditorMode);
 	RESOURCE_MANAGER.SetTag(PreviewScene, EDITOR_RESOURCE_TAG);
 
 	PreviewGameModel = new FEGameModel(nullptr, nullptr, "MaterialEditor_Preview_GameModel");
-	PreviewGameModel->Mesh = RESOURCE_MANAGER.GetMesh("7F251E3E0D08013E3579315F"/*"sphere"*/);
+	PreviewGameModel->Mesh = RESOURCE_MANAGER.GetMesh(FEEngineResourceIDs::SphereMesh);
 
 	PreviewEntity = PreviewScene->CreateEntity("MaterialEditor_Scene_PreviewEntity");
 	PreviewEntity->AddComponent<FEGameModelComponent>(PreviewGameModel);
@@ -1019,13 +1019,13 @@ void EditMaterialWindow::Stop()
 
 bool EditMaterialWindow::DragAndDropNodeAreaTargetCallback(FEObject* Object, void** CallbackInfo)
 {
-	if (ObjToWorkWith->IsTextureInList(RESOURCE_MANAGER.GetTexture(Object->GetObjectID())))
+	if (ObjToWorkWith->IsTextureInList(RESOURCE_MANAGER.GetTexture(Object->GetID())))
 		return false;
 
 	if (ObjToWorkWith->GetUsedTexturesCount() == FE_MAX_TEXTURES_PER_MATERIAL)
 		return false;
 
-	FEEditorTextureSourceNode* NewNode = new FEEditorTextureSourceNode(RESOURCE_MANAGER.GetTexture(Object->GetObjectID()));
+	FEEditorTextureSourceNode* NewNode = new FEEditorTextureSourceNode(RESOURCE_MANAGER.GetTexture(Object->GetID()));
 
 	ImVec2 PositionOnCanvas;
 	PositionOnCanvas.x = ImGui::GetMousePos().x - (WindowPosition.x + NodeGridRelativePosition.x) - NewNode->GetSize().x / 2.0f;

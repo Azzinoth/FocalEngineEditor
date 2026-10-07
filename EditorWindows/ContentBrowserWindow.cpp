@@ -82,7 +82,7 @@ void FEEditorContentBrowserWindow::OpenItemParentFolder(FEObject* Object)
 	for (size_t i = 0; i < Content.size(); i++)
 	{
 		FEObject* CurrentObject = OBJECT_MANAGER.GetFEObject(Content[i]);
-		if (CurrentObject != nullptr && CurrentObject->GetObjectID() == Object->GetObjectID())
+		if (CurrentObject != nullptr && CurrentObject->GetID() == Object->GetID())
 		{
 			ItemIndex = i;
 			break;
@@ -202,7 +202,7 @@ void FEEditorContentBrowserWindow::Render()
 					if (NewMat)
 					{
 						PROJECT_MANAGER.GetCurrent()->SetModified(true);
-						NewMat->Shader = RESOURCE_MANAGER.GetShader("0800253C242B05321A332D09"/*"FEPBRShader"*/);
+						NewMat->Shader = RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::PBRShader);
 
 						NewMat->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 
@@ -225,7 +225,7 @@ void FEEditorContentBrowserWindow::Render()
 
 				if (ImGui::MenuItem("Create new scene"))
 				{
-					FEScene* NewScene = SCENE_MANAGER.CreateScene("", "", FESceneFlag::EditorMode);
+					FEScene* NewScene = SCENE_MANAGER.CreateScene("", FEUUID(), FESceneFlag::EditorMode);
 					//PROJECT_MANAGER.GetCurrent()->InjectEditorCamera(NewScene);
 					PROJECT_MANAGER.GetCurrent()->SetModified(true);
 					VIRTUAL_FILE_SYSTEM.CreateFile(NewScene, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
@@ -277,7 +277,7 @@ void FEEditorContentBrowserWindow::Render()
 			{
 				if (ImGui::MenuItem("Edit"))
 				{
-					EDITOR_MATERIAL_WINDOW.Show(RESOURCE_MANAGER.GetMaterial(ObjectUnderMouse->GetObjectID()));
+					EDITOR_MATERIAL_WINDOW.Show(RESOURCE_MANAGER.GetMaterial(ObjectUnderMouse->GetID()));
 				}
 			}
 
@@ -285,12 +285,12 @@ void FEEditorContentBrowserWindow::Render()
 			{
 				if (ImGui::MenuItem("Edit"))
 				{
-					EditGameModelPopup::GetInstance().Show(RESOURCE_MANAGER.GetGameModel(ObjectUnderMouse->GetObjectID()));
+					EditGameModelPopup::GetInstance().Show(RESOURCE_MANAGER.GetGameModel(ObjectUnderMouse->GetID()));
 				}
 
 				if (ImGui::MenuItem("Create Prefab out of this Game Model"))
 				{
-					FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(ObjectUnderMouse->GetObjectID());
+					FEGameModel* GameModel = RESOURCE_MANAGER.GetGameModel(ObjectUnderMouse->GetID());
 					if (GameModel != nullptr)
 					{
 						FEPrefab* NewPrefab = RESOURCE_MANAGER.CreatePrefab();
@@ -306,7 +306,7 @@ void FEEditorContentBrowserWindow::Render()
 			{
 				if (ImGui::MenuItem("Edit"))
 				{
-					PREFAB_EDITOR_MANAGER.PrepareEditWinow(RESOURCE_MANAGER.GetPrefab(ObjectUnderMouse->GetObjectID()));
+					PREFAB_EDITOR_MANAGER.PrepareEditWinow(RESOURCE_MANAGER.GetPrefab(ObjectUnderMouse->GetID()));
 				}
 			}
 
@@ -314,13 +314,13 @@ void FEEditorContentBrowserWindow::Render()
 			{
 				if (ImGui::MenuItem("Edit"))
 				{
-					ShaderEditorWindow::GetInstance().Show(RESOURCE_MANAGER.GetShader(ObjectUnderMouse->GetObjectID()));
+					ShaderEditorWindow::GetInstance().Show(RESOURCE_MANAGER.GetShader(ObjectUnderMouse->GetID()));
 				}
 			}
 
 			if (!ReadOnlyItem && ObjectUnderMouse->GetType() == FE_NATIVE_SCRIPT_MODULE)
 			{
-				FENativeScriptModule* NativeScriptModule = RESOURCE_MANAGER.GetNativeScriptModule(ObjectUnderMouse->GetObjectID());
+				FENativeScriptModule* NativeScriptModule = RESOURCE_MANAGER.GetNativeScriptModule(ObjectUnderMouse->GetID());
 				if (NativeScriptModule != nullptr)
 				{
 					bool bHaveVSProjectReady = false;
@@ -365,6 +365,20 @@ void FEEditorContentBrowserWindow::Render()
 							}
 						}
 					}
+
+					if (ImGui::MenuItem("Save module as..."))
+					{
+						std::string FilePath;
+						FILE_SYSTEM.ShowFileSaveDialog(FilePath, NATIVE_SCRIPT_MODULE_FILTER, 1);
+
+						if (!FilePath.empty())
+						{
+							if (FILE_SYSTEM.GetFileExtension(FilePath) != ".nativescriptmodule")
+								FilePath += ".nativescriptmodule";
+
+							RESOURCE_MANAGER.SaveFENativeScriptModule(NativeScriptModule, FilePath);
+						}
+					}
 				}
 				else
 				{
@@ -382,31 +396,31 @@ void FEEditorContentBrowserWindow::Render()
 					}
 					else if (ObjectUnderMouse->GetType() == FE_MESH)
 					{
-						DeleteMeshPopup::GetInstance().Show(RESOURCE_MANAGER.GetMesh(ObjectUnderMouse->GetObjectID()));
+						DeleteMeshPopup::GetInstance().Show(RESOURCE_MANAGER.GetMesh(ObjectUnderMouse->GetID()));
 					}
 					else if (ObjectUnderMouse->GetType() == FE_POINT_CLOUD)
 					{
-						DeletePointCloudPopup::GetInstance().Show(RESOURCE_MANAGER.GetPointCloud(ObjectUnderMouse->GetObjectID()));
+						DeletePointCloudPopup::GetInstance().Show(RESOURCE_MANAGER.GetPointCloud(ObjectUnderMouse->GetID()));
 					}
 					else if (ObjectUnderMouse->GetType() == FE_TEXTURE)
 					{
-						DeleteTexturePopup::GetInstance().Show(RESOURCE_MANAGER.GetTexture(ObjectUnderMouse->GetObjectID()));
+						DeleteTexturePopup::GetInstance().Show(RESOURCE_MANAGER.GetTexture(ObjectUnderMouse->GetID()));
 					}
 					else if (ObjectUnderMouse->GetType() == FE_MATERIAL)
 					{
-						DeleteMaterialPopup::GetInstance().Show(RESOURCE_MANAGER.GetMaterial(ObjectUnderMouse->GetObjectID()));
+						DeleteMaterialPopup::GetInstance().Show(RESOURCE_MANAGER.GetMaterial(ObjectUnderMouse->GetID()));
 					}
 					else if (ObjectUnderMouse->GetType() == FE_GAMEMODEL)
 					{
-						DeleteGameModelPopup::GetInstance().Show(RESOURCE_MANAGER.GetGameModel(ObjectUnderMouse->GetObjectID()));
+						DeleteGameModelPopup::GetInstance().Show(RESOURCE_MANAGER.GetGameModel(ObjectUnderMouse->GetID()));
 					}
 					else if (ObjectUnderMouse->GetType() == FE_PREFAB)
 					{
-						DeletePrefabPopup::GetInstance().Show(RESOURCE_MANAGER.GetPrefab(ObjectUnderMouse->GetObjectID()));
+						DeletePrefabPopup::GetInstance().Show(RESOURCE_MANAGER.GetPrefab(ObjectUnderMouse->GetID()));
 					}
 					else if (ObjectUnderMouse->GetType() == FE_SCENE)
 					{
-						//DeleteScenePopup::GetInstance().Show(FilteredResources[ItemUnderMouse]->GetObjectID());
+						//DeleteScenePopup::GetInstance().Show(FilteredResources[ItemUnderMouse]->GetID());
 					}
 					else if (ObjectUnderMouse->GetType() == FE_SHADER)
 					{
@@ -423,7 +437,7 @@ void FEEditorContentBrowserWindow::Render()
 			{
 				if (ImGui::BeginMenu("Export"))
 				{
-					FEMesh* MeshToExport = RESOURCE_MANAGER.GetMesh(ObjectUnderMouse->GetObjectID());
+					FEMesh* MeshToExport = RESOURCE_MANAGER.GetMesh(ObjectUnderMouse->GetID());
 
 					if (ImGui::MenuItem("as OBJ"))
 					{
@@ -459,7 +473,7 @@ void FEEditorContentBrowserWindow::Render()
 
 			if (ObjectUnderMouse->GetType() == FE_POINT_CLOUD)
 			{
-				FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(ObjectUnderMouse->GetObjectID());
+				FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(ObjectUnderMouse->GetID());
 
 				if (ImGui::BeginMenu("Export"))
 				{
@@ -519,7 +533,7 @@ void FEEditorContentBrowserWindow::Render()
 				{
 					if (ImGui::MenuItem("Texture channels to individual textures"))
 					{
-						const std::vector<FETexture*> NewTextures = RESOURCE_MANAGER.ChannelsToFETextures(RESOURCE_MANAGER.GetTexture(ObjectUnderMouse->GetObjectID()));
+						const std::vector<FETexture*> NewTextures = RESOURCE_MANAGER.ChannelsToFETextures(RESOURCE_MANAGER.GetTexture(ObjectUnderMouse->GetID()));
 
 						PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(NewTextures[0]);
 						PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(NewTextures[1]);
@@ -536,7 +550,7 @@ void FEEditorContentBrowserWindow::Render()
 
 					if (ImGui::MenuItem("Resize"))
 					{
-						FETexture* TextureToResize = RESOURCE_MANAGER.GetTexture(ObjectUnderMouse->GetObjectID());
+						FETexture* TextureToResize = RESOURCE_MANAGER.GetTexture(ObjectUnderMouse->GetID());
 						ResizeTexturePopup::GetInstance().Show(TextureToResize);
 					}
 
@@ -556,7 +570,7 @@ void FEEditorContentBrowserWindow::Render()
 
 				if (ImGui::BeginMenu("Export"))
 				{
-					FETexture* TextureToExport = RESOURCE_MANAGER.GetTexture(ObjectUnderMouse->GetObjectID());
+					FETexture* TextureToExport = RESOURCE_MANAGER.GetTexture(ObjectUnderMouse->GetID());
 
 					if (ImGui::MenuItem("as PNG"))
 					{
@@ -576,7 +590,7 @@ void FEEditorContentBrowserWindow::Render()
 
 			if (ObjectUnderMouse->GetType() == FE_SCENE)
 			{
-				std::string SceneID = ObjectUnderMouse->GetObjectID();
+				FEUUID SceneID = ObjectUnderMouse->GetID();
 				bool bIsAlreadyOpened = EDITOR.GetEditorSceneWindow(SceneID) != nullptr;
 				
 				if (!bIsAlreadyOpened)
@@ -609,7 +623,7 @@ void FEEditorContentBrowserWindow::Render()
 				FEScene* StartingScene = SCENE_MANAGER.GetStartingScene();
 				bool bIsSceneStarting = false;
 				if (StartingScene != nullptr)
-					bIsSceneStarting = StartingScene->GetObjectID() == SceneID;
+					bIsSceneStarting = StartingScene->GetID() == SceneID;
 				
 				if (ImGui::MenuItem("Starting scene", NULL, &bIsSceneStarting))
 				{
@@ -759,18 +773,18 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 		UV0 = ImVec2(0.0f, 1.0f);
 		UV1 = ImVec2(1.0f, 0.0f);
 
-		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetObjectID());
+		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetID());
 		SmallAdditionTypeIcon = MeshIcon;
 	}
 	else if (Item->GetType() == FE_TEXTURE)
 	{
-		PreviewTexture = RESOURCE_MANAGER.GetTexture(Item->GetObjectID());
+		PreviewTexture = RESOURCE_MANAGER.GetTexture(Item->GetID());
 		if (PreviewTexture->GetType() == FE_TEXTURE_TYPE::FE_TEXTURE_3D)
 		{
 			UV0 = ImVec2(0.0f, 1.0f);
 			UV1 = ImVec2(1.0f, 0.0f);
 
-			PreviewTexture = PREVIEW_MANAGER.GetTexture3DPreview(Item->GetObjectID());
+			PreviewTexture = PREVIEW_MANAGER.GetTexture3DPreview(Item->GetID());
 			SmallAdditionTypeIcon = Texture3DIcon;
 		}
 		else
@@ -783,7 +797,7 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 		UV0 = ImVec2(0.0f, 1.0f);
 		UV1 = ImVec2(1.0f, 0.0f);
 
-		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetObjectID());
+		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetID());
 		SmallAdditionTypeIcon = MaterialIcon;
 	}
 	else if (Item->GetType() == FE_GAMEMODEL)
@@ -791,14 +805,14 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 		UV0 = ImVec2(0.0f, 1.0f);
 		UV1 = ImVec2(1.0f, 0.0f);
 
-		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetObjectID());
+		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetID());
 		SmallAdditionTypeIcon = GameModelIcon;
 	}
 	else if (Item->GetType() == FE_POINT_CLOUD)
 	{
 		UV0 = ImVec2(0.0f, 1.0f);
 		UV1 = ImVec2(1.0f, 0.0f);
-		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetObjectID());
+		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetID());
 		SmallAdditionTypeIcon = PointCloudIcon;
 	}
 	else if (Item->GetType() == FE_PREFAB)
@@ -806,7 +820,7 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 		UV0 = ImVec2(0.0f, 1.0f);
 		UV1 = ImVec2(1.0f, 0.0f);
 
-		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetObjectID());
+		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetID());
 		SmallAdditionTypeIcon = PrefabIcon;
 	}
 	else if (Item->GetType() == FE_SCENE)
@@ -814,7 +828,7 @@ void FEEditorContentBrowserWindow::ChooseTexturesItem(FETexture*& PreviewTexture
 		UV0 = ImVec2(0.0f, 1.0f);
 		UV1 = ImVec2(1.0f, 0.0f);
 
-		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetObjectID());
+		PreviewTexture = PREVIEW_MANAGER.GetPreview(Item->GetID());
 		SmallAdditionTypeIcon = SceneIcon;
 	}
 	else if (Item->GetType() == FE_ASSET_PACKAGE)
@@ -1210,9 +1224,9 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		if (CurrentResource == nullptr)
 			continue;
 
-		ImGui::PushID(int(std::hash<std::string>{}(CurrentResource->GetObjectID())));
+		ImGui::PushID(int(std::hash<FEUUID>{}(CurrentResource->GetID())));
 
-		if (ItemInFocus != nullptr && ItemInFocus->GetObjectID() == CurrentResource->GetObjectID())
+		if (ItemInFocus != nullptr && ItemInFocus->GetID() == CurrentResource->GetID())
 		{
 			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.1f, 1.0f, 0.1f, 1.0f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor(0.1f, 1.0f, 0.1f, 1.0f));
@@ -1236,7 +1250,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		if (PreviewTexture != nullptr)
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
-			ImGui::ImageButton((CurrentResource->GetObjectID() + "FilteredContentBrowserButton").c_str(), PreviewTexture->GetTextureID(), ImVec2(ItemIconSize, ItemIconSize), UV0, UV1, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f));
+			ImGui::ImageButton((UNIQUE_ID.ToString(CurrentResource->GetID()) + "FilteredContentBrowserButton").c_str(), PreviewTexture->GetTextureID(), ImVec2(ItemIconSize, ItemIconSize), UV0, UV1, ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f));
 			ImGui::PopStyleVar();
 		}
 		
@@ -1254,7 +1268,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 				std::string AdditionalTypeInfo;
 				if (CurrentResource->GetType() == FE_TEXTURE)
 				{
-					FETexture* CurrentTexture = RESOURCE_MANAGER.GetTexture(CurrentResource->GetObjectID());
+					FETexture* CurrentTexture = RESOURCE_MANAGER.GetTexture(CurrentResource->GetID());
 					AdditionalTypeInfo += "\nTexture type: ";
 					switch (CurrentTexture->GetType())
 					{
@@ -1274,14 +1288,14 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 				}
 				else if (CurrentResource->GetType() == FE_POINT_CLOUD)
 				{
-					FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(CurrentResource->GetObjectID());
+					FEPointCloud* PointCloud = RESOURCE_MANAGER.GetPointCloud(CurrentResource->GetID());
 					AdditionalTypeInfo += "\nPoint count: ";
 					AdditionalTypeInfo += std::to_string(PointCloud->GetPointCount());
 				}
 
 				ImGui::BeginTooltip();
 				ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-				ImGui::TextUnformatted(("ID: " + CurrentResource->GetObjectID() +
+				ImGui::TextUnformatted(("ID: " + UNIQUE_ID.ToString(CurrentResource->GetID()) +
 										"\nTag: " + CurrentResource->GetTag() +
 										"\nName: " + CurrentResource->GetName() +
 										"\nType: " + FEObjectTypeToString(CurrentResource->GetType()) +
@@ -1384,35 +1398,35 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		else if (ClickedItem->GetType() == FE_MESH)
 		{
 			std::string MeshInfo = "Vertex count: ";
-			MeshInfo += std::to_string(RESOURCE_MANAGER.GetMesh(ClickedItem->GetObjectID())->GetVertexCount());
+			MeshInfo += std::to_string(RESOURCE_MANAGER.GetMesh(ClickedItem->GetID())->GetVertexCount());
 			MeshInfo += "\n";
 			MeshInfo += "Sub material socket: ";
-			MeshInfo += RESOURCE_MANAGER.GetMesh(ClickedItem->GetObjectID())->GetMaterialCount() == 2 ? "Yes" : "No";
+			MeshInfo += RESOURCE_MANAGER.GetMesh(ClickedItem->GetID())->GetMaterialCount() == 2 ? "Yes" : "No";
 			MessagePopUp::GetInstance().Show("Mesh info", MeshInfo.c_str());
 		}
 		else if (ClickedItem->GetType() == FE_MATERIAL)
 		{
-			EDITOR_MATERIAL_WINDOW.Show(RESOURCE_MANAGER.GetMaterial(ClickedItem->GetObjectID()));
+			EDITOR_MATERIAL_WINDOW.Show(RESOURCE_MANAGER.GetMaterial(ClickedItem->GetID()));
 		}
 		else if (ClickedItem->GetType() == FE_GAMEMODEL)
 		{
 			if (!bContextMenuOpened && !EditGameModelPopup::GetInstance().IsVisible())
 			{
-				EditGameModelPopup::GetInstance().Show(RESOURCE_MANAGER.GetGameModel(ClickedItem->GetObjectID()));
+				EditGameModelPopup::GetInstance().Show(RESOURCE_MANAGER.GetGameModel(ClickedItem->GetID()));
 			}
 		}
 		else if (ClickedItem->GetType() == FE_PREFAB)
 		{
 			if (!bContextMenuOpened)
 			{
-				PREFAB_EDITOR_MANAGER.PrepareEditWinow(RESOURCE_MANAGER.GetPrefab(ClickedItem->GetObjectID()));
+				PREFAB_EDITOR_MANAGER.PrepareEditWinow(RESOURCE_MANAGER.GetPrefab(ClickedItem->GetID()));
 			}
 		}
 		else if (ClickedItem->GetType() == FE_SCENE)
 		{
 			if (!bContextMenuOpened)
 			{
-				std::string SceneID = ClickedItem->GetObjectID();
+				FEUUID SceneID = ClickedItem->GetID();
 				bool bIsAlreadyOpened = EDITOR.GetEditorSceneWindow(SceneID) != nullptr;
 				if (!bIsAlreadyOpened)
 					EDITOR.CreateEditorWindowForScene(SceneID);
@@ -1422,7 +1436,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		{
 			if (!bContextMenuOpened)
 			{
-				FETexture* ClickedTexture = RESOURCE_MANAGER.GetTexture(ClickedItem->GetObjectID());
+				FETexture* ClickedTexture = RESOURCE_MANAGER.GetTexture(ClickedItem->GetID());
 				if (ClickedTexture != nullptr)
 				{
 					const std::string WindowCaption = "Texture: " + ClickedTexture->GetName();
@@ -1529,7 +1543,7 @@ void FEEditorContentBrowserWindow::UpdateFilterForResources()
 {
 	FilteredResourcesIDs.clear();
 
-	std::vector<std::string> TemporaryFilteredList;
+	std::vector<FEUUID> TemporaryFilteredList;
 	TemporaryFilteredList = AllResourcesIDs;
 	if (!AnyFilterActive())
 	{
@@ -1551,7 +1565,7 @@ bool FEEditorContentBrowserWindow::AnyFilterActive()
 	return NameFilter[0] != '\0' || ObjectTypeFilters.size() > 0 || ObjectTagNegativeFilters.size() > 0;
 }
 
-bool FEEditorContentBrowserWindow::ShouldPassVisibilityFilter(std::string ObjectID)
+bool FEEditorContentBrowserWindow::ShouldPassVisibilityFilter(const FEUUID& ObjectID)
 {
 	FEObject* Object = OBJECT_MANAGER.GetFEObject(ObjectID);
 	if (Object == nullptr)

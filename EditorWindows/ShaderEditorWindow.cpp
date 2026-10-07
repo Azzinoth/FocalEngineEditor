@@ -422,7 +422,7 @@ void ShaderEditorWindow::Render()
 			// TODO: Verify if this is needed.
 			ReCompiledShader->AddUniformsFromShader(ShaderToEdit);
 
-			RESOURCE_MANAGER.ReplaceShader(ShaderToEdit->GetObjectID(), ReCompiledShader);
+			RESOURCE_MANAGER.ReplaceShader(ShaderToEdit->GetID(), ReCompiledShader);
 
 			if (ShaderToEdit->IsDebugRequest())
 			{
@@ -443,7 +443,7 @@ void ShaderEditorWindow::Render()
 
 void ShaderEditorWindow::ReplaceShader(FEShader* OldShader, FEShader* NewShader)
 {
-	std::vector<std::string> MaterialList = RESOURCE_MANAGER.GetMaterialIDList();
+	std::vector<FEUUID> MaterialList = RESOURCE_MANAGER.GetMaterialIDList();
 	for (size_t i = 0; i < MaterialList.size(); i++)
 	{
 		FEMaterial* TemporaryMaterial = RESOURCE_MANAGER.GetMaterial(MaterialList[i]);
@@ -466,7 +466,7 @@ void ShaderEditorWindow::ReplaceShader(FEShader* OldShader, FEShader* NewShader)
 	if (EDITOR.GetFocusedScene() != nullptr)
 	{
 		FEScene* CurrentScene = EDITOR.GetFocusedScene();
-		const std::vector<std::string> TerrainList = CurrentScene->GetEntityIDListWithComponent<FETerrainComponent>();
+		const std::vector<FEUUID> TerrainList = CurrentScene->GetEntityIDListWithComponent<FETerrainComponent>();
 		for (size_t i = 0; i < TerrainList.size(); i++)
 		{
 			FEEntity* TemporaryTerrain = CurrentScene->GetEntity(TerrainList[i]);

@@ -147,7 +147,7 @@ void ImGuiButton::Render()
 ImGuiImageButton::ImGuiImageButton(FETexture* Texture)
 {
 	this->Texture = Texture;
-	ID = APPLICATION.GetUniqueHexID();
+	ID = UNIQUE_ID.GenerateID();
 }
 
 ImVec2 ImGuiImageButton::GetPosition() const
@@ -285,7 +285,7 @@ void ImGuiImageButton::RenderBegin()
 	bHovered = false;
 
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(FramePadding, FramePadding));
-	ImGui::ImageButton(ID.c_str(), Texture->GetTextureID(), Size, UV0, UV1, BackgroundColor, TintColor);
+	ImGui::ImageButton(UNIQUE_ID.ToString(ID).c_str(), Texture->GetTextureID(), Size, UV0, UV1, BackgroundColor, TintColor);
 	ImGui::PopStyleVar();
 
 	// flag important for drag and drop functionality

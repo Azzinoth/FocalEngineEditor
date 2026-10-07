@@ -15,7 +15,7 @@ protected:
 	~FEEditorSceneWindow();
 	
 	 FEScene* Scene = nullptr;
-	 std::string SceneID = "";
+	 FEUUID SceneID;
 	 DragAndDropTarget* SceneWindowTarget = nullptr;
 	 
 	 bool bShouldDockToCentralNode = false;

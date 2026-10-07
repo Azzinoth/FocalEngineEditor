@@ -79,12 +79,12 @@ void FEEditor::SetMouseY(const double NewValue)
 	MouseY = NewValue;
 }
 
-std::string FEEditor::GetSceneEntityIDInClipboard()
+FEUUID FEEditor::GetSceneEntityIDInClipboard()
 {
 	return SceneEntityIDInClipboard;
 }
 
-void FEEditor::SetSceneEntityIDInClipboard(const std::string NewValue)
+void FEEditor::SetSceneEntityIDInClipboard(const FEUUID& NewValue)
 {
 	SceneEntityIDInClipboard = NewValue;
 }
@@ -119,7 +119,7 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 
 	if (!ImGui::GetIO().WantCaptureKeyboard && Mods == GLFW_MOD_CONTROL && Key == GLFW_KEY_V && Action == GLFW_RELEASE)
 	{
-		if (!EDITOR.GetSceneEntityIDInClipboard().empty())
+		if (!UNIQUE_ID.IsNull(EDITOR.GetSceneEntityIDInClipboard()))
 		{
 			if (EDITOR.GetFocusedScene() != nullptr)
 			{
@@ -127,8 +127,8 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 				// Skip if entity was deleted or belongs to another scene
 				if (EntityToDuplicate != nullptr)
 				{
-					FENaiveSceneGraphNode* NodeToDuplicate = EDITOR.GetFocusedScene()->SceneGraph.GetNodeByEntityID(EntityToDuplicate->GetObjectID());
-					FENaiveSceneGraphNode* DuplicatedNode = EDITOR.GetFocusedScene()->SceneGraph.DuplicateNode(NodeToDuplicate->GetObjectID(), NodeToDuplicate->GetParent()->GetObjectID());
+					FENaiveSceneGraphNode* NodeToDuplicate = EDITOR.GetFocusedScene()->SceneGraph.GetNodeByEntityID(EntityToDuplicate->GetID());
+					FENaiveSceneGraphNode* DuplicatedNode = EDITOR.GetFocusedScene()->SceneGraph.DuplicateNode(NodeToDuplicate->GetID(), NodeToDuplicate->GetParent()->GetID());
 					if (DuplicatedNode != nullptr)
 					{
 						FEEntity* DuplicatedEntity = DuplicatedNode->GetEntity();
@@ -488,7 +488,7 @@ void FEEditor::Render()
 		bool bFocusedSceneCouldBeUsedForGameMode = false;
 		if (EDITOR.GetFocusedScene() != nullptr)
 		{
-			FEEditorSceneWindow* SceneWindow = EDITOR_SCENE_WINDOW_MANAGER.GetSceneWindow(EDITOR.GetFocusedScene()->GetObjectID());
+			FEEditorSceneWindow* SceneWindow = EDITOR_SCENE_WINDOW_MANAGER.GetSceneWindow(EDITOR.GetFocusedScene()->GetID());
 			// Focused scene could be prefab scene
 			if (!PREFAB_EDITOR_MANAGER.IsEditorWindowIsPrefabWindow(SceneWindow))
 				bFocusedSceneCouldBeUsedForGameMode = true;
@@ -616,7 +616,7 @@ void FEEditor::RenderAboutWindow()
 	}
 }
 
-void FEEditor::OnViewportResize(std::string ViewportID)
+void FEEditor::OnViewportResize(FEUUID ViewportID)
 {
 	
 }
@@ -690,7 +690,7 @@ void FEEditor::DisplayEditorCamerasWindow() const
 			continue;
 		}
 
-		if (ImGui::CollapsingHeader(CameraEntity->GetObjectID().c_str(), 0))
+		if (ImGui::CollapsingHeader(UNIQUE_ID.ToString(CameraEntity->GetID()).c_str(), 0))
 		{
 			ImGui::Indent();
 
@@ -849,12 +849,12 @@ void FEEditor::CloseProjectAndCleanup()
 	PREFAB_EDITOR_MANAGER.Clear();
 }
 
-FEEditorSceneWindow* FEEditor::GetEditorSceneWindow(std::string SceneID)
+FEEditorSceneWindow* FEEditor::GetEditorSceneWindow(const FEUUID& SceneID)
 {
 	return EDITOR_SCENE_WINDOW_MANAGER.GetSceneWindow(SceneID);
 }
 
-void FEEditor::CreateEditorWindowForScene(const std::string& SceneID, FEProject* CurrentProject)
+void FEEditor::CreateEditorWindowForScene(const FEUUID& SceneID, FEProject* CurrentProject)
 {
 	EDITOR_SCENE_WINDOW_MANAGER.CreateSceneWindow(SceneID, CurrentProject);
 }
@@ -884,7 +884,7 @@ bool FEEditor::DuplicateScenesForGameMode()
 	}
 
 	// Here we are setting flag right away, because we want to make sure that scripts are started.
-	FEScene* GameModeScene = SCENE_MANAGER.DuplicateScene(EDITOR.GetFocusedScene()->GetObjectID(), "GameMode", [](FEEntity* EntityToCheck) {
+	FEScene* GameModeScene = SCENE_MANAGER.DuplicateScene(EDITOR.GetFocusedScene()->GetID(), "GameMode", [](FEEntity* EntityToCheck) {
 		return !(EntityToCheck->GetTag() == EDITOR_RESOURCE_TAG);
 	}, FESceneFlag::Active | FESceneFlag::GameMode | FESceneFlag::Renderable);
 
@@ -894,9 +894,9 @@ bool FEEditor::DuplicateScenesForGameMode()
 		return false;
 	}
 
-	ParentIDToScenesInGameMode[EDITOR.GetFocusedScene()->GetObjectID()] = GameModeScene;
+	ParentIDToScenesInGameMode[EDITOR.GetFocusedScene()->GetID()] = GameModeScene;
 
-	EDITOR.CreateEditorWindowForScene(GameModeScene->GetObjectID());
+	EDITOR.CreateEditorWindowForScene(GameModeScene->GetID());
 
 	return true;
 }
@@ -925,7 +925,7 @@ bool FEEditor::SetGameModeInternal(bool GameMode)
 		auto SceneIterator = ParentIDToScenesInGameMode.begin();
 		while (SceneIterator != ParentIDToScenesInGameMode.end())
 		{
-			EDITOR_SCENE_WINDOW_MANAGER.DeleteSceneAndCleanup(SceneIterator->second->GetObjectID());
+			EDITOR_SCENE_WINDOW_MANAGER.DeleteSceneAndCleanup(SceneIterator->second->GetID());
 			SceneIterator = ParentIDToScenesInGameMode.erase(SceneIterator);
 		}
 	}
@@ -933,7 +933,7 @@ bool FEEditor::SetGameModeInternal(bool GameMode)
 	return true;
 }
 
-std::vector<std::string> FEEditor::GetEditorOpenedScenesIDs() const
+std::vector<FEUUID> FEEditor::GetEditorOpenedScenesIDs() const
 {
 	return EDITOR_SCENE_WINDOW_MANAGER.GetOpenedScenesIDs();
 }
@@ -948,7 +948,7 @@ bool FEEditor::SetFocusedScene(FEScene* NewSceneInFocus)
 	return EDITOR_SCENE_WINDOW_MANAGER.SetFocusedScene(NewSceneInFocus);
 }
 
-bool FEEditor::SetFocusedScene(std::string NewSceneInFocusID)
+bool FEEditor::SetFocusedScene(const FEUUID& NewSceneInFocusID)
 {
 	return EDITOR_SCENE_WINDOW_MANAGER.SetFocusedScene(NewSceneInFocusID);
 }
@@ -963,10 +963,10 @@ void FEEditor::UpdateBeforeRender()
 		for (size_t i = 0; i < Scenes.size(); i++)
 		{
 			FEEntity* CurrentMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(Scenes[i]);
-			std::string EditorCameraID = CurrentProject->GetEditorCameraIDBySceneID(Scenes[i]->GetObjectID());
-			if (!EditorCameraID.empty())
+			FEUUID EditorCameraID = CurrentProject->GetEditorCameraIDBySceneID(Scenes[i]->GetID());
+			if (!UNIQUE_ID.IsNull(EditorCameraID))
 			{
-				if (CurrentMainCameraEntity != nullptr && CurrentMainCameraEntity->GetObjectID() != EditorCameraID)
+				if (CurrentMainCameraEntity != nullptr && CurrentMainCameraEntity->GetID() != EditorCameraID)
 				{
 					CAMERA_SYSTEM.SetMainCamera(Scenes[i]->GetEntity(EditorCameraID));
 				}

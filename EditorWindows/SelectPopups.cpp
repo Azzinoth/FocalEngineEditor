@@ -29,7 +29,7 @@ SelectFEObjectPopUp::~SelectFEObjectPopUp()
 	delete IconButton;
 }
 
-void SelectFEObjectPopUp::FilterOutTags(std::vector<std::string>& FEObjectIDList, std::vector<std::string> ListOfTagsToFilterOut)
+void SelectFEObjectPopUp::FilterOutTags(std::vector<FEUUID>& FEObjectIDList, std::vector<std::string> ListOfTagsToFilterOut)
 {
 	for (int i = 0; i < FEObjectIDList.size(); i++)
 	{
@@ -61,7 +61,7 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 
 	if (CustomList.empty())
 	{
-		std::vector<std::string> TemporaryList;
+		std::vector<FEUUID> TemporaryList;
 
 		switch (CurrentType)
 		{
@@ -107,20 +107,20 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 		if (CurrentType == FE_MESH)
 		{
 			if (!RESOURCE_MANAGER.GetMeshByName("FEPlane").empty())
-				TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.GetMeshByName("FEPlane")[0]->GetObjectID());
+				TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.GetMeshByName("FEPlane")[0]->GetID());
 
 			if (!RESOURCE_MANAGER.GetMeshByName("FECube").empty())
-				TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.GetMeshByName("FECube")[0]->GetObjectID());
+				TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.GetMeshByName("FECube")[0]->GetID());
 
 			if (!RESOURCE_MANAGER.GetMeshByName("FESphere").empty())
-				TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.GetMeshByName("FESphere")[0]->GetObjectID());
+				TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.GetMeshByName("FESphere")[0]->GetID());
 		}
 
 		if (CurrentType == FE_TEXTURE)
-			TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.NoTexture->GetObjectID());
+			TemporaryList.insert(TemporaryList.begin(), RESOURCE_MANAGER.NoTexture->GetID());
 
 		if (CurrentType == FE_MATERIAL)
-			TemporaryList.insert(TemporaryList.begin(), "18251A5E0F08013Z3939317U"/*"SolidColorMaterial"*/);
+			TemporaryList.insert(TemporaryList.begin(), FEEngineResourceIDs::SolidColorMaterial);
 		
 		for (size_t i = 0; i < TemporaryList.size(); i++)
 			ItemsList.push_back(OBJECT_MANAGER.GetFEObject(TemporaryList[i]));
@@ -138,9 +138,9 @@ void SelectFEObjectPopUp::Show(const FE_OBJECT_TYPE Type, void(*CallBack)(std::v
 	{
 		for (size_t i = 0; i < ItemsList.size(); i++)
 		{
-			if (ItemsList[i]->GetObjectID() == HighlightedObject->GetObjectID())
+			if (ItemsList[i]->GetID() == HighlightedObject->GetID())
 			{
-				AddToSelected(OBJECT_MANAGER.GetFEObject(ItemsList[i]->GetObjectID()));
+				AddToSelected(OBJECT_MANAGER.GetFEObject(ItemsList[i]->GetID()));
 				break;
 			}
 		}
@@ -186,12 +186,12 @@ void SelectFEObjectPopUp::Render()
 		ImGui::Columns(5, "selectPopupColumns", false);
 		for (size_t i = 0; i < FilteredItemsList.size(); i++)
 		{
-			ImGui::PushID(FilteredItemsList[i]->GetObjectID().c_str());
+			ImGui::PushID(UNIQUE_ID.ToString(FilteredItemsList[i]->GetID()).c_str());
 			if (ImGui::IsMouseDoubleClicked(0))
 			{
 				if (IndexUnderMouse != -1)
 				{
-					AddToSelected(OBJECT_MANAGER.GetFEObject(FilteredItemsList[IndexUnderMouse]->GetObjectID()));
+					AddToSelected(OBJECT_MANAGER.GetFEObject(FilteredItemsList[IndexUnderMouse]->GetID()));
 					if (!ControlButtonPressed || bOneObjectSelectonMode && SelectedObjects.size() == 1)
 					{
 						OnSelectAction();
@@ -205,7 +205,7 @@ void SelectFEObjectPopUp::Render()
 			IconButton->Render();
 			if (IconButton->IsClicked())
 			{
-				AddToSelected(OBJECT_MANAGER.GetFEObject(FilteredItemsList[i]->GetObjectID()));
+				AddToSelected(OBJECT_MANAGER.GetFEObject(FilteredItemsList[i]->GetID()));
 			}
 
 			if (ImGui::IsItemHovered())
@@ -213,7 +213,7 @@ void SelectFEObjectPopUp::Render()
 				std::string AdditionalTypeInfo;
 				if (FilteredItemsList[i]->GetType() == FE_TEXTURE)
 				{
-					FETexture* CurrentTexture = RESOURCE_MANAGER.GetTexture(FilteredItemsList[i]->GetObjectID());
+					FETexture* CurrentTexture = RESOURCE_MANAGER.GetTexture(FilteredItemsList[i]->GetID());
 					AdditionalTypeInfo += "\nTexture type: ";
 					switch (CurrentTexture->GetType())
 					{

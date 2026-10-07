@@ -79,7 +79,7 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 		CurrentProject->bWasJustCreated = false;
 		FEScene* StartScene = SCENE_MANAGER.GetStartingScene();
 		if (StartScene != nullptr)
-			EDITOR.CreateEditorWindowForScene(StartScene->GetObjectID(), CurrentProject);
+			EDITOR.CreateEditorWindowForScene(StartScene->GetID(), CurrentProject);
 	}
 	IndexChosen = -1;
 
@@ -131,7 +131,7 @@ void FEProjectManager::DisplayProjectSelection()
 			}
 
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
-			if (ImGui::ImageButton(List[i]->GetID().c_str(), List[i]->SceneScreenshot->GetTextureID(), ImVec2(512.0f, 288.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
+			if (ImGui::ImageButton(UNIQUE_ID.ToString(List[i]->GetID()).c_str(), List[i]->SceneScreenshot->GetTextureID(), ImVec2(512.0f, 288.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
 			{
 				IndexChosen = static_cast<int>(i);
 			}
@@ -291,7 +291,7 @@ void FEProjectManager::CreateNewProject(std::string ProjectName, std::string Pro
 	}
 
 	FEProject* NewProject = new FEProject(ProjectName, ProjectPath);
-	FEScene* NewScene = SCENE_MANAGER.CreateScene(ProjectName + "_main_scene", "", FESceneFlag::Active);
+	FEScene* NewScene = SCENE_MANAGER.CreateScene(ProjectName + "_main_scene", FEUUID(), FESceneFlag::Active);
 	
 	FEEntity* SunEntity = NewScene->CreateEntity("Sun");
 	SunEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
@@ -305,7 +305,7 @@ void FEProjectManager::CreateNewProject(std::string ProjectName, std::string Pro
 	SkyDome->AddComponent<FESkyDomeComponent>();
 
 	NewProject->bWasJustCreated = true;
-	SCENE_MANAGER.SetStartingScene(NewScene->GetObjectID());
+	SCENE_MANAGER.SetStartingScene(NewScene->GetID());
 	NewProject->InjectEditorCamera(NewScene);
 	NewProject->AddMissingVFSData();
 	NewProject->SaveProject(true);

@@ -11,22 +11,22 @@ class FEEditorSceneWindowManager
 public:
 	SINGLETON_PUBLIC_PART(FEEditorSceneWindowManager)
 
-	void CreateSceneWindow(const std::string& SceneID, FEProject* CurrentProject = nullptr);
+	void CreateSceneWindow(const FEUUID& SceneID, FEProject* CurrentProject = nullptr);
 	void RegisterSceneWindow(FEEditorSceneWindow* SceneWindow);
-	void DeleteSceneAndCleanup(std::string SceneID);
+	void DeleteSceneAndCleanup(const FEUUID& SceneID);
 
-	FEEditorSceneWindow* GetSceneWindow(std::string SceneID);
-	std::vector<std::string> GetOpenedScenesIDs() const;
+	FEEditorSceneWindow* GetSceneWindow(const FEUUID& SceneID);
+	std::vector<FEUUID> GetOpenedScenesIDs() const;
 	const std::vector<FEEditorSceneWindow*>& GetAllSceneWindows() const;
 
 	bool SetFocusedScene(FEScene* NewSceneInFocus);
-	bool SetFocusedScene(std::string NewSceneInFocusID);
+	bool SetFocusedScene(const FEUUID& NewSceneInFocusID);
 	FEScene* GetFocusedScene() const;
 	FEEditorSceneWindow* GetFocusedSceneWindow() const;
 
 	void Clear();
 
-	static void OnViewportResize(std::string ViewportID);
+	static void OnViewportResize(FEUUID ViewportID);
 	void Update();
 
 	void MouseButtonCallback(int Button, int Action, int Mods);
@@ -38,8 +38,8 @@ private:
 	SINGLETON_PRIVATE_PART(FEEditorSceneWindowManager)
 
 	std::vector<FEEditorSceneWindow*> SceneWindows;
-	std::unordered_map<std::string, bool> SeenScenesID;
-	std::string FocusedSceneID;
+	std::unordered_map<FEUUID, bool> SeenScenesID;
+	FEUUID FocusedSceneID;
 
 	void BeforeChangeOfFocusedScene(FEScene* NewSceneInFocus);
 };

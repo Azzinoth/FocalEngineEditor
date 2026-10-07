@@ -95,7 +95,7 @@ public:
 class ImGuiImageButton
 {
 protected:
-	std::string ID;
+	FEUUID ID;
 	ImVec2 Position = ImVec2(-1.0f, -1.0f);
 	ImVec2 Size = ImVec2(32.0f, 32.0f);
 	ImVec2 UV0 = ImVec2(0.0f, 0.0f);
