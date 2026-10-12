@@ -2,51 +2,49 @@
 
 #include "SceneGraphWindow.h"
 
-#ifdef FE_WIN_32
-	const COMDLG_FILTERSPEC OBJ_LOAD_FILTER[] =
+	const std::vector<FEFileSystem::FileDialogFilter> OBJ_LOAD_FILTER =
 	{
-		{ L"Wavefront OBJ files (*.obj)", L"*.obj" }
+		{ "Wavefront OBJ files (*.obj)", { "obj" } }
 	};
 
-    const COMDLG_FILTERSPEC GLTF_FILTER[] =
-    {
-        { L"GL Transmission Format (*.gltf)", L"*.gltf" }
-    };
-
-	const COMDLG_FILTERSPEC TEXTURE_LOAD_FILTER[] =
+	const std::vector<FEFileSystem::FileDialogFilter> GLTF_FILTER =
 	{
-		{ L"Image files (*.png; *.jpg; *.bmp)", L"*.png;*.jpg;*.bmp" }
+		{ "GL Transmission Format (*.gltf)", { "gltf" } }
 	};
 
-    const COMDLG_FILTERSPEC PLY_FILTER[] =
-    {
-        { L"Stanford PLY (*.ply)", L"*.ply" }
-    };
-
-	const COMDLG_FILTERSPEC LAS_FILTER[] =
+	const std::vector<FEFileSystem::FileDialogFilter> TEXTURE_LOAD_FILTER =
 	{
-	    { L"lidar point cloud files (*.las)", L"*.las" }
+		{ "Image files (*.png; *.jpg; *.bmp)", { "png", "jpg", "bmp" } }
 	};
 
-	const COMDLG_FILTERSPEC LAZ_FILTER[] =
+	const std::vector<FEFileSystem::FileDialogFilter> PLY_FILTER =
 	{
-		{ L"compressed lidar point cloud files (*.laz)", L"*.laz" }
+		{ "Stanford PLY (*.ply)", { "ply" } }
 	};
 
-	const COMDLG_FILTERSPEC NATIVE_SCRIPT_MODULE_FILTER[] =
+	const std::vector<FEFileSystem::FileDialogFilter> LAS_FILTER =
 	{
-		{ L"Native script module (*.nativescriptmodule)", L"*.nativescriptmodule" }
+		{ "lidar point cloud files (*.las)", { "las" } }
 	};
 
-	const COMDLG_FILTERSPEC ALL_IMPORT_LOAD_FILTER[] =
+	const std::vector<FEFileSystem::FileDialogFilter> LAZ_FILTER =
 	{
-		{ L"All files (*.png; *.jpg; *.bmp; *.obj; *.gltf)", L"*.png;*.jpg;*.bmp;*.obj;*.gltf" },
-		{ L"Image files (*.png; *.jpg; *.bmp)", L"*.png;*.jpg;*.bmp" },
-		{ L"Wavefront OBJ files (*.obj)", L"*.obj" },
-        { L"GL Transmission Format (*.gltf)", L"*.gltf" },
-		{ L"Stanford PLY (*.ply)", L"*.ply" }
+		{ "compressed lidar point cloud files (*.laz)", { "laz" } }
 	};
-#endif
+
+	const std::vector<FEFileSystem::FileDialogFilter> NATIVE_SCRIPT_MODULE_FILTER =
+	{
+		{ "Native script module (*.nativescriptmodule)", { "nativescriptmodule" } }
+	};
+
+	const std::vector<FEFileSystem::FileDialogFilter> ALL_IMPORT_LOAD_FILTER =
+	{
+		{ "All files (*.png; *.jpg; *.bmp; *.obj; *.gltf)", { "png", "jpg", "bmp", "obj", "gltf" } },
+		{ "Image files (*.png; *.jpg; *.bmp)", { "png", "jpg", "bmp" } },
+		{ "Wavefront OBJ files (*.obj)", { "obj" } },
+		{ "GL Transmission Format (*.gltf)", { "gltf" } },
+		{ "Stanford PLY (*.ply)", { "ply" } }
+	};
 
     class FEEditorContentBrowserWindow
     {

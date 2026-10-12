@@ -126,10 +126,10 @@ void FEEditorContentBrowserWindow::Render()
 		{
 			if (ImGui::MenuItem("Import Asset..."))
 			{
-				std::string FilePath;
-				FILE_SYSTEM.ShowFileOpenDialog(FilePath, ALL_IMPORT_LOAD_FILTER, 5);
-				if (!FilePath.empty())
-				{
+				FILE_SYSTEM.OpenFileDialog(ALL_IMPORT_LOAD_FILTER, [](const std::string& FilePath) {
+					if (FilePath.empty())
+						return;
+
 					if (EDITOR.GetFocusedScene() != nullptr)
 					{
 						const std::vector<FEObject*> LoadedObjects = EDITOR.GetFocusedScene()->ImportAsset(FilePath.c_str());
@@ -143,15 +143,15 @@ void FEEditorContentBrowserWindow::Render()
 							}
 						}
 					}
-				}
+				});
 			}
 
 			if (ImGui::MenuItem("*DEPRECATED*Import Tree..."))
 			{
-				std::string FilePath;
-				FILE_SYSTEM.ShowFileOpenDialog(FilePath, OBJ_LOAD_FILTER, 1);
-				if (!FilePath.empty())
-				{
+				FILE_SYSTEM.OpenFileDialog(OBJ_LOAD_FILTER, [](const std::string& FilePath) {
+					if (FilePath.empty())
+						return;
+
 					const std::vector<FEObject*> LoadedObjects = RESOURCE_MANAGER.ImportOBJ(FilePath, true);
 					for (size_t i = 0; i < LoadedObjects.size(); i++)
 					{
@@ -162,7 +162,7 @@ void FEEditorContentBrowserWindow::Render()
 							PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(LoadedObjects[i]);
 						}
 					}
-				}
+				});
 			}
 
 			if (ImGui::BeginMenu("Add"))
@@ -368,16 +368,13 @@ void FEEditorContentBrowserWindow::Render()
 
 					if (ImGui::MenuItem("Save module as..."))
 					{
-						std::string FilePath;
-						FILE_SYSTEM.ShowFileSaveDialog(FilePath, NATIVE_SCRIPT_MODULE_FILTER, 1);
-
-						if (!FilePath.empty())
-						{
+						FILE_SYSTEM.SaveFileDialog("", NATIVE_SCRIPT_MODULE_FILTER, [NativeScriptModule](std::string FilePath, int ChosenFilterIndex) {
 							if (FILE_SYSTEM.GetFileExtension(FilePath) != ".nativescriptmodule")
 								FilePath += ".nativescriptmodule";
 
 							RESOURCE_MANAGER.SaveFENativeScriptModule(NativeScriptModule, FilePath);
-						}
+							return true;
+						});
 					}
 				}
 				else
@@ -441,30 +438,22 @@ void FEEditorContentBrowserWindow::Render()
 
 					if (ImGui::MenuItem("as OBJ"))
 					{
-						std::string FilePath;
-						FILE_SYSTEM.ShowFileSaveDialog(FilePath, OBJ_LOAD_FILTER, 1);
-
-						if (!FilePath.empty())
-						{
+						FILE_SYSTEM.SaveFileDialog("", OBJ_LOAD_FILTER, [MeshToExport](std::string FilePath, int ChosenFilterIndex) {
 							if (FilePath.find(".obj") == std::string::npos)
 								FilePath += ".obj";
 
-							RESOURCE_MANAGER.ExportFEMeshToOBJ(MeshToExport, FilePath);
-						}
+							return RESOURCE_MANAGER.ExportFEMeshToOBJ(MeshToExport, FilePath);
+						});
 					}
 
 					if (ImGui::MenuItem("as PLY"))
 					{
-						std::string FilePath;
-						FILE_SYSTEM.ShowFileSaveDialog(FilePath, PLY_FILTER, 1);
-
-						if (!FilePath.empty())
-						{
+						FILE_SYSTEM.SaveFileDialog("", PLY_FILTER, [MeshToExport](std::string FilePath, int ChosenFilterIndex) {
 							if (FilePath.find(".ply") == std::string::npos)
 								FilePath += ".ply";
 
-							RESOURCE_MANAGER.ExportFEMeshToPLY(MeshToExport, FilePath);
-						}
+							return RESOURCE_MANAGER.ExportFEMeshToPLY(MeshToExport, FilePath);
+						});
 					}
 
 					ImGui::EndMenu();
@@ -479,42 +468,32 @@ void FEEditorContentBrowserWindow::Render()
 				{
 					if (ImGui::MenuItem("as PLY"))
 					{
-						std::string FilePath;
-						FILE_SYSTEM.ShowFileSaveDialog(FilePath, PLY_FILTER, 1);
-
-						if (!FilePath.empty())
-						{
+						FILE_SYSTEM.SaveFileDialog("", PLY_FILTER, [PointCloud](std::string FilePath, int ChosenFilterIndex) {
 							if (FilePath.find(".ply") == std::string::npos)
 								FilePath += ".ply";
 
-							RESOURCE_MANAGER.ExportFEPointCloudToPLY(PointCloud, FilePath);
-						}
+							return RESOURCE_MANAGER.ExportFEPointCloudToPLY(PointCloud, FilePath);
+						});
 					}
 
 					if (ImGui::MenuItem("as LAS"))
 					{
-						std::string FilePath;
-						FILE_SYSTEM.ShowFileSaveDialog(FilePath, LAS_FILTER, 1);
-						if (!FilePath.empty())
-						{
+						FILE_SYSTEM.SaveFileDialog("", LAS_FILTER, [PointCloud](std::string FilePath, int ChosenFilterIndex) {
 							if (FilePath.find(".las") == std::string::npos)
 								FilePath += ".las";
 
-							RESOURCE_MANAGER.ExportFEPointCloudToLAS(PointCloud, FilePath);
-						}
+							return RESOURCE_MANAGER.ExportFEPointCloudToLAS(PointCloud, FilePath);
+						});
 					}
 
 					if (ImGui::MenuItem("as LAZ"))
 					{
-						std::string FilePath;
-						FILE_SYSTEM.ShowFileSaveDialog(FilePath, LAZ_FILTER, 1);
-						if (!FilePath.empty())
-						{
+						FILE_SYSTEM.SaveFileDialog("", LAZ_FILTER, [PointCloud](std::string FilePath, int ChosenFilterIndex) {
 							if (FilePath.find(".laz") == std::string::npos)
 								FilePath += ".laz";
 
-							RESOURCE_MANAGER.ExportFEPointCloudToLAZ(PointCloud, FilePath);
-						}
+							return RESOURCE_MANAGER.ExportFEPointCloudToLAZ(PointCloud, FilePath);
+						});
 					}
 
 					ImGui::EndMenu();
@@ -574,14 +553,13 @@ void FEEditorContentBrowserWindow::Render()
 
 					if (ImGui::MenuItem("as PNG"))
 					{
-						std::string FilePath;
-						FILE_SYSTEM.ShowFileSaveDialog(FilePath, TEXTURE_LOAD_FILTER, 1);
+						// The dialog already adds ".png" when the user does not type an extension.
+						FILE_SYSTEM.SaveFileDialog("", TEXTURE_LOAD_FILTER, [TextureToExport](std::string FilePath, int ChosenFilterIndex) {
+							if (FILE_SYSTEM.GetFileExtension(FilePath) != ".png")
+								FilePath += ".png";
 
-						if (!FilePath.empty())
-						{
-							FilePath += ".png";
-							RESOURCE_MANAGER.ExportFETextureToPNG(TextureToExport, FilePath);
-						}
+							return RESOURCE_MANAGER.ExportFETextureToPNG(TextureToExport, FilePath);
+						});
 					}
 
 					ImGui::EndMenu();

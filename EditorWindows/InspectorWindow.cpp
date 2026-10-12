@@ -2036,27 +2036,25 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 			ExportHeightMapButton->Render();
 			if (ExportHeightMapButton->IsClicked())
 			{
-				std::string FilePath = "";
-				FILE_SYSTEM.ShowFileSaveDialog(FilePath, TEXTURE_LOAD_FILTER, 1);
+				// The dialog already adds ".png" when the user does not type an extension.
+				FILE_SYSTEM.SaveFileDialog("", TEXTURE_LOAD_FILTER, [HeightMap = TerrainComponent.GetHeightMap()](std::string FilePath, int ChosenFilterIndex) {
+					if (FILE_SYSTEM.GetFileExtension(FilePath) != ".png")
+						FilePath += ".png";
 
-				if (!FilePath.empty())
-				{
-					FilePath += ".png";
-					RESOURCE_MANAGER.ExportFETextureToPNG(TerrainComponent.GetHeightMap(), FilePath);
-				}
+					return RESOURCE_MANAGER.ExportFETextureToPNG(HeightMap, FilePath);
+				});
 			}
 
 			ImGui::SameLine();
 			ImportHeightMapButton->Render();
 			if (ImportHeightMapButton->IsClicked())
 			{
-				std::string FilePath;
-				FILE_SYSTEM.ShowFileOpenDialog(FilePath, TEXTURE_LOAD_FILTER, 1);
+				FILE_SYSTEM.OpenFileDialog(TEXTURE_LOAD_FILTER, [TerrainEntity](const std::string& FilePath) {
+					if (FilePath.empty())
+						return;
 
-				if (!FilePath.empty())
-				{
 					TERRAIN_SYSTEM.LoadHeightMap(FilePath.c_str(), TerrainEntity);
-					FETexture* LoadedTexture = TerrainComponent.GetHeightMap();
+					FETexture* LoadedTexture = TerrainEntity->GetComponent<FETerrainComponent>().GetHeightMap();
 					if (LoadedTexture == RESOURCE_MANAGER.NoTexture)
 					{
 						LOG.Add(std::string("can't load height map: ") + FilePath, "FE_LOG_LOADING", FE_LOG_ERROR);
@@ -2066,7 +2064,7 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 						LoadedTexture->SetDirtyFlag(true);
 						PROJECT_MANAGER.GetCurrent()->SetModified(true);
 					}
-				}
+				});
 			}
 
 			float HighScale = TerrainComponent.GetHeightScale();
@@ -2371,24 +2369,25 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 
 						if (ImGui::MenuItem("Export mask..."))
 						{
-							std::string FilePath = "";
-							FILE_SYSTEM.ShowFileSaveDialog(FilePath, TEXTURE_LOAD_FILTER, 1);
-							if (!FilePath.empty())
-							{
-								FilePath += ".png";
-								TERRAIN_SYSTEM.SaveTerrainLayerMask(TerrainEntity, FilePath, HoveredTerrainLayerItem);
-							}
+							// The dialog already adds ".png" when the user does not type an extension.
+							FILE_SYSTEM.SaveFileDialog("", TEXTURE_LOAD_FILTER, [TerrainEntity, LayerIndex = HoveredTerrainLayerItem](std::string FilePath, int ChosenFilterIndex) {
+								if (FILE_SYSTEM.GetFileExtension(FilePath) != ".png")
+									FilePath += ".png";
+
+								TERRAIN_SYSTEM.SaveTerrainLayerMask(TerrainEntity, FilePath, LayerIndex);
+								return true;
+							});
 						}
 
 						if (ImGui::MenuItem("Import mask..."))
 						{
-							std::string FilePath = "";
-							FILE_SYSTEM.ShowFileOpenDialog(FilePath, TEXTURE_LOAD_FILTER, 1);
-							if (!FilePath.empty())
-							{
-								TERRAIN_SYSTEM.LoadTerrainLayerMask(TerrainEntity, FilePath, HoveredTerrainLayerItem);
+							FILE_SYSTEM.OpenFileDialog(TEXTURE_LOAD_FILTER, [TerrainEntity, LayerIndex = HoveredTerrainLayerItem](const std::string& FilePath) {
+								if (FilePath.empty())
+									return;
+
+								TERRAIN_SYSTEM.LoadTerrainLayerMask(TerrainEntity, FilePath, LayerIndex);
 								PROJECT_MANAGER.GetCurrent()->SetModified(true);
-							}
+							});
 						}
 					}
 				}

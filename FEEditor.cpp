@@ -355,12 +355,12 @@ void FEEditor::Render()
 
 				if (ImGui::MenuItem("Save project as..."))
 				{
-					std::string Path;
-					FILE_SYSTEM.ShowFolderOpenDialog(Path);
-					if (!Path.empty())
-					{
+					FILE_SYSTEM.OpenFolderDialog([](const std::string& Path) {
+						if (Path.empty())
+							return;
+
 						PROJECT_MANAGER.GetCurrent()->SaveProjectTo(Path + "\\");
-					}
+					});
 				}
 
 				if (ImGui::MenuItem("Close project"))
