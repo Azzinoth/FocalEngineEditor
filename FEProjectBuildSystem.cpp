@@ -153,7 +153,7 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 	{
 		if (!FILE_SYSTEM.MakeDirectory(VSProjectDirectory + FoldersToCreate[i]))
 		{
-			LOG.Add("FEProjectBuildSystem::InitializeProject: Error creating " + FoldersToCreate[i] + " directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+			LOG.Add("FEProjectBuildSystem::BuildExecutable: Error creating " + FoldersToCreate[i] + " directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 			return false;
 		}
 	}
@@ -183,21 +183,21 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 	if (!FILE_SYSTEM.CopyDirectory(EnginePath + "/SubSystems/FEBasicApplication/ThirdParty/GLFW/lib",
 								   VSProjectDirectory + "SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/GLFW/lib"))
 	{
-		LOG.Add("FEProjectBuildSystem::InitializeProject: Error copying directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error copying directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;
 	}
 
 	if (!FILE_SYSTEM.CopyDirectory(EnginePath + "/SubSystems/FEBasicApplication/ThirdParty/glew2/lib",
 								   VSProjectDirectory + "SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/glew2/lib"))
 	{
-		LOG.Add("FEProjectBuildSystem::InitializeProject: Error copying directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error copying directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;
 	}
 
 	if (!FILE_SYSTEM.CopyDirectory(EnginePath + "/ThirdParty/openxr/Lib",
 								   VSProjectDirectory + "SubSystems/FocalEngine/ThirdParty/openxr/Lib"))
 	{
-		LOG.Add("FEProjectBuildSystem::InitializeProject: Error copying directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error copying directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;
 	}
 
@@ -217,7 +217,7 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 
 	if (!InitializeCMakeFileAndScriptFiles(ProjectToBuild, VSProjectDirectory))
 	{
-		LOG.Add("FEProjectBuildSystem::InitializeProject: Error initializing CMakeLists.txt", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error initializing CMakeLists.txt", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;
 	}
 

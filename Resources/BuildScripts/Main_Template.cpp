@@ -46,7 +46,7 @@ void LoadResources(std::string DirectoryPath)
 	for (size_t i = 0; i < MaterialsList.size(); i++)
 	{
 		if (RESOURCE_MANAGER.LoadMaterialFromJSON(Root["Materials"][MaterialsList[i]]) == nullptr)
-			LOG.Add("FEProject::LoadResources: Error loading material " + MaterialsList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
+			LOG.Add("LoadResources: Error loading material " + MaterialsList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
 	}
 
 	// Loading game models.
@@ -54,7 +54,7 @@ void LoadResources(std::string DirectoryPath)
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
 		if (RESOURCE_MANAGER.LoadGameModelFromJSON(Root["GameModels"][GameModelList[i]]) == nullptr)
-			LOG.Add("FEProject::LoadResources: Error loading game model " + GameModelList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
+			LOG.Add("LoadResources: Error loading game model " + GameModelList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
 	}
 
 	// Loading NativeScriptModules.
@@ -79,7 +79,7 @@ void LoadResources(std::string DirectoryPath)
 			continue;
 
 		if (SCENE_MANAGER.LoadSceneFromJSON(Root["Scenes"][SceneList[i]], FESceneFlag::PrefabDescription) == nullptr)
-			LOG.Add("FEProject::LoadResources: Error loading scene " + SceneList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
+			LOG.Add("LoadResources: Error loading scene " + SceneList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
 	}
 
 	// Then load Prefabs and initialize them with corresponding scenes.
@@ -87,7 +87,7 @@ void LoadResources(std::string DirectoryPath)
 	for (size_t i = 0; i < PrefabList.size(); i++)
 	{
 		if (RESOURCE_MANAGER.LoadPrefabFromJSON(Root["Prefabs"][PrefabList[i]]) == nullptr)
-			LOG.Add("FEProject::LoadResources: Error loading prefab " + PrefabList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
+			LOG.Add("LoadResources: Error loading prefab " + PrefabList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
 	}
 
 	for (size_t i = 0; i < SceneList.size(); i++)
@@ -97,7 +97,7 @@ void LoadResources(std::string DirectoryPath)
 			continue;
 
 		if (SCENE_MANAGER.LoadSceneFromJSON(Root["Scenes"][SceneList[i]], FESceneFlag::Active) == nullptr)
-			LOG.Add("FEProject::LoadResources: Error loading scene " + SceneList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
+			LOG.Add("LoadResources: Error loading scene " + SceneList[i], "FE_LOG_LOADING", FE_LOG_ERROR);
 	}
 }
 
@@ -105,25 +105,25 @@ void LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage)
 {
 	if (AssetPackage == nullptr)
 	{
-		LOG.Add("FEProject::LoadResourcesFromAssetPackage: AssetPackage is nullptr!", "FE_LOG_LOADING", FE_LOG_ERROR);
+		LOG.Add("LoadResourcesFromAssetPackage: AssetPackage is nullptr!", "FE_LOG_LOADING", FE_LOG_ERROR);
 		return;
 	}
 
 	std::string TemporaryFolder = FILE_SYSTEM.GetCurrentWorkingPath() + "/Temporary_Project_Resources/";
 	if (FILE_SYSTEM.DoesDirectoryExist(TemporaryFolder))
 	{
-		LOG.Add("FEProject::LoadResourcesFromAssetPackage: Temporary_Project_Resources directory already exist, trying to delete it.", "FE_LOG_LOADING", FE_LOG_WARNING);
+		LOG.Add("LoadResourcesFromAssetPackage: Temporary_Project_Resources directory already exist, trying to delete it.", "FE_LOG_LOADING", FE_LOG_WARNING);
 
 		if (!FILE_SYSTEM.DeleteDirectory(TemporaryFolder))
 		{
-			LOG.Add("FEProject::LoadResourcesFromAssetPackage: Error deleting Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
+			LOG.Add("LoadResourcesFromAssetPackage: Error deleting Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
 			return;
 		}
 	}
 
 	if (!FILE_SYSTEM.MakeDirectory(TemporaryFolder))
 	{
-		LOG.Add("FEProject::LoadResourcesFromAssetPackage: Error creating Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
+		LOG.Add("LoadResourcesFromAssetPackage: Error creating Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_ERROR);
 		return;
 	}
 
@@ -133,7 +133,7 @@ void LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage)
 	{
 		if (!AssetPackage->ExportAssetToFile(AssetList[i].ID, TemporaryFolder + AssetList[i].Name))
 		{
-			LOG.Add("FEProject::LoadResourcesFromAssetPackage: Error exporting asset " + AssetList[i].Name + " to file", "FE_LOG_LOADING", FE_LOG_WARNING);
+			LOG.Add("LoadResourcesFromAssetPackage: Error exporting asset " + AssetList[i].Name + " to file", "FE_LOG_LOADING", FE_LOG_WARNING);
 			continue;
 		}
 	}
@@ -141,7 +141,7 @@ void LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage)
 	LoadResources(TemporaryFolder);
 
 	if (!FILE_SYSTEM.DeleteDirectory(TemporaryFolder))
-		LOG.Add("FEProject::LoadResourcesFromAssetPackage: Error deleting Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_WARNING);
+		LOG.Add("LoadResourcesFromAssetPackage: Error deleting Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_WARNING);
 }
 
 FEEntity* CameraEntity = nullptr;

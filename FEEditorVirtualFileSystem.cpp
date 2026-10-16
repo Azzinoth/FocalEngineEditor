@@ -112,7 +112,7 @@ bool FEVFSDirectory::DeleteFile(const FEObject* File)
 {
 	if (File == nullptr)
 	{
-		LOG.Add("File is nullptr in function FEVFSDirectory::deleteFile.", "FE_VIRTUAL_FILE_SYSTEM", FE_LOG_ERROR);
+		LOG.Add("File is nullptr in function FEVFSDirectory::DeleteFile.", "FE_VIRTUAL_FILE_SYSTEM", FE_LOG_ERROR);
 		return false;
 	}
 
@@ -132,7 +132,7 @@ bool FEVFSDirectory::AddFile(FEObject* File)
 {
 	if (File == nullptr)
 	{
-		LOG.Add("File is nullptr in function FEVFSDirectory::addFile.", "FE_VIRTUAL_FILE_SYSTEM", FE_LOG_ERROR);
+		LOG.Add("File is nullptr in function FEVFSDirectory::AddFile.", "FE_VIRTUAL_FILE_SYSTEM", FE_LOG_ERROR);
 		return false;
 	}
 
