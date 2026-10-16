@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../SubSystems/ProjectManagment/FEProjectManager.h"
+#include "../SubSystems/ProjectManagement/FEProjectManager.h"
 #include "VisualNodeSystem.h"  
 #include "../SubSystems/NodeSystem/CustomNodes/FEEditorStandardNodes.h"
 
@@ -11,7 +11,7 @@ class DeleteTexturePopup : public ImGuiModalPopup
 	SINGLETON_PRIVATE_PART(DeleteTexturePopup)
 
 	friend DeleteDirectoryPopup;
-	FETexture* ObjToWorkWith;
+	FETexture* ObjectToWorkWith;
 
 	static void DeleteTexture(FETexture* Texture);
 public:
@@ -27,7 +27,7 @@ class DeleteMeshPopup : public ImGuiModalPopup
 	SINGLETON_PRIVATE_PART(DeleteMeshPopup)
 
 	friend DeleteDirectoryPopup;
-	FEMesh* ObjToWorkWith;
+	FEMesh* ObjectToWorkWith;
 
 	static void DeleteMesh(FEMesh* Mesh);
 public:
@@ -43,7 +43,7 @@ class DeletePointCloudPopup : public ImGuiModalPopup
 	SINGLETON_PRIVATE_PART(DeletePointCloudPopup)
 
 	friend DeleteDirectoryPopup;
-	FEPointCloud* ObjToWorkWith;
+	FEPointCloud* ObjectToWorkWith;
 
 	static void DeletePointCloud(FEPointCloud* PointCloud);
 public:
@@ -59,7 +59,7 @@ class DeleteMaterialPopup : public ImGuiModalPopup
 	SINGLETON_PRIVATE_PART(DeleteMaterialPopup)
 
 	friend DeleteDirectoryPopup;
-	FEMaterial* ObjToWorkWith;
+	FEMaterial* ObjectToWorkWith;
 
 	static void DeleteMaterial(FEMaterial* Material);
 public:
@@ -75,7 +75,7 @@ class DeleteGameModelPopup : public ImGuiModalPopup
 	SINGLETON_PRIVATE_PART(DeleteGameModelPopup)
 
 	friend DeleteDirectoryPopup;
-	FEGameModel* ObjToWorkWith;
+	FEGameModel* ObjectToWorkWith;
 
 	static void DeleteGameModel(FEGameModel* GameModel);
 public:
@@ -91,7 +91,7 @@ class DeletePrefabPopup : public ImGuiModalPopup
 	SINGLETON_PRIVATE_PART(DeletePrefabPopup)
 
 	friend DeleteDirectoryPopup;
-	FEPrefab* ObjToWorkWith;
+	FEPrefab* ObjectToWorkWith;
 
 	static void DeletePrefab(FEPrefab* Prefab);
 public:
@@ -106,7 +106,7 @@ class DeleteDirectoryPopup : public ImGuiModalPopup
 {
 	SINGLETON_PRIVATE_PART(DeleteDirectoryPopup)
 
-	std::string ObjToWorkWith;
+	std::string ObjectToWorkWith;
 	std::string PathToDirectory;
 public:
 	SINGLETON_PUBLIC_PART(DeleteDirectoryPopup)

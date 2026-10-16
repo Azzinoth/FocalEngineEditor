@@ -36,7 +36,7 @@ void FEEditorTextureCreatingNode::Draw()
 	ImGui::Image(ResultTexture->GetTextureID(), ImVec2(128, 128) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 }
 
-void FEEditorTextureCreatingNode::PutDataFromColorChannelInArray(NodeSocket* SourceSocket, unsigned char* DataArray, const size_t TextureDataLenght, const size_t ToWhatChannel)
+void FEEditorTextureCreatingNode::PutDataFromColorChannelInArray(NodeSocket* SourceSocket, unsigned char* DataArray, const size_t TextureDataLength, const size_t ToWhatChannel)
 {
 	const FEEditorTextureSourceNode* SourceNode = reinterpret_cast<FEEditorTextureSourceNode*>(SourceSocket->GetConnectedSockets()[0]->GetParent());
 	FETexture* SourceTexture = SourceNode->GetTexture();
@@ -44,10 +44,10 @@ void FEEditorTextureCreatingNode::PutDataFromColorChannelInArray(NodeSocket* Sou
 		SourceTexture->GetHeight() == SourceNode->GetTexture()->GetHeight())
 	{
 		FE_GL_ERROR(glBindTexture(GL_TEXTURE_2D, SourceTexture->GetTextureID()));
-		unsigned char* TextureData = new unsigned char[TextureDataLenght];
+		unsigned char* TextureData = new unsigned char[TextureDataLength];
 		FE_GL_ERROR(glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, TextureData));
 
-		for (size_t i = 0; i < TextureDataLenght; i += 4)
+		for (size_t i = 0; i < TextureDataLength; i += 4)
 		{
 			DataArray[i] = TextureData[i + ToWhatChannel];
 			DataArray[i + 1] = TextureData[i + ToWhatChannel];
@@ -67,17 +67,17 @@ unsigned char* FEEditorTextureCreatingNode::GetInputColorChannelData(const size_
 		if (Input[Channel]->GetConnectedSockets()[0]->GetAllowedTypes()[0] == "FLOAT")
 		{
 			const FEEditorFloatSourceNode* SourceNode = reinterpret_cast<FEEditorFloatSourceNode*>(Input[Channel]->GetConnectedSockets()[0]->GetParent());
-			float data = SourceNode->GetData();
-			if (data < 0.0f)
-				data = 0.0f;
+			float SourceValue = SourceNode->GetData();
+			if (SourceValue < 0.0f)
+				SourceValue = 0.0f;
 
-			data *= 255.0f;
+			SourceValue *= 255.0f;
 
-			const size_t DataLenght = ResultTexture->GetWidth() * ResultTexture->GetHeight();
-			unsigned char* Result = new unsigned char[DataLenght];
-			for (size_t i = 0; i < DataLenght; i++)
+			const size_t DataLength = ResultTexture->GetWidth() * ResultTexture->GetHeight();
+			unsigned char* Result = new unsigned char[DataLength];
+			for (size_t i = 0; i < DataLength; i++)
 			{
-				Result[i] = static_cast<unsigned char>(data);
+				Result[i] = static_cast<unsigned char>(SourceValue);
 			}
 			
 			return Result;
@@ -101,16 +101,16 @@ unsigned char* FEEditorTextureCreatingNode::GetInputColorChannelData(const size_
 				SourceChannel = 3;
 			}
 
-			const size_t TextureDataLenght = SourceTexture->GetWidth() * SourceTexture->GetHeight() * 4;
+			const size_t TextureDataLength = SourceTexture->GetWidth() * SourceTexture->GetHeight() * 4;
 			FE_GL_ERROR(glBindTexture(GL_TEXTURE_2D, SourceTexture->GetTextureID()));
-			unsigned char* TextureData = new unsigned char[TextureDataLenght];
+			unsigned char* TextureData = new unsigned char[TextureDataLength];
 			FE_GL_ERROR(glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, TextureData));
 
 			unsigned char* Result = new unsigned char[SourceTexture->GetWidth() * SourceTexture->GetHeight()];
-			int index = 0;
-			for (size_t i = 0; i < TextureDataLenght; i += 4)
+			int Index = 0;
+			for (size_t i = 0; i < TextureDataLength; i += 4)
 			{
-				Result[index++] = TextureData[i + SourceChannel];
+				Result[Index++] = TextureData[i + SourceChannel];
 			}
 
 			delete[] TextureData;
@@ -127,16 +127,16 @@ unsigned char* FEEditorTextureCreatingNode::GetInputColorChannelData(const size_
 
 		FETexture* SourceTexture = SourceNode->GetTexture();
 
-		const size_t TextureDataLenght = SourceTexture->GetWidth() * SourceTexture->GetHeight() * 4;
+		const size_t TextureDataLength = SourceTexture->GetWidth() * SourceTexture->GetHeight() * 4;
 		FE_GL_ERROR(glBindTexture(GL_TEXTURE_2D, SourceTexture->GetTextureID()));
-		unsigned char* TextureData = new unsigned char[TextureDataLenght];
+		unsigned char* TextureData = new unsigned char[TextureDataLength];
 		FE_GL_ERROR(glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, TextureData));
 
 		unsigned char* Result = new unsigned char[SourceTexture->GetWidth() * SourceTexture->GetHeight()];
-		int index = 0;
-		for (size_t i = 0; i < TextureDataLenght; i += 4)
+		int Index = 0;
+		for (size_t i = 0; i < TextureDataLength; i += 4)
 		{
-			Result[index++] = TextureData[i + Channel];
+			Result[Index++] = TextureData[i + Channel];
 		}
 
 		delete[] TextureData;
@@ -175,8 +175,8 @@ void FEEditorTextureCreatingNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket*
 		TextureHeight = SourceNode->GetTexture()->GetHeight();
 	}
 
-	const size_t TextureDataLenght = TextureWidth * TextureHeight * 4;
-	unsigned char* ResultPixels = new unsigned char[TextureDataLenght];
+	const size_t TextureDataLength = TextureWidth * TextureHeight * 4;
+	unsigned char* ResultPixels = new unsigned char[TextureDataLength];
 
 	const unsigned char* RedChannel = GetInputColorChannelData(0);
 	const unsigned char* GreenChannel = GetInputColorChannelData(1);
@@ -198,14 +198,14 @@ void FEEditorTextureCreatingNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket*
 		return;
 	}
 
-	int index = 0;
-	for (size_t i = 0; i < TextureDataLenght; i += 4)
+	int Index = 0;
+	for (size_t i = 0; i < TextureDataLength; i += 4)
 	{
-		ResultPixels[i] = RedChannel == nullptr ? 0 : RedChannel[index];
-		ResultPixels[i + 1] = GreenChannel == nullptr ? 0 : GreenChannel[index];
-		ResultPixels[i + 2] = BlueChannel == nullptr ? 0 : BlueChannel[index];
-		ResultPixels[i + 3] = AlphaChannel == nullptr ? 255 : AlphaChannel[index];
-		index++;
+		ResultPixels[i] = RedChannel == nullptr ? 0 : RedChannel[Index];
+		ResultPixels[i + 1] = GreenChannel == nullptr ? 0 : GreenChannel[Index];
+		ResultPixels[i + 2] = BlueChannel == nullptr ? 0 : BlueChannel[Index];
+		ResultPixels[i + 3] = AlphaChannel == nullptr ? 255 : AlphaChannel[Index];
+		Index++;
 	}
 
 	ResultTexture = RESOURCE_MANAGER.RawDataToFETexture(ResultPixels, static_cast<int>(TextureWidth), static_cast<int>(TextureHeight), -1);

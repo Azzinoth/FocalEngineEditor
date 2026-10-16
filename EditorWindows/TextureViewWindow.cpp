@@ -1,5 +1,5 @@
 #include "TextureViewWindow.h"
-#include "../SubSystems/ProjectManagment/FEProjectManager.h"
+#include "../SubSystems/ProjectManagement/FEProjectManager.h"
 
 namespace
 {

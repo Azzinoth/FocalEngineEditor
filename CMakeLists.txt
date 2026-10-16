@@ -143,11 +143,11 @@ if(USE_STATIC_RUNTIME)
 	)
 endif()
 
-file(GLOB ProjectManagment_SRC
-	"SubSystems/ProjectManagment/FEProjectManager.cpp"
-	"SubSystems/ProjectManagment/FEProjectManager.h"
-	"SubSystems/ProjectManagment/FEProject.cpp"
-	"SubSystems/ProjectManagment/FEProject.h"
+file(GLOB ProjectManagement_SRC
+	"SubSystems/ProjectManagement/FEProjectManager.cpp"
+	"SubSystems/ProjectManagement/FEProjectManager.h"
+	"SubSystems/ProjectManagement/FEProject.cpp"
+	"SubSystems/ProjectManagement/FEProject.h"
 )
 
 file(GLOB FEDearImguiWrapper_SRC
@@ -265,7 +265,7 @@ add_executable(FocalEngineEditor WIN32
 								 ${Editor_Materials_SRC}
 								 ${VisualNodeSystem_CustomNodes_SRC}
 								 # *************** SUB_SYSTEM ***************
-								 ${ProjectManagment_SRC}
+								 ${ProjectManagement_SRC}
 								 # *************** THIRD_PARTY ***************
 								 ${textEditor_SRC}
 								 ${TEST_SOURCE_FILES}
@@ -301,7 +301,7 @@ source_group("Source Files/EditorWindows" FILES ${EditorWindows_SRC})
 source_group("Source Files/Materials" FILES ${Editor_Materials_SRC})
 source_group("Source Files/NodeSystem/CustomNodes" FILES ${VisualNodeSystem_CustomNodes_SRC})
 # *************** SUB_SYSTEM ***************
-source_group("Source Files/ProjectManagment" FILES ${ProjectManagment_SRC})
+source_group("Source Files/ProjectManagement" FILES ${ProjectManagement_SRC})
 # *************** THIRD_PARTY ***************
 source_group("Source Files/ThirdParty/textEditor" FILES ${textEditor_SRC})
 if(FOCAL_ENGINE_EDITOR_ENABLE_TESTS)

@@ -4,7 +4,7 @@
 
 class ProjectWasModifiedPopUp : public ImGuiModalPopup
 {
-	FEProject* ObjToWorkWith;
+	FEProject* ObjectToWorkWith;
 	bool bShouldTerminate = false;
 public:
 	SINGLETON_PUBLIC_PART(ProjectWasModifiedPopUp)

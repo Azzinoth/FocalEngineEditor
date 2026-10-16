@@ -1,6 +1,6 @@
 #include "FEEditorSelectedObject.h"
 #include "FEEditorResourceIDs.h"
-#include "SubSystems/ProjectManagment/FEProjectManager.h"
+#include "SubSystems/ProjectManagement/FEProjectManager.h"
 #include "FEEditor.h"
 using namespace FocalEngine;
 

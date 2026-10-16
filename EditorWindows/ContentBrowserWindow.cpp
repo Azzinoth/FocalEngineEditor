@@ -198,15 +198,15 @@ void FEEditorContentBrowserWindow::Render()
 
 				if (ImGui::MenuItem("Create new material"))
 				{
-					FEMaterial* NewMat = RESOURCE_MANAGER.CreateMaterial("");
-					if (NewMat)
+					FEMaterial* NewMaterial = RESOURCE_MANAGER.CreateMaterial("");
+					if (NewMaterial)
 					{
 						PROJECT_MANAGER.GetCurrent()->SetModified(true);
-						NewMat->Shader = RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::PBRShader);
+						NewMaterial->Shader = RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::PBRShader);
 
-						NewMat->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
+						NewMaterial->SetAlbedoMap(RESOURCE_MANAGER.NoTexture);
 
-						VIRTUAL_FILE_SYSTEM.CreateFile(NewMat, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
+						VIRTUAL_FILE_SYSTEM.CreateFile(NewMaterial, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 					}
 				}
 
@@ -1480,16 +1480,16 @@ void FEEditorContentBrowserWindow::UpdateDirectoryDragAndDropTargets()
 
 		if (CurrentResource->GetType() == FE_NULL)
 		{
-			DirectoryDragAndDropCallbackInfo info;
+			DirectoryDragAndDropCallbackInfo CallbackInfo;
 
-			info.DirectoryPath = VIRTUAL_FILE_SYSTEM.GetCurrentPath();
+			CallbackInfo.DirectoryPath = VIRTUAL_FILE_SYSTEM.GetCurrentPath();
 			if (VIRTUAL_FILE_SYSTEM.GetCurrentPath().back() != '/')
-				info.DirectoryPath += "/";
+				CallbackInfo.DirectoryPath += "/";
 
-			info.DirectoryPath += CurrentResource->GetName() + "/";
-			DirectoryDragAndDropInfo[SubDirectoryIndex] = info;
+			CallbackInfo.DirectoryPath += CurrentResource->GetName() + "/";
+			DirectoryDragAndDropInfo[SubDirectoryIndex] = CallbackInfo;
 
-			if (VIRTUAL_FILE_SYSTEM.IsDirectoryReadOnly(info.DirectoryPath))
+			if (VIRTUAL_FILE_SYSTEM.IsDirectoryReadOnly(CallbackInfo.DirectoryPath))
 			{
 				DirectoriesTargets.push_back(nullptr);
 			}

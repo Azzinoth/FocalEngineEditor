@@ -651,11 +651,11 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 
 	if (ImGui::BeginCombo("Jitter phase sequence Count", std::to_string(TemporalJitterSequenceLength).c_str()))
 	{
-		for (const auto& count : SEQUENCE_OPTIONS)
+		for (const auto& SequenceLength : SEQUENCE_OPTIONS)
 		{
-			bool bIsSelected = (TemporalJitterSequenceLength == count);
-			if (ImGui::Selectable(std::to_string(count).c_str(), bIsSelected))
-				TemporalJitterSequenceLength = count;
+			bool bIsSelected = (TemporalJitterSequenceLength == SequenceLength);
+			if (ImGui::Selectable(std::to_string(SequenceLength).c_str(), bIsSelected))
+				TemporalJitterSequenceLength = SequenceLength;
 			if (bIsSelected)
 				ImGui::SetItemDefaultFocus();
 		}
@@ -664,33 +664,33 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	CameraComponent.SetTemporalJitterSequenceLength(TemporalJitterSequenceLength);
 
 	ImGui::Text("Anti-Aliasing(FXAA)");
-	static const char* options[5] = { "none", "1x", "2x", "4x", "8x" };
+	static const char* Options[5] = { "none", "1x", "2x", "4x", "8x" };
 	static std::string SelectedOption = "1x";
 
 	const float FXAASpanMax = CameraComponent.GetFXAASpanMax();
 	if (FXAASpanMax == 0.0f)
 	{
-		SelectedOption = options[0];
+		SelectedOption = Options[0];
 	}
 	else if (FXAASpanMax > 0.1f && FXAASpanMax < 1.1f)
 	{
-		SelectedOption = options[1];
+		SelectedOption = Options[1];
 	}
 	else if (FXAASpanMax > 1.1f && FXAASpanMax < 2.1f)
 	{
-		SelectedOption = options[2];
+		SelectedOption = Options[2];
 	}
 	else if (FXAASpanMax > 2.1f && FXAASpanMax < 4.1f)
 	{
-		SelectedOption = options[3];
+		SelectedOption = Options[3];
 	}
 	else if (FXAASpanMax > 4.1f && FXAASpanMax < 8.1f)
 	{
-		SelectedOption = options[4];
+		SelectedOption = Options[4];
 	}
 	else
 	{
-		SelectedOption = options[5];
+		SelectedOption = Options[5];
 	}
 
 	// TO-DO: it should be per camera.
@@ -700,27 +700,27 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 		const float FXAASpanMax = CameraComponent.GetFXAASpanMax();
 		if (FXAASpanMax == 0.0f)
 		{
-			SelectedOption = options[0];
+			SelectedOption = Options[0];
 		}
 		else if (FXAASpanMax > 0.1f && FXAASpanMax < 1.1f)
 		{
-			SelectedOption = options[1];
+			SelectedOption = Options[1];
 		}
 		else if (FXAASpanMax > 1.1f && FXAASpanMax < 2.1f)
 		{
-			SelectedOption = options[2];
+			SelectedOption = Options[2];
 		}
 		else if (FXAASpanMax > 2.1f && FXAASpanMax < 4.1f)
 		{
-			SelectedOption = options[3];
+			SelectedOption = Options[3];
 		}
 		else if (FXAASpanMax > 4.1f && FXAASpanMax < 8.1f)
 		{
-			SelectedOption = options[4];
+			SelectedOption = Options[4];
 		}
 		else
 		{
-			SelectedOption = options[5];
+			SelectedOption = Options[5];
 		}
 	}
 
@@ -731,13 +731,13 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 		{
 			for (size_t i = 0; i < 5; i++)
 			{
-				const bool bIsSelected = (SelectedOption == options[i]);
-				if (ImGui::Selectable(options[i], bIsSelected))
+				const bool bIsSelected = (SelectedOption == Options[i]);
+				if (ImGui::Selectable(Options[i], bIsSelected))
 				{
 					CameraComponent.SetFXAASpanMax(float(pow(2.0, (i - 1))));
 					if (i == 0)
 						CameraComponent.SetFXAASpanMax(0.0f);
-					SelectedOption = options[i];
+					SelectedOption = Options[i];
 				}
 
 				if (bIsSelected)
@@ -2673,11 +2673,11 @@ void FEEditorInspectorWindow::DisplayNativeScriptProperties(FEEntity* NativeScri
 			Json::Value Data = FailedToLoadData->GetRawData();
 			std::string RawData = Data.toStyledString();
 
-			static char buffer[10240] = {};
+			static char RawDataBuffer[10240] = {};
 
-			strncpy_s(buffer, RawData.c_str(), sizeof(buffer) - 1);
+			strncpy_s(RawDataBuffer, RawData.c_str(), sizeof(RawDataBuffer) - 1);
 
-			ImGui::InputTextMultiline("##FailedToLoadData", buffer, sizeof(buffer), ImVec2(500, 500), ImGuiInputTextFlags_ReadOnly);
+			ImGui::InputTextMultiline("##FailedToLoadData", RawDataBuffer, sizeof(RawDataBuffer), ImVec2(500, 500), ImGuiInputTextFlags_ReadOnly);
 
 		}
 		else

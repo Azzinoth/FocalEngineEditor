@@ -848,9 +848,9 @@ void FEProject::CreateDummyScreenshot()
 		}
 	}
 
-	FETexture* TempTexture = RESOURCE_MANAGER.RawDataToFETexture(Pixels, static_cast<int>(Width), static_cast<int>(Height));
-	RESOURCE_MANAGER.SaveFETexture(TempTexture, (GetProjectFolder() + "/Thumbnail.texture"));
-	RESOURCE_MANAGER.DeleteFETexture(TempTexture);
+	FETexture* TemporaryTexture = RESOURCE_MANAGER.RawDataToFETexture(Pixels, static_cast<int>(Width), static_cast<int>(Height));
+	RESOURCE_MANAGER.SaveFETexture(TemporaryTexture, (GetProjectFolder() + "/Thumbnail.texture"));
+	RESOURCE_MANAGER.DeleteFETexture(TemporaryTexture);
 	delete[] Pixels;
 }
 

@@ -108,11 +108,11 @@ void FEEditorMaterialNode::Draw()
 		ImGui::SetCursorScreenPos(CurrentPosition);
 		ImGui::Text("Roughness:");
 		ImGui::SetNextItemWidth(FieldWidth);
-		float roughness = Data->GetRoughness();
+		float Roughness = Data->GetRoughness();
 		CurrentPosition.y += FieldStep;
 		ImGui::SetCursorScreenPos(CurrentPosition);
-		ImGui::DragFloat("##Roughness", &roughness, 0.01f, 0.0f, 1.0f);
-		Data->SetRoughness(roughness);
+		ImGui::DragFloat("##Roughness", &Roughness, 0.01f, 0.0f, 1.0f);
+		Data->SetRoughness(Roughness);
 	}
 	else
 	{
@@ -120,11 +120,11 @@ void FEEditorMaterialNode::Draw()
 		ImGui::SetCursorScreenPos(CurrentPosition);
 		ImGui::Text("Roughness map \nintensity:");
 		ImGui::SetNextItemWidth(FieldWidth);
-		float roughness = Data->GetRoughnessMapIntensity();
+		float Roughness = Data->GetRoughnessMapIntensity();
 		CurrentPosition.y += FieldStep * 1.5f;
 		ImGui::SetCursorScreenPos(CurrentPosition);
-		ImGui::DragFloat("##Roughness map intensity", &roughness, 0.01f, 0.0f, 10.0f);
-		Data->SetRoughnessMapIntensity(roughness);
+		ImGui::DragFloat("##Roughness map intensity", &Roughness, 0.01f, 0.0f, 10.0f);
+		Data->SetRoughnessMapIntensity(Roughness);
 	}
 
 	// ************* Metalness *************
@@ -134,11 +134,11 @@ void FEEditorMaterialNode::Draw()
 		ImGui::SetCursorScreenPos(CurrentPosition);
 		ImGui::Text("Metalness:");
 		ImGui::SetNextItemWidth(FieldWidth);
-		float metalness = Data->GetMetalness();
+		float Metalness = Data->GetMetalness();
 		CurrentPosition.y += FieldStep;
 		ImGui::SetCursorScreenPos(CurrentPosition);
-		ImGui::DragFloat("##Metalness", &metalness, 0.01f, 0.0f, 1.0f);
-		Data->SetMetalness(metalness);
+		ImGui::DragFloat("##Metalness", &Metalness, 0.01f, 0.0f, 1.0f);
+		Data->SetMetalness(Metalness);
 	}
 	else
 	{
@@ -146,22 +146,22 @@ void FEEditorMaterialNode::Draw()
 		ImGui::SetCursorScreenPos(CurrentPosition);
 		ImGui::Text("Metalness map \nintensity:");
 		ImGui::SetNextItemWidth(FieldWidth);
-		float metalness = Data->GetMetalnessMapIntensity();
+		float Metalness = Data->GetMetalnessMapIntensity();
 		CurrentPosition.y += FieldStep * 1.5f;
 		ImGui::SetCursorScreenPos(CurrentPosition);
-		ImGui::DragFloat("##Metalness map intensity", &metalness, 0.01f, 0.0f, 10.0f);
-		Data->SetMetalnessMapIntensity(metalness);
+		ImGui::DragFloat("##Metalness map intensity", &Metalness, 0.01f, 0.0f, 10.0f);
+		Data->SetMetalnessMapIntensity(Metalness);
 	}
 
 	CurrentPosition.y += FieldStep;
 	ImGui::SetCursorScreenPos(CurrentPosition);
 	ImGui::Text("Tiling :");
 	ImGui::SetNextItemWidth(FieldWidth);
-	float tiling = Data->GetTiling();
+	float Tiling = Data->GetTiling();
 	CurrentPosition.y += FieldStep;
 	ImGui::SetCursorScreenPos(CurrentPosition);
-	ImGui::DragFloat("##Tiling", &tiling, 0.01f, 0.0f, 64.0f);
-	Data->SetTiling(tiling);
+	ImGui::DragFloat("##Tiling", &Tiling, 0.01f, 0.0f, 64.0f);
+	Data->SetTiling(Tiling);
 	
 	if (bContextMenu)
 	{

@@ -407,7 +407,7 @@ void ShaderEditorWindow::Render()
 			Errors += DummyShader->GetLinkErrors();
 			Errors += "\n";
 			Errors += DummyShader->GetValidateErrors();
-			JustTextWindowObj.Show(Errors, "Shader have error(s)!");
+			JustTextWindowObject.Show(Errors, "Shader have error(s)!");
 		}
 		else
 		{

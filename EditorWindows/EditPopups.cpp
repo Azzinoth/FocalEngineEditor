@@ -48,7 +48,7 @@ void EditGameModelPopup::ChangeBillboardMaterialCallback(const std::vector<FEObj
 EditGameModelPopup::EditGameModelPopup()
 {
 	TemporaryModel = new FEGameModel(nullptr, nullptr, "tempGameModel");
-	ObjToWorkWith = nullptr;
+	ObjectToWorkWith = nullptr;
 	Flags = ImGuiWindowFlags_NoResize;
 
 	CancelButton = new ImGuiButton("Cancel");
@@ -93,21 +93,21 @@ void EditGameModelPopup::Show(FEGameModel* GameModel)
 {
 	if (GameModel != nullptr)
 	{
-		ObjToWorkWith = GameModel;
+		ObjectToWorkWith = GameModel;
 		Flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
-		TemporaryModel->SetMaterial(ObjToWorkWith->GetMaterial());
-		TemporaryModel->SetScaleFactor(ObjToWorkWith->GetScaleFactor());
-		UpdatedMaterial = ObjToWorkWith->GetMaterial();
-		UpdatedBillboardMaterial = ObjToWorkWith->GetBillboardMaterial();
-		TemporaryModel->SetUsingLOD(ObjToWorkWith->IsUsingLOD());
-		TemporaryModel->SetBillboardZeroRotation(ObjToWorkWith->GetBillboardZeroRotation());
+		TemporaryModel->SetMaterial(ObjectToWorkWith->GetMaterial());
+		TemporaryModel->SetScaleFactor(ObjectToWorkWith->GetScaleFactor());
+		UpdatedMaterial = ObjectToWorkWith->GetMaterial();
+		UpdatedBillboardMaterial = ObjectToWorkWith->GetBillboardMaterial();
+		TemporaryModel->SetUsingLOD(ObjectToWorkWith->IsUsingLOD());
+		TemporaryModel->SetBillboardZeroRotation(ObjectToWorkWith->GetBillboardZeroRotation());
 
 		ChangeLODMeshButton.clear();
-		if (ObjToWorkWith->IsUsingLOD())
+		if (ObjectToWorkWith->IsUsingLOD())
 		{
-			ChangeLODMeshButton.resize(ObjToWorkWith->GetMaxLODCount());
-			for (size_t i = 0; i < ObjToWorkWith->GetMaxLODCount(); i++)
+			ChangeLODMeshButton.resize(ObjectToWorkWith->GetMaxLODCount());
+			for (size_t i = 0; i < ObjectToWorkWith->GetMaxLODCount(); i++)
 			{
 				const std::string ButtonName = "Change LOD" + std::to_string(i) + " Mesh";
 				ChangeLODMeshButton[i] = new ImGuiButton(ButtonName);
@@ -123,16 +123,16 @@ void EditGameModelPopup::Show(FEGameModel* GameModel)
 		}
 
 		UpdatedLODMeshes.clear();
-		for (size_t i = 0; i < ObjToWorkWith->GetMaxLODCount(); i++)
+		for (size_t i = 0; i < ObjectToWorkWith->GetMaxLODCount(); i++)
 		{
-			TemporaryModel->SetLODMesh(i, ObjToWorkWith->GetLODMesh(i));
-			TemporaryModel->SetLODMaxDrawDistance(i, ObjToWorkWith->GetLODMaxDrawDistance(i));
-			TemporaryModel->SetIsLODBillboard(i, ObjToWorkWith->IsLODBillboard(i));
-			UpdatedLODMeshes.push_back(ObjToWorkWith->GetLODMesh(i));
+			TemporaryModel->SetLODMesh(i, ObjectToWorkWith->GetLODMesh(i));
+			TemporaryModel->SetLODMaxDrawDistance(i, ObjectToWorkWith->GetLODMaxDrawDistance(i));
+			TemporaryModel->SetIsLODBillboard(i, ObjectToWorkWith->IsLODBillboard(i));
+			UpdatedLODMeshes.push_back(ObjectToWorkWith->GetLODMesh(i));
 		}
-		TemporaryModel->SetCullDistance(ObjToWorkWith->GetCullDistance());
+		TemporaryModel->SetCullDistance(ObjectToWorkWith->GetCullDistance());
 
-		if (ObjToWorkWith->IsUsingLOD())
+		if (ObjectToWorkWith->IsUsingLOD())
 		{
 			SwitchMode(HAS_LOD_MODE);
 		}
@@ -142,7 +142,7 @@ void EditGameModelPopup::Show(FEGameModel* GameModel)
 		}
 
 		std::string TemporaryCaption = "Edit game model:";
-		TemporaryCaption += " " + ObjToWorkWith->GetName();
+		TemporaryCaption += " " + ObjectToWorkWith->GetName();
 		strcpy_s(Caption, TemporaryCaption.size() + 1, TemporaryCaption.c_str());
 
 		Position = ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2 - Size.x / 2, APPLICATION.GetMainWindow()->GetHeight() / 2 - Size.y / 2);
@@ -166,20 +166,20 @@ void EditGameModelPopup::Show(FEGameModel* GameModel)
 		// ************** LOD Groups **************
 		LODGroups->Clear();
 		float Previous = 0.0f;
-		for (size_t i = 0; i < ObjToWorkWith->GetMaxLODCount(); i++)
+		for (size_t i = 0; i < ObjectToWorkWith->GetMaxLODCount(); i++)
 		{
-			if (ObjToWorkWith->GetLODMesh(i) != nullptr)
+			if (ObjectToWorkWith->GetLODMesh(i) != nullptr)
 			{
-				LODGroups->AddRange(((ObjToWorkWith->GetLODMaxDrawDistance(i)) - Previous) / ObjToWorkWith->GetCullDistance(), std::string("LOD") + std::to_string(i), "", LODColors[i]);
-				Previous = ObjToWorkWith->GetLODMaxDrawDistance(i);
+				LODGroups->AddRange(((ObjectToWorkWith->GetLODMaxDrawDistance(i)) - Previous) / ObjectToWorkWith->GetCullDistance(), std::string("LOD") + std::to_string(i), "", LODColors[i]);
+				Previous = ObjectToWorkWith->GetLODMaxDrawDistance(i);
 			}
 		}
 		// ************** LOD Groups END **************
 
 		// ************** Drag&Drop **************
-		LODMeshCallbackInfo.resize(ObjToWorkWith->GetMaxLODCount());
-		LODMeshTarget.resize(ObjToWorkWith->GetMaxLODCount());
-		for (size_t i = 0; i < ObjToWorkWith->GetMaxLODCount(); i++)
+		LODMeshCallbackInfo.resize(ObjectToWorkWith->GetMaxLODCount());
+		LODMeshTarget.resize(ObjectToWorkWith->GetMaxLODCount());
+		for (size_t i = 0; i < ObjectToWorkWith->GetMaxLODCount(); i++)
 		{
 			LODMeshCallbackInfo[i].LODLevel = static_cast<int>(i);
 			LODMeshCallbackInfo[i].Window = this;
@@ -223,14 +223,14 @@ void EditGameModelPopup::SwitchMode(const int ToMode)
 			TemporaryModel->SetBillboardMaterial(nullptr);
 
 			LODGroups->Clear();
-			LODGroups->AddRange((ObjToWorkWith->GetLODMaxDrawDistance(0)) / ObjToWorkWith->GetCullDistance(), "LOD0", "", ImColor(0, 255, 0, 255));
+			LODGroups->AddRange((ObjectToWorkWith->GetLODMaxDrawDistance(0)) / ObjectToWorkWith->GetCullDistance(), "LOD0", "", ImColor(0, 255, 0, 255));
 			break;
 		}
 
 		case HAS_LOD_MODE:
 		{
-			ChangeLODMeshButton.resize(ObjToWorkWith->GetMaxLODCount());
-			for (size_t i = 0; i < ObjToWorkWith->GetMaxLODCount(); i++)
+			ChangeLODMeshButton.resize(ObjectToWorkWith->GetMaxLODCount());
+			for (size_t i = 0; i < ObjectToWorkWith->GetMaxLODCount(); i++)
 			{
 				const std::string ButtonName = "Change LOD" + std::to_string(i) + " Mesh";
 				ChangeLODMeshButton[i] = new ImGuiButton(ButtonName);
@@ -352,7 +352,7 @@ void EditGameModelPopup::Render()
 		}
 	}
 
-	if (ObjToWorkWith == nullptr)
+	if (ObjectToWorkWith == nullptr)
 	{
 		FEImGuiWindow::Close();
 		return;
@@ -630,23 +630,23 @@ void EditGameModelPopup::Render()
 	ApplyButton->Render();
 	if (ApplyButton->IsClicked())
 	{
-		ObjToWorkWith->SetDirtyFlag(true);
-		ObjToWorkWith->Mesh = TemporaryModel->Mesh;
-		ObjToWorkWith->SetUsingLOD(TemporaryModel->IsUsingLOD());
+		ObjectToWorkWith->SetDirtyFlag(true);
+		ObjectToWorkWith->Mesh = TemporaryModel->Mesh;
+		ObjectToWorkWith->SetUsingLOD(TemporaryModel->IsUsingLOD());
 
 		for (size_t i = 0; i < TemporaryModel->GetMaxLODCount(); i++)
 		{
-			ObjToWorkWith->SetLODMesh(i, TemporaryModel->GetLODMesh(i));
-			ObjToWorkWith->SetLODMaxDrawDistance(i, TemporaryModel->GetLODMaxDrawDistance(i));
-			ObjToWorkWith->SetIsLODBillboard(i, TemporaryModel->IsLODBillboard(i));
+			ObjectToWorkWith->SetLODMesh(i, TemporaryModel->GetLODMesh(i));
+			ObjectToWorkWith->SetLODMaxDrawDistance(i, TemporaryModel->GetLODMaxDrawDistance(i));
+			ObjectToWorkWith->SetIsLODBillboard(i, TemporaryModel->IsLODBillboard(i));
 		}
 
-		ObjToWorkWith->SetCullDistance(TemporaryModel->GetCullDistance());
-		ObjToWorkWith->SetMaterial(TemporaryModel->GetMaterial());
-		ObjToWorkWith->SetBillboardMaterial(TemporaryModel->GetBillboardMaterial());
-		ObjToWorkWith->SetScaleFactor(TemporaryModel->GetScaleFactor());
-		ObjToWorkWith->SetBillboardZeroRotation(TemporaryModel->GetBillboardZeroRotation());
-		PREVIEW_MANAGER.CreateGameModelPreview(ObjToWorkWith->GetID());
+		ObjectToWorkWith->SetCullDistance(TemporaryModel->GetCullDistance());
+		ObjectToWorkWith->SetMaterial(TemporaryModel->GetMaterial());
+		ObjectToWorkWith->SetBillboardMaterial(TemporaryModel->GetBillboardMaterial());
+		ObjectToWorkWith->SetScaleFactor(TemporaryModel->GetScaleFactor());
+		ObjectToWorkWith->SetBillboardZeroRotation(TemporaryModel->GetBillboardZeroRotation());
+		PREVIEW_MANAGER.CreateGameModelPreview(ObjectToWorkWith->GetID());
 
 		FEImGuiWindow::Close();
 		return;
@@ -767,7 +767,7 @@ FEEntity* EditMaterialWindow::InjectModelViewCamera(FEScene* Scene)
 
 EditMaterialWindow::EditMaterialWindow()
 {
-	ObjToWorkWith = nullptr;
+	ObjectToWorkWith = nullptr;
 	Flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
 	CancelButton = new ImGuiButton("Cancel");
@@ -833,7 +833,7 @@ EditMaterialWindow::~EditMaterialWindow()
 	delete IconButton;
 }
 
-FEMaterial* EditMaterialWindow::ObjToWorkWith = nullptr;
+FEMaterial* EditMaterialWindow::ObjectToWorkWith = nullptr;
 VisNodeSys::NodeArea* EditMaterialWindow::MaterialNodeArea = nullptr;
 ImVec2 EditMaterialWindow::NodeGridRelativePosition = ImVec2(5, 30);
 ImVec2 EditMaterialWindow::WindowPosition = ImVec2(0, 0);
@@ -848,10 +848,10 @@ void EditMaterialWindow::Show(FEMaterial* Material)
 		PreviewScene->SetFlag(FESceneFlag::Active | FESceneFlag::Renderable, true);
 
 		TemporaryContainer = RESOURCE_MANAGER.NoTexture;
-		ObjToWorkWith = Material;
+		ObjectToWorkWith = Material;
 
 		std::string TemporaryCaption = "Edit material:";
-		TemporaryCaption += " " + ObjToWorkWith->GetName();
+		TemporaryCaption += " " + ObjectToWorkWith->GetName();
 		strcpy_s(Caption, TemporaryCaption.size() + 1, TemporaryCaption.c_str());
 		Size = ImVec2(1512.0f, 1000.0f);
 		Position = ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2 - Size.x / 2, APPLICATION.GetMainWindow()->GetHeight() / 2 - Size.y / 2);
@@ -916,38 +916,38 @@ void EditMaterialWindow::Show(FEMaterial* Material)
 
 			if (Material->GetAOMap() == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetAOMapChannel(), MaterialNode, 2);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjectToWorkWith->GetAOMapChannel(), MaterialNode, 2);
 			}
 			else if (Material->GetAOMap(1) == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetAOMapChannel(), MaterialNode, 8);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjectToWorkWith->GetAOMapChannel(), MaterialNode, 8);
 			}
 
 			if (Material->GetRoughnessMap() == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetRoughnessMapChannel(), MaterialNode, 3);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjectToWorkWith->GetRoughnessMapChannel(), MaterialNode, 3);
 			}
 			else if (Material->GetRoughnessMap(1) == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetRoughnessMapChannel(), MaterialNode, 9);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjectToWorkWith->GetRoughnessMapChannel(), MaterialNode, 9);
 			}
 
 			if (Material->GetMetalnessMap() == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetMetalnessMapChannel(), MaterialNode, 4);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjectToWorkWith->GetMetalnessMapChannel(), MaterialNode, 4);
 			}
 			else if (Material->GetMetalnessMap(1) == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetMetalnessMapChannel(), MaterialNode, 10);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjectToWorkWith->GetMetalnessMapChannel(), MaterialNode, 10);
 			}
 
 			if (Material->GetDisplacementMap() == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetDisplacementMapChannel(), MaterialNode, 5);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjectToWorkWith->GetDisplacementMapChannel(), MaterialNode, 5);
 			}
 			else if (Material->GetDisplacementMap(1) == Material->Textures[i])
 			{
-				MaterialNodeArea->TryToConnect(NewTextureNode, ObjToWorkWith->GetDisplacementMapChannel(), MaterialNode, 11);
+				MaterialNodeArea->TryToConnect(NewTextureNode, ObjectToWorkWith->GetDisplacementMapChannel(), MaterialNode, 11);
 			}
 		}
 	}
@@ -961,7 +961,7 @@ void EditMaterialWindow::Render()
 	if (!IsVisible())
 		return;
 
-	if (ObjToWorkWith == nullptr)
+	if (ObjectToWorkWith == nullptr)
 	{
 		FEImGuiWindow::Close();
 		return;
@@ -1019,10 +1019,10 @@ void EditMaterialWindow::Stop()
 
 bool EditMaterialWindow::DragAndDropNodeAreaTargetCallback(FEObject* Object, void** CallbackInfo)
 {
-	if (ObjToWorkWith->IsTextureInList(RESOURCE_MANAGER.GetTexture(Object->GetID())))
+	if (ObjectToWorkWith->IsTextureInList(RESOURCE_MANAGER.GetTexture(Object->GetID())))
 		return false;
 
-	if (ObjToWorkWith->GetUsedTexturesCount() == FE_MAX_TEXTURES_PER_MATERIAL)
+	if (ObjectToWorkWith->GetUsedTexturesCount() == FE_MAX_TEXTURES_PER_MATERIAL)
 		return false;
 
 	FEEditorTextureSourceNode* NewNode = new FEEditorTextureSourceNode(RESOURCE_MANAGER.GetTexture(Object->GetID()));
@@ -1075,9 +1075,9 @@ void EditMaterialWindow::TextureNodeCallback(VisNodeSys::Node* Node, const VisNo
 		return;
 
 	const FEEditorTextureSourceNode* CurrentNode = reinterpret_cast<FEEditorTextureSourceNode*>(Node);
-	if (ObjToWorkWith->IsTextureInList(CurrentNode->GetTexture()))
+	if (ObjectToWorkWith->IsTextureInList(CurrentNode->GetTexture()))
 	{
-		ObjToWorkWith->RemoveTexture(CurrentNode->GetTexture());
+		ObjectToWorkWith->RemoveTexture(CurrentNode->GetTexture());
 	}
 }
 
@@ -1088,9 +1088,9 @@ void EditMaterialWindow::TextureNodeCreationCallback(const std::vector<FEObject*
 
 	if (SelectionsResult[0] != nullptr && SelectionsResult[0] != RESOURCE_MANAGER.NoTexture)
 	{
-		if (!ObjToWorkWith->IsTextureInList(reinterpret_cast<FETexture*>(SelectionsResult[0])))
+		if (!ObjectToWorkWith->IsTextureInList(reinterpret_cast<FETexture*>(SelectionsResult[0])))
 		{
-			if (ObjToWorkWith->AddTexture(reinterpret_cast<FETexture*>(SelectionsResult[0])))
+			if (ObjectToWorkWith->AddTexture(reinterpret_cast<FETexture*>(SelectionsResult[0])))
 			{
 				FEEditorTextureSourceNode* NewNode = new FEEditorTextureSourceNode(reinterpret_cast<FETexture*>(SelectionsResult[0]));
 

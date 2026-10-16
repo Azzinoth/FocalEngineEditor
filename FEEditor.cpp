@@ -230,8 +230,8 @@ void FEEditor::RenderTemporaryDebugWindow()
 		ImGui::Checkbox("freezeOcclusionCulling", &bFreezeOcclusionCulling);
 		RENDERER.SetOcclusionCullingEnabled(!bFreezeOcclusionCulling);
 
-		static bool bDisplaySelectedObjAABB = false;
-		ImGui::Checkbox("Display AABB of selected object", &bDisplaySelectedObjAABB);
+		static bool bDisplaySelectedObjectAABB = false;
+		ImGui::Checkbox("Display AABB of selected object", &bDisplaySelectedObjectAABB);
 
 		FEScene* CurrentScene = EDITOR.GetFocusedScene();
 		if (CurrentScene != nullptr)
@@ -240,7 +240,7 @@ void FEEditor::RenderTemporaryDebugWindow()
 			FEEntity* SelectedEntity = SELECTED.GetSelected(CurrentScene);
 			if (SelectedEntity != nullptr &&
 				(SelectedEntity->HasComponent<FEGameModelComponent>() || SelectedEntity->HasComponent<FETerrainComponent>() || SelectedEntity->HasComponent<FEPointCloudComponent>()) &&
-				bDisplaySelectedObjAABB)
+				bDisplaySelectedObjectAABB)
 			{
 				FEAABB SelectedAABB;
 				SelectedAABB = SelectedEntity->GetParentScene()->GetEntityAABB(SelectedEntity);
@@ -248,10 +248,10 @@ void FEEditor::RenderTemporaryDebugWindow()
 
 				if (SelectedEntity->HasComponent<FEInstancedComponent>())
 				{
-					static bool bDisplaySubObjAABB = false;
-					ImGui::Checkbox("Display AABB of instanced entity subobjects", &bDisplaySubObjAABB);
+					static bool bDisplaySubObjectAABB = false;
+					ImGui::Checkbox("Display AABB of instanced entity subobjects", &bDisplaySubObjectAABB);
 
-					if (bDisplaySubObjAABB)
+					if (bDisplaySubObjectAABB)
 					{
 						FEInstancedComponent& InstancedComponent = SelectedEntity->GetComponent<FEInstancedComponent>();
 						const int MaxIterations = InstancedComponent.IndividualInstancedAABB.size() * 8 >= FE_MAX_DEBUG_LINES ? FE_MAX_DEBUG_LINES : int(InstancedComponent.IndividualInstancedAABB.size());
@@ -731,7 +731,7 @@ void FEEditor::RenderAllSubWindows()
 	DeleteDirectoryPopup::GetInstance().Render();
 
 	ResizeTexturePopup::GetInstance().Render();
-	JustTextWindowObj.Render();
+	JustTextWindowObject.Render();
 
 	RenamePopUp::GetInstance().Render();
 	RenameFailedPopUp::GetInstance().Render();

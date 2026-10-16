@@ -4,7 +4,7 @@
 
 class ResizeTexturePopup : public ImGuiModalPopup
 {
-	FETexture* ObjToWorkWith;
+	FETexture* ObjectToWorkWith;
 	int NewWidth;
 	int NewHeight;
 	int Filtration;
@@ -16,7 +16,7 @@ class ResizeTexturePopup : public ImGuiModalPopup
 public:
 	SINGLETON_PUBLIC_PART(ResizeTexturePopup)
 
-	void Show(FETexture* ObjToWorkWith);
+	void Show(FETexture* ObjectToWorkWith);
 	void Render() override;
 private:
 	SINGLETON_PRIVATE_PART(ResizeTexturePopup)

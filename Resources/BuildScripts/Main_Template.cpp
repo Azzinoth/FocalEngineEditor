@@ -145,7 +145,7 @@ void LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage)
 }
 
 FEEntity* CameraEntity = nullptr;
-void mouseButtonCallback(int Button, int Action, int Mods)
+void MouseButtonCallback(int Button, int Action, int Mods)
 {
 	if (Button == GLFW_MOUSE_BUTTON_2 && Action == GLFW_PRESS)
 	{
@@ -195,7 +195,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		LOG.Add("Error: no camera in starting scene", "FE_STARTING_APPLICATION", FE_LOG_ERROR);
 	}
 
-	INPUT.AddMouseButtonCallback(mouseButtonCallback);
+	INPUT.AddMouseButtonCallback(MouseButtonCallback);
 
 	while (ENGINE.IsNotTerminated())
 	{

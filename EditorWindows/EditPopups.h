@@ -12,7 +12,7 @@ class EditGameModelPopup : public FEImGuiWindow
 		HAS_LOD_MODE = 1,
 	};
 
-	FEGameModel* ObjToWorkWith;
+	FEGameModel* ObjectToWorkWith;
 	FEGameModel* TemporaryModel = nullptr;
 	FETexture* TemporaryPreview = nullptr;
 
@@ -96,7 +96,7 @@ class EditMaterialWindow : public FEImGuiWindow
 	FETexture* TemporaryContainer = nullptr;
 	int TextureDestination = -1;
 
-	static FEMaterial* ObjToWorkWith;
+	static FEMaterial* ObjectToWorkWith;
 
 	// ************** Node area **************
 	static VisNodeSys::NodeArea* MaterialNodeArea;

@@ -131,17 +131,17 @@
 
         static bool DirectoryDragAndDropCallback(FEObject* Object, void** Directory)
         {
-            const DirectoryDragAndDropCallbackInfo* info = reinterpret_cast<DirectoryDragAndDropCallbackInfo*>(Directory);
+            const DirectoryDragAndDropCallbackInfo* CallbackInfo = reinterpret_cast<DirectoryDragAndDropCallbackInfo*>(Directory);
             if (Object->GetType() == FE_NULL)
             {
                 std::string OldPath = VIRTUAL_FILE_SYSTEM.GetCurrentPath();
                 if (OldPath.back() != '/')
                     OldPath += "/";
-                VIRTUAL_FILE_SYSTEM.MoveDirectory(OldPath + Object->GetName(), info->DirectoryPath);
+                VIRTUAL_FILE_SYSTEM.MoveDirectory(OldPath + Object->GetName(), CallbackInfo->DirectoryPath);
             }
             else
             {
-                VIRTUAL_FILE_SYSTEM.MoveFile(Object, VIRTUAL_FILE_SYSTEM.GetCurrentPath(), info->DirectoryPath);
+                VIRTUAL_FILE_SYSTEM.MoveFile(Object, VIRTUAL_FILE_SYSTEM.GetCurrentPath(), CallbackInfo->DirectoryPath);
             }
             return true;
         }

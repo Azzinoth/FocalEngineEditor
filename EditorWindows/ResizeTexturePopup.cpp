@@ -3,7 +3,7 @@
 ResizeTexturePopup::ResizeTexturePopup()
 {
 	PopupCaption = "Resize texture";
-	ObjToWorkWith = nullptr;
+	ObjectToWorkWith = nullptr;
 
 	CancelButton = new ImGuiButton("Cancel");
 	CancelButton->SetDefaultColor(ImVec4(0.7f, 0.5f, 0.5f, 1.0f));
@@ -19,15 +19,15 @@ ResizeTexturePopup::~ResizeTexturePopup()
 	delete ApplyButton;
 }
 
-void ResizeTexturePopup::Show(FETexture* ObjToWorkWith)
+void ResizeTexturePopup::Show(FETexture* ObjectToWorkWith)
 {
-	if (ObjToWorkWith == nullptr)
+	if (ObjectToWorkWith == nullptr)
 		return;
 	bShouldOpen = true;
-	this->ObjToWorkWith = ObjToWorkWith;
+	this->ObjectToWorkWith = ObjectToWorkWith;
 
-	NewWidth = ObjToWorkWith->GetWidth();
-	NewHeight = ObjToWorkWith->GetHeight();
+	NewWidth = ObjectToWorkWith->GetWidth();
+	NewHeight = ObjectToWorkWith->GetHeight();
 }
 
 void ResizeTexturePopup::Render()
@@ -38,7 +38,7 @@ void ResizeTexturePopup::Render()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 	if (ImGui::BeginPopupModal(PopupCaption.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar))
 	{
-		if (ObjToWorkWith == nullptr)
+		if (ObjectToWorkWith == nullptr)
 		{
 			ImGui::PopStyleVar();
 			ImGui::EndPopup();
@@ -99,19 +99,19 @@ void ResizeTexturePopup::Render()
 		{
 			if (bReplaceTexture)
 			{
-				RESOURCE_MANAGER.ResizeTexture(ObjToWorkWith, NewWidth, NewHeight, 0/*filtration*/);
-				PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(ObjToWorkWith);
+				RESOURCE_MANAGER.ResizeTexture(ObjectToWorkWith, NewWidth, NewHeight, 0/*filtration*/);
+				PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(ObjectToWorkWith);
 			}
 			else
 			{
-				unsigned char* Result = RESOURCE_MANAGER.ResizeTextureRawData(ObjToWorkWith, NewWidth, NewHeight, 0/*filtration*/);
+				unsigned char* Result = RESOURCE_MANAGER.ResizeTextureRawData(ObjectToWorkWith, NewWidth, NewHeight, 0/*filtration*/);
 				FETexture* NewTexture = RESOURCE_MANAGER.RawDataToFETexture(Result, NewWidth, NewHeight);
 				VIRTUAL_FILE_SYSTEM.CreateFile(NewTexture, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 				PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(NewTexture);
 				delete[] Result;
 			}
 
-			ObjToWorkWith = nullptr;
+			ObjectToWorkWith = nullptr;
 			ImGuiModalPopup::Close();
 		}
 
@@ -120,7 +120,7 @@ void ResizeTexturePopup::Render()
 		CancelButton->Render();
 		if (CancelButton->IsClicked())
 		{
-			ObjToWorkWith = nullptr;
+			ObjectToWorkWith = nullptr;
 			ImGuiModalPopup::Close();
 		}
 

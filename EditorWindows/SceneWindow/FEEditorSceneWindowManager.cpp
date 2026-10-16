@@ -1,6 +1,6 @@
 #include "FEEditorSceneWindowManager.h"
 #include "../../FEEditor.h"
-#include "../../SubSystems/ProjectManagment/FEProject.h"
+#include "../../SubSystems/ProjectManagement/FEProject.h"
 
 FEEditorSceneWindowManager::FEEditorSceneWindowManager()
 {

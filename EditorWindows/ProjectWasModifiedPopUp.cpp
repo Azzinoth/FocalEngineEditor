@@ -3,13 +3,13 @@
 ProjectWasModifiedPopUp::ProjectWasModifiedPopUp()
 {
 	PopupCaption = "Save project ?";
-	ObjToWorkWith = nullptr;
+	ObjectToWorkWith = nullptr;
 }
 
 void ProjectWasModifiedPopUp::Show(FEProject* Project, const bool FullyCloseApplication)
 {
 	bShouldOpen = true;
-	ObjToWorkWith = Project;
+	ObjectToWorkWith = Project;
 	bShouldTerminate = FullyCloseApplication;
 }
 
@@ -20,7 +20,7 @@ void ProjectWasModifiedPopUp::Render()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 	if (ImGui::BeginPopupModal(PopupCaption.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		if (ObjToWorkWith == nullptr)
+		if (ObjectToWorkWith == nullptr)
 		{
 			ImGui::PopStyleVar();
 			ImGui::EndPopup();
@@ -38,7 +38,7 @@ void ProjectWasModifiedPopUp::Render()
 		{
 			PROJECT_MANAGER.GetCurrent()->SaveProject();
 			//ENGINE.SaveScreenshot((PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + "projectScreenShot.texture").c_str(), PROJECT_MANAGER.GetCurrent()->GetScene());
-			ObjToWorkWith = nullptr;
+			ObjectToWorkWith = nullptr;
 			ImGuiModalPopup::Close();
 			ButtonPressed = true;
 			APPLICATION.GetMainWindow()->CancelClose();
@@ -49,7 +49,7 @@ void ProjectWasModifiedPopUp::Render()
 		ImGui::SetCursorPosX(ImGui::GetWindowWidth() * 0.5f - 140.0f / 2.0f);
 		if (ImGui::Button("Exit without saving", ImVec2(140, 0)))
 		{
-			ObjToWorkWith = nullptr;
+			ObjectToWorkWith = nullptr;
 			ImGuiModalPopup::Close();
 			ButtonPressed = true;
 		}

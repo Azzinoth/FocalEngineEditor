@@ -11,7 +11,7 @@ class FEEditorTextureCreatingNode : public VisNodeSys::Node
 	char* CantInferResolutionMsg = "Can't infer texture resolution.";
 	char* TooManyConnectionOfThisTypeMsg = "Too many connections of this type.";
 
-	void PutDataFromColorChannelInArray(VisNodeSys::NodeSocket* SourceSocket, unsigned char* DataArray, size_t TextureDataLenght, size_t ToWhatChannel);
+	void PutDataFromColorChannelInArray(VisNodeSys::NodeSocket* SourceSocket, unsigned char* DataArray, size_t TextureDataLength, size_t ToWhatChannel);
 	unsigned char* GetInputColorChannelData(size_t Channel) const;
 
 	bool CanConnect(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* CandidateSocket, char** MsgToUser);

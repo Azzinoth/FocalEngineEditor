@@ -14,12 +14,12 @@ private:
 
 class RenamePopUp : public ImGuiModalPopup
 {
-	FEObject* ObjToWorkWith;
+	FEObject* ObjectToWorkWith;
 	std::string NewName;
 public:
 	SINGLETON_PUBLIC_PART(RenamePopUp)
 
-	void Show(FEObject* ObjToWorkWith);
+	void Show(FEObject* ObjectToWorkWith);
 	void Render() override;
 private:
 	SINGLETON_PRIVATE_PART(RenamePopUp)

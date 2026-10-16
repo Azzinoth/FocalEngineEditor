@@ -118,21 +118,21 @@ TEST(VirtualFileSystem, MoveDirectory_CompletesLegitimateMove)
 
 TEST(VirtualFileSystem, LoadState_ReplacesExistingState)
 {
-	const std::string SavedDir = "vfs_load_saved";
-	const std::string ExtraDir = "vfs_load_extra";
+	const std::string SavedDirectory = "vfs_load_saved";
+	const std::string ExtraDirectory = "vfs_load_extra";
 	const std::string SaveFile = "vfs_load_state_clear_test.txt";
 
-	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(SavedDir, "/"));
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(SavedDirectory, "/"));
 	VIRTUAL_FILE_SYSTEM.SaveState(SaveFile);
 
-	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(ExtraDir, "/"));
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(ExtraDirectory, "/"));
 
 	VIRTUAL_FILE_SYSTEM.LoadState(SaveFile);
 
-	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.IsPathCorrect("/" + SavedDir));
-	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.IsPathCorrect("/" + ExtraDir));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.IsPathCorrect("/" + SavedDirectory));
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.IsPathCorrect("/" + ExtraDirectory));
 
-	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory("/" + SavedDir));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory("/" + SavedDirectory));
 	std::remove(SaveFile.c_str());
 }
 
@@ -175,14 +175,14 @@ TEST(VirtualFileSystem, MoveDirectory_RejectsReadOnlyTarget)
 TEST(VirtualFileSystem, SaveState_PersistsFileReadOnlyFlag)
 {
 	const std::string Directory = "vfs_save_file_read_only_dir";
-	const std::string DirPath = "/" + Directory;
+	const std::string DirectoryPath = "/" + Directory;
 	const std::string SaveFile = "vfs_save_file_read_only_test.txt";
 
 	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Directory, "/"));
 
 	FEObject* TestFile = new FEObject(FE_TEXTURE, "vfs_test_file");
-	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateFile(TestFile, DirPath));
-	VIRTUAL_FILE_SYSTEM.SetFileReadOnly(true, TestFile, DirPath);
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateFile(TestFile, DirectoryPath));
+	VIRTUAL_FILE_SYSTEM.SetFileReadOnly(true, TestFile, DirectoryPath);
 
 	VIRTUAL_FILE_SYSTEM.SaveState(SaveFile);
 
@@ -218,10 +218,10 @@ TEST(VirtualFileSystem, SaveState_PersistsFileReadOnlyFlag)
 	EXPECT_TRUE(FileEntry->isObject());
 	EXPECT_TRUE((*FileEntry)["ReadOnly"].asBool());
 
-	VIRTUAL_FILE_SYSTEM.SetFileReadOnly(false, TestFile, DirPath);
-	VIRTUAL_FILE_SYSTEM.DeleteFile(TestFile, DirPath);
+	VIRTUAL_FILE_SYSTEM.SetFileReadOnly(false, TestFile, DirectoryPath);
+	VIRTUAL_FILE_SYSTEM.DeleteFile(TestFile, DirectoryPath);
 	delete TestFile;
-	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirectoryPath));
 	std::remove(SaveFile.c_str());
 }
 
@@ -425,24 +425,24 @@ TEST(VirtualFileSystem, MoveFile_RejectsSubdirectoryNameCollisionInTarget)
 TEST(VirtualFileSystem, RenameDirectory_RejectsFileNameCollisionInParent)
 {
 	const std::string Holder = "vfs_rename_dir_filename_holder";
-	const std::string SubDir = "vfs_rename_dir_filename_sub";
+	const std::string SubDirectory = "vfs_rename_dir_filename_sub";
 	const std::string NewName = "vfs_rename_dir_filename_target";
 	const std::string HolderPath = "/" + Holder;
-	const std::string SubDirPath = HolderPath + "/" + SubDir;
+	const std::string SubDirectoryPath = HolderPath + "/" + SubDirectory;
 
 	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Holder, "/"));
-	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(SubDir, HolderPath));
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(SubDirectory, HolderPath));
 
 	FEObject* CollidingFile = new FEObject(FE_TEXTURE, NewName);
 	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateFile(CollidingFile, HolderPath));
 
-	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.RenameDirectory(NewName, SubDirPath));
-	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.IsPathCorrect(SubDirPath));
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.RenameDirectory(NewName, SubDirectoryPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.IsPathCorrect(SubDirectoryPath));
 	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DoesFileExist(CollidingFile, HolderPath));
 
 	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteFile(CollidingFile, HolderPath));
 	delete CollidingFile;
-	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(SubDirPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(SubDirectoryPath));
 	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(HolderPath));
 }
 
@@ -780,19 +780,19 @@ TEST(VirtualFileSystem, SetCurrentPath_RejectsFilePath)
 TEST(VirtualFileSystem, CreateFile_RejectsReadOnlyDirectory)
 {
 	const std::string Directory = "vfs_create_file_read_only_dir";
-	const std::string DirPath = "/" + Directory;
+	const std::string DirectoryPath = "/" + Directory;
 
 	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Directory, "/"));
-	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(true, DirPath);
+	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(true, DirectoryPath);
 
 	FEObject* TestFile = new FEObject(FE_TEXTURE, "vfs_create_file_read_only_test");
-	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.CreateFile(TestFile, DirPath));
-	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.DoesFileExist(TestFile, DirPath));
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.CreateFile(TestFile, DirectoryPath));
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.DoesFileExist(TestFile, DirectoryPath));
 
-	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(false, DirPath);
-	VIRTUAL_FILE_SYSTEM.DeleteFile(TestFile, DirPath);
+	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(false, DirectoryPath);
+	VIRTUAL_FILE_SYSTEM.DeleteFile(TestFile, DirectoryPath);
 	delete TestFile;
-	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirectoryPath));
 }
 
 TEST(VirtualFileSystem, MoveFile_RejectsReadOnlyTarget)
@@ -844,20 +844,20 @@ TEST(VirtualFileSystem, DeleteFile_ReportsFailureOnReadOnlyFile)
 TEST(VirtualFileSystem, SaveState_PersistsReadOnlyFlag)
 {
 	const std::string Directory = "vfs_save_read_only_dir";
-	const std::string DirPath = "/" + Directory;
+	const std::string DirectoryPath = "/" + Directory;
 	const std::string SaveFile = "vfs_save_read_only_test.txt";
 
 	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Directory, "/"));
-	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(true, DirPath);
+	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(true, DirectoryPath);
 	VIRTUAL_FILE_SYSTEM.SaveState(SaveFile);
 
 	VIRTUAL_FILE_SYSTEM.LoadState(SaveFile);
 
-	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.CreateDirectory("child", DirPath));
-	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.IsPathCorrect(DirPath + "/child"));
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.CreateDirectory("child", DirectoryPath));
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.IsPathCorrect(DirectoryPath + "/child"));
 
-	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(false, DirPath);
-	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirPath));
+	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(false, DirectoryPath);
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirectoryPath));
 	std::remove(SaveFile.c_str());
 }
 

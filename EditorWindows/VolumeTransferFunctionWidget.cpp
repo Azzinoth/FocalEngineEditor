@@ -45,7 +45,7 @@ void VolumeTransferFunctionWidget::Render(FEEntity* CurrentEntity, float DataVal
 
 	ImGui::InvisibleButton("##TransferFunctionCanvas", ImVec2(CanvasWidth, CanvasHeight + MarkerStripHeight));
 	const bool bCanvasHovered = ImGui::IsItemHovered();
-	const ImVec2 MousePos = ImGui::GetIO().MousePos;
+	const ImVec2 MousePosition = ImGui::GetIO().MousePos;
 
 	auto PositionToX = [&](float Position) {
 		return CanvasOrigin.x + Position * CanvasWidth;
@@ -66,7 +66,7 @@ void VolumeTransferFunctionWidget::Render(FEEntity* CurrentEntity, float DataVal
 	const float HandleRadius = 5.0f;
 	auto IsNearOpacityHandle = [&](int Index) {
 		const ImVec2 Handle(PositionToX(OpacityPoints[Index].Position), OpacityToY(OpacityPoints[Index].Opacity));
-		return fabs(MousePos.x - Handle.x) <= HandleRadius + 2.0f && fabs(MousePos.y - Handle.y) <= HandleRadius + 2.0f;
+		return fabs(MousePosition.x - Handle.x) <= HandleRadius + 2.0f && fabs(MousePosition.y - Handle.y) <= HandleRadius + 2.0f;
 	};
 
 	// Color gradient background (full alpha so the color map is visible regardless of opacity).
@@ -96,11 +96,11 @@ void VolumeTransferFunctionWidget::Render(FEEntity* CurrentEntity, float DataVal
 			}
 		}
 
-		if (DraggedOpacityPoint == -1 && MousePos.y >= CanvasOrigin.y + CanvasHeight)
+		if (DraggedOpacityPoint == -1 && MousePosition.y >= CanvasOrigin.y + CanvasHeight)
 		{
 			for (int i = 0; i < static_cast<int>(ColorPoints.size()); i++)
 			{
-				if (fabs(MousePos.x - PositionToX(ColorPoints[i].Position)) <= 7.0f)
+				if (fabs(MousePosition.x - PositionToX(ColorPoints[i].Position)) <= 7.0f)
 				{
 					DraggedColorPoint = i;
 					SelectedColorPoint = i;
@@ -118,13 +118,13 @@ void VolumeTransferFunctionWidget::Render(FEEntity* CurrentEntity, float DataVal
 
 	if (DraggedOpacityPoint != -1 && ImGui::IsMouseDragging(0))
 	{
-		OpacityPoints[DraggedOpacityPoint].Opacity = YToOpacity(MousePos.y);
+		OpacityPoints[DraggedOpacityPoint].Opacity = YToOpacity(MousePosition.y);
 		const bool bEndpoint = (DraggedOpacityPoint == 0 || DraggedOpacityPoint == static_cast<int>(OpacityPoints.size()) - 1);
 		if (!bEndpoint)
 		{
 			const float LeftLimit = OpacityPoints[DraggedOpacityPoint - 1].Position + 0.001f;
 			const float RightLimit = OpacityPoints[DraggedOpacityPoint + 1].Position - 0.001f;
-			OpacityPoints[DraggedOpacityPoint].Position = glm::clamp(XToPosition(MousePos.x), LeftLimit, RightLimit);
+			OpacityPoints[DraggedOpacityPoint].Position = glm::clamp(XToPosition(MousePosition.x), LeftLimit, RightLimit);
 		}
 		bChanged = true;
 	}
@@ -135,12 +135,12 @@ void VolumeTransferFunctionWidget::Render(FEEntity* CurrentEntity, float DataVal
 		const int LastIndex = static_cast<int>(ColorPoints.size()) - 1;
 		const float LeftLimit = (DraggedColorPoint == 0) ? 0.0f : ColorPoints[DraggedColorPoint - 1].Position + 0.001f;
 		const float RightLimit = (DraggedColorPoint == LastIndex) ? 1.0f : ColorPoints[DraggedColorPoint + 1].Position - 0.001f;
-		ColorPoints[DraggedColorPoint].Position = glm::clamp(XToPosition(MousePos.x), LeftLimit, RightLimit);
+		ColorPoints[DraggedColorPoint].Position = glm::clamp(XToPosition(MousePosition.x), LeftLimit, RightLimit);
 		bChanged = true;
 	}
 
 	// Double-click on empty curve area adds an opacity point.
-	if (bCanvasHovered && ImGui::IsMouseDoubleClicked(0) && MousePos.y < CanvasOrigin.y + CanvasHeight)
+	if (bCanvasHovered && ImGui::IsMouseDoubleClicked(0) && MousePosition.y < CanvasOrigin.y + CanvasHeight)
 	{
 		bool bOnHandle = false;
 		for (int i = 0; i < static_cast<int>(OpacityPoints.size()); i++)
@@ -149,8 +149,8 @@ void VolumeTransferFunctionWidget::Render(FEEntity* CurrentEntity, float DataVal
 		if (!bOnHandle)
 		{
 			FETransferFunctionOpacityPoint NewPoint;
-			NewPoint.Position = XToPosition(MousePos.x);
-			NewPoint.Opacity = YToOpacity(MousePos.y);
+			NewPoint.Position = XToPosition(MousePosition.x);
+			NewPoint.Opacity = YToOpacity(MousePosition.y);
 
 			int InsertIndex = static_cast<int>(OpacityPoints.size());
 			for (int i = 0; i < static_cast<int>(OpacityPoints.size()); i++)
@@ -164,11 +164,11 @@ void VolumeTransferFunctionWidget::Render(FEEntity* CurrentEntity, float DataVal
 	// Right-click removes points, an opacity handle on the curve, or a color stop.
 	if (bCanvasHovered && ImGui::IsMouseClicked(1))
 	{
-		if (MousePos.y >= CanvasOrigin.y + CanvasHeight)
+		if (MousePosition.y >= CanvasOrigin.y + CanvasHeight)
 		{
 			for (int i = 1; i < static_cast<int>(ColorPoints.size()) - 1; i++)
 			{
-				if (fabs(MousePos.x - PositionToX(ColorPoints[i].Position)) <= 7.0f)
+				if (fabs(MousePosition.x - PositionToX(ColorPoints[i].Position)) <= 7.0f)
 				{
 					ColorPoints.erase(ColorPoints.begin() + i);
 					if (SelectedColorPoint == i)
