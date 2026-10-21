@@ -93,6 +93,20 @@ bool FEProjectBuildSystem::CopyVisualNodeSystemSubProjectFiles(const std::string
 		return false;
 	}
 
+	if (!FILE_SYSTEM.CopyDirectory(VisualNodeSystemPath + "StandardNodes/",
+								   OutputPath + "VisualNodeSystem/StandardNodes/"))
+	{
+		LOG.Add("FEProjectBuildSystem::CopyVisualNodeSystemSubProjectFiles: Error copying directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		return false;
+	}
+
+	if (!FILE_SYSTEM.CopyDirectory(VisualNodeSystemPath + "VersionInfo/",
+								   OutputPath + "VisualNodeSystem/VersionInfo/"))
+	{
+		LOG.Add("FEProjectBuildSystem::CopyVisualNodeSystemSubProjectFiles: Error copying directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		return false;
+	}
+
 	return true;
 }
 
@@ -141,10 +155,14 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 												 "SubSystems/FocalEngine",
 												 "ScriptModules/",
 												 "SubSystems/FocalEngine/ResourceManager",
+												 "SubSystems/FocalEngine/Core",
+												 "SubSystems/FocalEngine/Core/VersionInfo",
 												 "SubSystems/FocalEngine/SubSystems",
 												 "SubSystems/FocalEngine/ThirdParty",
 												 "SubSystems/FocalEngine/ThirdParty/openxr",
+												 "SubSystems/FocalEngine/ThirdParty/laszip",
 												 "SubSystems/FocalEngine/SubSystems/FEBasicApplication",
+												 "SubSystems/FocalEngine/SubSystems/FEBasicApplication/VersionInfo",
 												 "SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty",
 												 "SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/GLFW",
 												 "SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/glew2" };
@@ -166,10 +184,12 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 	FilesToCopy.push_back({ EditorPath + "/Resources/BuildScripts/CMakeLists_Template.txt", VSProjectDirectory + "CMakeLists.txt" });
 	std::string EnginePath = FILE_SYSTEM.GetCurrentWorkingPath() + "/" + std::string(ENGINE_FOLDER) + "/";
 	FilesToCopy.push_back({ EnginePath + "CMakeLists.txt", VSProjectDirectory + "SubSystems/FocalEngine/CMakeLists.txt" });
-	FilesToCopy.push_back({ EnginePath + "UpdateTimestamp.cmake", VSProjectDirectory + "SubSystems/FocalEngine/UpdateTimestamp.cmake" });
 	FilesToCopy.push_back({ EnginePath + "ResourceManager/Config.h.in", VSProjectDirectory + "SubSystems/FocalEngine/ResourceManager/Config.h.in" });
-	FilesToCopy.push_back({ EnginePath + "ResourceManager/Timestamp.h.in", VSProjectDirectory + "SubSystems/FocalEngine/ResourceManager/Timestamp.h.in" });
+	FilesToCopy.push_back({ EnginePath + "Core/VersionInfo/UpdateProjectVersion.cmake", VSProjectDirectory + "SubSystems/FocalEngine/Core/VersionInfo/UpdateProjectVersion.cmake" });
+	FilesToCopy.push_back({ EnginePath + "Core/VersionInfo/ProjectVersion.h.in", VSProjectDirectory + "SubSystems/FocalEngine/Core/VersionInfo/ProjectVersion.h.in" });
 	FilesToCopy.push_back({ EnginePath + "SubSystems/FEBasicApplication/CMakeLists.txt", VSProjectDirectory + "SubSystems/FocalEngine/SubSystems/FEBasicApplication/CMakeLists.txt" });
+	FilesToCopy.push_back({ EnginePath + "SubSystems/FEBasicApplication/VersionInfo/UpdateProjectVersion.cmake", VSProjectDirectory + "SubSystems/FocalEngine/SubSystems/FEBasicApplication/VersionInfo/UpdateProjectVersion.cmake" });
+	FilesToCopy.push_back({ EnginePath + "SubSystems/FEBasicApplication/VersionInfo/ProjectVersion.h.in", VSProjectDirectory + "SubSystems/FocalEngine/SubSystems/FEBasicApplication/VersionInfo/ProjectVersion.h.in" });
 
 	for (size_t i = 0; i < FilesToCopy.size(); i++)
 	{
@@ -196,6 +216,13 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 
 	if (!FILE_SYSTEM.CopyDirectory(EnginePath + "/ThirdParty/openxr/Lib",
 								   VSProjectDirectory + "SubSystems/FocalEngine/ThirdParty/openxr/Lib"))
+	{
+		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error copying directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		return false;
+	}
+
+	if (!FILE_SYSTEM.CopyDirectory(EnginePath + "/ThirdParty/laszip/lib",
+								   VSProjectDirectory + "SubSystems/FocalEngine/ThirdParty/laszip/lib"))
 	{
 		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error copying directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;

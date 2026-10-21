@@ -392,6 +392,11 @@ void FEEditor::Render()
 					{
 						CloseProjectAndCleanup();
 						ENGINE.Terminate();
+
+						ImGui::PopStyleVar();
+						ImGui::EndMenu();
+						ImGui::EndMainMenuBar();
+
 						return;
 					}
 				}
