@@ -1,4 +1,5 @@
 #include "FEEditor.h"
+#include "SubSystems/PluginSystem/FEEditorPluginManager.h"
 
 FEEditor::FEEditor()
 {
@@ -332,6 +333,7 @@ void FEEditor::Render()
 
 	PREVIEW_MANAGER.Update();
 	EDITOR_SCRIPTING_SYSTEM.Update();
+	EDITOR_PLUGIN_MANAGER.Update(ENGINE.GetDeltaTime());
 
 	std::vector<FEScene*> ActiveScenes = SCENE_MANAGER.GetScenesByFlagMask(FESceneFlag::Active | FESceneFlag::Renderable);
 	if (ActiveScenes.empty())
@@ -478,6 +480,8 @@ void FEEditor::Render()
 				ImGui::EndMenu();
 			}
 
+			EDITOR_PLUGIN_MANAGER.RenderMenu();
+
 			// TO-DO: Temporary, remove when plugin creation will be available in the editor UI.
 			if (ImGui::BeginMenu("Debug"))
 			{
@@ -492,6 +496,18 @@ void FEEditor::Render()
 						const bool bAddPublicInterface = true;
 						if (!PLUGIN_MANAGER.CreatePluginProject(PluginName, Path, bAddPublicInterface))
 							LOG.Add("FEEditor::Render: Failed to create plugin VS project in " + Path, "FE_EDITOR", FE_LOG_ERROR);
+					});
+				}
+
+				if (ImGui::MenuItem("Create new plugin project with editor module..."))
+				{
+					FILE_SYSTEM.OpenFolderDialog([](const std::string& Path) {
+						if (Path.empty())
+							return;
+
+						std::string PluginName = FILE_SYSTEM.GetFileName(Path);
+						if (!EDITOR_PLUGIN_MANAGER.CreateEditorPluginProject(PluginName, Path))
+							LOG.Add("FEEditor::Render: Failed to create plugin VS project with editor module in " + Path, "FE_EDITOR", FE_LOG_ERROR);
 					});
 				}
 
@@ -551,6 +567,7 @@ void FEEditor::Render()
 		INSPECTOR_WINDOW.Render();
 		DisplayEditorCamerasWindow();
 		DisplayLogWindow();
+		EDITOR_PLUGIN_MANAGER.RenderWindows();
 		if (!GizmosSettingsWindowObject.IsVisible())
 			GizmosSettingsWindowObject.Show();
 		GizmosSettingsWindowObject.Render();

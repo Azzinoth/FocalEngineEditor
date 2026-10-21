@@ -1,5 +1,6 @@
 #include "InspectorWindow.h"
 #include "../FEEditor.h"
+#include "../SubSystems/PluginSystem/FEEditorPluginManager.h"
 
 FEEntity* FEEditorInspectorWindow::EntityToModify = nullptr;
 FEEntity* FEEditorInspectorWindow::TerrainToWorkWith = nullptr;
@@ -1902,6 +1903,8 @@ void FEEditorInspectorWindow::Render()
 			DisplayNativeScriptProperties(SELECTED.GetSelected(CurrentScene));
 		}
 	}
+
+	EDITOR_PLUGIN_MANAGER.RenderInspectorSections(EntitySelected);
 
 	std::vector<std::string> AvailableComponentTypes = GetAvailableComponentsToAdd(EntitySelected);
 

@@ -1,4 +1,5 @@
 #include "FEEditor.h"
+#include "SubSystems/PluginSystem/FEEditorPluginManager.h"
 
 void OnTriggerRelease()
 {
@@ -25,6 +26,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	EDITOR.InitializeResources();
 	THREAD_POOL.SetConcurrentThreadCount(10);
 	NODE_SYSTEM.Initialize();
+	EDITOR_PLUGIN_MANAGER.Initialize();
 
 	const int FrameCountTillMeasure = 20;
 	double CPUFrameDurations[FrameCountTillMeasure] = { 0.0f };
@@ -207,6 +209,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			bPutThisFrameToTimeline = false;
 		}
 	}
+
+	PLUGIN_MANAGER.Shutdown();
 
 	return 0;
 }

@@ -150,6 +150,14 @@ file(GLOB ProjectManagement_SRC
 	"SubSystems/ProjectManagement/FEProject.h"
 )
 
+file(GLOB PluginSystem_SRC
+	"SubSystems/PluginSystem/FEEditorAPI.h"
+	"SubSystems/PluginSystem/FEEditorAPIImplementation.cpp"
+	"SubSystems/PluginSystem/FEEditorAPIImplementation.h"
+	"SubSystems/PluginSystem/FEEditorPluginManager.cpp"
+	"SubSystems/PluginSystem/FEEditorPluginManager.h"
+)
+
 file(GLOB FEDearImguiWrapper_SRC
 	"FEDearImguiWrapper/FEDearImguiWrapper.cpp"
 	"FEDearImguiWrapper/FEDearImguiWrapper.h"
@@ -266,6 +274,7 @@ add_executable(FocalEngineEditor WIN32
 								 ${VisualNodeSystem_CustomNodes_SRC}
 								 # *************** SUB_SYSTEM ***************
 								 ${ProjectManagement_SRC}
+								 ${PluginSystem_SRC}
 								 # *************** THIRD_PARTY ***************
 								 ${textEditor_SRC}
 								 ${TEST_SOURCE_FILES}
@@ -302,6 +311,7 @@ source_group("Source Files/Materials" FILES ${Editor_Materials_SRC})
 source_group("Source Files/NodeSystem/CustomNodes" FILES ${VisualNodeSystem_CustomNodes_SRC})
 # *************** SUB_SYSTEM ***************
 source_group("Source Files/ProjectManagement" FILES ${ProjectManagement_SRC})
+source_group("Source Files/PluginSystem" FILES ${PluginSystem_SRC})
 # *************** THIRD_PARTY ***************
 source_group("Source Files/ThirdParty/textEditor" FILES ${textEditor_SRC})
 if(FOCAL_ENGINE_EDITOR_ENABLE_TESTS)
