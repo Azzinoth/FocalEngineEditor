@@ -211,6 +211,8 @@ file(GLOB EditorWindows_SRC
 	"EditorWindows/ContentBrowserWindow.cpp"
 	"EditorWindows/ContentBrowserWindow.h"
 	"EditorWindows/LogWindow.cpp"
+	"EditorWindows/PluginsWindow.cpp"
+	"EditorWindows/PluginsWindow.h"
 )
 
 file(GLOB Editor_Materials_SRC

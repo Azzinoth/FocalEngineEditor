@@ -19,6 +19,8 @@ public:
 	void RenderWindows();
 	void RenderInspectorSections(FEEntity* Entity);
 
+	bool IsModuleLoaded(const PluginModule& Module) const;
+
 	bool CreateEditorPluginProject(std::string& PluginName, const std::string& VSProjectDirectory, bool bEditorOnly = false);
 private:
 	SINGLETON_PRIVATE_PART(FEEditorPluginManager)

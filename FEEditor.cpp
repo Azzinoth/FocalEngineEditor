@@ -1,5 +1,6 @@
 #include "FEEditor.h"
 #include "SubSystems/PluginSystem/FEEditorPluginManager.h"
+#include "EditorWindows/PluginsWindow.h"
 
 FEEditor::FEEditor()
 {
@@ -433,6 +434,11 @@ void FEEditor::Render()
 					bLogWindowVisible = !bLogWindowVisible;
 				}
 
+				if (ImGui::MenuItem("Plugins", nullptr, PLUGINS_WINDOW.bVisible))
+				{
+					PLUGINS_WINDOW.bVisible = !PLUGINS_WINDOW.bVisible;
+				}
+
 				if (ImGui::BeginMenu("Debug"))
 				{
 					auto PossibleWindows = RENDERER.GetDebugOutputTextures();
@@ -567,6 +573,7 @@ void FEEditor::Render()
 		INSPECTOR_WINDOW.Render();
 		DisplayEditorCamerasWindow();
 		DisplayLogWindow();
+		PLUGINS_WINDOW.Render();
 		EDITOR_PLUGIN_MANAGER.RenderWindows();
 		if (!GizmosSettingsWindowObject.IsVisible())
 			GizmosSettingsWindowObject.Show();

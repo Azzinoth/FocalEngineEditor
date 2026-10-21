@@ -111,6 +111,20 @@ void FEEditorPluginManager::RenderInspectorSections(FEEntity* Entity)
 		ActiveEditorPlugins[i].API->RenderInspectorSections(Entity);
 }
 
+bool FEEditorPluginManager::IsModuleLoaded(const PluginModule& Module) const
+{
+	if (Module.Type == "Engine")
+		return PLUGIN_MANAGER.IsModuleLoaded(Module.ID);
+
+	for (size_t i = 0; i < ActiveEditorPlugins.size(); i++)
+	{
+		if (ActiveEditorPlugins[i].Plugin.GetModule()->ID == Module.ID)
+			return true;
+	}
+
+	return false;
+}
+
 void FEEditorPluginManager::Shutdown()
 {
 	for (size_t i = ActiveEditorPlugins.size(); i > 0; i--)
