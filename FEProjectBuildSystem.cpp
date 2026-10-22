@@ -242,6 +242,8 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 	}
 	EngineResources->SaveToFile(VSProjectDirectory + "/EngineResources.fepackage");
 
+	StaticPlugins = FindStaticPlugins();
+
 	if (!InitializeCMakeFileAndScriptFiles(ProjectToBuild, VSProjectDirectory))
 	{
 		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error initializing CMakeLists.txt", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
@@ -383,6 +385,27 @@ bool FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles(FEProject* ProjectT
 	CurrentInstruction.ReplacementText = FolderListInVSProjectString;
 	Instructions.push_back(CurrentInstruction);
 
+	std::string StaticPluginListString = "";
+	for (size_t i = 0; i < StaticPlugins.size(); i++)
+	{
+		// Backslash is escape character in CMake.
+		std::string PluginFolderPath = FILE_SYSTEM.GetAbsolutePath(StaticPlugins[i].FolderPath);
+		std::replace(PluginFolderPath.begin(), PluginFolderPath.end(), '\\', '/');
+
+		const std::string& PluginName = StaticPlugins[i].Manifest.Name;
+		StaticPluginListString += "include(\"" + PluginFolderPath + "/Static/" + PluginName + ".cmake\")\n";
+		StaticPluginListString += "target_link_libraries(${PROJECT_NAME} PRIVATE " + PluginName + "::Static)\n";
+
+		// Native scripts could use plugin API.
+		if (FILE_SYSTEM.DoesDirectoryExist(PluginFolderPath + "/Public"))
+			StaticPluginListString += "target_include_directories(${PROJECT_NAME} PRIVATE \"" + PluginFolderPath + "/Public\")\n";
+	}
+
+	CurrentInstruction.ContextPattern = "#(PLACE_HOLDER) Here should be list of static plugins.";
+	CurrentInstruction.TargetText = "#(PLACE_HOLDER) Here should be list of static plugins.";
+	CurrentInstruction.ReplacementText = StaticPluginListString;
+	Instructions.push_back(CurrentInstruction);
+
 	if (!FILE_SYSTEM.PerformTextReplacements(CMakeFilePath, Instructions))
 	{
 		LOG.Add("FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles: Error initializing CMakeLists.txt", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
@@ -391,6 +414,32 @@ bool FEProjectBuildSystem::InitializeCMakeFileAndScriptFiles(FEProject* ProjectT
 	Instructions.clear();
 
 	return true;
+}
+
+static void AddFileLinesToLog(const std::string& FilePath, const std::string& StartPattern)
+{
+	std::vector<std::string> Lines;
+	std::ifstream File(FilePath);
+	std::string Line;
+	while (std::getline(File, Line))
+	{
+		const size_t FirstCharacter = Line.find_first_not_of(" \t");
+		if (FirstCharacter != std::string::npos)
+			Lines.push_back(Line.substr(FirstCharacter));
+	}
+
+	size_t StartIndex = 0;
+	for (size_t i = 0; i < Lines.size(); i++)
+	{
+		if (Lines[i].find(StartPattern) != std::string::npos)
+		{
+			StartIndex = i;
+			break;
+		}
+	}
+
+	for (size_t i = StartIndex; i < Lines.size(); i++)
+		LOG.Add(Lines[i], "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 }
 
 bool FEProjectBuildSystem::ConfigureAndBuildCMake(const std::string& VSProjectDirectory)
@@ -403,25 +452,30 @@ bool FEProjectBuildSystem::ConfigureAndBuildCMake(const std::string& VSProjectDi
 
 	std::string Generator = "Visual Studio 18 2026";
 
-	// CMake configure command.
-	std::string ConfigureCommand = "cmake -S \"" + VSProjectDirectory + "\" -B \"" + VSProjectDirectory + "\" -G \"" + Generator + "\"";
+	// Output of CMake goes to log files, so errors could be shown in editor log.
+	const std::string ConfigureLogPath = VSProjectDirectory + "ConfigureLog.txt";
+	std::string ConfigureCommand = "cmake -S \"" + VSProjectDirectory + "\" -B \"" + VSProjectDirectory + "\" -G \"" + Generator + "\" > \"" + ConfigureLogPath + "\" 2>&1";
 
 	// Execute CMake configure command.
 	int ConfigureResult = std::system(ConfigureCommand.c_str());
 	if (ConfigureResult != 0)
 	{
-		LOG.Add("FEProjectBuildSystem::ConfigureAndBuildCMake: Error running CMake configure command", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		LOG.Add("FEProjectBuildSystem::ConfigureAndBuildCMake: Error running CMake configure command, full output is in " + ConfigureLogPath, "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		AddFileLinesToLog(ConfigureLogPath, "CMake Error");
 		return false;
 	}
 
-	// Construct the CMake build command
-	std::string BuildCommand = "cmake --build \"" + VSProjectDirectory + "\" --config Release";
+	// MSBuild also writes only errors to a separate file.
+	const std::string BuildLogPath = VSProjectDirectory + "BuildLog.txt";
+	const std::string ErrorLogPath = VSProjectDirectory + "BuildErrors.txt";
+	std::string BuildCommand = "cmake --build \"" + VSProjectDirectory + "\" --config Release -- /fl \"/flp:ErrorsOnly;LogFile=" + ErrorLogPath + "\" > \"" + BuildLogPath + "\" 2>&1";
 
 	// Execute CMake build command
 	int BuildResult = std::system(BuildCommand.c_str());
 	if (BuildResult != 0)
 	{
-		LOG.Add("FEProjectBuildSystem::ConfigureAndBuildCMake: Error running CMake build command", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		LOG.Add("FEProjectBuildSystem::ConfigureAndBuildCMake: Error running CMake build command, full output is in " + BuildLogPath, "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		AddFileLinesToLog(ErrorLogPath, "");
 		return false;
 	}
 
@@ -508,9 +562,96 @@ bool FEProjectBuildSystem::CreateFinalExecutableDirectory(FEProject* ProjectToBu
 		return false;
 	}
 
+	if (!StaticPlugins.empty() && !FILE_SYSTEM.MakeDirectory(FinalDirectory + "Plugins/"))
+	{
+		LOG.Add("FEProjectBuildSystem::CreateFinalExecutableDirectory: Error creating Plugins directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		return false;
+	}
+
+	for (size_t i = 0; i < StaticPlugins.size(); i++)
+	{
+		const DiscoveredPlugin& Plugin = StaticPlugins[i];
+		const std::string PluginFinalDirectory = FinalDirectory + "Plugins/" + Plugin.Manifest.Name + "/";
+		if (!FILE_SYSTEM.MakeDirectory(PluginFinalDirectory))
+		{
+			LOG.Add("FEProjectBuildSystem::CreateFinalExecutableDirectory: Error creating directory " + PluginFinalDirectory, "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+			return false;
+		}
+
+		// Plugin manager of the game finds plugins that are linked into executable by their manifests.
+		std::vector<std::string> PluginFiles = FILE_SYSTEM.GetFileList(Plugin.FolderPath);
+		for (size_t j = 0; j < PluginFiles.size(); j++)
+		{
+			const std::string FilePath = Plugin.FolderPath + "/" + PluginFiles[j];
+			if (FILE_SYSTEM.GetFileExtension(PluginFiles[j]) != ".json" || !PLUGIN_MANAGER.IsValidManifest(FilePath))
+				continue;
+
+			if (!FILE_SYSTEM.CopyFileTo(FilePath, PluginFinalDirectory + PluginFiles[j]))
+			{
+				LOG.Add("FEProjectBuildSystem::CreateFinalExecutableDirectory: Error copying manifest of plugin \"" + Plugin.Manifest.Name + "\"", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+				return false;
+			}
+		}
+
+		// Executable itself imports DLLs that plugins depend on, so they should be next to it.
+		const std::string DependencyFolderPath = Plugin.FolderPath + "/Release/";
+		std::vector<std::string> DependencyFiles = FILE_SYSTEM.GetFileList(DependencyFolderPath);
+		for (size_t j = 0; j < DependencyFiles.size(); j++)
+		{
+			if (FILE_SYSTEM.DoesFileExist(FinalDirectory + DependencyFiles[j]))
+			{
+				LOG.Add("FEProjectBuildSystem::CreateFinalExecutableDirectory: " + DependencyFiles[j] + " of plugin \"" + Plugin.Manifest.Name + "\" is not copied, because file with the same name is already in the build directory", "FE_BUILD_EXECUTABLE", FE_LOG_WARNING);
+				continue;
+			}
+
+			if (!FILE_SYSTEM.CopyFileTo(DependencyFolderPath + DependencyFiles[j], FinalDirectory + DependencyFiles[j]))
+			{
+				LOG.Add("FEProjectBuildSystem::CreateFinalExecutableDirectory: Error copying " + DependencyFiles[j] + " of plugin \"" + Plugin.Manifest.Name + "\"", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+				return false;
+			}
+		}
+	}
+
 	// Open the directory in file explorer.
 	std::string OpenCommand = "explorer \"" + NormalizePathToWindows(FinalDirectory) + "\"";
 	std::system(OpenCommand.c_str());
 
 	return true;
+}
+
+std::vector<DiscoveredPlugin> FEProjectBuildSystem::FindStaticPlugins()
+{
+	std::vector<DiscoveredPlugin> Result;
+	const std::vector<DiscoveredPlugin>& Plugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
+	for (size_t i = 0; i < Plugins.size(); i++)
+	{
+		const PluginManifest& Manifest = Plugins[i].Manifest;
+		const std::string StaticFolderPath = Plugins[i].FolderPath + "/Static/";
+
+		bool bHasEngineModule = false;
+		bool bAllFilesFound = FILE_SYSTEM.DoesFileExist(StaticFolderPath + Manifest.Name + ".cmake");
+		for (size_t j = 0; j < Manifest.Modules.size(); j++)
+		{
+			// Only engine modules are part of the game.
+			if (Manifest.Modules[j].Type != "Engine")
+				continue;
+
+			bHasEngineModule = true;
+			if (!FILE_SYSTEM.DoesFileExist(StaticFolderPath + Manifest.Modules[j].Name + "_Release.lib"))
+				bAllFilesFound = false;
+		}
+
+		if (!bHasEngineModule)
+			continue;
+
+		if (!bAllFilesFound)
+		{
+			LOG.Add("FEProjectBuildSystem::FindStaticPlugins: Plugin \"" + Manifest.Name + "\" is not included in the game, because its Static folder does not have link file or static library of every engine module", "FE_BUILD_EXECUTABLE", FE_LOG_WARNING);
+			continue;
+		}
+
+		Result.push_back(Plugins[i]);
+	}
+
+	return Result;
 }

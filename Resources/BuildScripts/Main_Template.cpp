@@ -161,6 +161,8 @@ void MouseButtonCallback(int Button, int Action, int Mods)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+	// Plugins are linked into executable, plugin manager finds them by manifests in Plugins folder next to it.
+	PLUGIN_MANAGER.SetPluginDirectory("Plugins");
 	ENGINE.InitWindow();
 	THREAD_POOL.SetConcurrentThreadCount(10);
 

@@ -72,6 +72,8 @@ target_link_libraries(${PROJECT_NAME}
         opengl32.lib
 )
 
+#(PLACE_HOLDER) Here should be list of static plugins.
+
 # FocalEngine is headers-only, we need to add its include directories
 target_include_directories(${PROJECT_NAME} PRIVATE ${FOCAL_ENGINE_INCLUDES})
 target_compile_definitions(${PROJECT_NAME} PRIVATE FOCAL_ENGINE_HEADERS_ONLY)
