@@ -240,7 +240,7 @@ void FEEditorContentBrowserWindow::Render()
 
 				if (ImGui::MenuItem("Create new native script module"))
 				{
-					FENativeScriptModule* NewNativeScriptModule = RESOURCE_MANAGER.CreateNativeScriptModule();
+					FENativeScriptModule* NewNativeScriptModule = RESOURCE_MANAGER.CreateNativeScriptModule("New NativeScriptModule");
 					PROJECT_MANAGER.GetCurrent()->SetModified(true);
 					VIRTUAL_FILE_SYSTEM.CreateFile(NewNativeScriptModule, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 				}
@@ -358,7 +358,18 @@ void FEEditorContentBrowserWindow::Render()
 							{
 								std::string ProjectFolder = PROJECT_MANAGER.GetCurrent()->GetProjectFolder();
 								NativeScriptModule->GetProject()->SetWorkingDirectory(ProjectFolder);
-								if (!NativeScriptModule->GetProject()->CreateNewVSProject("FirstScript"))
+
+								// First script is named after the module, without "Module" at the end, so "New NativeScriptModule" gives "NewNativeScript".
+								std::string ModuleName = NativeScriptModule->GetName();
+								const std::string ModuleSuffix = "Module";
+								if (ModuleName.size() > ModuleSuffix.size() && ModuleName.compare(ModuleName.size() - ModuleSuffix.size(), ModuleSuffix.size(), ModuleSuffix) == 0)
+									ModuleName.erase(ModuleName.size() - ModuleSuffix.size());
+
+								std::string FirstScriptName = NATIVE_SCRIPT_SYSTEM.ConvertToCorrectScriptClassName(ModuleName);
+								if (FirstScriptName.empty())
+									FirstScriptName = "NewNativeScript";
+
+								if (!NativeScriptModule->GetProject()->CreateNewVSProject(FirstScriptName))
 								{
 									LOG.Add("FEEditorContentBrowserWindow::Render: Failed to create Visual Studio project!", "FE_EDITOR_CONTENT_BROWSER", FE_LOG_ERROR);
 								}
