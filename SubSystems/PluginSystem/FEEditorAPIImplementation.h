@@ -67,4 +67,6 @@ public:
 	FEEntity* GetSelectedEntity() const override;
 	void SetSelectedEntity(FEEntity* Entity) override;
 	void MarkProjectModified() override;
+
+	FEEditorPluginCore* GetEditorModuleCore(const FEUUID& PluginID) const override;
 };

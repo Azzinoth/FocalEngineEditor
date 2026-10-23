@@ -488,38 +488,6 @@ void FEEditor::Render()
 
 			EDITOR_PLUGIN_MANAGER.RenderMenu();
 
-			// TO-DO: Temporary, remove when plugin creation will be available in the editor UI.
-			if (ImGui::BeginMenu("Debug"))
-			{
-				if (ImGui::MenuItem("Create new plugin project..."))
-				{
-					FILE_SYSTEM.OpenFolderDialog([](const std::string& Path) {
-						if (Path.empty())
-							return;
-
-						std::string PluginName = FILE_SYSTEM.GetFileName(Path);
-						// TO-DO: Should be chosen by the user when plugin creation will be available in the editor UI.
-						const bool bAddPublicInterface = true;
-						if (!PLUGIN_MANAGER.CreatePluginProject(PluginName, Path, bAddPublicInterface))
-							LOG.Add("FEEditor::Render: Failed to create plugin VS project in " + Path, "FE_EDITOR", FE_LOG_ERROR);
-					});
-				}
-
-				if (ImGui::MenuItem("Create new plugin project with editor module..."))
-				{
-					FILE_SYSTEM.OpenFolderDialog([](const std::string& Path) {
-						if (Path.empty())
-							return;
-
-						std::string PluginName = FILE_SYSTEM.GetFileName(Path);
-						if (!EDITOR_PLUGIN_MANAGER.CreateEditorPluginProject(PluginName, Path))
-							LOG.Add("FEEditor::Render: Failed to create plugin VS project with editor module in " + Path, "FE_EDITOR", FE_LOG_ERROR);
-					});
-				}
-
-				ImGui::EndMenu();
-			}
-
 			if (ImGui::BeginMenu("Info"))
 			{
 				if (ImGui::MenuItem("About..."))

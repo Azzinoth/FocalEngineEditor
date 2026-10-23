@@ -1,4 +1,5 @@
 #include "FEEditorAPIImplementation.h"
+#include "FEEditorPluginManager.h"
 #include "../../FEEditor.h"
 
 FEEditorAPIImplementation::FEEditorAPIImplementation(const std::string& PluginName, const std::string& ModuleName, const FEUUID& ModuleID)
@@ -148,6 +149,11 @@ void FEEditorAPIImplementation::MarkProjectModified()
 {
 	if (PROJECT_MANAGER.GetCurrent() != nullptr)
 		PROJECT_MANAGER.GetCurrent()->SetModified(true);
+}
+
+FEEditorPluginCore* FEEditorAPIImplementation::GetEditorModuleCore(const FEUUID& PluginID) const
+{
+	return EDITOR_PLUGIN_MANAGER.GetEditorModule(PluginID);
 }
 
 void FEEditorAPIImplementation::Update()

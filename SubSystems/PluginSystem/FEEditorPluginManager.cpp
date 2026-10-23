@@ -17,63 +17,121 @@ void FEEditorPluginManager::Initialize()
 		EDITOR_PLUGIN_MANAGER.Shutdown();
 	});
 
+	struct PendingModule
+	{
+		const DiscoveredPlugin* Plugin = nullptr;
+		size_t ModuleIndex = 0;
+	};
+
+	std::vector<PendingModule> PendingModules;
 	const std::vector<DiscoveredPlugin>& Plugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
 	for (size_t i = 0; i < Plugins.size(); i++)
 	{
-		const PluginManifest& Manifest = Plugins[i].Manifest;
-		for (size_t j = 0; j < Manifest.Modules.size(); j++)
+		for (size_t j = 0; j < Plugins[i].Manifest.Modules.size(); j++)
 		{
-			const PluginModule& Module = Manifest.Modules[j];
-			if (Module.Type != "Editor")
-				continue;
+			if (Plugins[i].Manifest.Modules[j].Type == "Editor")
+				PendingModules.push_back({ &Plugins[i], j });
+		}
+	}
 
+	// Editor modules could depend on editor modules of other plugins, so every pass loads modules whose dependencies are already loaded.
+	bool bAnyModuleProcessed = true;
+	while (bAnyModuleProcessed && !PendingModules.empty())
+	{
+		bAnyModuleProcessed = false;
+		for (size_t i = 0; i < PendingModules.size();)
+		{
+			const PluginModule& Module = PendingModules[i].Plugin->Manifest.Modules[PendingModules[i].ModuleIndex];
 			bool bDependenciesLoaded = true;
-			for (size_t k = 0; k < Module.Dependencies.size(); k++)
+			for (size_t j = 0; j < Module.Dependencies.size(); j++)
 			{
-				if (!PLUGIN_MANAGER.IsModuleLoaded(Module.Dependencies[k]))
+				if (!IsModuleLoaded(Module.Dependencies[j]))
 				{
-					LOG.Add("FEEditorPluginManager::Initialize: Editor module \"" + Module.Name + "\" of plugin \"" + Manifest.Name + "\" is not loaded, because engine module with ID " + UNIQUE_ID.ToString(Module.Dependencies[k]) + " that it depends on is not loaded", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_WARNING);
 					bDependenciesLoaded = false;
 					break;
 				}
 			}
 
 			if (!bDependenciesLoaded)
-				continue;
-
-			ActiveEditorPlugin NewPlugin;
-			if (!PLUGIN_MANAGER.LoadPluginModule(Plugins[i], j, NewPlugin.Plugin))
-				continue;
-
-			NewPlugin.Instance = dynamic_cast<FEEditorPluginCore*>(NewPlugin.Plugin.GetInstance());
-			if (NewPlugin.Instance == nullptr)
 			{
-				LOG.Add("FEEditorPluginManager::Initialize: Editor module \"" + Module.Name + "\" of plugin \"" + Manifest.Name + "\" is not loaded, because it does not inherit from FEEditorPluginCore", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_WARNING);
-				PLUGIN_MANAGER.UnloadPluginModule(NewPlugin.Plugin);
+				i++;
 				continue;
 			}
 
-			const int APIVersion = NewPlugin.Instance->GetEditorAPIVersion();
-			if (APIVersion < FE_EDITOR_API_MIN_VERSION || APIVersion > FE_EDITOR_API_VERSION)
-			{
-				LOG.Add("FEEditorPluginManager::Initialize: Editor module \"" + Module.Name + "\" of plugin \"" + Manifest.Name + "\" is not loaded, because it was compiled with editor API version " + std::to_string(APIVersion) + ", editor supports versions from " + std::to_string(FE_EDITOR_API_MIN_VERSION) + " to " + std::to_string(FE_EDITOR_API_VERSION), "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_WARNING);
-				PLUGIN_MANAGER.UnloadPluginModule(NewPlugin.Plugin);
-				continue;
-			}
-
-			NewPlugin.API = new FEEditorAPIImplementation(Manifest.Name, Module.Name, Module.ID);
-			if (!NewPlugin.Instance->OnEditorLoad(NewPlugin.API))
-			{
-				LOG.Add("FEEditorPluginManager::Initialize: Editor module \"" + Module.Name + "\" of plugin \"" + Manifest.Name + "\" is not loaded, because its OnEditorLoad returned false", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_WARNING);
-				delete NewPlugin.API;
-				PLUGIN_MANAGER.UnloadPluginModule(NewPlugin.Plugin);
-				continue;
-			}
-
-			ActiveEditorPlugins.push_back(NewPlugin);
-			LOG.Add("FEEditorPluginManager::Initialize: Plugin \"" + Manifest.Name + "\" version " + Manifest.Version + ", editor module \"" + Module.Name + "\" loaded from \"" + NewPlugin.Plugin.GetDLLPath() + "\"", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_INFO);
+			LoadEditorModule(*PendingModules[i].Plugin, PendingModules[i].ModuleIndex);
+			PendingModules.erase(PendingModules.begin() + i);
+			bAnyModuleProcessed = true;
 		}
 	}
+
+	for (size_t i = 0; i < PendingModules.size(); i++)
+	{
+		const PluginManifest& Manifest = PendingModules[i].Plugin->Manifest;
+		const PluginModule& Module = Manifest.Modules[PendingModules[i].ModuleIndex];
+		for (size_t j = 0; j < Module.Dependencies.size(); j++)
+		{
+			if (IsModuleLoaded(Module.Dependencies[j]))
+				continue;
+
+			LOG.Add("FEEditorPluginManager::Initialize: Editor module \"" + Module.Name + "\" of plugin \"" + Manifest.Name + "\" is not loaded, because module \"" + GetModuleDisplayName(Module.Dependencies[j]) + "\" that it depends on is not loaded", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_WARNING);
+			break;
+		}
+	}
+}
+
+bool FEEditorPluginManager::LoadEditorModule(const DiscoveredPlugin& Plugin, size_t ModuleIndex)
+{
+	const PluginManifest& Manifest = Plugin.Manifest;
+	const PluginModule& Module = Manifest.Modules[ModuleIndex];
+
+	ActiveEditorPlugin NewPlugin;
+	if (!PLUGIN_MANAGER.LoadPluginModule(Plugin, ModuleIndex, NewPlugin.Plugin))
+		return false;
+
+	NewPlugin.Instance = dynamic_cast<FEEditorPluginCore*>(NewPlugin.Plugin.GetInstance());
+	if (NewPlugin.Instance == nullptr)
+	{
+		LOG.Add("FEEditorPluginManager::LoadEditorModule: Editor module \"" + Module.Name + "\" of plugin \"" + Manifest.Name + "\" is not loaded, because it does not inherit from FEEditorPluginCore", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_WARNING);
+		PLUGIN_MANAGER.UnloadPluginModule(NewPlugin.Plugin);
+		return false;
+	}
+
+	const int APIVersion = NewPlugin.Instance->GetEditorAPIVersion();
+	if (APIVersion < FE_EDITOR_API_MIN_VERSION || APIVersion > FE_EDITOR_API_VERSION)
+	{
+		LOG.Add("FEEditorPluginManager::LoadEditorModule: Editor module \"" + Module.Name + "\" of plugin \"" + Manifest.Name + "\" is not loaded, because it was compiled with editor API version " + std::to_string(APIVersion) + ", editor supports versions from " + std::to_string(FE_EDITOR_API_MIN_VERSION) + " to " + std::to_string(FE_EDITOR_API_VERSION), "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_WARNING);
+		PLUGIN_MANAGER.UnloadPluginModule(NewPlugin.Plugin);
+		return false;
+	}
+
+	NewPlugin.API = new FEEditorAPIImplementation(Manifest.Name, Module.Name, Module.ID);
+	if (!NewPlugin.Instance->OnEditorLoad(NewPlugin.API))
+	{
+		LOG.Add("FEEditorPluginManager::LoadEditorModule: Editor module \"" + Module.Name + "\" of plugin \"" + Manifest.Name + "\" is not loaded, because its OnEditorLoad returned false", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_WARNING);
+		delete NewPlugin.API;
+		PLUGIN_MANAGER.UnloadPluginModule(NewPlugin.Plugin);
+		return false;
+	}
+
+	ActiveEditorPlugins.push_back(NewPlugin);
+	LOG.Add("FEEditorPluginManager::LoadEditorModule: Plugin \"" + Manifest.Name + "\" version " + Manifest.Version + ", editor module \"" + Module.Name + "\" loaded from \"" + NewPlugin.Plugin.GetDLLPath() + "\"", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_INFO);
+	return true;
+}
+
+std::string FEEditorPluginManager::GetModuleDisplayName(const FEUUID& ModuleID) const
+{
+	const std::vector<DiscoveredPlugin>& Plugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
+	for (size_t i = 0; i < Plugins.size(); i++)
+	{
+		const PluginManifest& Manifest = Plugins[i].Manifest;
+		for (size_t j = 0; j < Manifest.Modules.size(); j++)
+		{
+			if (Manifest.Modules[j].ID == ModuleID)
+				return Manifest.Name + "/" + Manifest.Modules[j].Name;
+		}
+	}
+
+	return UNIQUE_ID.ToString(ModuleID);
 }
 
 void FEEditorPluginManager::Update(double DeltaTime)
@@ -125,6 +183,31 @@ bool FEEditorPluginManager::IsModuleLoaded(const PluginModule& Module) const
 	return false;
 }
 
+bool FEEditorPluginManager::IsModuleLoaded(const FEUUID& ModuleID) const
+{
+	if (PLUGIN_MANAGER.IsModuleLoaded(ModuleID))
+		return true;
+
+	for (size_t i = 0; i < ActiveEditorPlugins.size(); i++)
+	{
+		if (ActiveEditorPlugins[i].Plugin.GetModule()->ID == ModuleID)
+			return true;
+	}
+
+	return false;
+}
+
+FEEditorPluginCore* FEEditorPluginManager::GetEditorModule(const FEUUID& PluginID) const
+{
+	for (size_t i = 0; i < ActiveEditorPlugins.size(); i++)
+	{
+		if (ActiveEditorPlugins[i].Plugin.GetManifest()->ID == PluginID)
+			return ActiveEditorPlugins[i].Instance;
+	}
+
+	return nullptr;
+}
+
 void FEEditorPluginManager::Shutdown()
 {
 	for (size_t i = ActiveEditorPlugins.size(); i > 0; i--)
@@ -139,19 +222,30 @@ void FEEditorPluginManager::Shutdown()
 	ActiveEditorPlugins.clear();
 }
 
-bool FEEditorPluginManager::CreateEditorPluginProject(std::string& PluginName, const std::string& VSProjectDirectory, bool bEditorOnly)
+bool FEEditorPluginManager::CreatePluginProject(std::string& PluginName, const std::string& VSProjectDirectory, const FEEditorPluginProjectSettings& Settings)
 {
-	if (bEditorOnly)
+	if (VSProjectDirectory.empty())
 	{
-		LOG.Add("FEEditorPluginManager::CreateEditorPluginProject: Editor only plugins are not supported yet", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_WARNING);
+		LOG.Add("FEEditorPluginManager::CreatePluginProject: VSProjectDirectory is empty", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_WARNING);
 		return false;
 	}
 
-	// Editor module uses engine module through public interface, so it is always generated.
-	// Engine does not configure and build project, editor module should be added first.
-	if (!PLUGIN_MANAGER.CreatePluginProject(PluginName, VSProjectDirectory, true, false))
+	if (!FILE_SYSTEM.DoesDirectoryExist(VSProjectDirectory) && !FILE_SYSTEM.MakeDirectory(VSProjectDirectory))
 	{
-		LOG.Add("FEEditorPluginManager::CreateEditorPluginProject: Error creating engine module of plugin", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
+		LOG.Add("FEEditorPluginManager::CreatePluginProject: Error creating " + VSProjectDirectory + " directory", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
+		return false;
+	}
+
+	FEPluginProjectSettings EngineSettings;
+	EngineSettings.bAddMainModule = Settings.Type != FEPluginProjectType::Editor;
+	// Editor module uses engine module through its public interface.
+	EngineSettings.bAddPublicInterface = Settings.Type == FEPluginProjectType::EngineAndEditor || Settings.bAddPublicInterface;
+	// Project is configured and built only after editor finished changing it.
+	EngineSettings.bConfigureAndBuild = false;
+	EngineSettings.Description = Settings.Description;
+	if (!PLUGIN_MANAGER.CreatePluginProject(PluginName, VSProjectDirectory, EngineSettings))
+	{
+		LOG.Add("FEEditorPluginManager::CreatePluginProject: Error creating plugin project", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
 		return false;
 	}
 
@@ -159,22 +253,32 @@ bool FEEditorPluginManager::CreateEditorPluginProject(std::string& PluginName, c
 	if (ProjectDirectory.back() != '/' && ProjectDirectory.back() != '\\')
 		ProjectDirectory += '/';
 
-	if (!GenerateEditorModuleSourceFilesFromTemplate(PluginName, ProjectDirectory))
+	if (Settings.Type != FEPluginProjectType::Engine)
 	{
-		LOG.Add("FEEditorPluginManager::CreateEditorPluginProject: Error generating editor module source files from template", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
-		return false;
-	}
+		if (!GenerateEditorModuleSourceFilesFromTemplate(PluginName, ProjectDirectory, Settings))
+		{
+			LOG.Add("FEEditorPluginManager::CreatePluginProject: Error generating editor module source files from template", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
+			return false;
+		}
 
-	if (!AddEditorModuleToManifest(PluginName, ProjectDirectory))
-	{
-		LOG.Add("FEEditorPluginManager::CreateEditorPluginProject: Error adding editor module to manifest", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
-		return false;
-	}
+		if (!AddEditorModuleToManifest(PluginName, ProjectDirectory))
+		{
+			LOG.Add("FEEditorPluginManager::CreatePluginProject: Error adding editor module to manifest", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
+			return false;
+		}
 
-	if (!AddEditorModuleToCMake(ProjectDirectory))
-	{
-		LOG.Add("FEEditorPluginManager::CreateEditorPluginProject: Error adding editor module to CMake project", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
-		return false;
+		// Plugin ID is read from manifest, so it is generated only after manifest is complete.
+		if (Settings.bAddEditorPublicInterface && !GenerateEditorPublicInterfaceFromTemplate(PluginName, ProjectDirectory))
+		{
+			LOG.Add("FEEditorPluginManager::CreatePluginProject: Error generating editor public interface from template", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
+			return false;
+		}
+
+		if (!AddEditorModuleToCMake(ProjectDirectory))
+		{
+			LOG.Add("FEEditorPluginManager::CreatePluginProject: Error adding editor module to CMake project", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
+			return false;
+		}
 	}
 
 	if (!PLUGIN_MANAGER.ConfigureAndBuildCMake(ProjectDirectory))
@@ -183,7 +287,7 @@ bool FEEditorPluginManager::CreateEditorPluginProject(std::string& PluginName, c
 	return PLUGIN_MANAGER.RunVSProject(PluginName, ProjectDirectory);
 }
 
-bool FEEditorPluginManager::GenerateEditorModuleSourceFilesFromTemplate(const std::string& PluginName, const std::string& VSProjectDirectory)
+bool FEEditorPluginManager::GenerateEditorModuleSourceFilesFromTemplate(const std::string& PluginName, const std::string& VSProjectDirectory, const FEEditorPluginProjectSettings& Settings)
 {
 	std::string EditorDirectory = VSProjectDirectory + "Editor/";
 	if (!FILE_SYSTEM.DoesDirectoryExist(EditorDirectory))
@@ -208,10 +312,47 @@ bool FEEditorPluginManager::GenerateEditorModuleSourceFilesFromTemplate(const st
 	CurrentInstruction.ReplacementText = ModuleName;
 	Instructions.push_back(CurrentInstruction);
 
-	CurrentInstruction.ContextPattern = "INTERFACE_NAME_PLACE_HOLDER";
-	CurrentInstruction.TargetText = "INTERFACE_NAME_PLACE_HOLDER";
-	CurrentInstruction.ReplacementText = PluginName + "Interface";
-	Instructions.push_back(CurrentInstruction);
+	// Template is editor module without engine module, other parts are added only when they are needed.
+	const bool bHasEngineModule = Settings.Type == FEPluginProjectType::EngineAndEditor;
+	const std::string EngineInterfaceName = PluginName + "Interface";
+	const std::string EditorInterfaceName = PluginName + "EditorInterface";
+
+	std::string PublicIncludes;
+	if (bHasEngineModule)
+		PublicIncludes += "\n#include \"../Public/" + EngineInterfaceName + ".h\"";
+
+	if (Settings.bAddEditorPublicInterface)
+		PublicIncludes += "\n#include \"../Public/" + EditorInterfaceName + ".h\"";
+
+	if (!PublicIncludes.empty())
+	{
+		const std::string EditorAPIInclude = "#include \"../SubSystems/EditorAPI/FEEditorAPI.h\"";
+		CurrentInstruction.ContextPattern = EditorAPIInclude;
+		CurrentInstruction.TargetText = EditorAPIInclude;
+		CurrentInstruction.ReplacementText = EditorAPIInclude + PublicIncludes;
+		Instructions.push_back(CurrentInstruction);
+	}
+
+	// Rules are applied one after another, so class name is already replaced at this point.
+	if (Settings.bAddEditorPublicInterface)
+	{
+		CurrentInstruction.ContextPattern = " : public FEEditorPluginCore";
+		CurrentInstruction.TargetText = " : public FEEditorPluginCore";
+		CurrentInstruction.ReplacementText = " : public FEEditorPluginCore, public " + EditorInterfaceName;
+		Instructions.push_back(CurrentInstruction);
+	}
+
+	if (bHasEngineModule)
+	{
+		const std::string EditorMember = "FEEditorAPI* Editor = nullptr;";
+		CurrentInstruction.ContextPattern = EditorMember;
+		CurrentInstruction.TargetText = EditorMember;
+		CurrentInstruction.ReplacementText = EditorMember + "\n\n"
+			"\tusing EngineModuleInterface = " + EngineInterfaceName + ";\n"
+			"\t// Editor module is loaded after engine module and unloaded before it, so engine module is always available.\n"
+			"\tEngineModuleInterface* GetEngineModule() { return PLUGIN_MANAGER.GetPlugin<EngineModuleInterface>(UNIQUE_ID.FromString(EngineModuleInterface::PluginID)); }";
+		Instructions.push_back(CurrentInstruction);
+	}
 
 	for (size_t i = 0; i < FilesToCopy.size(); i++)
 	{
@@ -270,11 +411,11 @@ bool FEEditorPluginManager::AddEditorModuleToManifest(const std::string& PluginN
 		return false;
 	}
 
-	// At this point manifest contains only engine module.
+	// At this point manifest contains only engine module, or no modules if plugin has no engine module.
 	Json::Value& Modules = Root["Modules"];
-	if (!Modules.isArray() || Modules.size() != 1)
+	if (!Modules.isArray() || Modules.size() > 1)
 	{
-		LOG.Add("FEEditorPluginManager::AddEditorModuleToManifest: Expected only engine module in " + ManifestPath, "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
+		LOG.Add("FEEditorPluginManager::AddEditorModuleToManifest: Expected at most engine module in " + ManifestPath, "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
 		return false;
 	}
 
@@ -283,8 +424,10 @@ bool FEEditorPluginManager::AddEditorModuleToManifest(const std::string& PluginN
 	EditorModule["Type"] = "Editor";
 	EditorModule["Name"] = PluginName + "Editor";
 	EditorModule["EntryPointFileName"] = PluginName + "Editor.dll";
-	EditorModule["SupportedOS"] = Modules[0]["SupportedOS"];
-	EditorModule["Dependencies"].append(Modules[0]["ID"]);
+	EditorModule["SupportedOS"] = Modules.empty() ? Root["SupportedOS"] : Modules[0]["SupportedOS"];
+	EditorModule["Dependencies"] = Json::Value(Json::arrayValue);
+	if (!Modules.empty())
+		EditorModule["Dependencies"].append(Modules[0]["ID"]);
 	Modules.append(EditorModule);
 
 	std::ofstream OutputFile(ManifestPath, std::ios::trunc);
@@ -308,6 +451,58 @@ bool FEEditorPluginManager::AddEditorModuleToCMake(const std::string& VSProjectD
 	if (!FILE_SYSTEM.CopyFileTo(TemplatePath, VSProjectDirectory + "AdditionalModules.cmake"))
 	{
 		LOG.Add("FEEditorPluginManager::AddEditorModuleToCMake: Error copying file " + TemplatePath + " to " + VSProjectDirectory + "AdditionalModules.cmake", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
+		return false;
+	}
+
+	return true;
+}
+
+bool FEEditorPluginManager::GenerateEditorPublicInterfaceFromTemplate(const std::string& PluginName, const std::string& VSProjectDirectory)
+{
+	const std::string ManifestPath = VSProjectDirectory + PluginName + ".json";
+	PluginManifest Manifest;
+	if (!PLUGIN_MANAGER.ParseManifest(ManifestPath, Manifest))
+	{
+		LOG.Add("FEEditorPluginManager::GenerateEditorPublicInterfaceFromTemplate: Error parsing " + ManifestPath, "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
+		return false;
+	}
+
+	const std::string PublicDirectory = VSProjectDirectory + "Public/";
+	if (!FILE_SYSTEM.DoesDirectoryExist(PublicDirectory) && !FILE_SYSTEM.MakeDirectory(PublicDirectory))
+	{
+		LOG.Add("FEEditorPluginManager::GenerateEditorPublicInterfaceFromTemplate: Error creating " + PublicDirectory + " directory", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
+		return false;
+	}
+
+	const std::string InterfaceName = PluginName + "EditorInterface";
+	const std::string TemplatePath = FILE_SYSTEM.GetCurrentWorkingPath() + "/SubSystems/PluginSystem/Templates/PluginEditorInterfaceTemplate.h";
+	const std::string InterfaceFilePath = PublicDirectory + InterfaceName + ".h";
+	if (!FILE_SYSTEM.CopyFileTo(TemplatePath, InterfaceFilePath))
+	{
+		LOG.Add("FEEditorPluginManager::GenerateEditorPublicInterfaceFromTemplate: Error copying file " + TemplatePath + " to " + InterfaceFilePath, "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
+		return false;
+	}
+
+	std::vector<FEFileSystem::TextReplacementRule> Instructions;
+	FEFileSystem::TextReplacementRule CurrentInstruction;
+	CurrentInstruction.ContextPattern = "INTERFACE_NAME_PLACE_HOLDER";
+	CurrentInstruction.TargetText = "INTERFACE_NAME_PLACE_HOLDER";
+	CurrentInstruction.ReplacementText = InterfaceName;
+	Instructions.push_back(CurrentInstruction);
+
+	CurrentInstruction.ContextPattern = "PLUGIN_NAME_PLACE_HOLDER";
+	CurrentInstruction.TargetText = "PLUGIN_NAME_PLACE_HOLDER";
+	CurrentInstruction.ReplacementText = PluginName;
+	Instructions.push_back(CurrentInstruction);
+
+	CurrentInstruction.ContextPattern = "PLUGIN_ID_PLACE_HOLDER";
+	CurrentInstruction.TargetText = "PLUGIN_ID_PLACE_HOLDER";
+	CurrentInstruction.ReplacementText = UNIQUE_ID.ToString(Manifest.ID);
+	Instructions.push_back(CurrentInstruction);
+
+	if (!FILE_SYSTEM.PerformTextReplacements(InterfaceFilePath, Instructions))
+	{
+		LOG.Add("FEEditorPluginManager::GenerateEditorPublicInterfaceFromTemplate: Error initializing " + InterfaceFilePath, "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
 		return false;
 	}
 

@@ -6,6 +6,23 @@ using namespace FocalEngine;
 
 class FEEditorAPIImplementation;
 
+enum class FEPluginProjectType
+{
+	Engine,
+	EngineAndEditor,
+	Editor
+};
+
+struct FEEditorPluginProjectSettings
+{
+	FEPluginProjectType Type = FEPluginProjectType::Engine;
+	// Public interface of engine module, always added for Engine + Editor, because editor module uses it.
+	bool bAddPublicInterface = false;
+	// Public interface of editor module, editor modules of other plugins get it through FEEditorAPI::GetEditorModule.
+	bool bAddEditorPublicInterface = false;
+	std::string Description;
+};
+
 class FEEditorPluginManager
 {
 public:
@@ -20,8 +37,13 @@ public:
 	void RenderInspectorSections(FEEntity* Entity);
 
 	bool IsModuleLoaded(const PluginModule& Module) const;
+	// Checks both engine and editor modules.
+	bool IsModuleLoaded(const FEUUID& ModuleID) const;
+	// Returns nullptr if editor module of that plugin is not loaded.
+	FEEditorPluginCore* GetEditorModule(const FEUUID& PluginID) const;
 
-	bool CreateEditorPluginProject(std::string& PluginName, const std::string& VSProjectDirectory, bool bEditorOnly = false);
+	// Folder is created if it does not exist, project is built and opened in Visual Studio.
+	bool CreatePluginProject(std::string& PluginName, const std::string& VSProjectDirectory, const FEEditorPluginProjectSettings& Settings);
 private:
 	SINGLETON_PRIVATE_PART(FEEditorPluginManager)
 
@@ -33,7 +55,12 @@ private:
 	};
 	std::vector<ActiveEditorPlugin> ActiveEditorPlugins;
 
-	bool GenerateEditorModuleSourceFilesFromTemplate(const std::string& PluginName, const std::string& VSProjectDirectory);
+	bool LoadEditorModule(const DiscoveredPlugin& Plugin, size_t ModuleIndex);
+	// "<Plugin name>/<Module name>", or ID if module is not found.
+	std::string GetModuleDisplayName(const FEUUID& ModuleID) const;
+
+	bool GenerateEditorModuleSourceFilesFromTemplate(const std::string& PluginName, const std::string& VSProjectDirectory, const FEEditorPluginProjectSettings& Settings);
+	bool GenerateEditorPublicInterfaceFromTemplate(const std::string& PluginName, const std::string& VSProjectDirectory);
 	bool AddEditorModuleToManifest(const std::string& PluginName, const std::string& VSProjectDirectory);
 	bool AddEditorModuleToCMake(const std::string& VSProjectDirectory);
 };

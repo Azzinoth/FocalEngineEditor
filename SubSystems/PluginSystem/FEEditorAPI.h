@@ -1,13 +1,14 @@
 #pragma once
 #include "../FocalEngine/SubSystems/PluginSystem/FEPluginCore.h"
 
-#define FE_EDITOR_API_VERSION 1
+#define FE_EDITOR_API_VERSION 2
 #define FE_EDITOR_API_MIN_VERSION 1
 
 namespace FocalEngine
 {
 	class FEEntity;
 	class FEScene;
+	class FEEditorPluginCore;
 
 	// Implemented by the editor, every editor module gets its own object, it is valid until OnEditorUnload returns.
 	class FEEditorAPI
@@ -28,6 +29,17 @@ namespace FocalEngine
 		virtual FEEntity* GetSelectedEntity() const = 0;
 		virtual void SetSelectedEntity(FEEntity* Entity) = 0;
 		virtual void MarkProjectModified() = 0;
+
+		// Returns nullptr if editor module of that plugin is not loaded.
+		// Module that uses editor module of other plugin should list it in manifest dependencies, so it is loaded first.
+		virtual FEEditorPluginCore* GetEditorModuleCore(const FEUUID& PluginID) const = 0;
+
+		// T is usually public editor interface that plugin ships in its own header.
+		template<typename T>
+		T* GetEditorModule(const FEUUID& PluginID) const
+		{
+			return dynamic_cast<T*>(GetEditorModuleCore(PluginID));
+		}
 	protected:
 		~FEEditorAPI() = default;
 	};
