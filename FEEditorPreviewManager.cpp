@@ -754,6 +754,13 @@ void FEEditorPreviewManager::Update()
 		{
 			CreateMaterialPreview(MaterialList[i]);
 			CurrentMaterial->SetDirtyFlag(false);
+
+			const std::vector<FEScene*> SceneList = SCENE_MANAGER.GetAllScenes();
+			for (size_t j = 0; j < SceneList.size(); j++)
+			{
+				if (SceneList[j]->IsUsingMaterial(MaterialList[i]))
+					SceneList[j]->SetDirtyFlag(true);
+			}
 		}
 	}
 }

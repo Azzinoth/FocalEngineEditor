@@ -101,6 +101,7 @@ void LoadResources(std::string DirectoryPath)
 	}
 }
 
+std::string TemporaryFolder;
 void LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage)
 {
 	if (AssetPackage == nullptr)
@@ -109,7 +110,7 @@ void LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage)
 		return;
 	}
 
-	std::string TemporaryFolder = FILE_SYSTEM.GetCurrentWorkingPath() + "/Temporary_Project_Resources/";
+	TemporaryFolder = FILE_SYSTEM.GetCurrentWorkingPath() + "/Temporary_Project_Resources/";
 	if (FILE_SYSTEM.DoesDirectoryExist(TemporaryFolder))
 	{
 		LOG.Add("LoadResourcesFromAssetPackage: Temporary_Project_Resources directory already exist, trying to delete it.", "FE_LOG_LOADING", FE_LOG_WARNING);
@@ -139,9 +140,6 @@ void LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage)
 	}
 
 	LoadResources(TemporaryFolder);
-
-	if (!FILE_SYSTEM.DeleteDirectory(TemporaryFolder))
-		LOG.Add("LoadResourcesFromAssetPackage: Error deleting Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_WARNING);
 }
 
 FEEntity* CameraEntity = nullptr;
@@ -202,6 +200,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	while (ENGINE.IsNotTerminated())
 	{
 		ENGINE.BeginFrame();
+
+		// Textures are loaded asynchronously, so temporary folder can be deleted only after all of them are loaded.
+		if (!TemporaryFolder.empty() && !THREAD_POOL.IsAnyThreadHaveActiveJob())
+		{
+			if (!FILE_SYSTEM.DeleteDirectory(TemporaryFolder))
+				LOG.Add("Error deleting Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_WARNING);
+
+			TemporaryFolder.clear();
+		}
+
 		ENGINE.Render();
 		ENGINE.EndFrame();
 	}
