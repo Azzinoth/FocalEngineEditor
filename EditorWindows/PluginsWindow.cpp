@@ -14,6 +14,15 @@ static const std::vector<FEFileSystem::FileDialogFilter> PluginPackageFilter =
 	{ "Plugin package (*.feplugin)", { "feplugin" } }
 };
 
+static std::string GetGraphicsModesText(const PluginModule& Module)
+{
+	std::string Result;
+	for (size_t i = 0; i < Module.SupportedGraphicsModes.size(); i++)
+		Result += (i == 0 ? "" : ", ") + GraphicsModeToString(Module.SupportedGraphicsModes[i]);
+
+	return Result;
+}
+
 FEEditorPluginsWindow::FEEditorPluginsWindow()
 {
 }
@@ -302,11 +311,12 @@ void FEEditorPluginsWindow::RenderPluginDetails(const DiscoveredPlugin& Plugin)
 void FEEditorPluginsWindow::RenderModulesTable(const DiscoveredPlugin& Plugin)
 {
 	const PluginManifest& Manifest = Plugin.Manifest;
-	if (!ImGui::BeginTable("Modules", 4, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp))
+	if (!ImGui::BeginTable("Modules", 5, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp))
 		return;
 
 	ImGui::TableSetupColumn("Module");
 	ImGui::TableSetupColumn("Type");
+	ImGui::TableSetupColumn("Graphics modes");
 	ImGui::TableSetupColumn("Status");
 	ImGui::TableSetupColumn("Depends on");
 	ImGui::TableHeadersRow();
@@ -327,6 +337,9 @@ void FEEditorPluginsWindow::RenderModulesTable(const DiscoveredPlugin& Plugin)
 			ImGui::TextColored(EditorModuleColor, "%s", Module.Type.c_str());
 		else
 			ImGui::TextUnformatted(Module.Type.c_str());
+
+		ImGui::TableNextColumn();
+		ImGui::TextUnformatted(GetGraphicsModesText(Module).c_str());
 
 		ImGui::TableNextColumn();
 		switch (GetModuleStatus(Module))
@@ -594,6 +607,11 @@ void FEEditorPluginsWindow::RenderNewPluginForm()
 		else
 			RenderOptionRow("Editor interface", "##EditorPublicInterface", &bNewPluginEditorPublicInterface, true, false, "Editor modules of other plugins could call editor module API.");
 
+		if (NewPluginType == FEPluginProjectType::Editor)
+			RenderOptionRow("Without graphics", "##WithoutGraphics", &bNewPluginWorksWithoutGraphics, false, false, "Plugin has no engine module.");
+		else
+			RenderOptionRow("Without graphics", "##WithoutGraphics", &bNewPluginWorksWithoutGraphics, true, false, "Engine module could also run in applications without window and graphics.");
+
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();
 		ImGui::AlignTextToFramePadding();
@@ -634,6 +652,7 @@ void FEEditorPluginsWindow::RenderNewPluginForm()
 		Settings.Type = NewPluginType;
 		Settings.bAddPublicInterface = bNewPluginPublicInterface;
 		Settings.bAddEditorPublicInterface = bNewPluginEditorPublicInterface;
+		Settings.bEngineModuleWorksWithoutGraphics = bNewPluginWorksWithoutGraphics;
 		Settings.Description = NewPluginDescription;
 
 		std::string PluginName = NewPluginName;
@@ -796,6 +815,8 @@ void FEEditorPluginsWindow::RenderInstallPluginPopup()
 				ImGui::TextUnformatted(Manifest.Modules[i].Name.c_str());
 				ImGui::SameLine();
 				ImGui::TextColored(Manifest.Modules[i].Type == "Engine" ? EngineModuleColor : EditorModuleColor, "%s", Manifest.Modules[i].Type.c_str());
+				ImGui::SameLine();
+				ImGui::TextColored(LabelColor, "%s", GetGraphicsModesText(Manifest.Modules[i]).c_str());
 			}
 
 			ImGui::TableNextRow();

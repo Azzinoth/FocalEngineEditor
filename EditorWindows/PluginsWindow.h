@@ -18,6 +18,7 @@ class FEEditorPluginsWindow
 	FEPluginProjectType NewPluginType = FEPluginProjectType::Engine;
 	bool bNewPluginPublicInterface = false;
 	bool bNewPluginEditorPublicInterface = false;
+	bool bNewPluginWorksWithoutGraphics = false;
 	std::string NewPluginCreationError;
 	// Not empty after plugin project was created.
 	std::string CreatedPluginFolder;

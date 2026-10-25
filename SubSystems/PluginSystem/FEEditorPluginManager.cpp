@@ -243,6 +243,9 @@ bool FEEditorPluginManager::CreatePluginProject(std::string& PluginName, const s
 	// Project is configured and built only after editor finished changing it.
 	EngineSettings.bConfigureAndBuild = false;
 	EngineSettings.Description = Settings.Description;
+	if (Settings.bEngineModuleWorksWithoutGraphics)
+		EngineSettings.SupportedGraphicsModes = { FEGraphicsMode::OnScreen, FEGraphicsMode::Offscreen, FEGraphicsMode::None };
+
 	if (!PLUGIN_MANAGER.CreatePluginProject(PluginName, VSProjectDirectory, EngineSettings))
 	{
 		LOG.Add("FEEditorPluginManager::CreatePluginProject: Error creating plugin project", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);

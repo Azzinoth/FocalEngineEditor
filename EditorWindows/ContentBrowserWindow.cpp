@@ -6,6 +6,57 @@ using namespace FocalEngine;
 
 FEObject* FEEditorContentBrowserWindow::ItemInFocus = nullptr;
 
+// Built-in formats together with formats of registered importers.
+static std::vector<FEFileSystem::FileDialogFilter> GetImportFilter()
+{
+	std::vector<FEFileSystem::FileDialogFilter> Result = ALL_IMPORT_LOAD_FILTER;
+	const std::vector<FEResourceImporter> Importers = RESOURCE_MANAGER.GetResourceImporters();
+	if (Importers.empty())
+		return Result;
+
+	for (const FEResourceImporter& Importer : Importers)
+	{
+		std::string Patterns;
+		for (size_t i = 0; i < Importer.Extensions.size(); i++)
+		{
+			Patterns += (i == 0 ? "*." : "; *.") + Importer.Extensions[i];
+			Result[0].Extensions.push_back(Importer.Extensions[i]);
+		}
+
+		Result.push_back({ Importer.Description + " (" + Patterns + ")", Importer.Extensions });
+	}
+
+	std::string AllPatterns;
+	for (size_t i = 0; i < Result[0].Extensions.size(); i++)
+		AllPatterns += (i == 0 ? "*." : "; *.") + Result[0].Extensions[i];
+
+	Result[0].Description = "All files (" + AllPatterns + ")";
+	return Result;
+}
+
+static void RenderRegisteredExportMenuItems(FEObject* Object)
+{
+	const std::vector<FEResourceExporter> Exporters = RESOURCE_MANAGER.GetResourceExporters(Object->GetType());
+	for (size_t i = 0; i < Exporters.size(); i++)
+	{
+		ImGui::PushID(static_cast<int>(i));
+		if (ImGui::MenuItem(("as " + Exporters[i].Description).c_str()))
+		{
+			const FEResourceExporter Exporter = Exporters[i];
+			const std::vector<FEFileSystem::FileDialogFilter> Filter = { { Exporter.Description, Exporter.Extensions } };
+			FILE_SYSTEM.SaveFileDialog("", Filter, [Exporter, Object](std::string FilePath, int ChosenFilterIndex) {
+				std::string Extension = FILE_SYSTEM.GetFileExtension(FilePath);
+				std::transform(Extension.begin(), Extension.end(), Extension.begin(), [](unsigned char Character) { return static_cast<char>(std::tolower(Character)); });
+				if (Extension.empty() || std::find(Exporter.Extensions.begin(), Exporter.Extensions.end(), Extension.substr(1)) == Exporter.Extensions.end())
+					FilePath += "." + Exporter.Extensions[0];
+
+				return Exporter.Export(Object, FilePath);
+			});
+		}
+		ImGui::PopID();
+	}
+}
+
 FEEditorContentBrowserWindow::FEEditorContentBrowserWindow()
 {
 	INPUT.AddMouseButtonCallback(&FEEditorContentBrowserWindow::MouseButtonCallback);
@@ -126,7 +177,7 @@ void FEEditorContentBrowserWindow::Render()
 		{
 			if (ImGui::MenuItem("Import Asset..."))
 			{
-				FILE_SYSTEM.OpenFileDialog(ALL_IMPORT_LOAD_FILTER, [](const std::string& FilePath) {
+				FILE_SYSTEM.OpenFileDialog(GetImportFilter(), [](const std::string& FilePath) {
 					if (FilePath.empty())
 						return;
 
@@ -467,6 +518,7 @@ void FEEditorContentBrowserWindow::Render()
 						});
 					}
 
+					RenderRegisteredExportMenuItems(MeshToExport);
 					ImGui::EndMenu();
 				}
 			}
@@ -507,6 +559,7 @@ void FEEditorContentBrowserWindow::Render()
 						});
 					}
 
+					RenderRegisteredExportMenuItems(PointCloud);
 					ImGui::EndMenu();
 				}
 

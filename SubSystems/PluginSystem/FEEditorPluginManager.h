@@ -20,6 +20,8 @@ struct FEEditorPluginProjectSettings
 	bool bAddPublicInterface = false;
 	// Public interface of editor module, editor modules of other plugins get it through FEEditorAPI::GetEditorModule.
 	bool bAddEditorPublicInterface = false;
+	// Engine module could also be loaded by applications without window and graphics.
+	bool bEngineModuleWorksWithoutGraphics = false;
 	std::string Description;
 };
 
