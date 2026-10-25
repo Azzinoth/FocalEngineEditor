@@ -1,4 +1,5 @@
 #include "PluginsWindow.h"
+#include "../SubSystems/ProjectManagement/FEProjectManager.h"
 #include <shellapi.h>
 
 static const ImVec4 LabelColor = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
@@ -67,6 +68,9 @@ void FEEditorPluginsWindow::Render()
 		ImGui::Separator();
 		ImGui::Spacing();
 
+		if (PROJECT_MANAGER.GetCurrent() != nullptr)
+			RenderMissingPlugins(PROJECT_MANAGER.GetCurrent());
+
 		if (Plugins.empty())
 		{
 			ImGui::PushStyleColor(ImGuiCol_Text, LabelColor);
@@ -80,6 +84,56 @@ void FEEditorPluginsWindow::Render()
 	ImGui::End();
 
 	RenderNewPluginPopup();
+}
+
+void FEEditorPluginsWindow::RenderMissingPlugins(FEProject* Project)
+{
+	const std::vector<FEProjectPluginInfo> MissingPlugins = Project->GetMissingPlugins();
+	if (MissingPlugins.empty())
+		return;
+
+	ImGui::TextColored(ErrorColor, "Missing plugins");
+	ImGui::SameLine();
+	ImGui::TextColored(LabelColor, "Project uses them, but they are not installed.");
+
+	if (ImGui::BeginTable("MissingPlugins", 4, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp))
+	{
+		ImGui::TableSetupColumn("Plugin");
+		ImGui::TableSetupColumn("Version");
+		ImGui::TableSetupColumn("ID");
+		ImGui::TableSetupColumn("##Actions", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableHeadersRow();
+
+		for (size_t i = 0; i < MissingPlugins.size(); i++)
+		{
+			ImGui::PushID(static_cast<int>(i));
+			ImGui::TableNextRow();
+
+			ImGui::TableNextColumn();
+			RenderStatusDot(ErrorColor);
+			ImGui::TextUnformatted(MissingPlugins[i].Name.c_str());
+
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(MissingPlugins[i].Version.c_str());
+
+			ImGui::TableNextColumn();
+			ImGui::TextColored(LabelColor, "%s...", UNIQUE_ID.ToString(MissingPlugins[i].ID).substr(0, 8).c_str());
+			AddCopyIDBehavior(MissingPlugins[i].ID);
+
+			ImGui::TableNextColumn();
+			if (ImGui::SmallButton("Remove from project"))
+				Project->RemoveMissingPlugin(MissingPlugins[i].ID);
+			ImGui::SetItemTooltip("Project will no longer report this plugin as missing.");
+
+			ImGui::PopID();
+		}
+
+		ImGui::EndTable();
+	}
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
 }
 
 void FEEditorPluginsWindow::RenderPluginDetails(const DiscoveredPlugin& Plugin)

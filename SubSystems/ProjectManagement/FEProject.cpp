@@ -394,6 +394,34 @@ void FEProject::SaveProject(bool bFullSave)
 	Root["Name"] = Name;
 	Root["bWasJustCreated"] = bWasJustCreated;
 
+	// Missing plugins are kept, so project saved without them still reports them.
+	std::vector<FEProjectPluginInfo> PluginsToSave = GetMissingPlugins();
+	const std::vector<DiscoveredPlugin>& InstalledPlugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
+	for (size_t i = 0; i < InstalledPlugins.size(); i++)
+	{
+		const PluginManifest& Manifest = InstalledPlugins[i].Manifest;
+		for (size_t j = 0; j < Manifest.Modules.size(); j++)
+		{
+			if (Manifest.Modules[j].Type == "Engine")
+			{
+				PluginsToSave.push_back({ Manifest.ID, Manifest.Name, Manifest.Version });
+				break;
+			}
+		}
+	}
+	Plugins = PluginsToSave;
+
+	Json::Value PluginsData(Json::arrayValue);
+	for (size_t i = 0; i < Plugins.size(); i++)
+	{
+		Json::Value PluginData;
+		PluginData["ID"] = UNIQUE_ID.ToString(Plugins[i].ID);
+		PluginData["Name"] = Plugins[i].Name;
+		PluginData["Version"] = Plugins[i].Version;
+		PluginsData.append(PluginData);
+	}
+	Root["Plugins"] = PluginsData;
+
 	FEScene* SceneForScreenshot = EDITOR.GetFocusedScene();
 	if (SceneForScreenshot != nullptr)
 	{
@@ -661,6 +689,18 @@ void FEProject::LoadProject()
 	Name = Root["Name"].asCString();
 	if (Root.isMember("bWasJustCreated"))
 		bWasJustCreated = Root["bWasJustCreated"].asBool();
+
+	Plugins.clear();
+	if (Root.isMember("Plugins"))
+	{
+		for (const Json::Value& PluginData : Root["Plugins"])
+			Plugins.push_back({ UNIQUE_ID.FromString(PluginData["ID"].asString()), PluginData["Name"].asString(), PluginData["Version"].asString() });
+	}
+
+	// Reported before resources are loaded, because scripts that use missing plugins could fail to load.
+	const std::vector<FEProjectPluginInfo> MissingPlugins = GetMissingPlugins();
+	for (size_t i = 0; i < MissingPlugins.size(); i++)
+		LOG.Add("FEProject::LoadProject: Project uses plugin \"" + MissingPlugins[i].Name + "\" version " + MissingPlugins[i].Version + " with ID " + UNIQUE_ID.ToString(MissingPlugins[i].ID) + ", but it is not installed", "FE_LOG_LOADING", FE_LOG_WARNING);
 
 	LoadResources(ProjectFolder);
 
@@ -1069,4 +1109,40 @@ void FEProject::SaveProperMainCameras()
 FEUUID FEProject::GetID()
 {
 	return ID;
+}
+
+std::vector<FEProjectPluginInfo> FEProject::GetMissingPlugins()
+{
+	std::vector<FEProjectPluginInfo> Result;
+	const std::vector<DiscoveredPlugin>& InstalledPlugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
+	for (size_t i = 0; i < Plugins.size(); i++)
+	{
+		bool bInstalled = false;
+		for (size_t j = 0; j < InstalledPlugins.size(); j++)
+		{
+			if (InstalledPlugins[j].Manifest.ID == Plugins[i].ID)
+			{
+				bInstalled = true;
+				break;
+			}
+		}
+
+		if (!bInstalled)
+			Result.push_back(Plugins[i]);
+	}
+
+	return Result;
+}
+
+void FEProject::RemoveMissingPlugin(const FEUUID& PluginID)
+{
+	for (size_t i = 0; i < Plugins.size(); i++)
+	{
+		if (Plugins[i].ID == PluginID)
+		{
+			Plugins.erase(Plugins.begin() + i);
+			bModified = true;
+			return;
+		}
+	}
 }

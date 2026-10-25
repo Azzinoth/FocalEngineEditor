@@ -322,7 +322,7 @@ bool FEEditorPluginManager::GenerateEditorModuleSourceFilesFromTemplate(const st
 		PublicIncludes += "\n#include \"../Public/" + EngineInterfaceName + ".h\"";
 
 	if (Settings.bAddEditorPublicInterface)
-		PublicIncludes += "\n#include \"../Public/" + EditorInterfaceName + ".h\"";
+		PublicIncludes += "\n#include \"../Public/Editor/" + EditorInterfaceName + ".h\"";
 
 	if (!PublicIncludes.empty())
 	{
@@ -467,16 +467,20 @@ bool FEEditorPluginManager::GenerateEditorPublicInterfaceFromTemplate(const std:
 		return false;
 	}
 
-	const std::string PublicDirectory = VSProjectDirectory + "Public/";
-	if (!FILE_SYSTEM.DoesDirectoryExist(PublicDirectory) && !FILE_SYSTEM.MakeDirectory(PublicDirectory))
+	// Native script projects get Public folder of every plugin on include path, editor interface is kept in subfolder, because scripts can not use it.
+	const std::vector<std::string> DirectoriesToCreate = { VSProjectDirectory + "Public/", VSProjectDirectory + "Public/Editor/" };
+	for (size_t i = 0; i < DirectoriesToCreate.size(); i++)
 	{
-		LOG.Add("FEEditorPluginManager::GenerateEditorPublicInterfaceFromTemplate: Error creating " + PublicDirectory + " directory", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
-		return false;
+		if (!FILE_SYSTEM.DoesDirectoryExist(DirectoriesToCreate[i]) && !FILE_SYSTEM.MakeDirectory(DirectoriesToCreate[i]))
+		{
+			LOG.Add("FEEditorPluginManager::GenerateEditorPublicInterfaceFromTemplate: Error creating " + DirectoriesToCreate[i] + " directory", "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);
+			return false;
+		}
 	}
 
 	const std::string InterfaceName = PluginName + "EditorInterface";
 	const std::string TemplatePath = FILE_SYSTEM.GetCurrentWorkingPath() + "/SubSystems/PluginSystem/Templates/PluginEditorInterfaceTemplate.h";
-	const std::string InterfaceFilePath = PublicDirectory + InterfaceName + ".h";
+	const std::string InterfaceFilePath = DirectoriesToCreate.back() + InterfaceName + ".h";
 	if (!FILE_SYSTEM.CopyFileTo(TemplatePath, InterfaceFilePath))
 	{
 		LOG.Add("FEEditorPluginManager::GenerateEditorPublicInterfaceFromTemplate: Error copying file " + TemplatePath + " to " + InterfaceFilePath, "FE_EDITOR_PLUGIN_MANAGER", FE_LOG_ERROR);

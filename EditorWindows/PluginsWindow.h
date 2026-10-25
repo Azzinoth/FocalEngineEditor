@@ -2,6 +2,8 @@
 
 #include "../SubSystems/PluginSystem/FEEditorPluginManager.h"
 
+class FEProject;
+
 class FEEditorPluginsWindow
 {
 	friend class FEEditor;
@@ -29,6 +31,7 @@ class FEEditorPluginsWindow
 	};
 
 	void Render();
+	void RenderMissingPlugins(FEProject* Project);
 	void RenderPluginDetails(const DiscoveredPlugin& Plugin);
 	void RenderModulesTable(const DiscoveredPlugin& Plugin);
 	void RenderStatusDot(const ImVec4& Color);
