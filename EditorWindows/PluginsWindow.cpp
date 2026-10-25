@@ -9,6 +9,11 @@ static const ImVec4 ErrorColor = ImVec4(0.95f, 0.5f, 0.5f, 1.0f);
 static const ImVec4 EngineModuleColor = ImVec4(0.55f, 0.75f, 0.95f, 1.0f);
 static const ImVec4 EditorModuleColor = ImVec4(0.80f, 0.60f, 0.95f, 1.0f);
 
+static const std::vector<FEFileSystem::FileDialogFilter> PluginPackageFilter =
+{
+	{ "Plugin package (*.feplugin)", { "feplugin" } }
+};
+
 FEEditorPluginsWindow::FEEditorPluginsWindow()
 {
 }
@@ -46,9 +51,10 @@ void FEEditorPluginsWindow::Render()
 
 		const std::string PluginDirectory = GetDisplayPath(PLUGIN_MANAGER.GetPluginDirectory());
 		const char* NewPluginButtonText = "New plugin...";
+		const char* InstallButtonText = "Install plugin...";
 		const char* OpenButtonText = "Open plugins folder";
 		const ImGuiStyle& Style = ImGui::GetStyle();
-		const float ButtonsWidth = ImGui::CalcTextSize(NewPluginButtonText).x + ImGui::CalcTextSize(OpenButtonText).x + Style.FramePadding.x * 4.0f + Style.ItemSpacing.x;
+		const float ButtonsWidth = ImGui::CalcTextSize(NewPluginButtonText).x + ImGui::CalcTextSize(InstallButtonText).x + ImGui::CalcTextSize(OpenButtonText).x + Style.FramePadding.x * 6.0f + Style.ItemSpacing.x * 2.0f;
 		ImGui::SameLine();
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImMax(0.0f, ImGui::GetContentRegionAvail().x - ButtonsWidth));
 		if (ImGui::SmallButton(NewPluginButtonText))
@@ -61,12 +67,39 @@ void FEEditorPluginsWindow::Render()
 		}
 
 		ImGui::SameLine();
+		if (ImGui::SmallButton(InstallButtonText))
+		{
+			FILE_SYSTEM.OpenFileDialog(PluginPackageFilter, [this](const std::string& FilePath) {
+				if (FilePath.empty())
+					return;
+
+				InstallPackagePath = FilePath;
+				InstallPluginError.clear();
+				bPluginInstalled = false;
+				bInstallPackageRead = PLUGIN_MANAGER.ReadPluginPackageManifest(FilePath, InstallPackageManifest, InstallPluginError);
+				bShouldOpenInstallPluginPopup = true;
+			});
+		}
+
+		ImGui::SameLine();
 		if (ImGui::SmallButton(OpenButtonText))
 			OpenFolderInExplorer(PluginDirectory);
 		ImGui::SetItemTooltip("%s", PluginDirectory.c_str());
 
 		ImGui::Separator();
 		ImGui::Spacing();
+
+		if (!InstalledPluginNames.empty())
+		{
+			std::string Names;
+			for (size_t i = 0; i < InstalledPluginNames.size(); i++)
+				Names += (i == 0 ? "" : ", ") + InstalledPluginNames[i];
+
+			ImGui::PushStyleColor(ImGuiCol_Text, WarningColor);
+			ImGui::TextWrapped("Restart the editor to load installed plugins: %s", Names.c_str());
+			ImGui::PopStyleColor();
+			ImGui::Spacing();
+		}
 
 		if (PROJECT_MANAGER.GetCurrent() != nullptr)
 			RenderMissingPlugins(PROJECT_MANAGER.GetCurrent());
@@ -84,6 +117,7 @@ void FEEditorPluginsWindow::Render()
 	ImGui::End();
 
 	RenderNewPluginPopup();
+	RenderInstallPluginPopup();
 }
 
 void FEEditorPluginsWindow::RenderMissingPlugins(FEProject* Project)
@@ -247,6 +281,18 @@ void FEEditorPluginsWindow::RenderPluginDetails(const DiscoveredPlugin& Plugin)
 
 	ImGui::Spacing();
 	RenderModulesTable(Plugin);
+	ImGui::Spacing();
+
+	if (ImGui::Button("Create package..."))
+		SavePluginPackage(Plugin);
+	ImGui::SetItemTooltip("Saves plugin to a file that could be installed with \"Install plugin...\".");
+
+	if (PackagedPluginID == Manifest.ID && !PackageResultMessage.empty())
+	{
+		ImGui::SameLine();
+		ImGui::AlignTextToFramePadding();
+		ImGui::TextColored(bPackageCreated ? LoadedColor : ErrorColor, "%s", PackageResultMessage.c_str());
+	}
 	ImGui::Spacing();
 
 	ImGui::Unindent();
@@ -675,4 +721,144 @@ std::string FEEditorPluginsWindow::ValidateNewPlugin() const
 		return "Location does not exist.";
 
 	return "";
+}
+
+void FEEditorPluginsWindow::RenderInstallPluginPopup()
+{
+	if (bShouldOpenInstallPluginPopup)
+	{
+		ImGui::OpenPopup("Install plugin");
+		bShouldOpenInstallPluginPopup = false;
+	}
+
+	ImGui::SetNextWindowSizeConstraints(ImVec2(ImGui::GetFontSize() * 30.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
+	const bool bPopupOpen = ImGui::BeginPopupModal("Install plugin", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::PopStyleVar();
+	if (!bPopupOpen)
+		return;
+
+	ImGui::TextColored(LabelColor, "%s", GetDisplayPath(InstallPackagePath).c_str());
+	ImGui::Spacing();
+
+	const ImVec2 ButtonSize = ImVec2(ImGui::GetFontSize() * 6.0f, 0.0f);
+	const PluginManifest& Manifest = InstallPackageManifest;
+	if (bPluginInstalled)
+	{
+		const std::string InstalledFolder = GetDisplayPath(PLUGIN_MANAGER.GetPluginDirectory() + "/" + Manifest.Name);
+		ImGui::TextColored(LoadedColor, "Plugin \"%s\" was installed, restart the editor to load it.", Manifest.Name.c_str());
+		ImGui::TextUnformatted(InstalledFolder.c_str());
+
+		ImGui::Spacing();
+		if (ImGui::Button("Open folder"))
+			OpenFolderInExplorer(InstalledFolder);
+
+		ImGui::SameLine();
+		if (ImGui::Button("Close", ButtonSize))
+			ImGui::CloseCurrentPopup();
+
+		ImGui::EndPopup();
+		return;
+	}
+
+	if (bInstallPackageRead)
+	{
+		ImGui::TextUnformatted(Manifest.Name.c_str());
+		ImGui::SameLine();
+		ImGui::TextColored(LabelColor, "%s", Manifest.Version.c_str());
+		if (!Manifest.Description.empty())
+			ImGui::TextWrapped("%s", Manifest.Description.c_str());
+
+		ImGui::Spacing();
+		if (ImGui::BeginTable("PackageDetails", 2, ImGuiTableFlags_SizingFixedFit))
+		{
+			ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
+			ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+
+			std::string SupportedOS;
+			for (size_t i = 0; i < Manifest.SupportedOS.size(); i++)
+				SupportedOS += (i == 0 ? "" : ", ") + OSToString(Manifest.SupportedOS[i]);
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextColored(LabelColor, "Supported OS");
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(SupportedOS.c_str());
+
+			for (size_t i = 0; i < Manifest.Modules.size(); i++)
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				if (i == 0)
+					ImGui::TextColored(LabelColor, "Modules");
+
+				ImGui::TableNextColumn();
+				ImGui::TextUnformatted(Manifest.Modules[i].Name.c_str());
+				ImGui::SameLine();
+				ImGui::TextColored(Manifest.Modules[i].Type == "Engine" ? EngineModuleColor : EditorModuleColor, "%s", Manifest.Modules[i].Type.c_str());
+			}
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextColored(LabelColor, "ID");
+			ImGui::TableNextColumn();
+			ImGui::TextColored(LabelColor, "%s...", UNIQUE_ID.ToString(Manifest.ID).substr(0, 8).c_str());
+			AddCopyIDBehavior(Manifest.ID);
+
+			ImGui::EndTable();
+		}
+	}
+
+	if (!InstallPluginError.empty())
+	{
+		ImGui::Spacing();
+		ImGui::TextColored(ErrorColor, "%s", InstallPluginError.c_str());
+	}
+
+	ImGui::Spacing();
+	ImGui::BeginDisabled(!bInstallPackageRead);
+	if (ImGui::Button("Install", ButtonSize))
+	{
+		InstallPluginError.clear();
+		bPluginInstalled = PLUGIN_MANAGER.InstallPluginPackage(InstallPackagePath, InstallPluginError);
+		if (bPluginInstalled)
+			InstalledPluginNames.push_back(Manifest.Name);
+	}
+	ImGui::EndDisabled();
+
+	ImGui::SameLine();
+	if (ImGui::Button("Cancel", ButtonSize))
+		ImGui::CloseCurrentPopup();
+
+	ImGui::EndPopup();
+}
+
+void FEEditorPluginsWindow::SavePluginPackage(const DiscoveredPlugin& Plugin)
+{
+	const std::string PluginFolder = Plugin.FolderPath;
+	const FEUUID PluginID = Plugin.Manifest.ID;
+	FILE_SYSTEM.SaveFileDialog(Plugin.Manifest.Name + ".feplugin", PluginPackageFilter, [this, PluginFolder, PluginID](std::string FilePath, int ChosenFilterIndex) {
+		if (FILE_SYSTEM.GetFileExtension(FilePath) != ".feplugin")
+			FilePath += ".feplugin";
+
+		PackagedPluginID = PluginID;
+
+		// Package saved in plugin folder would be added to the next package of this plugin.
+		auto ToLower = [](std::string Text) {
+			std::transform(Text.begin(), Text.end(), Text.begin(), [](unsigned char Character) { return static_cast<char>(std::tolower(Character)); });
+			return Text;
+		};
+
+		if (ToLower(GetDisplayPath(FilePath)).rfind(ToLower(GetDisplayPath(PluginFolder) + "\\"), 0) == 0)
+		{
+			bPackageCreated = false;
+			PackageResultMessage = "Package can not be saved inside of plugin folder.";
+			return false;
+		}
+
+		std::string ErrorMessage;
+		bPackageCreated = PLUGIN_MANAGER.CreatePluginPackage(PluginFolder, FilePath, ErrorMessage);
+		PackageResultMessage = bPackageCreated ? "Saved to " + GetDisplayPath(FilePath) : ErrorMessage;
+		return bPackageCreated;
+	});
 }

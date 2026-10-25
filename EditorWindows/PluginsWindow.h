@@ -22,6 +22,20 @@ class FEEditorPluginsWindow
 	// Not empty after plugin project was created.
 	std::string CreatedPluginFolder;
 
+	bool bShouldOpenInstallPluginPopup = false;
+	std::string InstallPackagePath;
+	PluginManifest InstallPackageManifest;
+	bool bInstallPackageRead = false;
+	bool bPluginInstalled = false;
+	std::string InstallPluginError;
+	// Installed during this session, they are loaded after restart.
+	std::vector<std::string> InstalledPluginNames;
+
+	// Result of the last "Create package..." is shown next to the button of that plugin.
+	FEUUID PackagedPluginID;
+	bool bPackageCreated = false;
+	std::string PackageResultMessage;
+
 	enum class ModuleStatus
 	{
 		Loaded,
@@ -45,6 +59,9 @@ class FEEditorPluginsWindow
 	std::string GetNewPluginFolder() const;
 	// Returns description of the first problem, or empty string if plugin project could be created.
 	std::string ValidateNewPlugin() const;
+
+	void RenderInstallPluginPopup();
+	void SavePluginPackage(const DiscoveredPlugin& Plugin);
 
 	ModuleStatus GetModuleStatus(const PluginModule& Module) const;
 	std::string GetDisplayPath(const std::string& Path) const;
