@@ -124,7 +124,7 @@ void FEEditorSelectedObject::Clear(FEScene* Scene)
 		return;
 
 	FEEntity* CurrentlySelectedEntity = Scene->GetEntity(CurrentSelectionData->SelectedEntityID);
-	if (CurrentSelectionData->InstancedSubObjectIndexSelected != -1 && CurrentlySelectedEntity->HasComponent<FEInstancedComponent>())
+	if (CurrentlySelectedEntity != nullptr && CurrentSelectionData->InstancedSubObjectIndexSelected != -1 && CurrentlySelectedEntity->HasComponent<FEInstancedComponent>())
 	{
 		INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(CurrentlySelectedEntity, false);
 	}
@@ -174,18 +174,18 @@ void FEEditorSelectedObject::DetermineEntityUnderMouse(const double MouseX, cons
 					FEInstancedComponent& InstancedComponent = CurrentEntity->GetComponent<FEInstancedComponent>();
 					if (INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(CurrentEntity))
 					{
-						CurrentSelectionData->InstancedSubObjectsInfo[CurrentEntity] = std::vector<int>();
+						CurrentSelectionData->InstancedSubObjectsInfo[EntityList[i]] = std::vector<int>();
 						for (size_t j = 0; j < InstancedComponent.IndividualInstancedAABB.size(); j++)
 						{
 							if (InstancedComponent.IndividualInstancedAABB[j].RayIntersect(CameraTransformComponent.GetPosition(FE_WORLD_SPACE), MouseRay, Distance))
 							{
-								CurrentSelectionData->InstancedSubObjectsInfo[CurrentEntity].push_back(static_cast<int>(j));
+								CurrentSelectionData->InstancedSubObjectsInfo[EntityList[i]].push_back(static_cast<int>(j));
 							}
 						}
 					}
 				}
 
-				CurrentSelectionData->SceneEntitiesUnderMouse.push_back(CurrentEntity);
+				CurrentSelectionData->SceneEntitiesUnderMouse.push_back(EntityList[i]);
 			}
 		}
 	}
@@ -367,16 +367,27 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 		int B = ((i + 1) >> 16) & 255;
 #endif
 
-		RenderEntitySelectionColorID(CurrentSelectionData->SceneEntitiesUnderMouse[i],
+		// Entity could be deleted after mouse press, then it is not rendered, but its color stays reserved.
+		RenderEntitySelectionColorID(Scene->GetEntity(CurrentSelectionData->SceneEntitiesUnderMouse[i]),
 									 glm::vec3(static_cast<float>(R) / 255.0f, static_cast<float>(G) / 255.0f, static_cast<float>(B) / 255.0f),
 									 CurrentCamera, CurrentSelectionData);
 	}
 
 	int LastColorShiftIndex = static_cast<int>(CurrentSelectionData->SceneEntitiesUnderMouse.size() - 1);
 
+	FEEntity* DummyEntity = GetDummyEntity(Scene, CurrentSelectionData);
 	auto InstancedSubObjectIterator = CurrentSelectionData->InstancedSubObjectsInfo.begin();
 	while (InstancedSubObjectIterator != CurrentSelectionData->InstancedSubObjectsInfo.end())
 	{
+		FEEntity* InstancedEntity = Scene->GetEntity(InstancedSubObjectIterator->first);
+		if (InstancedEntity == nullptr)
+		{
+			// Colors of its sub objects stay reserved, so colors of other entities do not change.
+			LastColorShiftIndex += static_cast<int>(InstancedSubObjectIterator->second.size());
+			InstancedSubObjectIterator++;
+			continue;
+		}
+
 		for (size_t j = 0; j < InstancedSubObjectIterator->second.size(); j++)
 		{
 			LastColorShiftIndex++;
@@ -384,18 +395,16 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 			int g = ((LastColorShiftIndex + 1) >> 8) & 255;
 			int b = ((LastColorShiftIndex + 1) >> 16) & 255;
 
-			static FEEntity* DummyEntity = Scene->CreateEntity("DummyEntity");
-			RESOURCE_MANAGER.SetTag(DummyEntity, EDITOR_RESOURCE_TAG);
 			if (!DummyEntity->HasComponent<FEGameModelComponent>())
 				DummyEntity->AddComponent<FEGameModelComponent>();
-			
+
 			FEGameModelComponent& DummyGameModelComponent = DummyEntity->GetComponent<FEGameModelComponent>();
-			FEGameModelComponent& OriginalGameModelComponent = InstancedSubObjectIterator->first->GetComponent<FEGameModelComponent>();
+			FEGameModelComponent& OriginalGameModelComponent = InstancedEntity->GetComponent<FEGameModelComponent>();
 
 			DummyGameModelComponent.SetGameModel(OriginalGameModelComponent.GetGameModel());
 			DummyEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
 
-			FEInstancedComponent& InstancedComponent = InstancedSubObjectIterator->first->GetComponent<FEInstancedComponent>();
+			FEInstancedComponent& InstancedComponent = InstancedEntity->GetComponent<FEInstancedComponent>();
 			FETransformComponent& DummyTransformComponent = DummyEntity->GetComponent<FETransformComponent>();
 
 			glm::dvec3 Position, Scale;
@@ -443,14 +452,14 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 		{
 			CurrentSelectionData->ColorIndex -= static_cast<int>(CurrentSelectionData->SceneEntitiesUnderMouse.size());
 
-			const FEEntity* SelectedSubObjectInInstance = nullptr;
+			FEUUID InstancedEntityID;
 			auto InstancedSubObjectIterator = CurrentSelectionData->InstancedSubObjectsInfo.begin();
 			while (InstancedSubObjectIterator != CurrentSelectionData->InstancedSubObjectsInfo.end())
 			{
 				if (CurrentSelectionData->ColorIndex < static_cast<int>(InstancedSubObjectIterator->second.size()))
 				{
 					CurrentSelectionData->InstancedSubObjectIndexSelected = InstancedSubObjectIterator->second[CurrentSelectionData->ColorIndex];
-					SelectedSubObjectInInstance = InstancedSubObjectIterator->first;
+					InstancedEntityID = InstancedSubObjectIterator->first;
 					break;
 				}
 
@@ -458,11 +467,11 @@ int FEEditorSelectedObject::GetIndexOfObjectUnderMouse(const double MouseX, cons
 				InstancedSubObjectIterator++;
 			}
 
-			if (SelectedSubObjectInInstance != nullptr)
+			if (!UNIQUE_ID.IsNull(InstancedEntityID))
 			{
 				for (size_t i = 0; i < CurrentSelectionData->SceneEntitiesUnderMouse.size(); i++)
 				{
-					if (CurrentSelectionData->SceneEntitiesUnderMouse[i]->GetID() == SelectedSubObjectInInstance->GetID())
+					if (CurrentSelectionData->SceneEntitiesUnderMouse[i] == InstancedEntityID)
 					{
 						return static_cast<int>(i);
 					}
@@ -655,16 +664,17 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 		if (SelectedEntity->HasComponent<FEInstancedComponent>() && CurrentSelectionData->InstancedSubObjectIndexSelected != -1)
 		{
 			FEGameModelComponent& GameModelComponent = SelectedEntity->GetComponent<FEGameModelComponent>();
-			
-			if (!CurrentSelectionData->DummyEntity->HasComponent<FEGameModelComponent>())
-				CurrentSelectionData->DummyEntity->AddComponent<FEGameModelComponent>();
+			FEEntity* DummyEntity = SELECTED.GetDummyEntity(CurrentScene, CurrentSelectionData);
 
-			FEGameModelComponent& DummyGameModelComponent = CurrentSelectionData->DummyEntity->GetComponent<FEGameModelComponent>();
+			if (!DummyEntity->HasComponent<FEGameModelComponent>())
+				DummyEntity->AddComponent<FEGameModelComponent>();
+
+			FEGameModelComponent& DummyGameModelComponent = DummyEntity->GetComponent<FEGameModelComponent>();
 			DummyGameModelComponent.SetGameModel(GameModelComponent.GetGameModel());
-			CurrentSelectionData->DummyEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
+			DummyEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, true);
 
 			FEInstancedComponent& InstancedComponent = SelectedEntity->GetComponent<FEInstancedComponent>();
-			FETransformComponent& DummyTransformComponent = CurrentSelectionData->DummyEntity->GetComponent<FETransformComponent>();
+			FETransformComponent& DummyTransformComponent = DummyEntity->GetComponent<FETransformComponent>();
 
 			glm::dvec3 Position, Scale;
 			glm::dquat Rotation;
@@ -674,9 +684,9 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 			DummyTransformComponent.SetQuaternion(Rotation);
 			DummyTransformComponent.SetScale(Scale);
 
-			SELECTED.RenderEntityHaloEffectInternal(CurrentSelectionData->DummyEntity, glm::vec3(0.61f, 0.86f, 1.0f), CurrentCamera, CurrentSelectionData);
+			SELECTED.RenderEntityHaloEffectInternal(DummyEntity, glm::vec3(0.61f, 0.86f, 1.0f), CurrentCamera, CurrentSelectionData);
 
-			CurrentSelectionData->DummyEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
+			DummyEntity->SetComponentVisible(ComponentVisibilityType::GAME_MODEL, false);
 		}
 		else
 		{
@@ -722,12 +732,16 @@ void FEEditorSelectedObject::SetSelectedByIndex(const size_t Index, FEScene* Sce
 	if (Index < 0 || Index >= CurrentSelectionData->SceneEntitiesUnderMouse.size())
 		return;
 
+	FEEntity* EntityToSelect = Scene->GetEntity(CurrentSelectionData->SceneEntitiesUnderMouse[Index]);
+	if (EntityToSelect == nullptr)
+		return;
+
 	FEEntity* CurrentlySelectedEntity = Scene->GetEntity(CurrentSelectionData->SelectedEntityID);
 	if (CurrentlySelectedEntity != nullptr)
 	{
 		if (CurrentlySelectedEntity->HasComponent<FEInstancedComponent>())
 		{
-			if (CurrentSelectionData->SceneEntitiesUnderMouse[Index]->GetID() != CurrentlySelectedEntity->GetID())
+			if (EntityToSelect->GetID() != CurrentlySelectedEntity->GetID())
 			{
 				INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(CurrentlySelectedEntity, false);
 				CurrentSelectionData->InstancedSubObjectIndexSelected = -1;
@@ -735,7 +749,7 @@ void FEEditorSelectedObject::SetSelectedByIndex(const size_t Index, FEScene* Sce
 		}
 	}
 
-	CurrentSelectionData->SelectedEntityID = CurrentSelectionData->SceneEntitiesUnderMouse[Index]->GetID();
+	CurrentSelectionData->SelectedEntityID = EntityToSelect->GetID();
 	if (OnUpdateFunction != nullptr)
 		OnUpdateFunction(Scene);
 }
@@ -785,13 +799,31 @@ void FEEditorSelectedObject::AddSceneData(const FEUUID& SceneID)
 	delete PerSceneData[SceneID]->PixelAccurateSelectionFB->GetColorAttachment();
 	PerSceneData[SceneID]->PixelAccurateSelectionFB->SetColorAttachment(RESOURCE_MANAGER.CreateTexture(GL_RGB, GL_RGB, CameraComponent.GetRenderTargetWidth(), CameraComponent.GetRenderTargetHeight()));
 
-	if (CurrentScene->GetEntityByName("Editor_Selection_Dummy_Entity").empty())
-	{
-		PerSceneData[SceneID]->DummyEntity = CurrentScene->CreateEntity("Editor_Selection_Dummy_Entity");
-		RESOURCE_MANAGER.SetTag(PerSceneData[SceneID]->DummyEntity, EDITOR_RESOURCE_TAG);
-	}
+	GetDummyEntity(CurrentScene, PerSceneData[SceneID]);
 
 	HALO_SELECTION_EFFECT.AddSceneData(SceneID);
+}
+
+FEEntity* FEEditorSelectedObject::GetDummyEntity(FEScene* Scene, FESelectionData* CurrentSelectionData)
+{
+	FEEntity* DummyEntity = Scene->GetEntity(CurrentSelectionData->DummyEntityID);
+	if (DummyEntity != nullptr)
+		return DummyEntity;
+
+	// Scene could already have it, for example when selection data of that scene was created again.
+	std::vector<FEEntity*> ExistingEntities = Scene->GetEntityByName("Editor_Selection_Dummy_Entity");
+	if (!ExistingEntities.empty())
+	{
+		DummyEntity = ExistingEntities[0];
+	}
+	else
+	{
+		DummyEntity = Scene->CreateEntity("Editor_Selection_Dummy_Entity");
+		RESOURCE_MANAGER.SetTag(DummyEntity, EDITOR_RESOURCE_TAG);
+	}
+
+	CurrentSelectionData->DummyEntityID = DummyEntity->GetID();
+	return DummyEntity;
 }
 
 FESelectionData* FEEditorSelectedObject::GetSceneData(const FEUUID& SceneID)

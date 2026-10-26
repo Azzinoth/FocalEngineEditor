@@ -16,15 +16,14 @@ class FESelectionData
 public:
 	FEFramebuffer* PixelAccurateSelectionFB = nullptr;
 
-	std::vector<FEEntity*> SceneEntitiesUnderMouse;
-	FEEntity* PotentiallySelectedEntity = nullptr;
+	std::vector<FEUUID> SceneEntitiesUnderMouse;
 
 	FEUUID SelectedEntityID;
-	FEEntity* DummyEntity = nullptr;
+	FEUUID DummyEntityID;
 
 	bool CheckForSelectionisNeeded = false;
 
-	std::unordered_map<FEEntity*, std::vector<int>> InstancedSubObjectsInfo;
+	std::unordered_map<FEUUID, std::vector<int>> InstancedSubObjectsInfo;
 	int InstancedSubObjectIndexSelected = -1;
 
 	unsigned char* ColorUnderMouse = new unsigned char[3];
@@ -82,6 +81,8 @@ private:
 	void ClearAllSceneData();
 	void ClearSceneData(const FEUUID& SceneID);
 	void AddSceneData(const FEUUID& SceneID);
+
+	FEEntity* GetDummyEntity(FEScene* Scene, FESelectionData* CurrentSelectionData);
 
 	void RenderEntitySelectionColorID(FEEntity* Entity, glm::vec3 ColorID, FEEntity* CameraEntity, FESelectionData* CurrentSelectionData);
 	void RenderEntityHaloEffectInternal(FEEntity* Entity, glm::vec3 Color, FEEntity* CameraEntity, FESelectionData* CurrentSelectionData);

@@ -210,16 +210,16 @@ FEEditorPluginCore* FEEditorPluginManager::GetEditorModule(const FEUUID& PluginI
 
 void FEEditorPluginManager::Shutdown()
 {
-	for (size_t i = ActiveEditorPlugins.size(); i > 0; i--)
+	// Unloaded module is removed right away, because OnEditorUnload of other modules could call IsModuleLoaded or GetEditorModule.
+	while (!ActiveEditorPlugins.empty())
 	{
-		ActiveEditorPlugin& Plugin = ActiveEditorPlugins[i - 1];
+		ActiveEditorPlugin& Plugin = ActiveEditorPlugins.back();
 		Plugin.Instance->OnEditorUnload();
 		// Registrations hold callbacks that point to module code, so they should be deleted before DLL is unloaded.
 		delete Plugin.API;
 		PLUGIN_MANAGER.UnloadPluginModule(Plugin.Plugin);
+		ActiveEditorPlugins.pop_back();
 	}
-
-	ActiveEditorPlugins.clear();
 }
 
 bool FEEditorPluginManager::CreatePluginProject(std::string& PluginName, const std::string& VSProjectDirectory, const FEEditorPluginProjectSettings& Settings)

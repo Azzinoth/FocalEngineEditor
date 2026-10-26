@@ -64,9 +64,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				ImGui::Text(ColorIndex.c_str());
 
 				std::string EntityUnderMouse = "Entity under mouse: ";
+				FEEntity* HoveredEntity = nullptr;
 				if (SelectedData->ColorIndex != -1 && SelectedData->ColorIndex < SelectedData->SceneEntitiesUnderMouse.size())
+					HoveredEntity = EDITOR.GetFocusedScene()->GetEntity(SelectedData->SceneEntitiesUnderMouse[SelectedData->ColorIndex]);
+
+				if (HoveredEntity != nullptr)
 				{
-					EntityUnderMouse += SelectedData->SceneEntitiesUnderMouse[SelectedData->ColorIndex]->GetName();
+					EntityUnderMouse += HoveredEntity->GetName();
 				}
 				else
 				{

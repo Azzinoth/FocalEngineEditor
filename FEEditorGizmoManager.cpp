@@ -410,7 +410,10 @@ bool GizmoManager::WasSelected(int Index, FEScene* Scene)
 	if (CurrentSelectionData == nullptr)
 		return false;
 
-	FEEntity* SelectedEntity = CurrentSelectionData->SceneEntitiesUnderMouse[Index];
+	FEEntity* SelectedEntity = Scene->GetEntity(CurrentSelectionData->SceneEntitiesUnderMouse[Index]);
+	if (SelectedEntity == nullptr)
+		return false;
+
 	FETransformComponent& CurrentTransform = SelectedEntity->GetComponent<FETransformComponent>();
 
 	if (GizmoSceneData->GizmosState == TRANSFORM_GIZMOS && SelectedEntity->GetID() == GizmoSceneData->TransformationXGizmoEntity->GetID())
