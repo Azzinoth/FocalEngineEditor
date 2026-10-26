@@ -539,26 +539,6 @@ void FEEditorContentBrowserWindow::Render()
 						});
 					}
 
-					if (ImGui::MenuItem("as LAS"))
-					{
-						FILE_SYSTEM.SaveFileDialog("", LAS_FILTER, [PointCloud](std::string FilePath, int ChosenFilterIndex) {
-							if (FilePath.find(".las") == std::string::npos)
-								FilePath += ".las";
-
-							return RESOURCE_MANAGER.ExportFEPointCloudToLAS(PointCloud, FilePath);
-						});
-					}
-
-					if (ImGui::MenuItem("as LAZ"))
-					{
-						FILE_SYSTEM.SaveFileDialog("", LAZ_FILTER, [PointCloud](std::string FilePath, int ChosenFilterIndex) {
-							if (FilePath.find(".laz") == std::string::npos)
-								FilePath += ".laz";
-
-							return RESOURCE_MANAGER.ExportFEPointCloudToLAZ(PointCloud, FilePath);
-						});
-					}
-
 					RenderRegisteredExportMenuItems(PointCloud);
 					ImGui::EndMenu();
 				}

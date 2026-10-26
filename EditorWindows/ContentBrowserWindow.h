@@ -22,16 +22,6 @@
 		{ "Stanford PLY (*.ply)", { "ply" } }
 	};
 
-	const std::vector<FEFileSystem::FileDialogFilter> LAS_FILTER =
-	{
-		{ "lidar point cloud files (*.las)", { "las" } }
-	};
-
-	const std::vector<FEFileSystem::FileDialogFilter> LAZ_FILTER =
-	{
-		{ "compressed lidar point cloud files (*.laz)", { "laz" } }
-	};
-
 	const std::vector<FEFileSystem::FileDialogFilter> NATIVE_SCRIPT_MODULE_FILTER =
 	{
 		{ "Native script module (*.nativescriptmodule)", { "nativescriptmodule" } }

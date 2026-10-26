@@ -525,26 +525,21 @@ void FEEditorPluginsWindow::RenderNewPluginForm()
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();
 		ImGui::AlignTextToFramePadding();
-		ImGui::TextColored(LabelColor, "Location");
+		ImGui::TextColored(LabelColor, "Folder");
 		ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(BrowseButtonText).x - Style.FramePadding.x * 2.0f - Style.ItemSpacing.x);
-		ImGui::InputText("##Location", &NewPluginLocation);
+		ImGui::InputText("##Folder", &NewPluginLocation);
 		ImGui::SameLine();
 		if (ImGui::Button(BrowseButtonText))
 		{
 			FILE_SYSTEM.OpenFolderDialog([this](const std::string& Path) {
-				if (!Path.empty())
-					NewPluginLocation = Path;
-			});
-		}
+				if (Path.empty())
+					return;
 
-		const std::string NewPluginFolder = GetNewPluginFolder();
-		if (!NewPluginFolder.empty())
-		{
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::TableNextColumn();
-			ImGui::TextColored(LabelColor, "Project folder: %s", NewPluginFolder.c_str());
+				NewPluginLocation = Path;
+				if (NewPluginName.empty())
+					NewPluginName = FILE_SYSTEM.GetFileName(Path);
+			});
 		}
 
 		// Descriptions of types are aligned in one column.
@@ -692,14 +687,11 @@ void FEEditorPluginsWindow::RenderNewPluginCreatedMessage()
 
 std::string FEEditorPluginsWindow::GetNewPluginFolder() const
 {
-	if (NewPluginLocation.empty() || NewPluginName.empty())
-		return "";
-
 	std::string Folder = NewPluginLocation;
-	if (Folder.back() != '/' && Folder.back() != '\\')
-		Folder += '\\';
+	while (!Folder.empty() && (Folder.back() == '/' || Folder.back() == '\\'))
+		Folder.pop_back();
 
-	return Folder + NewPluginName;
+	return Folder;
 }
 
 std::string FEEditorPluginsWindow::ValidateNewPlugin() const
@@ -733,11 +725,12 @@ std::string FEEditorPluginsWindow::ValidateNewPlugin() const
 			return "Plugin with this name is already installed.";
 	}
 
-	if (NewPluginLocation.empty())
-		return "Choose location of plugin project.";
+	const std::string NewPluginFolder = GetNewPluginFolder();
+	if (NewPluginFolder.empty())
+		return "Choose folder of plugin project.";
 
-	if (!FILE_SYSTEM.DoesDirectoryExist(NewPluginLocation))
-		return "Location does not exist.";
+	if (!FILE_SYSTEM.DoesDirectoryExist(NewPluginFolder) && !FILE_SYSTEM.DoesDirectoryExist(FILE_SYSTEM.GetDirectoryPath(NewPluginFolder)))
+		return "Folder that should contain plugin project folder does not exist.";
 
 	return "";
 }

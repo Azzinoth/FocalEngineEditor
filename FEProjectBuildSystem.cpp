@@ -160,7 +160,6 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 												 "SubSystems/FocalEngine/SubSystems",
 												 "SubSystems/FocalEngine/ThirdParty",
 												 "SubSystems/FocalEngine/ThirdParty/openxr",
-												 "SubSystems/FocalEngine/ThirdParty/laszip",
 												 "SubSystems/FocalEngine/SubSystems/FEBasicApplication",
 												 "SubSystems/FocalEngine/SubSystems/FEBasicApplication/VersionInfo",
 												 "SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty",
@@ -216,13 +215,6 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 
 	if (!FILE_SYSTEM.CopyDirectory(EnginePath + "/ThirdParty/openxr/Lib",
 								   VSProjectDirectory + "SubSystems/FocalEngine/ThirdParty/openxr/Lib"))
-	{
-		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error copying directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
-		return false;
-	}
-
-	if (!FILE_SYSTEM.CopyDirectory(EnginePath + "/ThirdParty/laszip/lib",
-								   VSProjectDirectory + "SubSystems/FocalEngine/ThirdParty/laszip/lib"))
 	{
 		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error copying directory", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
 		return false;
