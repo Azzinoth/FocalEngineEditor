@@ -409,15 +409,11 @@ FEEditorPluginsWindow::ModuleStatus FEEditorPluginsWindow::GetModuleStatus(const
 	if (EDITOR_PLUGIN_MANAGER.IsModuleLoaded(Module))
 		return ModuleStatus::Loaded;
 
-	// Engine modules are loaded regardless of their dependencies, only editor plugin manager skips modules with not loaded dependencies.
-	if (Module.Type == "Editor")
+	for (size_t i = 0; i < Module.Dependencies.size(); i++)
 	{
-		for (size_t i = 0; i < Module.Dependencies.size(); i++)
-		{
-			const PluginModule* Dependency = FindModule(Module.Dependencies[i]);
-			if (Dependency == nullptr || !EDITOR_PLUGIN_MANAGER.IsModuleLoaded(*Dependency))
-				return ModuleStatus::Skipped;
-		}
+		const PluginModule* Dependency = FindModule(Module.Dependencies[i]);
+		if (Dependency == nullptr || !EDITOR_PLUGIN_MANAGER.IsModuleLoaded(*Dependency))
+			return ModuleStatus::Skipped;
 	}
 
 	return ModuleStatus::Failed;

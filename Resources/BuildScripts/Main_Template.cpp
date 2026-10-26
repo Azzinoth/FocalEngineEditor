@@ -184,6 +184,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	
 	StartingScene->SetFlag(FESceneFlag::Active | FESceneFlag::Renderable | FESceneFlag::GameMode, true);
 
+	// Scripts are awakened only when their component is created in game mode scene,
+	// but scenes are loaded before starting scene is known, so its scripts are awakened here.
+	std::vector<FEEntity*> ScriptEntities = StartingScene->GetEntityListWithComponent<FENativeScriptComponent>();
+	for (size_t i = 0; i < ScriptEntities.size(); i++)
+	{
+		FENativeScriptComponent& NativeScriptComponent = ScriptEntities[i]->GetComponent<FENativeScriptComponent>();
+		if (NativeScriptComponent.IsInitialized())
+			NativeScriptComponent.Awake();
+	}
+
 	CameraEntity = CAMERA_SYSTEM.GetMainCamera(StartingScene);
 	if (CameraEntity != nullptr)
 	{
