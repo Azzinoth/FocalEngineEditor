@@ -56,7 +56,7 @@ namespace FocalEngine
 		// Drawing should be wrapped in own ImGui::Begin/End, otherwise it ends up in the editor toolbar.
 		virtual void OnEditorUpdate(double DeltaTime) {}
 	private:
-		void OnLoad() final {}
+		bool OnLoad() final { return true; }
 		void OnUnload() final {}
 		void OnUpdate(double DeltaTime) final {}
 		void OnBeforeRender() final {}
@@ -64,5 +64,6 @@ namespace FocalEngine
 		void OnSceneAdded(FEScene* Scene) final {}
 		void OnSceneFlagsChanged(FEScene* Scene, FESceneFlag PreviousFlags) final {}
 		void OnSceneDeleting(FEScene* Scene) final {}
+		void OnCameraRenderStage(FECameraRenderStage Stage, FEEntity* CameraEntity) final {}
 	};
 }
