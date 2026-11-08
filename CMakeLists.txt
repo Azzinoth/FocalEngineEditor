@@ -13,6 +13,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(FOCAL_ENGINE_EDITOR_ENABLE_TESTS "Enable tests" OFF)
+set(FOCAL_ENGINE_EDITOR_MAIN "" CACHE FILEPATH "Source file to build the editor with instead of main.cpp")
 
 set(TEST_SOURCE_FILES)
 
@@ -113,7 +114,11 @@ configure_file(${ENGINE_FOLDER}/ResourceManager/Config.h.in ${ENGINE_FOLDER}/Res
 
 set(EDITOR_SOURCE_FILES "")
 if(NOT FOCAL_ENGINE_EDITOR_ENABLE_TESTS)
-	list(APPEND EDITOR_SOURCE_FILES "main.cpp")
+	if(FOCAL_ENGINE_EDITOR_MAIN)
+		list(APPEND EDITOR_SOURCE_FILES "${FOCAL_ENGINE_EDITOR_MAIN}")
+	else()
+		list(APPEND EDITOR_SOURCE_FILES "main.cpp")
+	endif()
 endif()
 list(APPEND EDITOR_SOURCE_FILES
 	"FEEditor.cpp"
@@ -325,6 +330,7 @@ endif()
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT FocalEngineEditor)
 
 include_directories(
+	${CMAKE_CURRENT_SOURCE_DIR}
 	${GLEW_INCLUDE_DIR}
 	${BASICAPP_THIRDPARTY_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/FEBasicApplication/ThirdParty/imgui
