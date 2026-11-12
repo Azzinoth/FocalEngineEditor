@@ -80,6 +80,10 @@ void FEEditorPreviewManager::ReCreateAll()
 	const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
+		// Game models that use a material already got preview from CreateMaterialPreview.
+		if (PreviewTextures.find(GameModelList[i]) != PreviewTextures.end())
+			continue;
+
 		FEObject* CurrentGameModel = OBJECT_MANAGER.GetFEObject(GameModelList[i]);
 		if (CurrentGameModel->GetTag() != EDITOR_RESOURCE_TAG)
 			CreateGameModelPreview(GameModelList[i]);
@@ -149,7 +153,7 @@ void FEEditorPreviewManager::CreateMeshPreview(const FEUUID& MeshID)
 	BeforePreviewActions();
 
 	FEAABB MeshAABB = PreviewEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Mesh->GetAABB();
-	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
+	MeshAABB = MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
 	const glm::vec3 Min = MeshAABB.GetMin();
 	const glm::vec3 Max = MeshAABB.GetMax();
 
@@ -167,8 +171,6 @@ void FEEditorPreviewManager::CreateMeshPreview(const FEUUID& MeshID)
 	AfterPreviewActions();
 
 	StorePreview(MeshID, RENDERER.GetCameraResult(LocalCameraEntity));
-
-	CheckAndUpdateIfNeededGameModelPreview(MeshID);
 }
 
 FETexture* FEEditorPreviewManager::GetMeshPreview(const FEUUID& MeshID)
@@ -223,8 +225,6 @@ void FEEditorPreviewManager::CreateMaterialPreview(const FEUUID& MaterialID)
 			CreateGameModelPreview(CurrentGameModel->GetID());
 	}
 
-	CheckAndUpdateIfNeededGameModelPreview(MaterialID);
-
 	//// Looking for all prefabs that uses this material to also update them.
 	//const std::vector<FEUUID> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
 	//for (size_t i = 0; i < PrefabList.size(); i++)
@@ -240,29 +240,8 @@ FETexture* FEEditorPreviewManager::GetMaterialPreview(const FEUUID& MaterialID)
 	// if material's dirty flag is set we need to update preview
 	if (RESOURCE_MANAGER.GetMaterial(MaterialID)->IsDirty())
 	{
+		// It also updates previews of game models that use this material and of prefabs that use these game models.
 		CreateMaterialPreview(MaterialID);
-		// if some game model uses this material we should also update its preview
-		const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
-		for (size_t i = 0; i < GameModelList.size(); i++)
-		{
-			const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
-
-			if (CurrentGameModel->Material == RESOURCE_MANAGER.GetMaterial(MaterialID))
-			{
-				CreateGameModelPreview(CurrentGameModel->GetID());
-
-				// If some Prefab uses this game model we should also update its preview.
-				std::vector<FEUUID> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
-				for (size_t j = 0; j < PrefabList.size(); j++)
-				{
-					FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[j]);
-					
-					if (CurrentPrefab->IsUsingGameModel(CurrentGameModel->GetID()))
-						CreatePrefabPreview(CurrentPrefab->GetID());
-				}
-			}
-		}
-
 		RESOURCE_MANAGER.GetMaterial(MaterialID)->SetDirtyFlag(false);
 	}	
 
@@ -281,7 +260,7 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEUUID& GameModelID)
 	BeforePreviewActions();
 
 	FEAABB MeshAABB = PreviewEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Mesh->GetAABB();
-	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
+	MeshAABB = MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
 	const glm::vec3 Min = MeshAABB.GetMin();
 	const glm::vec3 Max = MeshAABB.GetMax();
 
@@ -315,7 +294,7 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 	BeforePreviewActions();
 
 	FEAABB MeshAABB = PreviewEntity->GetComponent<FEGameModelComponent>().GetGameModel()->Mesh->GetAABB();
-	MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
+	MeshAABB = MeshAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
 	const glm::vec3 Min = MeshAABB.GetMin();
 	const glm::vec3 Max = MeshAABB.GetMax();
 
@@ -337,36 +316,6 @@ void FEEditorPreviewManager::CreateGameModelPreview(const FEGameModel* GameModel
 		*ResultingTexture = RESOURCE_MANAGER.CreateCopyOfTexture(CameraResult);
 
 	CheckAndUpdateIfNeededPrefabPreview(GameModel->GetID());
-}
-
-void FEEditorPreviewManager::CheckAndUpdateIfNeededGameModelPreview(const FEUUID& ObjectIDThatWasChanged)
-{
-	FEObject* ObjectThatWasChanged = OBJECT_MANAGER.GetFEObject(ObjectIDThatWasChanged);
-	if (ObjectThatWasChanged == nullptr)
-		return;
-
-	if (ObjectThatWasChanged->GetType() != FE_MESH)
-	{
-		const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
-		for (size_t i = 0; i < GameModelList.size(); i++)
-		{
-			const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
-			if (CurrentGameModel->Material == RESOURCE_MANAGER.GetMaterial(ObjectIDThatWasChanged))
-				CreateGameModelPreview(CurrentGameModel->GetID());
-		}
-		return;
-	}
-	else if (ObjectThatWasChanged->GetType() != FE_MATERIAL)
-	{
-		const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
-		for (size_t i = 0; i < GameModelList.size(); i++)
-		{
-			const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
-			if (CurrentGameModel->Material == RESOURCE_MANAGER.GetMaterial(ObjectIDThatWasChanged))
-				CreateGameModelPreview(CurrentGameModel->GetID());
-		}
-		return;
-	}
 }
 
 void FEEditorPreviewManager::CheckAndUpdateIfNeededPrefabPreview(const FEUUID& GameModelIDThatWasChanged)
@@ -407,9 +356,8 @@ FETexture* FEEditorPreviewManager::GetGameModelPreview(const FEUUID& GameModelID
 	// if game model's material dirty flag is set we need to update preview
 	if (RESOURCE_MANAGER.GetGameModel(GameModelID)->GetMaterial() != nullptr && RESOURCE_MANAGER.GetGameModel(GameModelID)->GetMaterial()->IsDirty())
 	{
+		// It also updates previews of all game models that use this material.
 		CreateMaterialPreview(RESOURCE_MANAGER.GetGameModel(GameModelID)->GetMaterial()->GetID());
-		// This material could use muiltiple GM so we should update all GMs.
-		UpdateAllGameModelPreviews();
 		RESOURCE_MANAGER.GetGameModel(GameModelID)->GetMaterial()->SetDirtyFlag(false);
 		//createGameModelPreview(gameModelID);
 	}
@@ -437,7 +385,7 @@ void FEEditorPreviewManager::CreatePointCloudPreview(const FEUUID& PointCloudID)
 	BeforePreviewActions();
 
 	FEAABB PointCloudAABB = PointCloud->GetAABB();
-	PointCloudAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
+	PointCloudAABB = PointCloudAABB.Transform(PreviewEntity->GetComponent<FETransformComponent>().GetWorldMatrix());
 	const glm::vec3 Min = PointCloudAABB.GetMin();
 	const glm::vec3 Max = PointCloudAABB.GetMax();
 

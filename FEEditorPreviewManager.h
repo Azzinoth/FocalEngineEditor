@@ -83,7 +83,6 @@ private:
 	FETexture* GetPreview(FEObject* Object);
 	FETexture* GetPreview(const FEUUID& ObjectID);
 
-	void CheckAndUpdateIfNeededGameModelPreview(const FEUUID& ObjectIDThatWasChanged);
 	void CheckAndUpdateIfNeededPrefabPreview(const FEUUID& GameModelIDThatWasChanged);
 
 	void Clear();
