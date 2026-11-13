@@ -31,10 +31,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	const int FrameCountTillMeasure = 20;
 	double CPUFrameDurations[FrameCountTillMeasure] = { 0.0f };
 	double GPUFrameDurations[FrameCountTillMeasure] = { 0.0f };
+	double FrameDurations[FrameCountTillMeasure] = { 0.0 };
 	int FrameCounter = 0;
 
 	double AverageCpuFrameDuration = 0.0;
 	double AverageGpuFrameDuration = 0.0;
+	double AverageFrameDuration = 0.0;
 
 	bool bPutThisFrameToTimeline = false;
 
@@ -43,8 +45,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	FEOpenXR_INPUT.SetLeftValveSqueezeValueCallBack(OnSomething);
 
+	const std::string FrameTimeStampLabel = "EditorFrame";
+	TIME.BeginTimeStamp(FrameTimeStampLabel);
 	while (ENGINE.IsNotTerminated())
 	{
+		const double PreviousFrameDuration = TIME.EndTimeStamp(FrameTimeStampLabel);
+		TIME.BeginTimeStamp(FrameTimeStampLabel);
+
 		PROFILING.StartProfiling();
 
 		ENGINE.BeginFrame();
@@ -165,42 +172,59 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		EDITOR.Render();
 		ENGINE.EndFrame();
 
-		// CPU and GPU Time
+		// Engine time is BeginFrame with Render, present time is EndFrame.
 		CPUFrameDurations[FrameCounter] = ENGINE.GetCpuTime();
 		GPUFrameDurations[FrameCounter] = ENGINE.GetGpuTime();
+		FrameDurations[FrameCounter] = PreviousFrameDuration;
 		FrameCounter++;
 
 		if (FrameCounter > FrameCountTillMeasure - 1)
 		{
 			AverageCpuFrameDuration = 0.0f;
 			AverageGpuFrameDuration = 0.0f;
+			AverageFrameDuration = 0.0;
 			for (size_t i = 0; i < FrameCountTillMeasure; i++)
 			{
 				AverageCpuFrameDuration += CPUFrameDurations[i];
 				AverageGpuFrameDuration += GPUFrameDurations[i];
+				AverageFrameDuration += FrameDurations[i];
 			}
 			AverageCpuFrameDuration /= FrameCountTillMeasure;
 			AverageGpuFrameDuration /= FrameCountTillMeasure;
+			AverageFrameDuration /= FrameCountTillMeasure;
 
 			FrameCounter = 0;
 		}
 
-		std::string CPUMs = std::to_string(AverageCpuFrameDuration);
-		CPUMs.erase(CPUMs.begin() + 4, CPUMs.end());
+		const auto ToCaptionString = [](const double Milliseconds) {
+			std::string Result = std::to_string(Milliseconds);
+			const size_t DotPosition = Result.find('.');
+			if (DotPosition != std::string::npos)
+				Result.erase(DotPosition >= 3 ? DotPosition : 4);
 
-		std::string GPUMs = std::to_string(AverageGpuFrameDuration);
-		GPUMs.erase(GPUMs.begin() + 4, GPUMs.end());
+			return Result;
+		};
 
-		std::string FrameMs = std::to_string(AverageCpuFrameDuration + AverageGpuFrameDuration);
-		FrameMs.erase(FrameMs.begin() + 4, FrameMs.end());
+		// What is left of the frame is the editor user interface.
+		double AverageEditorDuration = AverageFrameDuration - AverageCpuFrameDuration - AverageGpuFrameDuration;
+		if (AverageEditorDuration < 0.0)
+			AverageEditorDuration = 0.0;
 
-		std::string Caption = "CPU time : ";
+		const std::string CPUMs = ToCaptionString(AverageCpuFrameDuration);
+		const std::string GPUMs = ToCaptionString(AverageGpuFrameDuration);
+		const std::string FrameMs = ToCaptionString(AverageFrameDuration);
+		const std::string EditorMs = ToCaptionString(AverageEditorDuration);
+
+		std::string Caption = "Engine : ";
 		Caption += CPUMs;
 		Caption += " ms";
-		Caption += "  GPU time : ";
+		Caption += "  Editor UI : ";
+		Caption += EditorMs;
+		Caption += " ms";
+		Caption += "  Present : ";
 		Caption += GPUMs;
 		Caption += " ms";
-		Caption += "  Frame time : ";
+		Caption += "  Frame : ";
 		Caption += FrameMs;
 		Caption += " ms";
 
