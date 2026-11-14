@@ -95,6 +95,10 @@
         bool AnyFilterActive();
 		bool ShouldPassVisibilityFilter(const FEUUID& ObjectID);
         void UpdateFilterForResources();
+		std::string LastUsedNameFilter = "";
+		std::vector<std::string> LastUsedObjectTypeFilters;
+		std::vector<std::string> LastUsedObjectTagNegativeFilters;
+		bool IsFilteredListOutdated();
 
         // Filter buttons
         ImGuiImageButton* FilterAllTypesButton = nullptr;

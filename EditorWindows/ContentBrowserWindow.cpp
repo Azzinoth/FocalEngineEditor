@@ -908,8 +908,6 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 	ImGui::PopStyleColor();
 
 	static std::string LastFramePath;
-	AllResourcesIDs.clear();
-	AllResourcesIDs = VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs(VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 
 	float CurrentX = 100.0f;
 	ImGui::SetCursorPosX(CurrentX);
@@ -1219,8 +1217,8 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 25);
 	ImGui::Separator();
 
-	UpdateFilterForResources();
-	UpdateDirectoryDragAndDropTargets();
+	if (IsFilteredListOutdated())
+		UpdateDirectoryDragAndDropTargets();
 
 	// ************** Drag&Drop **************
 	if (VIRTUAL_FILE_SYSTEM.GetCurrentPath() != LastFramePath)
@@ -1240,11 +1238,23 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 	ImGui::Columns(IconsPerWindowWidth, "mycolumns3", false);
 
+	const ImVec2 ItemSize = ImVec2(ItemIconSize + 16.0f, ItemIconSize + 16.0f + ImGui::GetStyle().ItemSpacing.y + ImGui::GetTextLineHeight());
 	for (size_t i = 0; i < FilteredResourcesIDs.size(); i++)
 	{
 		FEObject* CurrentResource = OBJECT_MANAGER.GetFEObject(FilteredResourcesIDs[i]);
 		if (CurrentResource == nullptr)
 			continue;
+
+		// Items not on the screen should just reserve space, but not rendered.
+		if (RenameIndex != int(i) && !ImGui::IsRectVisible(ItemSize))
+		{
+			if (CurrentResource->GetType() == FE_NULL)
+				DirectoryIndex++;
+
+			ImGui::Dummy(ItemSize);
+			ImGui::NextColumn();
+			continue;
+		}
 
 		ImGui::PushID(int(std::hash<FEUUID>{}(CurrentResource->GetID())));
 
@@ -1561,8 +1571,24 @@ void FEEditorContentBrowserWindow::UpdateDirectoryDragAndDropTargets()
 	}
 }
 
+bool FEEditorContentBrowserWindow::IsFilteredListOutdated()
+{
+	// Names of objects can be changed outside of this window.
+	if (!NameFilter.empty())
+		return true;
+
+	return NameFilter != LastUsedNameFilter ||
+		   ObjectTypeFilters != LastUsedObjectTypeFilters ||
+		   ObjectTagNegativeFilters != LastUsedObjectTagNegativeFilters ||
+		   AllResourcesIDs != VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs(VIRTUAL_FILE_SYSTEM.GetCurrentPath());
+}
+
 void FEEditorContentBrowserWindow::UpdateFilterForResources()
 {
+	LastUsedNameFilter = NameFilter;
+	LastUsedObjectTypeFilters = ObjectTypeFilters;
+	LastUsedObjectTagNegativeFilters = ObjectTagNegativeFilters;
+
 	FilteredResourcesIDs.clear();
 
 	std::vector<FEUUID> TemporaryFilteredList;
