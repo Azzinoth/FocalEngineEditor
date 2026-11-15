@@ -406,14 +406,17 @@ void FEEditorSceneGraphWindow::Render()
 		return;
 	}
 
-	if (ImGui::Button("ExpandAll"))
+	if (EDITOR.IsDebugWindowVisible())
 	{
-		SceneGraphUI->ExpandAllNodes();
-	}
+		if (ImGui::Button("ExpandAll"))
+		{
+			SceneGraphUI->ExpandAllNodes();
+		}
 
-	if (ImGui::Button("CollapseAll"))
-	{
-		SceneGraphUI->CollapseAllNodes();
+		if (ImGui::Button("CollapseAll"))
+		{
+			SceneGraphUI->CollapseAllNodes();
+		}
 	}
 
 	// TreeView's built-in ExpandToNode only runs from IsNodeSelected, which is not called on nodes hidden under a collapsed ancestor.

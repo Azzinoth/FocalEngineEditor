@@ -196,7 +196,10 @@ void FEEditor::AfterEngineUpdate()
 
 void FEEditor::RenderTemporaryDebugWindow()
 {
-	if (ImGui::Begin("Temporary debug window"))
+	if (!bTemporaryDebugWindowVisible)
+		return;
+
+	if (ImGui::Begin("Temporary debug window", &bTemporaryDebugWindowVisible))
 	{
 		// FE_FIX_ME: Find a proper place for this UI.
 		static float AverageTime = 0.0f;
@@ -296,6 +299,73 @@ void FEEditor::RenderTemporaryDebugWindow()
 		}
 	}
 	ImGui::End();
+}
+
+bool FEEditor::IsDebugWindowVisible() const
+{
+	return bDebugWindowVisible;
+}
+
+// Small window at the top center of the main window, with a triangle to run game mode and a square to exit it.
+void FEEditor::RenderGameModeButton()
+{
+	bool bFocusedSceneCouldBeUsedForGameMode = false;
+	if (EDITOR.GetFocusedScene() != nullptr)
+	{
+		FEEditorSceneWindow* SceneWindow = EDITOR_SCENE_WINDOW_MANAGER.GetSceneWindow(EDITOR.GetFocusedScene()->GetID());
+		// Focused scene could be prefab scene
+		if (!PREFAB_EDITOR_MANAGER.IsEditorWindowIsPrefabWindow(SceneWindow))
+			bFocusedSceneCouldBeUsedForGameMode = true;
+	}
+
+	std::string ToolTipText = "Run game mode";
+	if (EDITOR.IsInGameMode())
+	{
+		ToolTipText = "Exit game mode";
+	}
+	else if (!bFocusedSceneCouldBeUsedForGameMode)
+	{
+		ToolTipText = "Can not run game mode (focused scene is prefab scene).";
+	}
+
+	const float WindowSize = 48.0f;
+	const float ButtonSize = 32.0f;
+	const float ButtonOffset = (WindowSize - ButtonSize) / 2.0f;
+	ImGui::SetNextWindowPos(ImVec2((APPLICATION.GetMainWindow()->GetWidth() - WindowSize) / 2.0f, 10.0f));
+	ImGui::SetNextWindowSize(ImVec2(WindowSize, WindowSize));
+	ImGui::Begin("##GameModeButtonWindow", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+													ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings);
+
+	const bool bDisabled = !bFocusedSceneCouldBeUsedForGameMode;
+	if (bDisabled)
+		ImGui::BeginDisabled();
+
+	ImGui::SetCursorPos(ImVec2(ButtonOffset, ButtonOffset));
+	const ImVec2 ButtonPosition = ImGui::GetCursorScreenPos();
+	const bool bClicked = ImGui::Button("##GameModeButton", ImVec2(ButtonSize, ButtonSize));
+
+	if (bDisabled)
+		ImGui::EndDisabled();
+
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		ImGui::SetTooltip("%s", ToolTipText.c_str());
+
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	if (EDITOR.IsInGameMode())
+	{
+		DrawList->AddRectFilled(ImVec2(ButtonPosition.x + 9.0f, ButtonPosition.y + 9.0f), ImVec2(ButtonPosition.x + 23.0f, ButtonPosition.y + 23.0f), IM_COL32(225, 70, 60, 255));
+	}
+	else
+	{
+		const ImU32 Color = bDisabled ? IM_COL32(120, 120, 120, 255) : IM_COL32(70, 200, 90, 255);
+		DrawList->AddTriangleFilled(ImVec2(ButtonPosition.x + 10.0f, ButtonPosition.y + 7.0f), ImVec2(ButtonPosition.x + 26.0f, ButtonPosition.y + 16.0f),
+									ImVec2(ButtonPosition.x + 10.0f, ButtonPosition.y + 25.0f), Color);
+	}
+
+	ImGui::End();
+
+	if (bClicked)
+		EDITOR.SetGameMode(!EDITOR.IsInGameMode());
 }
 
 void FEEditor::SetUpDocking()
@@ -407,6 +477,14 @@ void FEEditor::Render()
 				ImGui::EndMenu();
 			}
 
+			if (ImGui::BeginMenu("Project"))
+			{
+				if (ImGui::MenuItem("Build executable"))
+					EDITOR_PROJECT_BUILD_SYSTEM.BuildExecutable(PROJECT_MANAGER.GetCurrent());
+
+				ImGui::EndMenu();
+			}
+
 			if (ImGui::BeginMenu("Window"))
 			{
 				if (ImGui::MenuItem("Scene Graph", nullptr, SCENE_GRAPH_WINDOW.bVisible))
@@ -441,6 +519,14 @@ void FEEditor::Render()
 
 				if (ImGui::BeginMenu("Debug"))
 				{
+					if (ImGui::MenuItem("Debug window", nullptr, bDebugWindowVisible))
+						bDebugWindowVisible = !bDebugWindowVisible;
+
+					if (ImGui::MenuItem("Temporary debug window", nullptr, bTemporaryDebugWindowVisible))
+						bTemporaryDebugWindowVisible = !bTemporaryDebugWindowVisible;
+
+					ImGui::Separator();
+
 					auto PossibleWindows = RENDERER.GetDebugOutputTextures();
 
 					auto WindowIterator = PossibleWindows.begin();
@@ -500,41 +586,7 @@ void FEEditor::Render()
 		}
 		ImGui::PopStyleVar();
 
-		bool bFocusedSceneCouldBeUsedForGameMode = false;
-		if (EDITOR.GetFocusedScene() != nullptr)
-		{
-			FEEditorSceneWindow* SceneWindow = EDITOR_SCENE_WINDOW_MANAGER.GetSceneWindow(EDITOR.GetFocusedScene()->GetID());
-			// Focused scene could be prefab scene
-			if (!PREFAB_EDITOR_MANAGER.IsEditorWindowIsPrefabWindow(SceneWindow))
-				bFocusedSceneCouldBeUsedForGameMode = true;
-		}
-
-
-		std::string ButtonText = "Run game mode";
-		
-		if (EDITOR.IsInGameMode())
-		{
-			ButtonText = "Exit game mode";
-		}
-		else
-		{
-			if (!bFocusedSceneCouldBeUsedForGameMode)
-			{
-				ButtonText = "Can not run game mode (focused scene is prefab scene).";
-			}
-		}
-
-		if (!bFocusedSceneCouldBeUsedForGameMode)
-			ImGui::BeginDisabled();
-
-		if (ImGui::Button(ButtonText.c_str(), ImVec2(220, 0)))
-		{
-			EDITOR.SetGameMode(!EDITOR.IsInGameMode());
-		}
-
-		if (!bFocusedSceneCouldBeUsedForGameMode)
-			ImGui::EndDisabled();
-
+		RenderGameModeButton();
 		RenderTemporaryDebugWindow();
 		SCENE_GRAPH_WINDOW.Render();
 		CONTENT_BROWSER_WINDOW.Render();

@@ -51,6 +51,15 @@ void GizmosSettingsWindow::Render()
 	if (GizmoSceneData == nullptr)
 		return;
 
+	// Top right corner of the window of focused scene, below its tab.
+	FEEditorSceneWindow* SceneWindow = EDITOR_SCENE_WINDOW_MANAGER.GetSceneWindow(CurrentScene->GetID());
+	if (SceneWindow != nullptr && SceneWindow->GetWindow() != nullptr)
+	{
+		const ImRect SceneArea = SceneWindow->GetWindow()->InnerRect;
+		Position = ImVec2(SceneArea.Max.x - Size.x - 8.0f, SceneArea.Min.y + 8.0f);
+		ImGui::SetNextWindowPos(Position);
+	}
+
 	FEImGuiWindow::Render();
 
 	GizmoSceneData->GizmosState == TRANSFORM_GIZMOS ? SetSelectedStyle(TransformationGizmoButton) : SetDefaultStyle(TransformationGizmoButton);

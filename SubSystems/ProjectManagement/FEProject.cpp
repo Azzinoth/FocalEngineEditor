@@ -781,6 +781,8 @@ bool FEProject::LoadVFSData(std::string FilePath)
 	}
 
 	VIRTUAL_FILE_SYSTEM.LoadState(FilePath);
+	// Does nothing when directory already exists.
+	VIRTUAL_FILE_SYSTEM.CreateDirectory("Shaders", "/");
 	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(false, "/Shaders");
 
 	auto Files = VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs("/Shaders");
@@ -814,6 +816,8 @@ bool FEProject::LoadVFSData(std::string FilePath)
 
 void FEProject::AddMissingVFSData()
 {
+	VIRTUAL_FILE_SYSTEM.CreateDirectory("Shaders", "/");
+
 	std::vector<FEUUID> ShaderList = RESOURCE_MANAGER.GetShaderIDList();
 	for (size_t i = 0; i < ShaderList.size(); i++)
 	{

@@ -51,6 +51,8 @@ public:
     bool IsInGameMode() const;
     void SetGameMode(bool GameMode);
 
+    bool IsDebugWindowVisible() const;
+
     void UpdateBeforeRender();
 
 	void RenderTemporaryDebugWindow();
@@ -80,6 +82,11 @@ private:
     // Log window
     bool bLogWindowVisible = true;
     void DisplayLogWindow() const;
+
+    bool bDebugWindowVisible = false;
+    bool bTemporaryDebugWindowVisible = false;
+
+    void RenderGameModeButton();
 
 	// About window
     bool bShouldOpenAboutWindow = false;
