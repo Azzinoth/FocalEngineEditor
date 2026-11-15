@@ -208,6 +208,9 @@ void FEEditorTextureCreatingNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket*
 		Index++;
 	}
 
+	if (ResultTexture != RESOURCE_MANAGER.NoTexture)
+		RESOURCE_MANAGER.DeleteFETexture(ResultTexture);
+
 	ResultTexture = RESOURCE_MANAGER.RawDataToFETexture(ResultPixels, static_cast<int>(TextureWidth), static_cast<int>(TextureHeight), -1);
 
 	delete[] ResultPixels;

@@ -71,6 +71,12 @@ void CombineChannelsToTexturePopUp::Render()
 			PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(TextureNode->GetTexture());
 			VIRTUAL_FILE_SYSTEM.CreateFile(TextureNode->GetTexture(), VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 			NODE_SYSTEM.DeleteNodeArea(CurrentNodeArea);
+			CurrentNodeArea = nullptr;
+			TextureNode = nullptr;
+		}
+		else
+		{
+			DiscardResult();
 		}
 
 		FEImGuiWindow::Close();
@@ -90,6 +96,7 @@ void CombineChannelsToTexturePopUp::Render()
 
 		ImGui::PopStyleVar();
 
+		DiscardResult();
 		FEImGuiWindow::Close();
 		return;
 	}
@@ -100,6 +107,20 @@ void CombineChannelsToTexturePopUp::Render()
 
 	ImGui::PopStyleVar();
 	FEImGuiWindow::OnRenderEnd();
+}
+
+void CombineChannelsToTexturePopUp::DiscardResult()
+{
+	if (CurrentNodeArea == nullptr)
+		return;
+
+	// Node does not delete its texture when node area is deleted.
+	if (TextureNode != nullptr && TextureNode->GetTexture() != RESOURCE_MANAGER.NoTexture)
+		RESOURCE_MANAGER.DeleteFETexture(TextureNode->GetTexture());
+
+	NODE_SYSTEM.DeleteNodeArea(CurrentNodeArea);
+	CurrentNodeArea = nullptr;
+	TextureNode = nullptr;
 }
 
 bool CombineChannelsToTexturePopUp::DragAndDropNodeAreaTargetCallback(FEObject* Object, void** CallbackInfo)

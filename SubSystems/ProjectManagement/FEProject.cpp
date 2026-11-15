@@ -292,8 +292,6 @@ void FEProject::SaveResources(std::string DirectoryPath, bool bFullSave)
 // TODO: Make that process in memory, not involving creating temporary files.
 FEAssetPackage* FEProject::SaveResourcesToAssetPackage()
 {
-	FEAssetPackage* Result = new FEAssetPackage();
-
 	std::string TemporaryFolder = FILE_SYSTEM.GetCurrentWorkingPath() + "/Temporary_Project_Resources/";
 	if (FILE_SYSTEM.DoesDirectoryExist(TemporaryFolder))
 	{
@@ -322,6 +320,7 @@ FEAssetPackage* FEProject::SaveResourcesToAssetPackage()
 	SetEditorCamerasInsteadOfProperMainCameras();
 	
 	// Saving all files to package.
+	FEAssetPackage* Result = new FEAssetPackage();
 	std::vector<std::string> Files = FILE_SYSTEM.GetFileNamesInDirectory(TemporaryFolder);
 	for (size_t i = 0; i < Files.size(); i++)
 	{

@@ -148,7 +148,13 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 	}
 
 	FEAssetPackage* Resources = ProjectToBuild->SaveResourcesToAssetPackage();
+	if (Resources == nullptr)
+	{
+		LOG.Add("FEProjectBuildSystem::BuildExecutable: Error saving project resources to asset package", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		return false;
+	}
 	Resources->SaveToFile(VSProjectDirectory + "/Resources.fepackage");
+	delete Resources;
 
 	// Create all needed folders.
 	std::vector<std::string> FoldersToCreate = { "SubSystems/",
@@ -233,6 +239,7 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 		return false;
 	}
 	EngineResources->SaveToFile(VSProjectDirectory + "/EngineResources.fepackage");
+	delete EngineResources;
 
 	StaticPlugins = FindStaticPlugins();
 
