@@ -14,8 +14,6 @@ class FEProjectManager
 	int IndexChosen = -1;
 	FEProject* Current = nullptr;
 	std::string CustomProjectFolder;
-
-	void CreateNewProject(std::string ProjectName, std::string ProjectPath);
 public:
 	SINGLETON_PUBLIC_PART(FEProjectManager)
 	SINGLETON_PRIVATE_PART(FEProjectManager)
@@ -27,6 +25,7 @@ public:
 
 	std::vector<FEProject*> GetList();
 
+	void CreateNewProject(std::string ProjectName, std::string ProjectPath);
 	void OpenProject(int ProjectIndex);
 	void LoadProjectList();
 	void CloseCurrentProject();
