@@ -13,7 +13,9 @@ private:
 protected:
 	FEEditorSceneWindow(FEScene* Scene);
 	~FEEditorSceneWindow();
-	
+
+	void DeleteSceneAndEditorData();
+
 	 FEScene* Scene = nullptr;
 	 FEUUID SceneID;
 	 DragAndDropTarget* SceneWindowTarget = nullptr;

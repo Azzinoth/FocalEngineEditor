@@ -76,8 +76,7 @@ VolumetricTextureViewWindow::~VolumetricTextureViewWindow()
 	if (CurrentProject != nullptr)
 		CurrentProject->SceneIDToEditorCameraID.erase(SceneID);
 
-	// Using ID instead of Scene pointer because it's possible that scene was already deleted.
-	SCENE_MANAGER.DeleteScene(SceneID);
+	DeleteSceneAndEditorData();
 
 	delete MaterialFor3DTextures;
 }

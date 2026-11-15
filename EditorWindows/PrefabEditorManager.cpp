@@ -24,8 +24,7 @@ FEPrefabSceneEditorWindow::FEPrefabSceneEditorWindow(FEScene* Scene) : FEEditorS
 FEPrefabSceneEditorWindow::~FEPrefabSceneEditorWindow()
 {
 	delete CloseButton;
-	// Using ID instead of Scene pointer because it's possible that scene was already deleted.
-	SCENE_MANAGER.DeleteScene(SceneID);
+	DeleteSceneAndEditorData();
 
 	if (!PREFAB_EDITOR_MANAGER.bClearing)
 	{

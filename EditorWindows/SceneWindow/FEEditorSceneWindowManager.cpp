@@ -83,11 +83,8 @@ void FEEditorSceneWindowManager::DeleteSceneAndCleanup(const FEUUID& SceneID)
 		}
 	}
 
-	if (SELECTED.PerSceneData.find(SceneToDelete->GetID()) != SELECTED.PerSceneData.end())
-		SELECTED.PerSceneData.erase(SceneToDelete->GetID());
-
-	if (GIZMO_MANAGER.PerSceneData.find(SceneToDelete->GetID()) != GIZMO_MANAGER.PerSceneData.end())
-		GIZMO_MANAGER.PerSceneData.erase(SceneToDelete->GetID());
+	SELECTED.ClearSceneData(SceneToDelete->GetID());
+	GIZMO_MANAGER.ClearSceneData(SceneToDelete->GetID());
 
 	SCENE_MANAGER.DeleteScene(SceneToDelete->GetID());
 }

@@ -50,6 +50,7 @@ void FEProjectManager::CloseCurrentProject()
 	WindowsManager::GetInstance().CloseAllPopups();
 
 	SELECTED.ClearAll();
+	GIZMO_MANAGER.ClearAllSceneData();
 	PREVIEW_MANAGER.Clear();
 	for (size_t i = 0; i < List.size(); i++)
 	{

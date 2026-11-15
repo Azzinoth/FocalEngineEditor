@@ -279,6 +279,7 @@ void GizmoManager::Update()
 	{
 		if (SCENE_MANAGER.GetSceneByID(PerSceneIterator->first) == nullptr)
 		{
+			delete PerSceneIterator->second;
 			PerSceneIterator = PerSceneData.erase(PerSceneIterator);
 			continue;
 		}

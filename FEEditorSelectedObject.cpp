@@ -756,6 +756,8 @@ void FEEditorSelectedObject::SetSelectedByIndex(const size_t Index, FEScene* Sce
 
 void FEEditorSelectedObject::ClearAllSceneData()
 {
+	HALO_SELECTION_EFFECT.ClearAllSceneData();
+
 	auto PerSceneIterator = PerSceneData.begin();
 	while (PerSceneIterator != PerSceneData.end())
 	{
@@ -768,6 +770,8 @@ void FEEditorSelectedObject::ClearAllSceneData()
 
 void FEEditorSelectedObject::ClearSceneData(const FEUUID& SceneID)
 {
+	HALO_SELECTION_EFFECT.ClearSceneData(SceneID);
+
 	auto FoundSceneData = PerSceneData.find(SceneID);
 	if (FoundSceneData != PerSceneData.end())
 	{

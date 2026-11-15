@@ -84,6 +84,7 @@ void FEEditorHaloSelectionEffect::UpdateResources(FEScene* Scene)
 	if (CameraData == nullptr)
 		return;
 
+	DeletePostProcess(CurrentHaloSelectionData);
 	std::vector<FEPostProcess*>& PostProcesses = CameraData->PostProcessEffects;
 
 	delete CurrentHaloSelectionData->HaloObjectsFB;
@@ -126,6 +127,36 @@ void FEEditorHaloSelectionEffect::UpdateResources(FEScene* Scene)
 	CurrentHaloSelectionData->PostProcess->ReplaceOutTexture(4, RESOURCE_MANAGER.CreateSameFormatTexture(CameraData->SceneToTextureFB->GetColorAttachment(), CameraData->SceneToTextureFB->GetWidth(), CameraData->SceneToTextureFB->GetHeight()));
 
 	RENDERER.AddPostProcess(CameraData, CurrentHaloSelectionData->PostProcess, true);
+	CurrentHaloSelectionData->PostProcessCameraID = CameraData->CameraEntity->GetID();
+}
+
+void FEEditorHaloSelectionEffect::DeletePostProcess(FEHaloSelectionData* SceneData)
+{
+	if (SceneData == nullptr || SceneData->PostProcess == nullptr)
+		return;
+
+	// Camera still uses the effect if its rendering data was not recreated.
+	FEScene* Scene = SCENE_MANAGER.GetSceneByID(SceneData->SceneID);
+	FEEntity* CameraEntity = Scene == nullptr ? nullptr : Scene->GetEntity(SceneData->PostProcessCameraID);
+	FECameraRenderingData* CameraData = RENDERER.GetCameraRenderingData(CameraEntity);
+	if (CameraData != nullptr)
+	{
+		std::vector<FEPostProcess*>& PostProcesses = CameraData->PostProcessEffects;
+		for (size_t i = 0; i < PostProcesses.size(); i++)
+		{
+			if (PostProcesses[i] == SceneData->PostProcess)
+			{
+				PostProcesses.erase(PostProcesses.begin() + i);
+				break;
+			}
+		}
+
+		if (CameraData->FinalScene == SceneData->PostProcess->Stages.back()->OutTexture)
+			CameraData->FinalScene = nullptr;
+	}
+
+	delete SceneData->PostProcess;
+	SceneData->PostProcess = nullptr;
 }
 
 void FEEditorHaloSelectionEffect::ClearAllSceneData()
@@ -133,6 +164,7 @@ void FEEditorHaloSelectionEffect::ClearAllSceneData()
 	auto PerSceneIterator = PerSceneData.begin();
 	while (PerSceneIterator != PerSceneData.end())
 	{
+		DeletePostProcess(PerSceneIterator->second);
 		delete PerSceneIterator->second;
 		PerSceneIterator++;
 	}
@@ -145,6 +177,7 @@ void FEEditorHaloSelectionEffect::ClearSceneData(const FEUUID& SceneID)
 	auto FoundSceneData = PerSceneData.find(SceneID);
 	if (FoundSceneData != PerSceneData.end())
 	{
+		DeletePostProcess(FoundSceneData->second);
 		delete FoundSceneData->second;
 		PerSceneData.erase(FoundSceneData);
 	}
@@ -207,6 +240,7 @@ void FEEditorHaloSelectionEffect::AddSceneData(const FEUUID& SceneID)
 	PerSceneData[SceneID]->PostProcess->ReplaceOutTexture(4, RESOURCE_MANAGER.CreateSameFormatTexture(CameraData->SceneToTextureFB->GetColorAttachment(), CameraData->SceneToTextureFB->GetWidth(), CameraData->SceneToTextureFB->GetHeight()));
 
 	RENDERER.AddPostProcess(CameraData, PerSceneData[SceneID]->PostProcess, true);
+	PerSceneData[SceneID]->PostProcessCameraID = MainCamera->GetID();
 }
 
 FEHaloSelectionData* FEEditorHaloSelectionEffect::GetSceneData(const FEUUID& SceneID)

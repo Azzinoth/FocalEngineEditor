@@ -110,6 +110,14 @@ FEEditorSceneWindow::~FEEditorSceneWindow()
 
 }
 
+void FEEditorSceneWindow::DeleteSceneAndEditorData()
+{
+	SELECTED.ClearSceneData(SceneID);
+	GIZMO_MANAGER.ClearSceneData(SceneID);
+	// Using ID instead of Scene pointer because it's possible that scene was already deleted.
+	SCENE_MANAGER.DeleteScene(SceneID);
+}
+
 void FEEditorSceneWindow::Show()
 {
 	FEImGuiWindow::Show();

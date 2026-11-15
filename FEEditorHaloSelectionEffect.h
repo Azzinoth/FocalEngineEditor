@@ -14,7 +14,8 @@ class FEHaloSelectionData
 	FEUUID SceneID;
 	FEFramebuffer* HaloObjectsFB = nullptr;
 	FEPostProcess* PostProcess = nullptr;
-	
+	FEUUID PostProcessCameraID;
+
 	float BloomSize = -1.0f;
 public:
 	// We need to have some way to tweak the bloom size. If it is -1.0f, then it will be default.
@@ -33,6 +34,7 @@ private:
 
 	void InitializeResources();
 	void UpdateResources(FEScene* Scene);
+	void DeletePostProcess(FEHaloSelectionData* SceneData);
 
 	FEMaterial* HaloMaterial = nullptr;
 	FEShader* HaloDrawInstancedObjectShader = nullptr;
