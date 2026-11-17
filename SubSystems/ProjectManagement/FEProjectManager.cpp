@@ -84,8 +84,7 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 	}
 	IndexChosen = -1;
 
-	// After loading project we should update our previews
-	PREVIEW_MANAGER.ReCreateAll();
+	PREVIEW_MANAGER.Clear();
 	SELECTED.ClearAll();
 }
 

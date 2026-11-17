@@ -27,7 +27,6 @@ private:
 	SINGLETON_PRIVATE_PART(FEEditorPreviewManager)
 
 	void InitializeResources();
-	void ReCreateAll();
 
 	void Update();
 
@@ -59,6 +58,7 @@ private:
 	FETexture* GetMeshPreview(const FEUUID& MeshID);
 
 	void CreateMaterialPreview(const FEUUID& MaterialID);
+	void UpdatePreviewsThatUseMaterial(const FEUUID& MaterialID);
 	FETexture* GetMaterialPreview(const FEUUID& MaterialID);
 
 	void CreateGameModelPreview(const FEUUID& GameModelID);

@@ -59,37 +59,6 @@ void FEEditorPreviewManager::InitializeResources()
 	RESOURCE_MANAGER.SetTag(MaterialFor3DTextures, EDITOR_RESOURCE_TAG);
 }
 
-void FEEditorPreviewManager::ReCreateAll()
-{
-	Clear();
-
-	const std::vector<FEUUID> MeshList = RESOURCE_MANAGER.GetMeshIDList();
-	for (size_t i = 0; i < MeshList.size(); i++)
-	{
-		CreateMeshPreview(MeshList[i]);
-	}
-
-	const std::vector<FEUUID> MaterialList = RESOURCE_MANAGER.GetMaterialIDList();
-	for (size_t i = 0; i < MaterialList.size(); i++)
-	{
-		FEObject* CurrentMaterial = OBJECT_MANAGER.GetFEObject(MaterialList[i]);
-		if (CurrentMaterial->GetTag() != EDITOR_RESOURCE_TAG)
-			CreateMaterialPreview(MaterialList[i]);
-	}
-
-	const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
-	for (size_t i = 0; i < GameModelList.size(); i++)
-	{
-		// Game models that use a material already got preview from CreateMaterialPreview.
-		if (PreviewTextures.find(GameModelList[i]) != PreviewTextures.end())
-			continue;
-
-		FEObject* CurrentGameModel = OBJECT_MANAGER.GetFEObject(GameModelList[i]);
-		if (CurrentGameModel->GetTag() != EDITOR_RESOURCE_TAG)
-			CreateGameModelPreview(GameModelList[i]);
-	}
-}
-
 void FEEditorPreviewManager::BeforePreviewActions()
 {
 	PreviewScene->SetFlag(FESceneFlag::Active | FESceneFlag::Renderable, true);
@@ -216,23 +185,37 @@ void FEEditorPreviewManager::CreateMaterialPreview(const FEUUID& MaterialID)
 
 	StorePreview(MaterialID, RENDERER.GetCameraResult(LocalCameraEntity));
 
-	// Looking for all gameModels that uses this material to also update them.
+	UpdatePreviewsThatUseMaterial(MaterialID);
+}
+
+void FEEditorPreviewManager::UpdatePreviewsThatUseMaterial(const FEUUID& MaterialID)
+{
+	const FEMaterial* Material = RESOURCE_MANAGER.GetMaterial(MaterialID);
+	if (Material == nullptr)
+		return;
+
 	const std::vector<FEUUID> GameModelList = RESOURCE_MANAGER.GetGameModelIDList();
 	for (size_t i = 0; i < GameModelList.size(); i++)
 	{
+		if (PreviewTextures.find(GameModelList[i]) == PreviewTextures.end())
+			continue;
+
 		const FEGameModel* CurrentGameModel = RESOURCE_MANAGER.GetGameModel(GameModelList[i]);
-		if (CurrentGameModel->Material == PreviewMaterial && CurrentGameModel != PreviewGameModel)
-			CreateGameModelPreview(CurrentGameModel->GetID());
+		if (CurrentGameModel->Material == Material && CurrentGameModel != PreviewGameModel)
+			CreateGameModelPreview(GameModelList[i]);
 	}
 
-	//// Looking for all prefabs that uses this material to also update them.
-	//const std::vector<FEUUID> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
-	//for (size_t i = 0; i < PrefabList.size(); i++)
-	//{
-	//	FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[i]);
-	//	if (CurrentPrefab->IsUsingMaterial(MaterialID))
-	//		CreatePrefabPreview(CurrentPrefab->GetID());
-	//}
+	// A prefab could use the material through a game model that has no preview.
+	const std::vector<FEUUID> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
+	for (size_t i = 0; i < PrefabList.size(); i++)
+	{
+		if (PreviewTextures.find(PrefabList[i]) == PreviewTextures.end())
+			continue;
+
+		FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[i]);
+		if (CurrentPrefab->GetScene() != nullptr && CurrentPrefab->GetScene()->IsUsingMaterial(MaterialID))
+			CreatePrefabPreview(PrefabList[i]);
+	}
 }
 
 FETexture* FEEditorPreviewManager::GetMaterialPreview(const FEUUID& MaterialID)
@@ -327,8 +310,10 @@ void FEEditorPreviewManager::CheckAndUpdateIfNeededPrefabPreview(const FEUUID& G
 	std::vector<FEUUID> PrefabList = RESOURCE_MANAGER.GetPrefabIDList();
 	for (size_t j = 0; j < PrefabList.size(); j++)
 	{
-		FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[j]);
+		if (PreviewTextures.find(PrefabList[j]) == PreviewTextures.end())
+			continue;
 
+		FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabList[j]);
 		if (CurrentPrefab->IsUsingGameModel(GameModelThatWasChanged->GetID()))
 			CreatePrefabPreview(CurrentPrefab->GetID());
 	}
@@ -700,7 +685,10 @@ void FEEditorPreviewManager::Update()
 
 		if (CurrentMaterial->IsDirty())
 		{
-			CreateMaterialPreview(MaterialList[i]);
+			// A material that was not shown yet has no preview to make again.
+			const bool bHasPreview = PreviewTextures.find(MaterialList[i]) != PreviewTextures.end();
+			bHasPreview ? CreateMaterialPreview(MaterialList[i]) : UpdatePreviewsThatUseMaterial(MaterialList[i]);
+
 			CurrentMaterial->SetDirtyFlag(false);
 
 			const std::vector<FEScene*> SceneList = SCENE_MANAGER.GetAllScenes();
