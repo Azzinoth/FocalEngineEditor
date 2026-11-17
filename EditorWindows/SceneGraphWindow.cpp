@@ -420,7 +420,8 @@ void FEEditorSceneGraphWindow::Render()
 	}
 
 	// TreeView's built-in ExpandToNode only runs from IsNodeSelected, which is not called on nodes hidden under a collapsed ancestor.
-	// So when selection changes from outside the tree (e.g. scene window pick), we expand the path here before TreeView iterates.
+	// So when selection changes from outside the tree (e.g. scene window pick), we expand the path and scroll to the node here before TreeView iterates.
+	// Clicks inside the tree update LastFrameSelectedEntityID in OnNodeClicked, so they do not scroll the tree.
 	FEEntity* CurrentlySelected = SELECTED.GetSelected(CurrentScene);
 	FEUUID CurrentSelectedID = CurrentlySelected == nullptr ? FEUUID() : CurrentlySelected->GetID();
 	if (CurrentSelectedID != LastFrameSelectedEntityID)
@@ -430,7 +431,7 @@ void FEEditorSceneGraphWindow::Render()
 		{
 			FENaiveSceneGraphNode* SelectedNode = CurrentScene->SceneGraph.GetNodeByEntityID(CurrentlySelected->GetID());
 			if (SelectedNode != nullptr)
-				SceneGraphUI->ExpandToNode(SceneGraphUI::NodeHandle(SelectedNode, SceneGraphBackend));
+				SceneGraphUI->ScrollToNode(SceneGraphUI::NodeHandle(SelectedNode, SceneGraphBackend));
 		}
 	}
 
@@ -459,6 +460,7 @@ void FEEditorSceneGraphWindow::OnNodeClicked(SceneGraphUI::NodeHandle Node, ImGu
 		return;
 
 	SELECTED.SetSelected(CurrentEntity);
+	SCENE_GRAPH_WINDOW.LastFrameSelectedEntityID = CurrentEntity->GetID();
 }
 
 bool FEEditorSceneGraphWindow::IsSelected(SceneGraphUI::NodeHandle Node)
