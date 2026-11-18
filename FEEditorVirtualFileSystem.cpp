@@ -265,16 +265,7 @@ bool FEVirtualFileSystem::CreateFile(FEObject* Data, const std::string Path)
 		return false;
 	}
 
-	if (Data->GetType() != FE_SHADER &&
-		Data->GetType() != FE_TEXTURE &&
-		Data->GetType() != FE_MESH &&
-		Data->GetType() != FE_MATERIAL &&
-		Data->GetType() != FE_GAMEMODEL &&
-		Data->GetType() != FE_POINT_CLOUD &&
-		Data->GetType() != FE_PREFAB &&
-		Data->GetType() != FE_SCENE &&
-		Data->GetType() != FE_ASSET_PACKAGE &&
-		Data->GetType() != FE_NATIVE_SCRIPT_MODULE)
+	if (!IsSupportedFileType(Data->GetType()))
 	{
 		LOG.Add("Data type is not supported in function FEVirtualFileSystem::CreateFile.", "FE_VIRTUAL_FILE_SYSTEM", FE_LOG_ERROR);
 		return false;
@@ -335,6 +326,91 @@ bool FEVirtualFileSystem::DirectoryHasFileWithName(FEVFSDirectory* Directory, co
 	}
 
 	return false;
+}
+
+bool FEVirtualFileSystem::IsSupportedFileType(const FE_OBJECT_TYPE Type)
+{
+	return Type == FE_SHADER ||
+		   Type == FE_TEXTURE ||
+		   Type == FE_MESH ||
+		   Type == FE_MATERIAL ||
+		   Type == FE_GAMEMODEL ||
+		   Type == FE_POINT_CLOUD ||
+		   Type == FE_PREFAB ||
+		   Type == FE_SCENE ||
+		   Type == FE_ASSET_PACKAGE ||
+		   Type == FE_NATIVE_SCRIPT_MODULE;
+}
+
+void FEVirtualFileSystem::CollectFileIDsRecursive(const FEVFSDirectory* Directory, std::unordered_set<FEUUID>& FileIDs)
+{
+	for (size_t i = 0; i < Directory->Files.size(); i++)
+		FileIDs.insert(Directory->Files[i].DataID);
+
+	for (size_t i = 0; i < Directory->SubDirectories.size(); i++)
+		CollectFileIDsRecursive(Directory->SubDirectories[i], FileIDs);
+}
+
+std::vector<FEObject*> FEVirtualFileSystem::CreateMissingFiles(const std::vector<FEObject*>& Objects, const std::string Path, const bool bRenameIfNameIsTaken)
+{
+	std::vector<FEObject*> Result;
+	if (!IsPathCorrect(Path) || IsPathToFile(Path))
+		return Result;
+
+	FEVFSDirectory* Directory = PathToDirectory(Path);
+	if (Directory->IsReadOnly() || IsAnyAncestorReadOnly(Directory))
+		return Result;
+
+	// Files and names are collected once, a search for every object is slow in large projects.
+	std::unordered_set<FEUUID> FileIDs;
+	CollectFileIDsRecursive(Root, FileIDs);
+
+	std::unordered_set<std::string> TakenNames;
+	for (size_t i = 0; i < Directory->SubDirectories.size(); i++)
+		TakenNames.insert(Directory->SubDirectories[i]->GetName());
+
+	for (size_t i = 0; i < Directory->Files.size(); i++)
+	{
+		const FEObject* Existing = OBJECT_MANAGER.GetFEObject(Directory->Files[i].DataID);
+		if (Existing != nullptr)
+			TakenNames.insert(Existing->GetName());
+	}
+
+	for (size_t i = 0; i < Objects.size(); i++)
+	{
+		FEObject* Object = Objects[i];
+		if (Object == nullptr || !IsSupportedFileType(Object->GetType()) || !AcceptableName(Object->GetName()))
+			continue;
+
+		if (FileIDs.find(Object->GetID()) != FileIDs.end())
+			continue;
+
+		std::string Name = Object->GetName();
+		if (bRenameIfNameIsTaken && TakenNames.find(Name) != TakenNames.end())
+		{
+			// Type is added without its FE_ prefix.
+			const std::string TypeName = FEObjectTypeToString(Object->GetType());
+			Name = Object->GetName() + "_" + TypeName.substr(TypeName.find('_') + 1);
+			if (TakenNames.find(Name) != TakenNames.end())
+				Name = Object->GetName() + "_" + UNIQUE_ID.ToString(Object->GetID());
+		}
+
+		if (TakenNames.find(Name) != TakenNames.end())
+		{
+			LOG.Add("File with name " + Name + " already exists in target directory in function FEVirtualFileSystem::CreateMissingFiles.", "FE_VIRTUAL_FILE_SYSTEM", FE_LOG_WARNING);
+			continue;
+		}
+
+		if (Name != Object->GetName())
+			Object->SetName(Name);
+
+		Directory->Files.push_back(FEVFSFile(Object->GetID(), Directory));
+		FileIDs.insert(Object->GetID());
+		TakenNames.insert(Name);
+		Result.push_back(Object);
+	}
+
+	return Result;
 }
 
 bool FEVirtualFileSystem::IsAnyAncestorReadOnly(const FEVFSDirectory* Directory)

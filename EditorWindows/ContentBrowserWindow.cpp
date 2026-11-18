@@ -184,11 +184,11 @@ void FEEditorContentBrowserWindow::Render()
 					if (EDITOR.GetFocusedScene() != nullptr)
 					{
 						const std::vector<FEObject*> LoadedObjects = EDITOR.GetFocusedScene()->ImportAsset(FilePath.c_str());
+						VIRTUAL_FILE_SYSTEM.CreateMissingFiles(LoadedObjects, VIRTUAL_FILE_SYSTEM.GetCurrentPath(), true);
 						for (size_t i = 0; i < LoadedObjects.size(); i++)
 						{
 							if (LoadedObjects[i] != nullptr)
 							{
-								VIRTUAL_FILE_SYSTEM.CreateFile(LoadedObjects[i], VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 								PROJECT_MANAGER.GetCurrent()->SetModified(true);
 								PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(LoadedObjects[i]);
 							}
@@ -204,11 +204,11 @@ void FEEditorContentBrowserWindow::Render()
 						return;
 
 					const std::vector<FEObject*> LoadedObjects = RESOURCE_MANAGER.ImportOBJ(FilePath, true);
+					VIRTUAL_FILE_SYSTEM.CreateMissingFiles(LoadedObjects, VIRTUAL_FILE_SYSTEM.GetCurrentPath(), true);
 					for (size_t i = 0; i < LoadedObjects.size(); i++)
 					{
 						if (LoadedObjects[i] != nullptr)
 						{
-							VIRTUAL_FILE_SYSTEM.CreateFile(LoadedObjects[i], VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 							PROJECT_MANAGER.GetCurrent()->SetModified(true);
 							PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(LoadedObjects[i]);
 						}
@@ -1235,7 +1235,9 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		return;
 
 	if (!bContextMenuOpened) ItemUnderMouse = -1;
-	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+	// ImGui reports an error when the cursor is moved and no item follows.
+	if (!FilteredResourcesIDs.empty())
+		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 	ImGui::Columns(IconsPerWindowWidth, "mycolumns3", false);
 
 	const ImVec2 ItemSize = ImVec2(ItemIconSize + 16.0f, ItemIconSize + 16.0f + ImGui::GetStyle().ItemSpacing.y + ImGui::GetTextLineHeight());

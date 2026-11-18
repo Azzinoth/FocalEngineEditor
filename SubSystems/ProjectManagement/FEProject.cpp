@@ -859,19 +859,30 @@ void FEProject::AddMissingVFSData()
 		OtherResourceList.push_back(SceneList[i]);
 	}
 
+	std::vector<FEObject*> EngineAndEditorResources;
+	std::vector<FEObject*> ProjectResources;
 	for (size_t i = 0; i < OtherResourceList.size(); i++)
 	{
-		if (VIRTUAL_FILE_SYSTEM.DoesFileExistAnywhere(OBJECT_MANAGER.GetFEObject(OtherResourceList[i])))
+		FEObject* Resource = OBJECT_MANAGER.GetFEObject(OtherResourceList[i]);
+		if (Resource == nullptr)
 			continue;
 
-		VIRTUAL_FILE_SYSTEM.CreateFile(OBJECT_MANAGER.GetFEObject(OtherResourceList[i]), "/");
-
-		if (OBJECT_MANAGER.GetFEObject(OtherResourceList[i])->GetTag() == ENGINE_RESOURCE_TAG ||
-			OBJECT_MANAGER.GetFEObject(OtherResourceList[i])->GetTag() == EDITOR_RESOURCE_TAG)
+		if (Resource->GetTag() == ENGINE_RESOURCE_TAG || Resource->GetTag() == EDITOR_RESOURCE_TAG)
 		{
-			VIRTUAL_FILE_SYSTEM.SetFileReadOnly(true, OBJECT_MANAGER.GetFEObject(OtherResourceList[i]), "/");
+			EngineAndEditorResources.push_back(Resource);
+		}
+		else
+		{
+			ProjectResources.push_back(Resource);
 		}
 	}
+
+	// Engine and editor resources are found by their names, so they are not renamed.
+	const std::vector<FEObject*> AddedResources = VIRTUAL_FILE_SYSTEM.CreateMissingFiles(EngineAndEditorResources, "/");
+	for (size_t i = 0; i < AddedResources.size(); i++)
+		VIRTUAL_FILE_SYSTEM.SetFileReadOnly(true, AddedResources[i], "/");
+
+	VIRTUAL_FILE_SYSTEM.CreateMissingFiles(ProjectResources, "/", true);
 }
 
 void FEProject::CreateDummyScreenshot()

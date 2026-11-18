@@ -24,7 +24,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	ENGINE.InitWindow();
 	EDITOR.InitializeResources();
-	THREAD_POOL.SetConcurrentThreadCount(10);
+	THREAD_POOL.SetConcurrentThreadCount(THREAD_POOL.GetLogicalCoreCount());
 	NODE_SYSTEM.Initialize();
 	EDITOR_PLUGIN_MANAGER.Initialize();
 

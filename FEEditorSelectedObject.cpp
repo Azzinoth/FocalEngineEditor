@@ -639,6 +639,16 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 			continue;
 		}
 
+		// Without a selection the effect has nothing to draw.
+		FEEntity* SelectedEntity = CurrentScene->GetEntity(CurrentSelectionData->SelectedEntityID);
+		if (SelectedEntity == nullptr)
+		{
+			HaloSelectionData->PostProcess->bActive = false;
+
+			SceneIterator++;
+			continue;
+		}
+
 		// Set default bloom size
 		HaloSelectionData->SetBloomSize(-1.0f);
 		HaloSelectionData->HaloObjectsFB->Bind();
@@ -649,16 +659,6 @@ void FEEditorSelectedObject::OnCameraUpdate() const
 
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		FE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT));
-
-		FEEntity* SelectedEntity = CurrentScene->GetEntity(CurrentSelectionData->SelectedEntityID);
-		if (SelectedEntity == nullptr)
-		{
-			HaloSelectionData->HaloObjectsFB->UnBind();
-			HaloSelectionData->PostProcess->bActive = true;
-
-			SceneIterator++;
-			continue;
-		}
 
 		// If selected entity is instanced and in individual select mode.
 		if (SelectedEntity->HasComponent<FEInstancedComponent>() && CurrentSelectionData->InstancedSubObjectIndexSelected != -1)

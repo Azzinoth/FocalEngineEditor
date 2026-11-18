@@ -48,6 +48,8 @@ public:
 	bool IsPathCorrect(std::string Path);
 	bool IsPathToFile(std::string Path);
 	bool CreateFile(FEObject* Data, std::string Path);
+	// Adds objects that are in no directory, returns the ones that were added. A renamed object gets its type added to the name, or its ID if that name is taken too.
+	std::vector<FEObject*> CreateMissingFiles(const std::vector<FEObject*>& Objects, std::string Path, bool bRenameIfNameIsTaken = false);
 	bool MoveFile(FEObject* Data, std::string OldPath, std::string NewPath);
 	bool DeleteFile(const FEObject* Data, std::string Path);
 	void SetFileReadOnly(bool NewValue, const FEObject* Data, std::string Path);
@@ -92,6 +94,8 @@ private:
 	void SaveStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Directory);
 	void LoadStateRecursive(Json::Value* LocalRoot, FEVFSDirectory* Parent, FEVFSDirectory* Directory);
 	bool DirectoryHasFileWithName(FEVFSDirectory* Directory, const std::string Name);
+	bool IsSupportedFileType(FE_OBJECT_TYPE Type);
+	void CollectFileIDsRecursive(const FEVFSDirectory* Directory, std::unordered_set<FEUUID>& FileIDs);
 	bool IsAnyAncestorReadOnly(const FEVFSDirectory* Directory);
 };
 

@@ -707,6 +707,7 @@ void FEEditor::DropCallback(const int Count, const char** Paths)
 			if (EDITOR.GetFocusedScene() != nullptr)
 			{
 				std::vector<FEObject*> LoadedObjects = EDITOR.GetFocusedScene()->ImportAsset(Paths[i]);
+				VIRTUAL_FILE_SYSTEM.CreateMissingFiles(LoadedObjects, VIRTUAL_FILE_SYSTEM.GetCurrentPath(), true);
 				for (size_t j = 0; j < LoadedObjects.size(); j++)
 				{
 					if (LoadedObjects[j] != nullptr)
@@ -717,7 +718,6 @@ void FEEditor::DropCallback(const int Count, const char** Paths)
 						}
 						else
 						{
-							VIRTUAL_FILE_SYSTEM.CreateFile(LoadedObjects[j], VIRTUAL_FILE_SYSTEM.GetCurrentPath());
 							PROJECT_MANAGER.GetCurrent()->SetModified(true);
 							PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(LoadedObjects[j]);
 						}

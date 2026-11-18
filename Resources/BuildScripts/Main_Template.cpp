@@ -162,7 +162,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// Plugins are linked into executable, plugin manager finds them by manifests in Plugins folder next to it.
 	PLUGIN_MANAGER.SetPluginDirectory("Plugins");
 	ENGINE.InitWindow();
-	THREAD_POOL.SetConcurrentThreadCount(10);
+	THREAD_POOL.SetConcurrentThreadCount(THREAD_POOL.GetLogicalCoreCount());
 
 	// Here we need to load all resources
 	// And then load main scene?

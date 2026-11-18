@@ -558,6 +558,115 @@ TEST(VirtualFileSystem, CreateFile_RejectsDuplicateInDifferentDirectory)
 	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirectoryBPath));
 }
 
+TEST(VirtualFileSystem, CreateMissingFiles_AddsOnlyObjectsThatAreInNoDirectory)
+{
+	const std::string Holder = "vfs_missing_files_holder";
+	const std::string Other = "vfs_missing_files_other";
+	const std::string HolderPath = "/" + Holder;
+	const std::string OtherPath = "/" + Other;
+
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Holder, "/"));
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Other, "/"));
+
+	FEObject* FileInOtherDirectory = new FEObject(FE_TEXTURE, "vfs_missing_files_existing");
+	FEObject* MissingFile = new FEObject(FE_MESH, "vfs_missing_files_new");
+	FEObject* NotSupportedObject = new FEObject(FE_ENTITY, "vfs_missing_files_entity");
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateFile(FileInOtherDirectory, OtherPath));
+
+	const std::vector<FEObject*> Added = VIRTUAL_FILE_SYSTEM.CreateMissingFiles({ FileInOtherDirectory, MissingFile, nullptr, NotSupportedObject, MissingFile }, HolderPath);
+
+	ASSERT_EQ(Added.size(), static_cast<size_t>(1));
+	EXPECT_EQ(Added[0], MissingFile);
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DoesFileExist(MissingFile, HolderPath));
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.DoesFileExist(FileInOtherDirectory, HolderPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DoesFileExist(FileInOtherDirectory, OtherPath));
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.DoesFileExistAnywhere(NotSupportedObject));
+	EXPECT_EQ(VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs(HolderPath).size(), static_cast<size_t>(1));
+
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.CreateMissingFiles({ MissingFile }, "/no_such_directory").empty());
+
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteFile(MissingFile, HolderPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteFile(FileInOtherDirectory, OtherPath));
+	delete FileInOtherDirectory;
+	delete MissingFile;
+	delete NotSupportedObject;
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(HolderPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(OtherPath));
+}
+
+TEST(VirtualFileSystem, CreateMissingFiles_RenamesObjectWithTakenName)
+{
+	const std::string Directory = "vfs_missing_files_rename";
+	const std::string DirectoryPath = "/" + Directory;
+	const std::string SharedName = "vfs_missing_files_shared";
+
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Directory, "/"));
+
+	FEObject* FirstFile = new FEObject(FE_MESH, SharedName);
+	FEObject* SecondFile = new FEObject(FE_MESH, SharedName);
+	FEObject* ThirdFile = new FEObject(FE_MESH, SharedName);
+	FEObject* FileOfOtherType = new FEObject(FE_TEXTURE, SharedName);
+
+	const std::vector<FEObject*> Added = VIRTUAL_FILE_SYSTEM.CreateMissingFiles({ FirstFile, SecondFile, ThirdFile, FileOfOtherType }, DirectoryPath, true);
+
+	EXPECT_EQ(Added.size(), static_cast<size_t>(4));
+	EXPECT_EQ(FirstFile->GetName(), SharedName);
+	EXPECT_EQ(SecondFile->GetName(), SharedName + "_MESH");
+	EXPECT_EQ(ThirdFile->GetName(), SharedName + "_" + UNIQUE_ID.ToString(ThirdFile->GetID()));
+	EXPECT_EQ(FileOfOtherType->GetName(), SharedName + "_TEXTURE");
+	EXPECT_EQ(VIRTUAL_FILE_SYSTEM.GetDirectoryContentIDs(DirectoryPath).size(), static_cast<size_t>(4));
+
+	// Name of a sub directory is taken too.
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory("vfs_missing_files_sub_directory", DirectoryPath));
+	FEObject* FileNamedAsSubDirectory = new FEObject(FE_MATERIAL, "vfs_missing_files_sub_directory");
+	EXPECT_EQ(VIRTUAL_FILE_SYSTEM.CreateMissingFiles({ FileNamedAsSubDirectory }, DirectoryPath, true).size(), static_cast<size_t>(1));
+	EXPECT_EQ(FileNamedAsSubDirectory->GetName(), "vfs_missing_files_sub_directory_MATERIAL");
+
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteFile(FirstFile, DirectoryPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteFile(SecondFile, DirectoryPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteFile(ThirdFile, DirectoryPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteFile(FileOfOtherType, DirectoryPath));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteFile(FileNamedAsSubDirectory, DirectoryPath));
+	delete FirstFile;
+	delete SecondFile;
+	delete ThirdFile;
+	delete FileOfOtherType;
+	delete FileNamedAsSubDirectory;
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirectoryPath + "/vfs_missing_files_sub_directory"));
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirectoryPath));
+}
+
+TEST(VirtualFileSystem, CreateMissingFiles_WithoutRenameLeavesOutObjectWithTakenName)
+{
+	const std::string Directory = "vfs_missing_files_no_rename";
+	const std::string DirectoryPath = "/" + Directory;
+	const std::string SharedName = "vfs_missing_files_kept_name";
+
+	ASSERT_TRUE(VIRTUAL_FILE_SYSTEM.CreateDirectory(Directory, "/"));
+
+	FEObject* FirstFile = new FEObject(FE_MESH, SharedName);
+	FEObject* SecondFile = new FEObject(FE_MESH, SharedName);
+
+	const std::vector<FEObject*> Added = VIRTUAL_FILE_SYSTEM.CreateMissingFiles({ FirstFile, SecondFile }, DirectoryPath);
+
+	ASSERT_EQ(Added.size(), static_cast<size_t>(1));
+	EXPECT_EQ(Added[0], FirstFile);
+	EXPECT_EQ(SecondFile->GetName(), SharedName);
+	EXPECT_FALSE(VIRTUAL_FILE_SYSTEM.DoesFileExistAnywhere(SecondFile));
+
+	// Read only directory gets no files.
+	FEObject* ThirdFile = new FEObject(FE_MESH, "vfs_missing_files_read_only");
+	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(true, DirectoryPath);
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.CreateMissingFiles({ ThirdFile }, DirectoryPath, true).empty());
+	VIRTUAL_FILE_SYSTEM.SetDirectoryReadOnly(false, DirectoryPath);
+
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteFile(FirstFile, DirectoryPath));
+	delete FirstFile;
+	delete SecondFile;
+	delete ThirdFile;
+	EXPECT_TRUE(VIRTUAL_FILE_SYSTEM.DeleteEmptyDirectory(DirectoryPath));
+}
+
 TEST(VirtualFileSystem, IsReadOnly_DefensiveOnInvalidPath)
 {
 	FEObject* TestFile = new FEObject(FE_TEXTURE, "vfs_isreadonly_root_leak_file");
