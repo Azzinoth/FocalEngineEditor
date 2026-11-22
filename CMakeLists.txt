@@ -104,10 +104,12 @@ endif()
 
 # Extract the relative path of the engine folder
 file(RELATIVE_PATH RELATIVE_PATH_TO_ENGINE_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}" "${ENGINE_FOLDER}")
+file(RELATIVE_PATH RELATIVE_PATH_TO_ENGINE_BINARY_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}" "${ENGINE_BINARY_FOLDER}")
 # We need to re-configure the Config.h file for the engine
 # This is necessary for any project that will include FocalEngine
 # to make sure that the engine can find its dependencies
 set(ENGINE_FOLDER "${RELATIVE_PATH_TO_ENGINE_FOLDER}")
+set(ENGINE_BINARY_FOLDER "${RELATIVE_PATH_TO_ENGINE_BINARY_FOLDER}")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_FOLDER}/ResourceManager/Config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_FOLDER}/ResourceManager/Config.h @ONLY)
 
 # *************** EDITOR ***************
