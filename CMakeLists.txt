@@ -108,7 +108,7 @@ file(RELATIVE_PATH RELATIVE_PATH_TO_ENGINE_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}" 
 # This is necessary for any project that will include FocalEngine
 # to make sure that the engine can find its dependencies
 set(ENGINE_FOLDER "${RELATIVE_PATH_TO_ENGINE_FOLDER}")
-configure_file(${ENGINE_FOLDER}/ResourceManager/Config.h.in ${ENGINE_FOLDER}/ResourceManager/Config.h @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_FOLDER}/ResourceManager/Config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/${ENGINE_FOLDER}/ResourceManager/Config.h @ONLY)
 
 # *************** EDITOR ***************
 
