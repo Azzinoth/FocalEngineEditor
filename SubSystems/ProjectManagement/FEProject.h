@@ -52,6 +52,7 @@ public:
 	// Plugins that project uses, but that are not installed.
 	std::vector<FEProjectPluginInfo> GetMissingPlugins();
 	void RemoveMissingPlugin(const FEUUID& PluginID);
+	bool UsesPlugin(const FEUUID& PluginID) const;
 private:
 	// Plugins with engine module that project was saved with, scripts and game builds of the project could use them.
 	// Missing plugins stay in the list until they are removed explicitly.

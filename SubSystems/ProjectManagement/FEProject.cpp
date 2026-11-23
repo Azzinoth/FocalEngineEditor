@@ -1160,3 +1160,14 @@ void FEProject::RemoveMissingPlugin(const FEUUID& PluginID)
 		}
 	}
 }
+
+bool FEProject::UsesPlugin(const FEUUID& PluginID) const
+{
+	for (size_t i = 0; i < Plugins.size(); i++)
+	{
+		if (Plugins[i].ID == PluginID)
+			return true;
+	}
+
+	return false;
+}

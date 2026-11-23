@@ -84,6 +84,9 @@ if(NOT TARGET VisualNodeSystem)
 	add_subdirectory(SubSystems/NodeSystem/VisualNodeSystem)
 endif()
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/SubSystems/FocalEngine/SubSystems/PluginSystem/FEPlugins.cmake)
+fe_optional_plugin(CurlPlugin REPOSITORY Azzinoth/CurlPlugin VERSION 1.0.0 SHA256 ccbc65b5a1350c432998fa1d0cd187b6fb13b9b337ddac0e4575e725eaecc7ab RESULT_VARIABLE CURL_PLUGIN_INSTALLED)
+
 if(NOT TARGET FocalEngine)
 	add_subdirectory(SubSystems/FocalEngine)
 endif()
@@ -163,6 +166,8 @@ file(GLOB PluginSystem_SRC
 	"SubSystems/PluginSystem/FEEditorAPIImplementation.h"
 	"SubSystems/PluginSystem/FEEditorPluginManager.cpp"
 	"SubSystems/PluginSystem/FEEditorPluginManager.h"
+	"SubSystems/PluginSystem/FEPluginBrowser.cpp"
+	"SubSystems/PluginSystem/FEPluginBrowser.h"
 )
 
 file(GLOB FEDearImguiWrapper_SRC
@@ -306,6 +311,10 @@ if(FOCAL_ENGINE_EDITOR_ENABLE_TESTS)
 endif()
 
 target_compile_definitions(FocalEngineEditor PRIVATE SCENE_GRAPH_UI_WITH_FOCAL_ENGINE)
+
+if(CURL_PLUGIN_INSTALLED)
+	target_include_directories(FocalEngineEditor PRIVATE "${FE_PLUGINS_DIRECTORY}/CurlPlugin/Public")
+endif()
 
 # *************** EDITOR ***************
 source_group("Source Files/" FILES ${EDITOR_SOURCE_FILES})

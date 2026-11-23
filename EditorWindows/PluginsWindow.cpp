@@ -14,6 +14,11 @@ static const std::vector<FEFileSystem::FileDialogFilter> PluginPackageFilter =
 	{ "Plugin package (*.feplugin)", { "feplugin" } }
 };
 
+static const std::vector<FEFileSystem::FileDialogFilter> InstallPluginFilter =
+{
+	{ "Plugin package or archive (*.feplugin, *.zip)", { "feplugin", "zip" } }
+};
+
 static std::string GetGraphicsModesText(const PluginModule& Module)
 {
 	std::string Result;
@@ -78,7 +83,7 @@ void FEEditorPluginsWindow::Render()
 		ImGui::SameLine();
 		if (ImGui::SmallButton(InstallButtonText))
 		{
-			FILE_SYSTEM.OpenFileDialog(PluginPackageFilter, [this](const std::string& FilePath) {
+			FILE_SYSTEM.OpenFileDialog(InstallPluginFilter, [this](const std::string& FilePath) {
 				if (FilePath.empty())
 					return;
 
@@ -98,11 +103,18 @@ void FEEditorPluginsWindow::Render()
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		if (!InstalledPluginNames.empty())
+		std::vector<std::string> NamesToLoad = InstalledPluginNames;
+		for (const std::string& Name : PLUGIN_BROWSER.GetInstalledPluginNames())
+		{
+			if (std::find(NamesToLoad.begin(), NamesToLoad.end(), Name) == NamesToLoad.end())
+				NamesToLoad.push_back(Name);
+		}
+
+		if (!NamesToLoad.empty())
 		{
 			std::string Names;
-			for (size_t i = 0; i < InstalledPluginNames.size(); i++)
-				Names += (i == 0 ? "" : ", ") + InstalledPluginNames[i];
+			for (size_t i = 0; i < NamesToLoad.size(); i++)
+				Names += (i == 0 ? "" : ", ") + NamesToLoad[i];
 
 			ImGui::PushStyleColor(ImGuiCol_Text, WarningColor);
 			ImGui::TextWrapped("Restart the editor to load installed plugins: %s", Names.c_str());
@@ -110,23 +122,83 @@ void FEEditorPluginsWindow::Render()
 			ImGui::Spacing();
 		}
 
-		if (PROJECT_MANAGER.GetCurrent() != nullptr)
-			RenderMissingPlugins(PROJECT_MANAGER.GetCurrent());
-
-		if (Plugins.empty())
+		std::string NamesToRemove;
+		for (size_t i = 0; i < Plugins.size(); i++)
 		{
-			ImGui::PushStyleColor(ImGuiCol_Text, LabelColor);
-			ImGui::TextWrapped("No plugins were found, plugin folders should be placed in %s", PluginDirectory.c_str());
-			ImGui::PopStyleColor();
+			if (PLUGIN_MANAGER.IsUninstallPending(Plugins[i].Manifest.ID))
+				NamesToRemove += (NamesToRemove.empty() ? "" : ", ") + Plugins[i].Manifest.Name;
 		}
 
+		if (!NamesToRemove.empty())
+		{
+			ImGui::PushStyleColor(ImGuiCol_Text, WarningColor);
+			ImGui::TextWrapped("Restart the editor to remove uninstalled plugins: %s", NamesToRemove.c_str());
+			ImGui::PopStyleColor();
+			ImGui::Spacing();
+		}
+
+		std::string NamesToUpdate;
 		for (size_t i = 0; i < Plugins.size(); i++)
-			RenderPluginDetails(Plugins[i]);
+		{
+			const std::string PendingUpdateVersion = PLUGIN_MANAGER.GetPendingUpdateVersion(Plugins[i].Manifest.ID);
+			if (!PendingUpdateVersion.empty())
+				NamesToUpdate += (NamesToUpdate.empty() ? "" : ", ") + Plugins[i].Manifest.Name + " " + PendingUpdateVersion;
+		}
+
+		if (!NamesToUpdate.empty())
+		{
+			ImGui::PushStyleColor(ImGuiCol_Text, WarningColor);
+			ImGui::TextWrapped("Restart the editor to update plugins: %s", NamesToUpdate.c_str());
+			ImGui::PopStyleColor();
+			ImGui::Spacing();
+		}
+
+		if (ImGui::BeginTabBar("PluginTabs"))
+		{
+			// Counts are not part of tab ID, so tab stays selected when they change.
+			const size_t UpdateCount = FindAvailableUpdates().size();
+			std::string InstalledTabLabel = "Installed (" + std::to_string(Plugins.size());
+			if (UpdateCount > 0)
+				InstalledTabLabel += ", " + std::to_string(UpdateCount) + (UpdateCount == 1 ? " update" : " updates");
+			InstalledTabLabel += ")###Installed";
+
+			if (ImGui::BeginTabItem(InstalledTabLabel.c_str()))
+			{
+				ImGui::Spacing();
+				RenderUpdateAllLine();
+				if (PROJECT_MANAGER.GetCurrent() != nullptr)
+					RenderMissingPlugins(PROJECT_MANAGER.GetCurrent());
+
+				if (Plugins.empty())
+				{
+					ImGui::PushStyleColor(ImGuiCol_Text, LabelColor);
+					ImGui::TextWrapped("No plugins were found, plugin folders should be placed in %s", PluginDirectory.c_str());
+					ImGui::PopStyleColor();
+				}
+
+				for (size_t i = 0; i < Plugins.size(); i++)
+					RenderPluginDetails(Plugins[i]);
+
+				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem("Browse"))
+			{
+				ImGui::Spacing();
+				RenderBrowseTab();
+				ImGui::EndTabItem();
+			}
+
+			ImGui::EndTabBar();
+		}
 	}
 	ImGui::End();
 
 	RenderNewPluginPopup();
 	RenderInstallPluginPopup();
+	RenderInstallDependenciesPopup();
+	RenderEngineCommitPopup();
+	RenderUninstallPopup();
 }
 
 void FEEditorPluginsWindow::RenderMissingPlugins(FEProject* Project)
@@ -190,11 +262,24 @@ void FEEditorPluginsWindow::RenderPluginDetails(const DiscoveredPlugin& Plugin)
 	}
 
 	const bool bAllModulesLoaded = LoadedModuleCount == Manifest.Modules.size();
+	const bool bUninstallPending = PLUGIN_MANAGER.IsUninstallPending(Manifest.ID);
+	const std::string PendingUpdateVersion = PLUGIN_MANAGER.GetPendingUpdateVersion(Manifest.ID);
+	const FEPluginInstallTask* InstallTask = PLUGIN_BROWSER.FindInstallTask(Manifest.Name);
+	const bool bUpdateInProgress = InstallTask != nullptr && InstallTask->bUpdate && InstallTask->State != FEPluginInstallState::Installed && InstallTask->State != FEPluginInstallState::Failed;
+	const bool bChangePending = bUninstallPending || !PendingUpdateVersion.empty() || bUpdateInProgress;
 	ImVec4 StatusColor = WarningColor;
-	if (bAllModulesLoaded)
+	if (bChangePending)
+	{
+		StatusColor = WarningColor;
+	}
+	else if (bAllModulesLoaded)
+	{
 		StatusColor = LoadedColor;
+	}
 	else if (LoadedModuleCount == 0)
+	{
 		StatusColor = ErrorColor;
+	}
 
 	ImGui::PushID(&Plugin);
 
@@ -223,9 +308,31 @@ void FEEditorPluginsWindow::RenderPluginDetails(const DiscoveredPlugin& Plugin)
 
 	const char* OpenFolderText = "Open folder";
 	const float OpenFolderButtonX = HeaderRight - ImGui::CalcTextSize(OpenFolderText).x - Style.FramePadding.x * 2.0f;
-	const std::string ModuleCountText = std::to_string(LoadedModuleCount) + "/" + std::to_string(Manifest.Modules.size()) + " loaded";
+	std::string ModuleCountText = std::to_string(LoadedModuleCount) + "/" + std::to_string(Manifest.Modules.size()) + " loaded";
+	if (bUninstallPending)
+	{
+		ModuleCountText = "removed after restart";
+	}
+	else if (!PendingUpdateVersion.empty())
+	{
+		ModuleCountText = "updated to " + PendingUpdateVersion + " after restart";
+	}
+	else if (bUpdateInProgress)
+	{
+		ModuleCountText = "updating...";
+	}
 	const float ModuleCountX = OpenFolderButtonX - Style.ItemSpacing.x * 2.0f - ImGui::CalcTextSize(ModuleCountText.c_str()).x;
 	DrawList->AddText(ImVec2(ModuleCountX, TextY), ImGui::GetColorU32(StatusColor), ModuleCountText.c_str());
+
+	const FEPluginBrowserEntry* BrowserEntry = PLUGIN_BROWSER.FindEntry(Manifest.ID);
+	if (!bChangePending && BrowserEntry != nullptr && FEPluginBrowser::CompareVersions(BrowserEntry->Manifest.Version, Manifest.Version) > 0)
+	{
+		const std::string UpdateText = BrowserEntry->Manifest.Version + " available";
+		const float UpdateTextX = ModuleCountX - Style.ItemSpacing.x * 2.0f - ImGui::CalcTextSize(UpdateText.c_str()).x;
+		const float VersionEndX = TextX + ImGui::CalcTextSize(Manifest.Version.c_str()).x + Style.ItemSpacing.x * 2.0f;
+		if (UpdateTextX > VersionEndX)
+			DrawList->AddText(ImVec2(UpdateTextX, TextY), ImGui::GetColorU32(WarningColor), UpdateText.c_str());
+	}
 
 	const std::string FolderPath = GetDisplayPath(Plugin.FolderPath);
 	// SmallButton aligns itself to text baseline of the header line, so header top is enough to center it.
@@ -295,6 +402,41 @@ void FEEditorPluginsWindow::RenderPluginDetails(const DiscoveredPlugin& Plugin)
 	if (ImGui::Button("Create package..."))
 		SavePluginPackage(Plugin);
 	ImGui::SetItemTooltip("Saves plugin to a file that could be installed with \"Install plugin...\".");
+
+	ImGui::SameLine();
+	if (bUninstallPending)
+	{
+		if (ImGui::Button("Cancel uninstall"))
+		{
+			std::string ErrorMessage;
+			PLUGIN_MANAGER.CancelUninstall(Manifest.ID, ErrorMessage);
+		}
+		ImGui::SetItemTooltip("Plugin will be removed when the editor is restarted.");
+	}
+	else if (ImGui::Button("Uninstall..."))
+	{
+		StartUninstall(Plugin);
+	}
+
+	if (!PendingUpdateVersion.empty())
+	{
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel update"))
+		{
+			std::string ErrorMessage;
+			PLUGIN_MANAGER.CancelUpdate(Manifest.ID, ErrorMessage);
+		}
+		ImGui::SetItemTooltip("Plugin will be updated to %s when the editor is restarted.", PendingUpdateVersion.c_str());
+	}
+	else if (!bUninstallPending && BrowserEntry != nullptr && GetBrowserEntryStatus(*BrowserEntry).bCanBeUpdated)
+	{
+		ImGui::SameLine();
+		ImGui::BeginDisabled(PLUGIN_BROWSER.IsInstalling());
+		const std::string UpdateButtonText = "Update to " + BrowserEntry->Manifest.Version;
+		if (ImGui::Button(UpdateButtonText.c_str()))
+			StartInstall({ BrowserEntry });
+		ImGui::EndDisabled();
+	}
 
 	if (PackagedPluginID == Manifest.ID && !PackageResultMessage.empty())
 	{
@@ -404,6 +546,694 @@ void FEEditorPluginsWindow::OpenFolderInExplorer(const std::string& Path)
 		LOG.Add("FEEditorPluginsWindow::OpenFolderInExplorer: Failed to open \"" + Path + "\" in file explorer", "FE_EDITOR", FE_LOG_WARNING);
 }
 
+void FEEditorPluginsWindow::OpenURL(const std::string& URL)
+{
+	HINSTANCE Result = ShellExecuteA(nullptr, "open", URL.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+	if (reinterpret_cast<INT_PTR>(Result) <= 32)
+		LOG.Add("FEEditorPluginsWindow::OpenURL: Failed to open \"" + URL + "\"", "FE_EDITOR", FE_LOG_WARNING);
+}
+
+// Same units as GitHub shows for release assets.
+static std::string FormatFileSize(const uint64_t Size)
+{
+	char Buffer[32];
+	if (Size < 1024 * 1024)
+	{
+		snprintf(Buffer, sizeof(Buffer), "%.0f KB", static_cast<double>(Size) / 1024.0);
+	}
+	else
+	{
+		snprintf(Buffer, sizeof(Buffer), "%.1f MB", static_cast<double>(Size) / (1024.0 * 1024.0));
+	}
+
+	return Buffer;
+}
+
+// Rounded down to minutes, so text does not change every second.
+static std::string GetTimeSinceText(const uint64_t TimeInSeconds)
+{
+	const uint64_t CurrentTime = TIME.GetTimeStamp(FE_TIME_RESOLUTION_SECONDS);
+	const uint64_t Seconds = CurrentTime > TimeInSeconds ? CurrentTime - TimeInSeconds : 0;
+	if (Seconds < 60)
+		return "just now";
+
+	return TIME.TimeToFormattedString(Seconds / 60 * 60, FE_TIME_RESOLUTION_SECONDS) + " ago";
+}
+
+static std::string ToLowerText(std::string Text)
+{
+	std::transform(Text.begin(), Text.end(), Text.begin(), [](unsigned char Character) { return static_cast<char>(std::tolower(Character)); });
+	return Text;
+}
+
+void FEEditorPluginsWindow::RenderBrowseTab()
+{
+	if (!PLUGIN_BROWSER.IsAvailable())
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, WarningColor);
+		ImGui::TextWrapped("Browsing needs CurlPlugin. It is downloaded when the editor is configured with CMake, see fe_optional_plugin in CMakeLists.txt of the editor.");
+		ImGui::PopStyleColor();
+		ImGui::Spacing();
+		ImGui::PushStyleColor(ImGuiCol_Text, LabelColor);
+		ImGui::TextWrapped("Plugins can still be installed from a file with \"Install plugin...\".");
+		ImGui::PopStyleColor();
+		return;
+	}
+
+	if (!PLUGIN_BROWSER.WasRefreshed())
+		PLUGIN_BROWSER.Refresh();
+
+	RenderBrowseToolbar();
+	ImGui::Spacing();
+	RenderUpdateAllLine();
+
+	if (PLUGIN_BROWSER.HasFailed())
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, ErrorColor);
+		ImGui::TextWrapped("Could not load plugin list: %s", PLUGIN_BROWSER.GetErrorMessage().c_str());
+		ImGui::PopStyleColor();
+		ImGui::Spacing();
+	}
+
+	const std::vector<FEPluginBrowserEntry>& Entries = PLUGIN_BROWSER.GetEntries();
+	if (Entries.empty())
+	{
+		if (PLUGIN_BROWSER.IsLoading())
+		{
+			ImGui::TextColored(LabelColor, "Loading plugin list...");
+		}
+		else if (!PLUGIN_BROWSER.HasFailed())
+		{
+			ImGui::PushStyleColor(ImGuiCol_Text, LabelColor);
+			ImGui::TextWrapped("No public repository of %s has all required topics and a release.", PLUGIN_BROWSER.GetOwner().c_str());
+			ImGui::PopStyleColor();
+		}
+
+		return;
+	}
+
+	const std::string Filter = ToLowerText(BrowseFilter);
+	size_t ShownCount = 0;
+	for (size_t i = 0; i < Entries.size(); i++)
+	{
+		const std::string Description = Entries[i].bManifestLoaded ? Entries[i].Manifest.Description : Entries[i].RepositoryDescription;
+		if (!Filter.empty() && ToLowerText(Entries[i].RepositoryName).find(Filter) == std::string::npos && ToLowerText(Description).find(Filter) == std::string::npos)
+			continue;
+
+		ShownCount++;
+		RenderBrowserEntry(Entries[i]);
+	}
+
+	if (ShownCount == 0)
+		ImGui::TextColored(LabelColor, "No plugin matches the filter.");
+}
+
+void FEEditorPluginsWindow::RenderBrowseToolbar()
+{
+	std::string LoadText;
+	if (PLUGIN_BROWSER.IsLoading())
+	{
+		LoadText = "Loading...";
+	}
+	else if (PLUGIN_BROWSER.GetLastLoadTime() != 0)
+	{
+		LoadText = "Updated " + GetTimeSinceText(PLUGIN_BROWSER.GetLastLoadTime());
+	}
+
+	// Filter takes width that is left after load status and refresh button.
+	const char* RefreshText = "Refresh";
+	const ImGuiStyle& Style = ImGui::GetStyle();
+	const float RightPartWidth = ImGui::CalcTextSize(LoadText.c_str()).x + ImGui::CalcTextSize(RefreshText).x + Style.FramePadding.x * 2.0f + Style.ItemSpacing.x * 2.0f;
+	ImGui::SetNextItemWidth(ImMax(ImGui::GetFontSize() * 6.0f, ImGui::GetContentRegionAvail().x - RightPartWidth));
+	ImGui::InputTextWithHint("##BrowseFilter", "Filter by name or description", &BrowseFilter);
+
+	ImGui::SameLine();
+	ImGui::TextColored(LabelColor, "%s", LoadText.c_str());
+
+	ImGui::SameLine();
+	ImGui::BeginDisabled(PLUGIN_BROWSER.IsLoading());
+	if (ImGui::Button(RefreshText))
+		PLUGIN_BROWSER.Refresh();
+	ImGui::EndDisabled();
+
+	const std::vector<std::string> Topics = PLUGIN_BROWSER.GetRequiredTopics();
+	std::string TopicsText;
+	for (size_t i = 0; i < Topics.size(); i++)
+		TopicsText += (i == 0 ? "" : ", ") + Topics[i];
+
+	ImGui::PushStyleColor(ImGuiCol_Text, LabelColor);
+	ImGui::TextWrapped("Public repositories of github.com/%s with topics %s and a release.", PLUGIN_BROWSER.GetOwner().c_str(), TopicsText.c_str());
+	ImGui::PopStyleColor();
+}
+
+void FEEditorPluginsWindow::RenderBrowserEntry(const FEPluginBrowserEntry& Entry)
+{
+	const FEBrowserEntryStatus Status = GetBrowserEntryStatus(Entry);
+	ImVec4 StatusColor = Status.Color;
+
+	const FEPluginInstallTask* InstallTask = PLUGIN_BROWSER.FindInstallTask(Entry.RepositoryName);
+	const bool bInstallInProgress = InstallTask != nullptr && InstallTask->State != FEPluginInstallState::Installed && InstallTask->State != FEPluginInstallState::Failed;
+	if (bInstallInProgress)
+		StatusColor = WarningColor;
+
+	ImGui::PushID(Entry.RepositoryName.c_str());
+
+	const ImVec2 HeaderPosition = ImGui::GetCursorScreenPos();
+	const float HeaderRight = HeaderPosition.x + ImGui::GetContentRegionAvail().x;
+	const bool bOpen = ImGui::CollapsingHeader("##Header", ImGuiTreeNodeFlags_AllowOverlap);
+	const bool bHeaderHovered = ImGui::IsItemHovered();
+
+	// Drawn the same way as header of installed plugin.
+	const ImGuiStyle& Style = ImGui::GetStyle();
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	const float FrameHeight = ImGui::GetFrameHeight();
+	const float DotRadius = ImGui::GetFontSize() * 0.25f;
+	const float TextY = HeaderPosition.y + Style.FramePadding.y;
+	float TextX = HeaderPosition.x + ImGui::GetFontSize() + Style.FramePadding.x * 3.0f;
+
+	DrawList->AddCircleFilled(ImVec2(TextX + DotRadius, HeaderPosition.y + FrameHeight * 0.5f), DotRadius, ImGui::GetColorU32(StatusColor));
+	TextX += DotRadius * 2.0f + Style.ItemSpacing.x;
+	DrawList->AddText(ImVec2(TextX, TextY), ImGui::GetColorU32(ImGuiCol_Text), Entry.RepositoryName.c_str());
+	TextX += ImGui::CalcTextSize(Entry.RepositoryName.c_str()).x + Style.ItemSpacing.x;
+
+	const std::string Version = Entry.bManifestLoaded ? Entry.Manifest.Version : Entry.ReleaseTag;
+	DrawList->AddText(ImVec2(TextX, TextY), ImGui::GetColorU32(LabelColor), Version.c_str());
+	TextX += ImGui::CalcTextSize(Version.c_str()).x + Style.ItemSpacing.x * 2.0f;
+
+	// Right side of header shows install progress, install button or status.
+	float RightPartX = HeaderRight;
+	if (bInstallInProgress)
+	{
+		RightPartX = HeaderRight - Style.FramePadding.x - ImGui::GetFontSize() * 9.0f;
+		RenderInstallProgress(*InstallTask, ImVec2(RightPartX, HeaderPosition.y + Style.FramePadding.y * 0.5f), ImVec2(HeaderRight - Style.FramePadding.x, HeaderPosition.y + FrameHeight - Style.FramePadding.y * 0.5f));
+	}
+	else if (Status.bCanBeInstalled || Status.bCanBeUpdated)
+	{
+		const char* ButtonText = Status.bCanBeUpdated ? "Update" : "Install";
+		RightPartX = HeaderRight - ImGui::CalcTextSize(ButtonText).x - Style.FramePadding.x * 2.0f;
+		// SmallButton aligns itself to text baseline of the header line, so header top is enough to center it.
+		ImGui::SameLine();
+		ImGui::SetCursorScreenPos(ImVec2(RightPartX, HeaderPosition.y));
+		ImGui::BeginDisabled(PLUGIN_BROWSER.IsInstalling());
+		if (ImGui::SmallButton(ButtonText))
+			StartInstall({ &Entry });
+		ImGui::EndDisabled();
+
+		if (Status.bCanBeUpdated)
+		{
+			const std::string InstalledText = "installed " + Status.InstalledVersion;
+			RightPartX -= Style.ItemSpacing.x + ImGui::CalcTextSize(InstalledText.c_str()).x;
+			DrawList->AddText(ImVec2(RightPartX, TextY), ImGui::GetColorU32(LabelColor), InstalledText.c_str());
+		}
+	}
+	else
+	{
+		RightPartX = HeaderRight - Style.FramePadding.x - ImGui::CalcTextSize(Status.Text.c_str()).x;
+		DrawList->AddText(ImVec2(RightPartX, TextY), ImGui::GetColorU32(StatusColor), Status.Text.c_str());
+		if (bHeaderHovered && !Status.Tooltip.empty() && ImGui::GetMousePos().x >= RightPartX)
+			ImGui::SetTooltip("%s", Status.Tooltip.c_str());
+	}
+
+	// Size is left out in narrow window, so it does not overlap right side.
+	const std::string SizeText = Entry.ArchiveSize > 0 ? FormatFileSize(Entry.ArchiveSize) : "";
+	if (!SizeText.empty() && TextX + ImGui::CalcTextSize(SizeText.c_str()).x + Style.ItemSpacing.x * 2.0f < RightPartX)
+		DrawList->AddText(ImVec2(TextX, TextY), ImGui::GetColorU32(LabelColor), SizeText.c_str());
+
+	if (!bOpen)
+	{
+		ImGui::PopID();
+		return;
+	}
+
+	ImGui::Indent();
+	ImGui::Spacing();
+
+	const std::string Description = Entry.bManifestLoaded && !Entry.Manifest.Description.empty() ? Entry.Manifest.Description : Entry.RepositoryDescription;
+	if (!Description.empty())
+	{
+		ImGui::TextWrapped("%s", Description.c_str());
+		ImGui::Spacing();
+	}
+
+	if (!Entry.Problem.empty())
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, ErrorColor);
+		ImGui::TextWrapped("%s", Entry.Problem.c_str());
+		ImGui::PopStyleColor();
+		ImGui::Spacing();
+	}
+
+	if (InstallTask != nullptr && InstallTask->State == FEPluginInstallState::Failed)
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, ErrorColor);
+		ImGui::TextWrapped("%s failed: %s", InstallTask->bUpdate ? "Update" : "Install", InstallTask->ErrorMessage.c_str());
+		ImGui::PopStyleColor();
+		ImGui::BeginDisabled(PLUGIN_BROWSER.IsInstalling());
+		if (ImGui::Button("Try again"))
+			StartInstall({ &Entry });
+		ImGui::EndDisabled();
+		ImGui::Spacing();
+	}
+
+	if (ImGui::BeginTable("Details", 2, ImGuiTableFlags_SizingFixedFit))
+	{
+		ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+
+		auto AddRow = [](const char* Label, const std::string& Value) {
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextColored(LabelColor, "%s", Label);
+			ImGui::TableNextColumn();
+			if (Value.empty())
+			{
+				ImGui::TextColored(LabelColor, "-");
+			}
+			else
+			{
+				ImGui::TextWrapped("%s", Value.c_str());
+			}
+		};
+
+		AddRow("Release", Entry.ReleaseDate.empty() ? Entry.ReleaseTag : Entry.ReleaseTag + ", " + Entry.ReleaseDate);
+		AddRow("Archive", Entry.ArchiveName.empty() ? "" : Entry.ArchiveName + ", " + FormatFileSize(Entry.ArchiveSize));
+
+		if (Entry.bManifestLoaded)
+		{
+			const PluginManifest& Manifest = Entry.Manifest;
+			std::string SupportedOS;
+			for (size_t i = 0; i < Manifest.SupportedOS.size(); i++)
+				SupportedOS += (i == 0 ? "" : ", ") + OSToString(Manifest.SupportedOS[i]);
+			AddRow("Supported OS", SupportedOS);
+
+			std::string Dependencies;
+			for (size_t i = 0; i < Manifest.Dependencies.size(); i++)
+				Dependencies += (i == 0 ? "" : ", ") + FindInstalledOrAvailablePluginName(Manifest.Dependencies[i]);
+			AddRow("Depends on", Dependencies);
+
+			std::string Modules;
+			for (size_t i = 0; i < Manifest.Modules.size(); i++)
+				Modules += (i == 0 ? "" : ", ") + Manifest.Modules[i].Name + " (" + Manifest.Modules[i].Type + ")";
+			AddRow("Modules", Modules);
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextColored(LabelColor, "ID");
+			ImGui::TableNextColumn();
+			ImGui::TextColored(LabelColor, "%s...", UNIQUE_ID.ToString(Manifest.ID).substr(0, 8).c_str());
+			AddCopyIDBehavior(Manifest.ID);
+		}
+
+		ImGui::EndTable();
+	}
+
+	if (!Entry.ReleaseNotes.empty())
+	{
+		ImGui::Spacing();
+		ImGui::TextColored(LabelColor, "Release notes");
+		ImGui::TextWrapped("%s", Entry.ReleaseNotes.c_str());
+	}
+
+	ImGui::Spacing();
+	const std::string GitHubURL = Entry.ReleaseURL.empty() ? Entry.RepositoryURL : Entry.ReleaseURL;
+	if (ImGui::Button("Open on GitHub"))
+		OpenURL(GitHubURL);
+	ImGui::SetItemTooltip("%s", GitHubURL.c_str());
+	ImGui::Spacing();
+
+	ImGui::Unindent();
+	ImGui::PopID();
+}
+
+FEEditorPluginsWindow::FEBrowserEntryStatus FEEditorPluginsWindow::GetBrowserEntryStatus(const FEPluginBrowserEntry& Entry) const
+{
+	FEBrowserEntryStatus Result;
+	const std::string PluginName = Entry.bManifestLoaded ? Entry.Manifest.Name : Entry.RepositoryName;
+	const FEPluginInstallTask* InstallTask = PLUGIN_BROWSER.FindInstallTask(Entry.RepositoryName);
+	const bool bInstallFailed = InstallTask != nullptr && InstallTask->State == FEPluginInstallState::Failed;
+	const bool bSupportsThisOS = std::find(Entry.Manifest.SupportedOS.begin(), Entry.Manifest.SupportedOS.end(), GetOS()) != Entry.Manifest.SupportedOS.end();
+
+	const DiscoveredPlugin* InstalledPlugin = nullptr;
+	const std::vector<DiscoveredPlugin>& Plugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
+	for (size_t i = 0; i < Plugins.size(); i++)
+	{
+		const bool bSamePlugin = Entry.bManifestLoaded ? Plugins[i].Manifest.ID == Entry.Manifest.ID : Plugins[i].Manifest.Name == PluginName;
+		if (bSamePlugin)
+		{
+			InstalledPlugin = &Plugins[i];
+			break;
+		}
+	}
+
+	if (InstalledPlugin != nullptr)
+	{
+		Result.InstalledVersion = InstalledPlugin->Manifest.Version;
+		const std::string PendingUpdateVersion = PLUGIN_MANAGER.GetPendingUpdateVersion(InstalledPlugin->Manifest.ID);
+		const std::string AvailableVersion = Entry.bManifestLoaded ? Entry.Manifest.Version : Entry.ReleaseTag;
+		const int Comparison = FEPluginBrowser::CompareVersions(AvailableVersion, InstalledPlugin->Manifest.Version);
+		if (PLUGIN_MANAGER.IsUninstallPending(InstalledPlugin->Manifest.ID))
+		{
+			Result.Text = "Removed after restart";
+			Result.Color = WarningColor;
+		}
+		else if (!PendingUpdateVersion.empty())
+		{
+			Result.Text = "Updated to " + PendingUpdateVersion + " after restart";
+			Result.Color = WarningColor;
+		}
+		else if (bInstallFailed)
+		{
+			Result.Text = "Update failed";
+			Result.Color = ErrorColor;
+			Result.Tooltip = InstallTask->ErrorMessage;
+		}
+		else if (Comparison > 0)
+		{
+			Result.Text = "Update from " + InstalledPlugin->Manifest.Version + " available";
+			Result.Color = WarningColor;
+			Result.Tooltip = Entry.Problem;
+			Result.bCanBeUpdated = Entry.Problem.empty() && bSupportsThisOS;
+		}
+		else if (Comparison == 0)
+		{
+			Result.Text = "Installed";
+			Result.Color = LoadedColor;
+		}
+		else
+		{
+			Result.Text = "Installed " + InstalledPlugin->Manifest.Version;
+			Result.Color = LoadedColor;
+			Result.Tooltip = "Installed version is newer than the latest release.";
+		}
+
+		return Result;
+	}
+
+	if (IsInstalledThisSession(PluginName))
+	{
+		Result.Text = "Restart to load";
+		Result.Color = WarningColor;
+	}
+	else if (bInstallFailed)
+	{
+		Result.Text = "Install failed";
+		Result.Color = ErrorColor;
+		Result.Tooltip = InstallTask->ErrorMessage;
+	}
+	else if (!Entry.Problem.empty())
+	{
+		Result.Text = "Can not be installed";
+		Result.Color = ErrorColor;
+		Result.Tooltip = Entry.Problem;
+	}
+	else if (!bSupportsThisOS)
+	{
+		Result.Text = "Not available for " + OSToString(GetOS());
+		Result.Color = LabelColor;
+	}
+	else
+	{
+		Result.Text = "Not installed";
+		Result.Color = LabelColor;
+		Result.bCanBeInstalled = true;
+	}
+
+	return Result;
+}
+
+std::vector<const FEPluginBrowserEntry*> FEEditorPluginsWindow::FindAvailableUpdates() const
+{
+	std::vector<const FEPluginBrowserEntry*> Result;
+	const std::vector<DiscoveredPlugin>& Plugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
+	for (size_t i = 0; i < Plugins.size(); i++)
+	{
+		const FEPluginBrowserEntry* Entry = PLUGIN_BROWSER.FindEntry(Plugins[i].Manifest.ID);
+		if (Entry != nullptr && GetBrowserEntryStatus(*Entry).bCanBeUpdated)
+			Result.push_back(Entry);
+	}
+
+	return Result;
+}
+
+void FEEditorPluginsWindow::RenderUpdateAllLine()
+{
+	const std::vector<const FEPluginBrowserEntry*> Updates = FindAvailableUpdates();
+	if (Updates.empty())
+		return;
+
+	ImGui::AlignTextToFramePadding();
+	ImGui::TextColored(WarningColor, "%zu %s available", Updates.size(), Updates.size() == 1 ? "update is" : "updates are");
+	ImGui::SameLine();
+	ImGui::BeginDisabled(PLUGIN_BROWSER.IsInstalling());
+	if (ImGui::Button("Update all"))
+		StartInstall(Updates);
+	ImGui::EndDisabled();
+	ImGui::Spacing();
+}
+
+bool FEEditorPluginsWindow::IsInstalledThisSession(const std::string& PluginName) const
+{
+	const std::vector<std::string>& BrowserInstalledNames = PLUGIN_BROWSER.GetInstalledPluginNames();
+	return std::find(InstalledPluginNames.begin(), InstalledPluginNames.end(), PluginName) != InstalledPluginNames.end() ||
+		   std::find(BrowserInstalledNames.begin(), BrowserInstalledNames.end(), PluginName) != BrowserInstalledNames.end();
+}
+
+void FEEditorPluginsWindow::RenderInstallProgress(const FEPluginInstallTask& Task, const ImVec2& Min, const ImVec2& Max)
+{
+	float Fraction = 0.0f;
+	std::string Text;
+	switch (Task.State)
+	{
+		case FEPluginInstallState::Downloading:
+			if (Task.TotalBytes > 0)
+			{
+				Fraction = ImClamp(static_cast<float>(static_cast<double>(Task.DownloadedBytes) / static_cast<double>(Task.TotalBytes)), 0.0f, 1.0f);
+				Text = std::to_string(static_cast<int>(Fraction * 100.0f)) + "%";
+			}
+			else
+			{
+				Text = FormatFileSize(Task.DownloadedBytes);
+			}
+			break;
+
+		case FEPluginInstallState::CheckingArchive:
+			Text = "Checking...";
+			break;
+
+		case FEPluginInstallState::Downloaded:
+			Text = PLUGIN_BROWSER.IsWaitingForConfirmation() ? "Waiting" : "Downloaded";
+			break;
+
+		case FEPluginInstallState::Installing:
+			Text = "Installing...";
+			break;
+
+		default:
+			break;
+	}
+
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	const float Rounding = ImGui::GetStyle().FrameRounding;
+	DrawList->AddRectFilled(Min, Max, ImGui::GetColorU32(ImGuiCol_FrameBg), Rounding);
+	if (Fraction > 0.0f)
+		DrawList->AddRectFilled(Min, ImVec2(Min.x + (Max.x - Min.x) * Fraction, Max.y), ImGui::GetColorU32(ImGuiCol_PlotHistogram), Rounding);
+
+	const ImVec2 TextSize = ImGui::CalcTextSize(Text.c_str());
+	DrawList->AddText(ImVec2((Min.x + Max.x - TextSize.x) * 0.5f, (Min.y + Max.y - TextSize.y) * 0.5f), ImGui::GetColorU32(ImGuiCol_Text), Text.c_str());
+}
+
+void FEEditorPluginsWindow::StartInstall(const std::vector<const FEPluginBrowserEntry*>& Targets)
+{
+	// Names are stored, because entries are replaced when plugin list is refreshed.
+	PluginsToInstall.clear();
+	InstallTargets.clear();
+	MissingDependenciesOfInstall.clear();
+	for (const FEPluginBrowserEntry* Target : Targets)
+	{
+		InstallTargets.push_back(Target->RepositoryName);
+
+		std::vector<FEUUID> MissingDependencies;
+		const std::vector<const FEPluginBrowserEntry*> InstallOrder = PLUGIN_BROWSER.GetInstallOrder(*Target, MissingDependencies);
+		for (const FEPluginBrowserEntry* EntryToInstall : InstallOrder)
+		{
+			if (std::find(PluginsToInstall.begin(), PluginsToInstall.end(), EntryToInstall->RepositoryName) == PluginsToInstall.end())
+				PluginsToInstall.push_back(EntryToInstall->RepositoryName);
+		}
+
+		for (const FEUUID& DependencyID : MissingDependencies)
+		{
+			if (std::find(MissingDependenciesOfInstall.begin(), MissingDependenciesOfInstall.end(), DependencyID) == MissingDependenciesOfInstall.end())
+				MissingDependenciesOfInstall.push_back(DependencyID);
+		}
+	}
+
+	// User is asked only when plugins that user did not choose are installed too, or when some dependencies are missing.
+	if (PluginsToInstall.size() == InstallTargets.size() && MissingDependenciesOfInstall.empty())
+	{
+		PLUGIN_BROWSER.Install(PluginsToInstall);
+		return;
+	}
+
+	bShouldOpenInstallDependenciesPopup = true;
+}
+
+void FEEditorPluginsWindow::RenderInstallDependenciesPopup()
+{
+	if (bShouldOpenInstallDependenciesPopup)
+	{
+		ImGui::OpenPopup("Install plugins");
+		bShouldOpenInstallDependenciesPopup = false;
+	}
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
+	const bool bPopupOpen = ImGui::BeginPopupModal("Install plugins", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::PopStyleVar();
+	if (!bPopupOpen)
+		return;
+
+	const std::string PluginName = InstallTargets.size() == 1 ? InstallTargets[0] : "Plugins";
+	ImGui::PushTextWrapPos(ImGui::GetFontSize() * 32.0f);
+	if (InstallTargets.size() > 1)
+	{
+		ImGui::TextWrapped("These plugins will be installed or updated:");
+	}
+	else if (PluginsToInstall.size() > 1)
+	{
+		ImGui::TextWrapped("%s depends on plugins that are not installed, they will be installed first:", PluginName.c_str());
+	}
+	else
+	{
+		ImGui::TextWrapped("%s will be installed:", PluginName.c_str());
+	}
+	ImGui::Spacing();
+
+	uint64_t TotalSize = 0;
+	if (ImGui::BeginTable("PluginsToInstall", 4, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+	{
+		ImGui::TableSetupColumn("Plugin");
+		ImGui::TableSetupColumn("Action");
+		ImGui::TableSetupColumn("Version");
+		ImGui::TableSetupColumn("Size");
+		ImGui::TableHeadersRow();
+		for (const std::string& Name : PluginsToInstall)
+		{
+			const FEPluginBrowserEntry* Entry = PLUGIN_BROWSER.FindEntryByName(Name);
+			const std::string InstalledVersion = Entry != nullptr ? GetBrowserEntryStatus(*Entry).InstalledVersion : "";
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(Name.c_str());
+			ImGui::TableNextColumn();
+			ImGui::TextColored(LabelColor, "%s", InstalledVersion.empty() ? "Install" : ("Update from " + InstalledVersion).c_str());
+			ImGui::TableNextColumn();
+			ImGui::TextColored(LabelColor, "%s", Entry != nullptr ? Entry->Manifest.Version.c_str() : "-");
+			ImGui::TableNextColumn();
+			ImGui::TextColored(LabelColor, "%s", Entry != nullptr ? FormatFileSize(Entry->ArchiveSize).c_str() : "-");
+			if (Entry != nullptr)
+				TotalSize += Entry->ArchiveSize;
+		}
+
+		ImGui::EndTable();
+	}
+
+	ImGui::TextColored(LabelColor, "Download size: %s", FormatFileSize(TotalSize).c_str());
+
+	if (!MissingDependenciesOfInstall.empty())
+	{
+		ImGui::Spacing();
+		ImGui::PushStyleColor(ImGuiCol_Text, ErrorColor);
+		ImGui::TextWrapped("These dependencies are not installed and are not in the plugin list, %s could fail to load without them:", PluginName.c_str());
+		for (const FEUUID& DependencyID : MissingDependenciesOfInstall)
+			ImGui::BulletText("%s", FindInstalledOrAvailablePluginName(DependencyID).c_str());
+		ImGui::PopStyleColor();
+	}
+	ImGui::PopTextWrapPos();
+
+	ImGui::Spacing();
+	const ImVec2 ButtonSize = ImVec2(ImGui::GetFontSize() * 6.0f, 0.0f);
+	if (ImGui::Button("Install", ButtonSize))
+	{
+		PLUGIN_BROWSER.Install(PluginsToInstall);
+		ImGui::CloseCurrentPopup();
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Cancel", ButtonSize))
+		ImGui::CloseCurrentPopup();
+
+	ImGui::EndPopup();
+}
+
+void FEEditorPluginsWindow::RenderEngineCommitPopup()
+{
+	const char* PopupName = "Different engine commit";
+	if (PLUGIN_BROWSER.IsWaitingForConfirmation() && !ImGui::IsPopupOpen(PopupName))
+		ImGui::OpenPopup(PopupName);
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
+	const bool bPopupOpen = ImGui::BeginPopupModal(PopupName, nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::PopStyleVar();
+	if (!bPopupOpen)
+		return;
+
+	if (!PLUGIN_BROWSER.IsWaitingForConfirmation())
+	{
+		ImGui::CloseCurrentPopup();
+		ImGui::EndPopup();
+		return;
+	}
+
+	const std::string EngineCommitHash = ENGINE.GetEngineCommitHash();
+	ImGui::PushTextWrapPos(ImGui::GetFontSize() * 32.0f);
+	ImGui::TextWrapped("These plugins were built with a different engine commit than this editor (engine %s), they could fail to load or crash:", EngineCommitHash.empty() ? "unknown" : EngineCommitHash.c_str());
+	ImGui::PopTextWrapPos();
+	ImGui::Spacing();
+
+	if (ImGui::BeginTable("EngineCommits", 2, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+	{
+		ImGui::TableSetupColumn("Plugin");
+		ImGui::TableSetupColumn("Built with engine");
+		ImGui::TableHeadersRow();
+		for (const FEPluginInstallTask& Task : PLUGIN_BROWSER.GetInstallTasks())
+		{
+			if (FEPluginBrowser::IsSameEngineCommit(Task.EngineCommit))
+				continue;
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(Task.PluginName.c_str());
+			ImGui::TableNextColumn();
+			if (Task.EngineCommit.empty())
+			{
+				ImGui::TextColored(WarningColor, "unknown, archive has no EngineCommit.txt");
+			}
+			else
+			{
+				ImGui::TextColored(WarningColor, "%s", Task.EngineCommit.substr(0, 7).c_str());
+				ImGui::SetItemTooltip("%s", Task.EngineCommit.c_str());
+			}
+		}
+
+		ImGui::EndTable();
+	}
+
+	ImGui::Spacing();
+	const ImVec2 ButtonSize = ImVec2(ImGui::GetFontSize() * 8.0f, 0.0f);
+	if (ImGui::Button("Install anyway", ButtonSize))
+	{
+		PLUGIN_BROWSER.ContinueInstall();
+		ImGui::CloseCurrentPopup();
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Cancel", ButtonSize))
+	{
+		PLUGIN_BROWSER.CancelInstall();
+		ImGui::CloseCurrentPopup();
+	}
+
+	ImGui::EndPopup();
+}
+
 FEEditorPluginsWindow::ModuleStatus FEEditorPluginsWindow::GetModuleStatus(const PluginModule& Module) const
 {
 	if (EDITOR_PLUGIN_MANAGER.IsModuleLoaded(Module))
@@ -434,6 +1264,22 @@ std::string FEEditorPluginsWindow::FindPluginName(const FEUUID& PluginID) const
 		if (Plugins[i].Manifest.ID == PluginID)
 			return Plugins[i].Manifest.Name;
 	}
+
+	return UNIQUE_ID.ToString(PluginID) + " (not found)";
+}
+
+std::string FEEditorPluginsWindow::FindInstalledOrAvailablePluginName(const FEUUID& PluginID) const
+{
+	const std::vector<DiscoveredPlugin>& Plugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
+	for (size_t i = 0; i < Plugins.size(); i++)
+	{
+		if (Plugins[i].Manifest.ID == PluginID)
+			return Plugins[i].Manifest.Name;
+	}
+
+	const FEPluginBrowserEntry* Entry = PLUGIN_BROWSER.FindEntry(PluginID);
+	if (Entry != nullptr)
+		return Entry->Manifest.Name;
 
 	return UNIQUE_ID.ToString(PluginID) + " (not found)";
 }
@@ -871,4 +1717,130 @@ void FEEditorPluginsWindow::SavePluginPackage(const DiscoveredPlugin& Plugin)
 		PackageResultMessage = bPackageCreated ? "Saved to " + GetDisplayPath(FilePath) : ErrorMessage;
 		return bPackageCreated;
 	});
+}
+
+std::vector<FEUUID> FEEditorPluginsWindow::FindDependentPlugins(const FEUUID& PluginID) const
+{
+	std::vector<FEUUID> Result;
+	std::vector<FEUUID> IDsToCheck = { PluginID };
+	const std::vector<DiscoveredPlugin>& Plugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
+	for (size_t i = 0; i < IDsToCheck.size(); i++)
+	{
+		for (const DiscoveredPlugin& Plugin : Plugins)
+		{
+			const FEUUID& CandidateID = Plugin.Manifest.ID;
+			if (CandidateID == PluginID || PLUGIN_MANAGER.IsUninstallPending(CandidateID) || std::find(Result.begin(), Result.end(), CandidateID) != Result.end())
+				continue;
+
+			const std::vector<FEUUID>& Dependencies = Plugin.Manifest.Dependencies;
+			if (std::find(Dependencies.begin(), Dependencies.end(), IDsToCheck[i]) == Dependencies.end())
+				continue;
+
+			Result.push_back(CandidateID);
+			IDsToCheck.push_back(CandidateID);
+		}
+	}
+
+	return Result;
+}
+
+void FEEditorPluginsWindow::StartUninstall(const DiscoveredPlugin& Plugin)
+{
+	PluginToUninstall = Plugin.Manifest.ID;
+	DependentPluginsOfUninstall = FindDependentPlugins(PluginToUninstall);
+	UninstallErrorMessage.clear();
+	bShouldOpenUninstallPopup = true;
+}
+
+bool FEEditorPluginsWindow::UninstallPlugins(const std::vector<FEUUID>& PluginIDs)
+{
+	UninstallErrorMessage.clear();
+	for (const FEUUID& PluginID : PluginIDs)
+	{
+		std::string ErrorMessage;
+		if (!PLUGIN_MANAGER.UninstallPlugin(PluginID, ErrorMessage))
+			UninstallErrorMessage += (UninstallErrorMessage.empty() ? "" : "\n") + ErrorMessage;
+	}
+
+	return UninstallErrorMessage.empty();
+}
+
+void FEEditorPluginsWindow::RenderUninstallPopup()
+{
+	if (bShouldOpenUninstallPopup)
+	{
+		ImGui::OpenPopup("Uninstall plugin");
+		bShouldOpenUninstallPopup = false;
+	}
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
+	const bool bPopupOpen = ImGui::BeginPopupModal("Uninstall plugin", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::PopStyleVar();
+	if (!bPopupOpen)
+		return;
+
+	const std::string PluginName = FindPluginName(PluginToUninstall);
+	ImGui::PushTextWrapPos(ImGui::GetFontSize() * 32.0f);
+	ImGui::TextWrapped("%s will be removed when the editor is restarted.", PluginName.c_str());
+
+	if (!DependentPluginsOfUninstall.empty())
+	{
+		ImGui::Spacing();
+		ImGui::PushStyleColor(ImGuiCol_Text, WarningColor);
+		ImGui::TextWrapped("These installed plugins depend on %s and would fail to load without it:", PluginName.c_str());
+		for (const FEUUID& DependentID : DependentPluginsOfUninstall)
+			ImGui::BulletText("%s", FindPluginName(DependentID).c_str());
+		ImGui::PopStyleColor();
+	}
+
+	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+	std::vector<FEUUID> PluginsToCheck = DependentPluginsOfUninstall;
+	PluginsToCheck.insert(PluginsToCheck.begin(), PluginToUninstall);
+	std::string PluginsUsedByProject;
+	for (const FEUUID& PluginID : PluginsToCheck)
+	{
+		if (CurrentProject != nullptr && CurrentProject->UsesPlugin(PluginID))
+			PluginsUsedByProject += (PluginsUsedByProject.empty() ? "" : ", ") + FindPluginName(PluginID);
+	}
+
+	if (!PluginsUsedByProject.empty())
+	{
+		ImGui::Spacing();
+		ImGui::PushStyleColor(ImGuiCol_Text, WarningColor);
+		ImGui::TextWrapped("Open project uses %s. After restart it will be listed as missing, and native scripts that use its API will not compile.", PluginsUsedByProject.c_str());
+		ImGui::PopStyleColor();
+	}
+
+	if (!UninstallErrorMessage.empty())
+	{
+		ImGui::Spacing();
+		ImGui::PushStyleColor(ImGuiCol_Text, ErrorColor);
+		ImGui::TextWrapped("%s", UninstallErrorMessage.c_str());
+		ImGui::PopStyleColor();
+	}
+	ImGui::PopTextWrapPos();
+
+	ImGui::Spacing();
+	const ImVec2 ButtonSize = ImVec2(ImGui::GetFontSize() * 6.0f, 0.0f);
+	if (DependentPluginsOfUninstall.empty())
+	{
+		if (ImGui::Button("Uninstall", ButtonSize) && UninstallPlugins({ PluginToUninstall }))
+			ImGui::CloseCurrentPopup();
+	}
+	else
+	{
+		if (ImGui::Button("Uninstall all") && UninstallPlugins(PluginsToCheck))
+			ImGui::CloseCurrentPopup();
+
+		ImGui::SameLine();
+		const std::string UninstallOnlyText = "Uninstall only " + PluginName;
+		if (ImGui::Button(UninstallOnlyText.c_str()) && UninstallPlugins({ PluginToUninstall }))
+			ImGui::CloseCurrentPopup();
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Cancel", ButtonSize))
+		ImGui::CloseCurrentPopup();
+
+	ImGui::EndPopup();
 }
