@@ -393,22 +393,20 @@ void FEProject::SaveProject(bool bFullSave)
 	Root["Name"] = Name;
 	Root["bWasJustCreated"] = bWasJustCreated;
 
-	// Missing plugins are kept, so project saved without them still reports them.
-	std::vector<FEProjectPluginInfo> PluginsToSave = GetMissingPlugins();
+	// Missing plugins keep name and version they were saved with.
 	const std::vector<DiscoveredPlugin>& InstalledPlugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
-	for (size_t i = 0; i < InstalledPlugins.size(); i++)
+	for (size_t i = 0; i < Plugins.size(); i++)
 	{
-		const PluginManifest& Manifest = InstalledPlugins[i].Manifest;
-		for (size_t j = 0; j < Manifest.Modules.size(); j++)
+		for (size_t j = 0; j < InstalledPlugins.size(); j++)
 		{
-			if (Manifest.Modules[j].Type == "Engine")
+			if (InstalledPlugins[j].Manifest.ID == Plugins[i].ID)
 			{
-				PluginsToSave.push_back({ Manifest.ID, Manifest.Name, Manifest.Version });
+				Plugins[i].Name = InstalledPlugins[j].Manifest.Name;
+				Plugins[i].Version = InstalledPlugins[j].Manifest.Version;
 				break;
 			}
 		}
 	}
-	Plugins = PluginsToSave;
 
 	Json::Value PluginsData(Json::arrayValue);
 	for (size_t i = 0; i < Plugins.size(); i++)
@@ -1199,4 +1197,132 @@ bool FEProject::UsesPlugin(const FEUUID& PluginID) const
 	}
 
 	return false;
+}
+
+const std::vector<FEProjectPluginInfo>& FEProject::GetEnabledPlugins() const
+{
+	return Plugins;
+}
+
+// Installed plugins that given plugin or its modules depend on.
+static std::vector<const DiscoveredPlugin*> GetPluginDependencies(const PluginManifest& Manifest)
+{
+	std::vector<const DiscoveredPlugin*> Result;
+	const std::vector<DiscoveredPlugin>& InstalledPlugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
+	for (size_t i = 0; i < InstalledPlugins.size(); i++)
+	{
+		const PluginManifest& Candidate = InstalledPlugins[i].Manifest;
+		if (Candidate.ID == Manifest.ID)
+			continue;
+
+		bool bDependency = std::find(Manifest.Dependencies.begin(), Manifest.Dependencies.end(), Candidate.ID) != Manifest.Dependencies.end();
+		for (size_t j = 0; j < Manifest.Modules.size() && !bDependency; j++)
+		{
+			const std::vector<FEUUID>& ModuleDependencies = Manifest.Modules[j].Dependencies;
+			for (size_t k = 0; k < Candidate.Modules.size() && !bDependency; k++)
+				bDependency = std::find(ModuleDependencies.begin(), ModuleDependencies.end(), Candidate.Modules[k].ID) != ModuleDependencies.end();
+		}
+
+		if (bDependency)
+			Result.push_back(&InstalledPlugins[i]);
+	}
+
+	return Result;
+}
+
+void FEProject::EnablePlugin(const PluginManifest& Manifest)
+{
+	if (UsesPlugin(Manifest.ID))
+		return;
+
+	Plugins.push_back({ Manifest.ID, Manifest.Name, Manifest.Version });
+	bModified = true;
+
+	const std::vector<const DiscoveredPlugin*> Dependencies = GetPluginDependencies(Manifest);
+	for (size_t i = 0; i < Dependencies.size(); i++)
+		EnablePlugin(Dependencies[i]->Manifest);
+}
+
+void FEProject::DisablePlugin(const FEUUID& PluginID)
+{
+	for (size_t i = 0; i < Plugins.size(); i++)
+	{
+		if (Plugins[i].ID == PluginID)
+		{
+			Plugins.erase(Plugins.begin() + i);
+			bModified = true;
+			return;
+		}
+	}
+}
+
+std::vector<FEUUID> FEProject::GetEnabledPluginsWithDependencies() const
+{
+	std::vector<FEUUID> Result;
+	for (size_t i = 0; i < Plugins.size(); i++)
+		Result.push_back(Plugins[i].ID);
+
+	// Dependencies are added to the end of the list while it is processed.
+	const std::vector<DiscoveredPlugin>& InstalledPlugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
+	for (size_t i = 0; i < Result.size(); i++)
+	{
+		for (size_t j = 0; j < InstalledPlugins.size(); j++)
+		{
+			const PluginManifest& Manifest = InstalledPlugins[j].Manifest;
+			if (!(Manifest.ID == Result[i]))
+				continue;
+
+			std::vector<FEUUID> DependencyIDs = Manifest.Dependencies;
+			const std::vector<const DiscoveredPlugin*> Dependencies = GetPluginDependencies(Manifest);
+			for (size_t k = 0; k < Dependencies.size(); k++)
+				DependencyIDs.push_back(Dependencies[k]->Manifest.ID);
+
+			for (size_t k = 0; k < DependencyIDs.size(); k++)
+			{
+				if (std::find(Result.begin(), Result.end(), DependencyIDs[k]) == Result.end())
+					Result.push_back(DependencyIDs[k]);
+			}
+
+			break;
+		}
+	}
+
+	return Result;
+}
+
+std::vector<FEUUID> FEProject::GetEnabledDependentPlugins(const FEUUID& PluginID) const
+{
+	// Plugin that is not enabled could still connect enabled plugin with given one.
+	std::vector<FEUUID> DependentPlugins;
+	std::vector<FEUUID> IDsToCheck = { PluginID };
+	const std::vector<DiscoveredPlugin>& InstalledPlugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
+	for (size_t i = 0; i < IDsToCheck.size(); i++)
+	{
+		for (size_t j = 0; j < InstalledPlugins.size(); j++)
+		{
+			const FEUUID& CandidateID = InstalledPlugins[j].Manifest.ID;
+			if (CandidateID == PluginID || std::find(DependentPlugins.begin(), DependentPlugins.end(), CandidateID) != DependentPlugins.end())
+				continue;
+
+			const std::vector<const DiscoveredPlugin*> Dependencies = GetPluginDependencies(InstalledPlugins[j].Manifest);
+			for (size_t k = 0; k < Dependencies.size(); k++)
+			{
+				if (Dependencies[k]->Manifest.ID == IDsToCheck[i])
+				{
+					DependentPlugins.push_back(CandidateID);
+					IDsToCheck.push_back(CandidateID);
+					break;
+				}
+			}
+		}
+	}
+
+	std::vector<FEUUID> Result;
+	for (size_t i = 0; i < DependentPlugins.size(); i++)
+	{
+		if (UsesPlugin(DependentPlugins[i]))
+			Result.push_back(DependentPlugins[i]);
+	}
+
+	return Result;
 }

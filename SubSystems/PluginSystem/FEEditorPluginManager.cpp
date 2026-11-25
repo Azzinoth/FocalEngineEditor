@@ -51,6 +51,9 @@ std::vector<FEUUID> FEEditorPluginManager::GetAlwaysLoadedPlugins()
 
 bool FEEditorPluginManager::IsPluginRequested(const DiscoveredPlugin& Plugin) const
 {
+	if (bAutomaticLoading)
+		return true;
+
 	if (std::find(RequestedPluginIDs.begin(), RequestedPluginIDs.end(), Plugin.Manifest.ID) != RequestedPluginIDs.end())
 		return true;
 
@@ -81,7 +84,7 @@ void FEEditorPluginManager::LoadEditorModules()
 	const std::vector<DiscoveredPlugin>& Plugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
 	for (size_t i = 0; i < Plugins.size(); i++)
 	{
-		if (!bAutomaticLoading && !IsPluginRequested(Plugins[i]))
+		if (!IsPluginRequested(Plugins[i]))
 			continue;
 
 		for (size_t j = 0; j < Plugins[i].Manifest.Modules.size(); j++)

@@ -36,6 +36,8 @@ public:
 	// False if Initialize was called with list of plugins.
 	bool IsAutomaticLoadingEnabled() const;
 	const std::vector<FEUUID>& GetRequestedPlugins() const;
+	// Plugin was given to Initialize or is loaded because given plugin depends on it, always true with automatic loading.
+	bool IsPluginRequested(const DiscoveredPlugin& Plugin) const;
 	// Plugins that editor itself needs, they are loaded even without project.
 	static std::vector<FEUUID> GetAlwaysLoadedPlugins();
 	void Update(double DeltaTime);
@@ -66,7 +68,6 @@ private:
 
 	bool bAutomaticLoading = true;
 	std::vector<FEUUID> RequestedPluginIDs;
-	bool IsPluginRequested(const DiscoveredPlugin& Plugin) const;
 	void LoadEditorModules();
 
 	bool LoadEditorModule(const DiscoveredPlugin& Plugin, size_t ModuleIndex);

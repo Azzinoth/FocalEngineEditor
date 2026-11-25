@@ -118,6 +118,13 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 		return false;
 	}
 
+	// Game without plugin that project uses would fail only when it runs, so build is stopped before anything is copied.
+	if (!FindStaticPlugins(ProjectToBuild))
+	{
+		LOG.Add("FEProjectBuildSystem::BuildExecutable: Game is not built, because some plugins of the project can not be included in it", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+		return false;
+	}
+
 	std::string VSProjectDirectory = FILE_SYSTEM.GetCurrentWorkingPath() + "/BuildProjects_Temporary/";
 	if (FILE_SYSTEM.DoesDirectoryExist(VSProjectDirectory))
 	{
@@ -240,8 +247,6 @@ bool FEProjectBuildSystem::BuildExecutable(FEProject* ProjectToBuild)
 	}
 	EngineResources->SaveToFile(VSProjectDirectory + "/EngineResources.fepackage");
 	delete EngineResources;
-
-	StaticPlugins = FindStaticPlugins();
 
 	if (!InitializeCMakeFileAndScriptFiles(ProjectToBuild, VSProjectDirectory))
 	{
@@ -618,14 +623,38 @@ bool FEProjectBuildSystem::CreateFinalExecutableDirectory(FEProject* ProjectToBu
 	return true;
 }
 
-std::vector<DiscoveredPlugin> FEProjectBuildSystem::FindStaticPlugins()
+bool FEProjectBuildSystem::FindStaticPlugins(FEProject* ProjectToBuild)
 {
-	std::vector<DiscoveredPlugin> Result;
+	StaticPlugins.clear();
+
+	bool bAllPluginsFound = true;
 	const std::vector<DiscoveredPlugin>& Plugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
-	for (size_t i = 0; i < Plugins.size(); i++)
+	const std::vector<FEUUID> PluginIDs = ProjectToBuild->GetEnabledPluginsWithDependencies();
+	for (size_t i = 0; i < PluginIDs.size(); i++)
 	{
-		const PluginManifest& Manifest = Plugins[i].Manifest;
-		const std::string StaticFolderPath = Plugins[i].FolderPath + "/Static/";
+		const DiscoveredPlugin* Plugin = nullptr;
+		for (size_t j = 0; j < Plugins.size(); j++)
+		{
+			if (Plugins[j].Manifest.ID == PluginIDs[i])
+				Plugin = &Plugins[j];
+		}
+
+		if (Plugin == nullptr)
+		{
+			std::string PluginName = UNIQUE_ID.ToString(PluginIDs[i]);
+			for (const FEProjectPluginInfo& PluginInfo : ProjectToBuild->GetEnabledPlugins())
+			{
+				if (PluginInfo.ID == PluginIDs[i])
+					PluginName = "\"" + PluginInfo.Name + "\"";
+			}
+
+			LOG.Add("FEProjectBuildSystem::FindStaticPlugins: Plugin " + PluginName + " is enabled in the project or enabled plugin depends on it, but it is not installed", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+			bAllPluginsFound = false;
+			continue;
+		}
+
+		const PluginManifest& Manifest = Plugin->Manifest;
+		const std::string StaticFolderPath = Plugin->FolderPath + "/Static/";
 
 		bool bHasEngineModule = false;
 		bool bAllFilesFound = FILE_SYSTEM.DoesFileExist(StaticFolderPath + Manifest.Name + ".cmake");
@@ -645,12 +674,13 @@ std::vector<DiscoveredPlugin> FEProjectBuildSystem::FindStaticPlugins()
 
 		if (!bAllFilesFound)
 		{
-			LOG.Add("FEProjectBuildSystem::FindStaticPlugins: Plugin \"" + Manifest.Name + "\" is not included in the game, because its Static folder does not have link file or static library of every engine module", "FE_BUILD_EXECUTABLE", FE_LOG_WARNING);
+			LOG.Add("FEProjectBuildSystem::FindStaticPlugins: Plugin \"" + Manifest.Name + "\" can not be included in the game, because its Static folder does not have link file or static library of every engine module", "FE_BUILD_EXECUTABLE", FE_LOG_ERROR);
+			bAllPluginsFound = false;
 			continue;
 		}
 
-		Result.push_back(Plugins[i]);
+		StaticPlugins.push_back(*Plugin);
 	}
 
-	return Result;
+	return bAllPluginsFound;
 }

@@ -52,11 +52,19 @@ public:
 	// Plugins that project uses, but that are not installed.
 	std::vector<FEProjectPluginInfo> GetMissingPlugins();
 	void RemoveMissingPlugin(const FEUUID& PluginID);
+	// True if plugin is enabled in the project.
 	bool UsesPlugin(const FEUUID& PluginID) const;
+	const std::vector<FEProjectPluginInfo>& GetEnabledPlugins() const;
+	// Installed plugins that it depends on are enabled too, change is applied when project is opened next time.
+	void EnablePlugin(const PluginManifest& Manifest);
+	void DisablePlugin(const FEUUID& PluginID);
+	// Enabled plugins that depend on given plugin, directly or through other plugins.
+	std::vector<FEUUID> GetEnabledDependentPlugins(const FEUUID& PluginID) const;
+	std::vector<FEUUID> GetEnabledPluginsWithDependencies() const;
 	// Reads only list of plugins from Project.txt, it could be called before engine is initialized.
 	static std::vector<FEUUID> ReadPluginIDs(const std::string& ProjectFolder);
 private:
-	// Plugins with engine module that project was saved with, scripts and game builds of the project could use them.
+	// Plugins enabled in the project, editor loads them when project is opened.
 	// Missing plugins stay in the list until they are removed explicitly.
 	std::vector<FEProjectPluginInfo> Plugins;
 

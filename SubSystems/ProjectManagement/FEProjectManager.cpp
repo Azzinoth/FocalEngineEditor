@@ -1,5 +1,6 @@
 #include "FEProjectManager.h"
 #include "../../FEEditor.h"
+#include "../../EditorWindows/PluginsWindow.h"
 
 FEProjectManager::FEProjectManager()
 {
@@ -193,7 +194,8 @@ void FEProjectManager::DisplayProjectSelection()
 				ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::ImColor(0.1f, 1.0f, 0.1f, 1.0f)));
 			}
 
-			if (ImGui::IsMouseDoubleClicked(0))
+			// Project list could be covered by plugins window.
+			if (ImGui::IsMouseDoubleClicked(0) && ImGui::IsWindowHovered())
 			{
 				if (IndexChosen != -1)
 				{
@@ -281,8 +283,13 @@ void FEProjectManager::DisplayProjectSelection()
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::ImColor(34.0f / 255.0f, 1.0f, 106.0f / 255.0f, 1.0f)));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::ImColor(0.0f, 202.0f / 255.0f, 66.0f / 255.0f, 1.0f)));
 
+		// Two buttons are aligned to the right side of the panel.
 		ImGui::SameLine();
-		ImGui::SetCursorPos(ImVec2(ImGui::GetContentRegionAvail().x + 280.0f + 64.0f, ImGui::GetCursorPos().y));
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - 200.0f - ImGui::GetStyle().ItemSpacing.x - 280.0f);
+		if (ImGui::Button("Plugins", ImVec2(200.0f, 64.0f)))
+			PLUGINS_WINDOW.SetVisible(true);
+
+		ImGui::SameLine();
 		if (ImGui::Button("Choose projects directory", ImVec2(280.0f, 64.0f)))
 		{
 			FILE_SYSTEM.OpenFolderDialog([this](const std::string& Path) {

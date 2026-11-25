@@ -400,6 +400,20 @@ void FEEditor::SetUpDocking()
 
 void FEEditor::Render()
 {
+	if (bSaveProjectAndRestartRequested)
+	{
+		bSaveProjectAndRestartRequested = false;
+		FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+		if (CurrentProject != nullptr)
+		{
+			const std::string ProjectFolder = CurrentProject->GetProjectFolder();
+			CurrentProject->SaveProject();
+			CloseProjectAndCleanup();
+			RestartWithProject(ProjectFolder);
+			return;
+		}
+	}
+
 	SetUpDocking();
 
 	PREVIEW_MANAGER.Update();
@@ -599,7 +613,6 @@ void FEEditor::Render()
 		EDITOR_PLUGIN_MANAGER.RenderWindows();
 		if (!GizmosSettingsWindowObject.IsVisible())
 			GizmosSettingsWindowObject.Show();
-		GizmosSettingsWindowObject.Render();
 
 		EDITOR_SCENE_WINDOW_MANAGER.Update();
 
@@ -609,6 +622,7 @@ void FEEditor::Render()
 	else
 	{
 		PROJECT_MANAGER.DisplayProjectSelection();
+		PLUGINS_WINDOW.Render();
 	}
 }
 
@@ -974,6 +988,11 @@ bool FEEditor::RestartWithProject(const std::string& ProjectFolder)
 	CloseHandle(ProcessInfo.hProcess);
 	ENGINE.Terminate();
 	return true;
+}
+
+void FEEditor::RequestSaveProjectAndRestart()
+{
+	bSaveProjectAndRestartRequested = true;
 }
 
 void FEEditor::CloseProjectAndCleanup()

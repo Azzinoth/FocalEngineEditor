@@ -63,6 +63,8 @@ public:
 	bool IsRestartNeededForProject(const std::string& ProjectFolder) const;
 	// Starts new editor process and terminates this one, empty folder means project list.
 	bool RestartWithProject(const std::string& ProjectFolder);
+	// Opened project is saved and editor is restarted with it at the start of the next frame.
+	void RequestSaveProjectAndRestart();
 private:
     SINGLETON_PRIVATE_PART(FEEditor)
 
@@ -124,6 +126,8 @@ private:
     void SetImGuiStyle();
 
     void CloseProjectAndCleanup();
+
+	bool bSaveProjectAndRestartRequested = false;
 };
 
 #define EDITOR FEEditor::GetInstance()

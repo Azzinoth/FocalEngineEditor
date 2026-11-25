@@ -64,9 +64,14 @@ class FEEditorPluginsWindow
 		std::string InstalledVersion;
 	};
 
+	// Plugins installed from plugin browser that were already enabled in the project.
+	size_t HandledBrowserInstallCount = 0;
+
 	enum class ModuleStatus
 	{
 		Loaded,
+		// Plugin of the module was not requested, so nothing was loaded on purpose.
+		NotEnabled,
 		// Editor module that was not loaded, because module that it depends on is not loaded.
 		Skipped,
 		Failed
@@ -114,7 +119,12 @@ class FEEditorPluginsWindow
 	bool IsInstalledThisSession(const std::string& PluginName) const;
 	void OpenURL(const std::string& URL);
 
-	ModuleStatus GetModuleStatus(const PluginModule& Module) const;
+	// Plugins installed while project is opened are enabled in it.
+	void EnablePluginsInstalledFromBrowser();
+	// Plugins that will be loaded or will no longer be loaded after restart, empty if there are no changes.
+	std::string GetPendingPluginChangesText() const;
+
+	ModuleStatus GetModuleStatus(const DiscoveredPlugin& Plugin, const PluginModule& Module) const;
 	std::string GetDisplayPath(const std::string& Path) const;
 	std::string FindPluginName(const FEUUID& PluginID) const;
 	// Also looks in plugin browser, for dependencies of plugins that are not installed.
@@ -124,6 +134,9 @@ class FEEditorPluginsWindow
 	std::string FindModuleName(const FEUUID& ModuleID, const FEUUID& CurrentPluginID) const;
 public:
 	SINGLETON_PUBLIC_PART(FEEditorPluginsWindow)
+
+	bool IsVisible() const;
+	void SetVisible(bool bNewValue);
 };
 
 #define PLUGINS_WINDOW FEEditorPluginsWindow::GetInstance()

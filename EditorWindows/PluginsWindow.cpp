@@ -1,5 +1,6 @@
 #include "PluginsWindow.h"
 #include "../SubSystems/ProjectManagement/FEProjectManager.h"
+#include "../FEEditor.h"
 #include <shellapi.h>
 
 static const ImVec4 LabelColor = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
@@ -38,21 +39,43 @@ FEEditorPluginsWindow::~FEEditorPluginsWindow()
 
 void FEEditorPluginsWindow::Render()
 {
+	EnablePluginsInstalledFromBrowser();
 	if (!bVisible)
 		return;
 
+	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+
 	// Padding is popped right after Begin, so tooltips keep default padding.
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-	const bool bWindowOpen = ImGui::Begin("Plugins", nullptr, ImGuiWindowFlags_None);
+	bool bWindowOpen = false;
+	if (CurrentProject != nullptr)
+	{
+		bWindowOpen = ImGui::Begin("Plugins", nullptr, ImGuiWindowFlags_None);
+	}
+	else
+	{
+		// Without project window covers project list, it has its own ID, so docking of the usual window is not changed.
+		ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
+		ImGui::SetNextWindowSize(ImVec2(static_cast<float>(APPLICATION.GetMainWindow()->GetWidth()), static_cast<float>(APPLICATION.GetMainWindow()->GetHeight())));
+		bWindowOpen = ImGui::Begin("Plugins###PluginsWithoutProject", &bVisible, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings);
+	}
 	ImGui::PopStyleVar();
 
 	if (bWindowOpen)
 	{
 		const std::vector<DiscoveredPlugin>& Plugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
+		size_t EnabledPluginCount = 0;
 		size_t ModuleCount = 0;
 		size_t LoadedModuleCount = 0;
 		for (size_t i = 0; i < Plugins.size(); i++)
 		{
+			if (CurrentProject != nullptr && CurrentProject->UsesPlugin(Plugins[i].Manifest.ID))
+				EnabledPluginCount++;
+
+			// Modules of plugins that were not requested are not expected to be loaded.
+			if (!EDITOR_PLUGIN_MANAGER.IsPluginRequested(Plugins[i]))
+				continue;
+
 			for (size_t j = 0; j < Plugins[i].Manifest.Modules.size(); j++)
 			{
 				ModuleCount++;
@@ -61,7 +84,14 @@ void FEEditorPluginsWindow::Render()
 			}
 		}
 
-		ImGui::TextColored(LabelColor, "%zu %s, %zu/%zu modules loaded", Plugins.size(), Plugins.size() == 1 ? "plugin" : "plugins", LoadedModuleCount, ModuleCount);
+		if (CurrentProject != nullptr)
+		{
+			ImGui::TextColored(LabelColor, "%zu %s, %zu enabled in project, %zu/%zu modules loaded", Plugins.size(), Plugins.size() == 1 ? "plugin" : "plugins", EnabledPluginCount, LoadedModuleCount, ModuleCount);
+		}
+		else
+		{
+			ImGui::TextColored(LabelColor, "%zu %s, %zu/%zu modules loaded", Plugins.size(), Plugins.size() == 1 ? "plugin" : "plugins", LoadedModuleCount, ModuleCount);
+		}
 
 		const std::string PluginDirectory = GetDisplayPath(PLUGIN_MANAGER.GetPluginDirectory());
 		const char* NewPluginButtonText = "New plugin...";
@@ -117,7 +147,15 @@ void FEEditorPluginsWindow::Render()
 				Names += (i == 0 ? "" : ", ") + NamesToLoad[i];
 
 			ImGui::PushStyleColor(ImGuiCol_Text, WarningColor);
-			ImGui::TextWrapped("Restart the editor to load installed plugins: %s", Names.c_str());
+			// Without project only plugins of the editor are loaded, other plugins are loaded with projects that enable them.
+			if (CurrentProject != nullptr)
+			{
+				ImGui::TextWrapped("Restart the editor to load installed plugins: %s", Names.c_str());
+			}
+			else
+			{
+				ImGui::TextWrapped("Restart the editor to add installed plugins to the list: %s", Names.c_str());
+			}
 			ImGui::PopStyleColor();
 			ImGui::Spacing();
 		}
@@ -153,6 +191,29 @@ void FEEditorPluginsWindow::Render()
 			ImGui::Spacing();
 		}
 
+		const std::string PluginChanges = GetPendingPluginChangesText();
+		if (!PluginChanges.empty())
+		{
+			ImGui::PushStyleColor(ImGuiCol_Text, WarningColor);
+			ImGui::TextWrapped("Restart the editor to apply plugin changes: %s", PluginChanges.c_str());
+			ImGui::PopStyleColor();
+			ImGui::Spacing();
+		}
+
+		if (!NamesToLoad.empty() || !NamesToRemove.empty() || !NamesToUpdate.empty() || !PluginChanges.empty())
+		{
+			if (CurrentProject != nullptr)
+			{
+				if (ImGui::SmallButton("Save project and restart"))
+					EDITOR.RequestSaveProjectAndRestart();
+			}
+			else if (ImGui::SmallButton("Restart"))
+			{
+				EDITOR.RestartWithProject("");
+			}
+			ImGui::Spacing();
+		}
+
 		if (ImGui::BeginTabBar("PluginTabs"))
 		{
 			// Counts are not part of tab ID, so tab stays selected when they change.
@@ -166,8 +227,8 @@ void FEEditorPluginsWindow::Render()
 			{
 				ImGui::Spacing();
 				RenderUpdateAllLine();
-				if (PROJECT_MANAGER.GetCurrent() != nullptr)
-					RenderMissingPlugins(PROJECT_MANAGER.GetCurrent());
+				if (CurrentProject != nullptr)
+					RenderMissingPlugins(CurrentProject);
 
 				if (Plugins.empty())
 				{
@@ -203,7 +264,14 @@ void FEEditorPluginsWindow::Render()
 
 void FEEditorPluginsWindow::RenderMissingPlugins(FEProject* Project)
 {
-	const std::vector<FEProjectPluginInfo> MissingPlugins = Project->GetMissingPlugins();
+	// Plugin installed during this session is not known to plugin manager until restart.
+	std::vector<FEProjectPluginInfo> MissingPlugins;
+	for (const FEProjectPluginInfo& Plugin : Project->GetMissingPlugins())
+	{
+		if (!IsInstalledThisSession(Plugin.Name))
+			MissingPlugins.push_back(Plugin);
+	}
+
 	if (MissingPlugins.empty())
 		return;
 
@@ -267,10 +335,17 @@ void FEEditorPluginsWindow::RenderPluginDetails(const DiscoveredPlugin& Plugin)
 	const FEPluginInstallTask* InstallTask = PLUGIN_BROWSER.FindInstallTask(Manifest.Name);
 	const bool bUpdateInProgress = InstallTask != nullptr && InstallTask->bUpdate && InstallTask->State != FEPluginInstallState::Installed && InstallTask->State != FEPluginInstallState::Failed;
 	const bool bChangePending = bUninstallPending || !PendingUpdateVersion.empty() || bUpdateInProgress;
+	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+	const bool bEnabled = CurrentProject != nullptr && CurrentProject->UsesPlugin(Manifest.ID);
+	const bool bRequested = EDITOR_PLUGIN_MANAGER.IsPluginRequested(Plugin);
 	ImVec4 StatusColor = WarningColor;
 	if (bChangePending)
 	{
 		StatusColor = WarningColor;
+	}
+	else if (!bRequested)
+	{
+		StatusColor = LabelColor;
 	}
 	else if (bAllModulesLoaded)
 	{
@@ -284,7 +359,7 @@ void FEEditorPluginsWindow::RenderPluginDetails(const DiscoveredPlugin& Plugin)
 	ImGui::PushID(&Plugin);
 
 	// Plugins with problems are open, so problems are visible right away.
-	if (!bAllModulesLoaded)
+	if (bRequested && !bAllModulesLoaded)
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 
 	const ImVec2 HeaderPosition = ImGui::GetCursorScreenPos();
@@ -321,17 +396,74 @@ void FEEditorPluginsWindow::RenderPluginDetails(const DiscoveredPlugin& Plugin)
 	{
 		ModuleCountText = "updating...";
 	}
+	else if (!bRequested && CurrentProject == nullptr)
+	{
+		ModuleCountText = "loaded with projects that enable it";
+	}
+	else if (!bRequested)
+	{
+		ModuleCountText = bEnabled ? "loaded after restart" : "not enabled";
+	}
+	else if (!bEnabled)
+	{
+		const std::vector<FEUUID> AlwaysLoadedPlugins = FEEditorPluginManager::GetAlwaysLoadedPlugins();
+		if (std::find(AlwaysLoadedPlugins.begin(), AlwaysLoadedPlugins.end(), Manifest.ID) != AlwaysLoadedPlugins.end())
+			ModuleCountText += ", used by the editor";
+	}
 	const float ModuleCountX = OpenFolderButtonX - Style.ItemSpacing.x * 2.0f - ImGui::CalcTextSize(ModuleCountText.c_str()).x;
 	DrawList->AddText(ImVec2(ModuleCountX, TextY), ImGui::GetColorU32(StatusColor), ModuleCountText.c_str());
+
+	// Checkbox is smaller than usual, so it fits in the header.
+	const char* EnabledText = "Enable in project";
+	const float CheckboxSize = ImGui::GetFontSize() + 2.0f;
+	const float CheckboxX = ModuleCountX - Style.ItemSpacing.x * 2.0f - CheckboxSize - Style.ItemInnerSpacing.x - ImGui::CalcTextSize(EnabledText).x;
+	const float RightItemsX = CurrentProject != nullptr ? CheckboxX : ModuleCountX;
 
 	const FEPluginBrowserEntry* BrowserEntry = PLUGIN_BROWSER.FindEntry(Manifest.ID);
 	if (!bChangePending && BrowserEntry != nullptr && FEPluginBrowser::CompareVersions(BrowserEntry->Manifest.Version, Manifest.Version) > 0)
 	{
 		const std::string UpdateText = BrowserEntry->Manifest.Version + " available";
-		const float UpdateTextX = ModuleCountX - Style.ItemSpacing.x * 2.0f - ImGui::CalcTextSize(UpdateText.c_str()).x;
+		const float UpdateTextX = RightItemsX - Style.ItemSpacing.x * 2.0f - ImGui::CalcTextSize(UpdateText.c_str()).x;
 		const float VersionEndX = TextX + ImGui::CalcTextSize(Manifest.Version.c_str()).x + Style.ItemSpacing.x * 2.0f;
 		if (UpdateTextX > VersionEndX)
 			DrawList->AddText(ImVec2(UpdateTextX, TextY), ImGui::GetColorU32(WarningColor), UpdateText.c_str());
+	}
+
+	if (CurrentProject != nullptr)
+	{
+		// Plugin that enabled plugins depend on is loaded anyway, so it can not be disabled.
+		const std::vector<FEUUID> DependentPlugins = CurrentProject->GetEnabledDependentPlugins(Manifest.ID);
+		std::string DependentPluginNames;
+		for (size_t i = 0; i < DependentPlugins.size(); i++)
+			DependentPluginNames += (i == 0 ? "" : ", ") + FindPluginName(DependentPlugins[i]);
+
+		bool bChecked = bEnabled || !DependentPlugins.empty();
+		ImGui::SameLine();
+		ImGui::SetCursorScreenPos(ImVec2(CheckboxX, HeaderPosition.y + (FrameHeight - CheckboxSize) * 0.5f));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1.0f, 1.0f));
+		ImGui::BeginDisabled(!DependentPlugins.empty());
+		if (ImGui::Checkbox(EnabledText, &bChecked))
+		{
+			if (bChecked)
+			{
+				CurrentProject->EnablePlugin(Manifest);
+			}
+			else
+			{
+				CurrentProject->DisablePlugin(Manifest.ID);
+			}
+		}
+		ImGui::EndDisabled();
+		ImGui::PopStyleVar();
+
+		if (DependentPlugins.empty())
+		{
+			ImGui::SetItemTooltip("Editor loads enabled plugins when this project is opened, change is applied after restart.");
+		}
+		else
+		{
+			ImGui::SetItemTooltip("Required by %s.", DependentPluginNames.c_str());
+		}
 	}
 
 	const std::string FolderPath = GetDisplayPath(Plugin.FolderPath);
@@ -484,11 +616,25 @@ void FEEditorPluginsWindow::RenderModulesTable(const DiscoveredPlugin& Plugin)
 		ImGui::TextUnformatted(GetGraphicsModesText(Module).c_str());
 
 		ImGui::TableNextColumn();
-		switch (GetModuleStatus(Module))
+		switch (GetModuleStatus(Plugin, Module))
 		{
 			case ModuleStatus::Loaded:
 				RenderStatusDot(LoadedColor);
 				ImGui::TextColored(LoadedColor, "Loaded");
+				break;
+
+			case ModuleStatus::NotEnabled:
+				RenderStatusDot(LabelColor);
+				if (PROJECT_MANAGER.GetCurrent() != nullptr)
+				{
+					ImGui::TextColored(LabelColor, "Not enabled");
+					ImGui::SetItemTooltip("Plugin was not enabled in the project when it was opened.");
+				}
+				else
+				{
+					ImGui::TextColored(LabelColor, "Not loaded");
+					ImGui::SetItemTooltip("Plugin is loaded with projects that enable it.");
+				}
 				break;
 
 			case ModuleStatus::Skipped:
@@ -1234,10 +1380,71 @@ void FEEditorPluginsWindow::RenderEngineCommitPopup()
 	ImGui::EndPopup();
 }
 
-FEEditorPluginsWindow::ModuleStatus FEEditorPluginsWindow::GetModuleStatus(const PluginModule& Module) const
+bool FEEditorPluginsWindow::IsVisible() const
+{
+	return bVisible;
+}
+
+void FEEditorPluginsWindow::SetVisible(const bool bNewValue)
+{
+	bVisible = bNewValue;
+}
+
+void FEEditorPluginsWindow::EnablePluginsInstalledFromBrowser()
+{
+	const std::vector<std::string>& InstalledNames = PLUGIN_BROWSER.GetInstalledPluginNames();
+	for (; HandledBrowserInstallCount < InstalledNames.size(); HandledBrowserInstallCount++)
+	{
+		FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+		const FEPluginBrowserEntry* Entry = PLUGIN_BROWSER.FindEntryByName(InstalledNames[HandledBrowserInstallCount]);
+		if (CurrentProject != nullptr && Entry != nullptr && Entry->bManifestLoaded)
+			CurrentProject->EnablePlugin(Entry->Manifest);
+	}
+}
+
+std::string FEEditorPluginsWindow::GetPendingPluginChangesText() const
+{
+	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+	if (CurrentProject == nullptr || EDITOR_PLUGIN_MANAGER.IsAutomaticLoadingEnabled())
+		return "";
+
+	const std::vector<FEUUID>& RequestedPlugins = EDITOR_PLUGIN_MANAGER.GetRequestedPlugins();
+	std::string NamesToEnable;
+	for (const FEProjectPluginInfo& Plugin : CurrentProject->GetEnabledPlugins())
+	{
+		if (std::find(RequestedPlugins.begin(), RequestedPlugins.end(), Plugin.ID) == RequestedPlugins.end())
+			NamesToEnable += (NamesToEnable.empty() ? "" : ", ") + Plugin.Name;
+	}
+
+	const std::vector<FEUUID> AlwaysLoadedPlugins = FEEditorPluginManager::GetAlwaysLoadedPlugins();
+	std::string NamesToDisable;
+	for (const DiscoveredPlugin& Plugin : PLUGIN_MANAGER.GetDiscoveredPlugins())
+	{
+		const FEUUID& PluginID = Plugin.Manifest.ID;
+		if (CurrentProject->UsesPlugin(PluginID) || std::find(RequestedPlugins.begin(), RequestedPlugins.end(), PluginID) == RequestedPlugins.end())
+			continue;
+
+		if (std::find(AlwaysLoadedPlugins.begin(), AlwaysLoadedPlugins.end(), PluginID) == AlwaysLoadedPlugins.end())
+			NamesToDisable += (NamesToDisable.empty() ? "" : ", ") + Plugin.Manifest.Name;
+	}
+
+	std::string Result;
+	if (!NamesToEnable.empty())
+		Result = "enable " + NamesToEnable;
+
+	if (!NamesToDisable.empty())
+		Result += (Result.empty() ? "" : "; ") + ("disable " + NamesToDisable);
+
+	return Result;
+}
+
+FEEditorPluginsWindow::ModuleStatus FEEditorPluginsWindow::GetModuleStatus(const DiscoveredPlugin& Plugin, const PluginModule& Module) const
 {
 	if (EDITOR_PLUGIN_MANAGER.IsModuleLoaded(Module))
 		return ModuleStatus::Loaded;
+
+	if (!EDITOR_PLUGIN_MANAGER.IsPluginRequested(Plugin))
+		return ModuleStatus::NotEnabled;
 
 	for (size_t i = 0; i < Module.Dependencies.size(); i++)
 	{
@@ -1678,7 +1885,11 @@ void FEEditorPluginsWindow::RenderInstallPluginPopup()
 		InstallPluginError.clear();
 		bPluginInstalled = PLUGIN_MANAGER.InstallPluginPackage(InstallPackagePath, InstallPluginError);
 		if (bPluginInstalled)
+		{
 			InstalledPluginNames.push_back(Manifest.Name);
+			if (PROJECT_MANAGER.GetCurrent() != nullptr)
+				PROJECT_MANAGER.GetCurrent()->EnablePlugin(Manifest);
+		}
 	}
 	ImGui::EndDisabled();
 
