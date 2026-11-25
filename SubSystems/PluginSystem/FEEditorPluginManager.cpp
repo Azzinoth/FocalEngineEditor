@@ -1,5 +1,10 @@
 #include "FEEditorPluginManager.h"
 #include "FEEditorAPIImplementation.h"
+// Public folder of CurlPlugin is in include directories only when plugin was installed by CMake.
+#if __has_include("CurlPluginInterface.h")
+	#include "CurlPluginInterface.h"
+	#define FE_CURL_PLUGIN_INTERFACE_AVAILABLE
+#endif
 using namespace FocalEngine;
 
 FEEditorPluginManager::FEEditorPluginManager()
@@ -11,6 +16,55 @@ FEEditorPluginManager::~FEEditorPluginManager()
 }
 
 void FEEditorPluginManager::Initialize()
+{
+	bAutomaticLoading = true;
+	RequestedPluginIDs.clear();
+	LoadEditorModules();
+}
+
+void FEEditorPluginManager::Initialize(const std::vector<FEUUID>& PluginIDs)
+{
+	bAutomaticLoading = false;
+	RequestedPluginIDs = PluginIDs;
+	LoadEditorModules();
+}
+
+bool FEEditorPluginManager::IsAutomaticLoadingEnabled() const
+{
+	return bAutomaticLoading;
+}
+
+const std::vector<FEUUID>& FEEditorPluginManager::GetRequestedPlugins() const
+{
+	return RequestedPluginIDs;
+}
+
+std::vector<FEUUID> FEEditorPluginManager::GetAlwaysLoadedPlugins()
+{
+	std::vector<FEUUID> Result;
+#ifdef FE_CURL_PLUGIN_INTERFACE_AVAILABLE
+	Result.push_back(UNIQUE_ID.FromString(CurlPluginInterface::PluginID));
+#endif
+
+	return Result;
+}
+
+bool FEEditorPluginManager::IsPluginRequested(const DiscoveredPlugin& Plugin) const
+{
+	if (std::find(RequestedPluginIDs.begin(), RequestedPluginIDs.end(), Plugin.Manifest.ID) != RequestedPluginIDs.end())
+		return true;
+
+	// Engine module could be loaded without request, because requested plugin depends on it.
+	for (size_t i = 0; i < Plugin.Manifest.Modules.size(); i++)
+	{
+		if (Plugin.Manifest.Modules[i].Type == "Engine" && PLUGIN_MANAGER.IsModuleLoaded(Plugin.Manifest.Modules[i].ID))
+			return true;
+	}
+
+	return false;
+}
+
+void FEEditorPluginManager::LoadEditorModules()
 {
 	// Editor modules use engine modules, so they are unloaded first on any path that shuts plugins down.
 	PLUGIN_MANAGER.SetBeforeShutdownCallback([]() {
@@ -27,6 +81,9 @@ void FEEditorPluginManager::Initialize()
 	const std::vector<DiscoveredPlugin>& Plugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
 	for (size_t i = 0; i < Plugins.size(); i++)
 	{
+		if (!bAutomaticLoading && !IsPluginRequested(Plugins[i]))
+			continue;
+
 		for (size_t j = 0; j < Plugins[i].Manifest.Modules.size(); j++)
 		{
 			if (Plugins[i].Manifest.Modules[j].Type == "Editor")

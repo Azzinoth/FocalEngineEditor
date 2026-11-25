@@ -53,6 +53,8 @@ public:
 	std::vector<FEProjectPluginInfo> GetMissingPlugins();
 	void RemoveMissingPlugin(const FEUUID& PluginID);
 	bool UsesPlugin(const FEUUID& PluginID) const;
+	// Reads only list of plugins from Project.txt, it could be called before engine is initialized.
+	static std::vector<FEUUID> ReadPluginIDs(const std::string& ProjectFolder);
 private:
 	// Plugins with engine module that project was saved with, scripts and game builds of the project could use them.
 	// Missing plugins stay in the list until they are removed explicitly.

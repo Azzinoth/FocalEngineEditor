@@ -20,13 +20,79 @@ void OnSomething(float Value)
 	FEOpenXR_INPUT.TriggerHapticFeedback(0.5f, 0.5f, 0.5f, false);
 }
 
+static void WaitForProcessToExit(const DWORD ProcessID)
+{
+	const HANDLE Process = OpenProcess(SYNCHRONIZE, FALSE, ProcessID);
+	if (Process == nullptr)
+		return;
+
+	WaitForSingleObject(Process, 30000);
+	CloseHandle(Process);
+}
+
+static void WaitForDebugger()
+{
+	std::string CommandLine = "vsjitdebugger.exe -p " + std::to_string(GetCurrentProcessId());
+
+	STARTUPINFOA StartupInfo = {};
+	StartupInfo.cb = sizeof(StartupInfo);
+	PROCESS_INFORMATION ProcessInfo = {};
+	if (!CreateProcessA(nullptr, CommandLine.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &StartupInfo, &ProcessInfo))
+		return;
+
+	// Loop ends when dialog of vsjitdebugger is closed, so editor does not hang if it was cancelled.
+	while (!IsDebuggerPresent() && WaitForSingleObject(ProcessInfo.hProcess, 100) == WAIT_TIMEOUT) {}
+
+	// Dialog could be closed slightly before debugger is attached.
+	for (int i = 0; i < 20 && !IsDebuggerPresent(); i++)
+		Sleep(100);
+
+	CloseHandle(ProcessInfo.hThread);
+	CloseHandle(ProcessInfo.hProcess);
+}
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+	std::string ProjectToLoadPath;
+	std::string ProjectsFolder;
+	const std::vector<CommandLineAction> Actions = APPLICATION.ParseCommandLine(lpCmdLine);
+	for (size_t i = 0; i < Actions.size(); i++)
+	{
+		const std::map<std::string, std::string>& Settings = Actions[i].Settings;
+
+		if (Actions[i].Action == "wait_for_process" && Settings.find("id") != Settings.end())
+		{
+			WaitForProcessToExit(static_cast<DWORD>(std::strtoul(Settings.at("id").c_str(), nullptr, 10)));
+		}
+		else if (Actions[i].Action == "wait_for_debugger")
+		{
+			WaitForDebugger();
+		}
+		else if (Actions[i].Action == "load_project" && Settings.find("path") != Settings.end())
+		{
+			ProjectToLoadPath = Settings.at("path");
+		}
+		else if (Actions[i].Action == "set_projects_folder" && Settings.find("path") != Settings.end())
+		{
+			ProjectsFolder = Settings.at("path");
+		}
+	}
+
+	// Only plugins of the editor and of the project are loaded.
+	const std::vector<FEUUID> PluginsToLoad = FEEditor::GetPluginsForProject(ProjectToLoadPath);
+	PLUGIN_MANAGER.SetAutomaticLoading(false);
 	ENGINE.InitWindow();
+	PLUGIN_MANAGER.ManuallyLoadPlugins(PluginsToLoad);
 	EDITOR.InitializeResources();
 	THREAD_POOL.SetConcurrentThreadCount(THREAD_POOL.GetLogicalCoreCount());
 	NODE_SYSTEM.Initialize();
-	EDITOR_PLUGIN_MANAGER.Initialize();
+	EDITOR_PLUGIN_MANAGER.Initialize(PluginsToLoad);
+
+	if (!ProjectsFolder.empty())
+		PROJECT_MANAGER.SetProjectsFolder(ProjectsFolder);
+
+	if (!ProjectToLoadPath.empty())
+		PROJECT_MANAGER.OpenProject(ProjectToLoadPath);
 
 	const int FrameCountTillMeasure = 20;
 	double CPUFrameDurations[FrameCountTillMeasure] = { 0.0f };

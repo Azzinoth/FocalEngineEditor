@@ -56,6 +56,13 @@ public:
     void UpdateBeforeRender();
 
 	void RenderTemporaryDebugWindow();
+
+	// Plugins of the editor and of the project, empty folder means project list.
+	static std::vector<FEUUID> GetPluginsForProject(const std::string& ProjectFolder);
+	// Plugins are loaded only at start of the editor, so project that needs other plugins is opened by restart.
+	bool IsRestartNeededForProject(const std::string& ProjectFolder) const;
+	// Starts new editor process and terminates this one, empty folder means project list.
+	bool RestartWithProject(const std::string& ProjectFolder);
 private:
     SINGLETON_PRIVATE_PART(FEEditor)
 

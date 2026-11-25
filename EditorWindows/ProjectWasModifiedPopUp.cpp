@@ -1,4 +1,5 @@
 #include "ProjectWasModifiedPopUp.h"
+#include "../FEEditor.h"
 
 ProjectWasModifiedPopUp::ProjectWasModifiedPopUp()
 {
@@ -72,6 +73,10 @@ void ProjectWasModifiedPopUp::Render()
 			{
 				ENGINE.Terminate();
 				return;
+			}
+			else if (EDITOR.IsRestartNeededForProject(""))
+			{
+				EDITOR.RestartWithProject("");
 			}
 		}
 	}

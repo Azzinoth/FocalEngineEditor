@@ -1161,6 +1161,35 @@ void FEProject::RemoveMissingPlugin(const FEUUID& PluginID)
 	}
 }
 
+std::vector<FEUUID> FEProject::ReadPluginIDs(const std::string& ProjectFolder)
+{
+	std::vector<FEUUID> Result;
+
+	std::ifstream ProjectFile;
+	ProjectFile.open(ProjectFolder + "/Project.txt");
+	if (!ProjectFile.is_open())
+		return Result;
+
+	const std::string FileData((std::istreambuf_iterator<char>(ProjectFile)), std::istreambuf_iterator<char>());
+	ProjectFile.close();
+
+	Json::Value Root;
+	JSONCPP_STRING Error;
+	Json::CharReaderBuilder Builder;
+
+	const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
+	if (!Reader->parse(FileData.c_str(), FileData.c_str() + FileData.size(), &Root, &Error))
+		return Result;
+
+	if (!Root.isObject() || !Root.isMember("Plugins"))
+		return Result;
+
+	for (const Json::Value& PluginData : Root["Plugins"])
+		Result.push_back(UNIQUE_ID.FromString(PluginData["ID"].asString()));
+
+	return Result;
+}
+
 bool FEProject::UsesPlugin(const FEUUID& PluginID) const
 {
 	for (size_t i = 0; i < Plugins.size(); i++)

@@ -31,6 +31,13 @@ public:
 	SINGLETON_PUBLIC_PART(FEEditorPluginManager)
 
 	void Initialize();
+	// Editor modules are loaded only for given plugins and for plugins whose engine modules are loaded.
+	void Initialize(const std::vector<FEUUID>& PluginIDs);
+	// False if Initialize was called with list of plugins.
+	bool IsAutomaticLoadingEnabled() const;
+	const std::vector<FEUUID>& GetRequestedPlugins() const;
+	// Plugins that editor itself needs, they are loaded even without project.
+	static std::vector<FEUUID> GetAlwaysLoadedPlugins();
 	void Update(double DeltaTime);
 	void Shutdown();
 
@@ -56,6 +63,11 @@ private:
 		FEEditorAPIImplementation* API = nullptr;
 	};
 	std::vector<ActiveEditorPlugin> ActiveEditorPlugins;
+
+	bool bAutomaticLoading = true;
+	std::vector<FEUUID> RequestedPluginIDs;
+	bool IsPluginRequested(const DiscoveredPlugin& Plugin) const;
+	void LoadEditorModules();
 
 	bool LoadEditorModule(const DiscoveredPlugin& Plugin, size_t ModuleIndex);
 	// "<Plugin name>/<Module name>", or ID if module is not found.

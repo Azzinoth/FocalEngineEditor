@@ -88,6 +88,77 @@ void FEProjectManager::OpenProject(const int ProjectIndex)
 	SELECTED.ClearAll();
 }
 
+static std::string RemoveTrailingSlashes(std::string Path)
+{
+	while (!Path.empty() && (Path.back() == '/' || Path.back() == '\\'))
+		Path.pop_back();
+
+	return Path;
+}
+
+static std::string GetComparablePath(const std::string& Path)
+{
+	std::string Result = RemoveTrailingSlashes(FILE_SYSTEM.GetAbsolutePath(Path));
+	std::transform(Result.begin(), Result.end(), Result.begin(), [](const unsigned char Character) { return static_cast<char>(std::tolower(Character)); });
+	return Result;
+}
+
+int FEProjectManager::GetProjectIndex(const std::string& ProjectFolder)
+{
+	const std::string ComparablePath = GetComparablePath(ProjectFolder);
+	for (size_t i = 0; i < List.size(); i++)
+	{
+		if (GetComparablePath(List[i]->GetProjectFolder()) == ComparablePath)
+			return static_cast<int>(i);
+	}
+
+	return -1;
+}
+
+bool FEProjectManager::OpenProject(const std::string& ProjectFolder)
+{
+	if (!ContainProject(ProjectFolder))
+	{
+		LOG.Add("FEProjectManager::OpenProject: \"" + ProjectFolder + "\" is not a project folder", "FE_LOG_LOADING", FE_LOG_ERROR);
+		return false;
+	}
+
+	int ProjectIndex = GetProjectIndex(ProjectFolder);
+	if (ProjectIndex == -1)
+	{
+		SetProjectsFolder(FILE_SYSTEM.GetDirectoryPath(RemoveTrailingSlashes(FILE_SYSTEM.GetAbsolutePath(ProjectFolder))));
+		ProjectIndex = GetProjectIndex(ProjectFolder);
+	}
+
+	if (ProjectIndex == -1)
+	{
+		LOG.Add("FEProjectManager::OpenProject: Project \"" + ProjectFolder + "\" was not found in projects folder", "FE_LOG_LOADING", FE_LOG_ERROR);
+		return false;
+	}
+
+	OpenProject(ProjectIndex);
+	return true;
+}
+
+void FEProjectManager::OpenChosenProject()
+{
+	if (IndexChosen < 0 || IndexChosen >= static_cast<int>(List.size()))
+		return;
+
+	const int ProjectIndex = IndexChosen;
+	IndexChosen = -1;
+
+	const std::string ProjectFolder = List[ProjectIndex]->GetProjectFolder();
+	if (EDITOR.IsRestartNeededForProject(ProjectFolder))
+	{
+		EDITOR.RestartWithProject(ProjectFolder);
+	}
+	else
+	{
+		OpenProject(ProjectIndex);
+	}
+}
+
 void FEProjectManager::DisplayProjectSelection()
 {
 	static float LowerPanelHeight = 90.0f;
@@ -126,7 +197,7 @@ void FEProjectManager::DisplayProjectSelection()
 			{
 				if (IndexChosen != -1)
 				{
-					OpenProject(IndexChosen);
+					OpenChosenProject();
 				}
 			}
 
@@ -173,7 +244,7 @@ void FEProjectManager::DisplayProjectSelection()
 		ImGui::SameLine();
 		if (ImGui::Button("Open Project", ImVec2(200.0f, 64.0f)) && IndexChosen != -1)
 		{
-			OpenProject(IndexChosen);
+			OpenChosenProject();
 		}
 
 		ImGui::SameLine();
@@ -323,6 +394,11 @@ bool FEProjectManager::ContainProject(const std::string Path)
 		return false;
 
 	return true;
+}
+
+std::string FEProjectManager::GetProjectsFolder() const
+{
+	return CustomProjectFolder;
 }
 
 void FEProjectManager::SetProjectsFolder(const std::string FolderPath)

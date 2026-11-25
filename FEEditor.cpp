@@ -445,6 +445,8 @@ void FEEditor::Render()
 					else
 					{
 						CloseProjectAndCleanup();
+						if (IsRestartNeededForProject(""))
+							RestartWithProject("");
 
 						ImGui::PopStyleVar();
 						ImGui::EndMenu();
@@ -905,6 +907,73 @@ void FEEditor::SetUpImGui()
 	SetImGuiStyle();
 
 	APPLICATION.GetMainWindow()->EnableDefaultDockspace();
+}
+
+std::vector<FEUUID> FEEditor::GetPluginsForProject(const std::string& ProjectFolder)
+{
+	std::vector<FEUUID> Result = EDITOR_PLUGIN_MANAGER.GetAlwaysLoadedPlugins();
+	if (ProjectFolder.empty())
+		return Result;
+
+	const std::vector<FEUUID> ProjectPlugins = FEProject::ReadPluginIDs(ProjectFolder);
+	for (size_t i = 0; i < ProjectPlugins.size(); i++)
+	{
+		if (std::find(Result.begin(), Result.end(), ProjectPlugins[i]) == Result.end())
+			Result.push_back(ProjectPlugins[i]);
+	}
+
+	return Result;
+}
+
+bool FEEditor::IsRestartNeededForProject(const std::string& ProjectFolder) const
+{
+	// With automatic loading all plugins are loaded, so any project could be opened.
+	if (EDITOR_PLUGIN_MANAGER.IsAutomaticLoadingEnabled())
+		return false;
+
+	const std::vector<FEUUID> NeededPlugins = GetPluginsForProject(ProjectFolder);
+	const std::vector<FEUUID>& LoadedPlugins = EDITOR_PLUGIN_MANAGER.GetRequestedPlugins();
+	if (NeededPlugins.size() != LoadedPlugins.size())
+		return true;
+
+	for (size_t i = 0; i < NeededPlugins.size(); i++)
+	{
+		if (std::find(LoadedPlugins.begin(), LoadedPlugins.end(), NeededPlugins[i]) == LoadedPlugins.end())
+			return true;
+	}
+
+	return false;
+}
+
+bool FEEditor::RestartWithProject(const std::string& ProjectFolder)
+{
+	const std::string ExecutablePath = FILE_SYSTEM.GetExecutablePath();
+	std::string CommandLine = "\"" + ExecutablePath + "\"";
+	if (!ProjectFolder.empty())
+		CommandLine += " -load_project path=\"" + ProjectFolder + "\"";
+
+	const std::string ProjectsFolder = PROJECT_MANAGER.GetProjectsFolder();
+	if (!ProjectsFolder.empty() && ProjectsFolder != FILE_SYSTEM.GetCurrentWorkingPath())
+		CommandLine += " -set_projects_folder path=\"" + ProjectsFolder + "\"";
+
+	// New process waits for this one to exit, so plugin folders and settings files are used by one editor at a time.
+	CommandLine += " -wait_for_process id=" + std::to_string(GetCurrentProcessId());
+	if (IsDebuggerPresent())
+		CommandLine += " -wait_for_debugger";
+
+	STARTUPINFOA StartupInfo = {};
+	StartupInfo.cb = sizeof(StartupInfo);
+	PROCESS_INFORMATION ProcessInfo = {};
+	if (!CreateProcessA(ExecutablePath.c_str(), CommandLine.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &StartupInfo, &ProcessInfo))
+	{
+		LOG.Add("FEEditor::RestartWithProject: Failed to start \"" + ExecutablePath + "\", error code " + std::to_string(GetLastError()), "FE_EDITOR", FE_LOG_ERROR);
+		return false;
+	}
+
+	CloseHandle(ProcessInfo.hThread);
+	CloseHandle(ProcessInfo.hProcess);
+	ENGINE.Terminate();
+	return true;
 }
 
 void FEEditor::CloseProjectAndCleanup()

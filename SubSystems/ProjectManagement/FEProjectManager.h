@@ -27,6 +27,8 @@ public:
 
 	void CreateNewProject(std::string ProjectName, std::string ProjectPath);
 	void OpenProject(int ProjectIndex);
+	// Folder that holds the project becomes projects folder if project is not in the list.
+	bool OpenProject(const std::string& ProjectFolder);
 	void LoadProjectList();
 	void CloseCurrentProject();
 
@@ -34,6 +36,10 @@ public:
 
 	bool ContainProject(std::string Path);
 	void SetProjectsFolder(std::string FolderPath);
+	std::string GetProjectsFolder() const;
+private:
+	int GetProjectIndex(const std::string& ProjectFolder);
+	void OpenChosenProject();
 };
 
 #define PROJECTS_FOLDER PROJECT_MANAGER.CustomProjectFolder.c_str()
