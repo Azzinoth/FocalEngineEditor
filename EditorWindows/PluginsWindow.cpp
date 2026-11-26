@@ -44,22 +44,33 @@ void FEEditorPluginsWindow::Render()
 		return;
 
 	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
+	// Without project window is shown over the project list and looks like it.
+	const bool bProjectListStyle = CurrentProject == nullptr;
+	if (bProjectListStyle)
+		PROJECT_MANAGER.PushProjectListStyle();
 
 	// Padding is popped right after Begin, so tooltips keep default padding.
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 	bool bWindowOpen = false;
 	if (CurrentProject != nullptr)
 	{
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
 		bWindowOpen = ImGui::Begin("Plugins", nullptr, ImGuiWindowFlags_None);
+		ImGui::PopStyleVar();
 	}
 	else
 	{
-		// Without project window covers project list, it has its own ID, so docking of the usual window is not changed.
-		ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
-		ImGui::SetNextWindowSize(ImVec2(static_cast<float>(APPLICATION.GetMainWindow()->GetWidth()), static_cast<float>(APPLICATION.GetMainWindow()->GetHeight())));
+		// It has its own ID, so docking of the usual window is not changed.
+		const float MainWindowWidth = static_cast<float>(APPLICATION.GetMainWindow()->GetWidth());
+		const float MainWindowHeight = static_cast<float>(APPLICATION.GetMainWindow()->GetHeight());
+		ImGui::SetNextWindowPos(ImVec2(MainWindowWidth / 2.0f, MainWindowHeight / 2.0f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(ImMin(MainWindowWidth - 160.0f, 1600.0f), ImMin(MainWindowHeight - 160.0f, 1100.0f)));
+
+		// Frame padding sets height of the title bar.
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20.0f, 20.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(16.0f, 13.0f));
 		bWindowOpen = ImGui::Begin("Plugins###PluginsWithoutProject", &bVisible, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings);
+		ImGui::PopStyleVar(2);
 	}
-	ImGui::PopStyleVar();
 
 	if (bWindowOpen)
 	{
@@ -260,6 +271,9 @@ void FEEditorPluginsWindow::Render()
 	RenderInstallDependenciesPopup();
 	RenderEngineCommitPopup();
 	RenderUninstallPopup();
+
+	if (bProjectListStyle)
+		PROJECT_MANAGER.PopProjectListStyle();
 }
 
 void FEEditorPluginsWindow::RenderMissingPlugins(FEProject* Project)

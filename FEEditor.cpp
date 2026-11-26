@@ -31,6 +31,11 @@ std::string FEEditor::GetEditorBuildTimestamp()
 	return GetFE_EDITOR_VersionInfo().BuildTimestamp;
 }
 
+std::string FEEditor::GetEditorCommitHash()
+{
+	return GetFE_EDITOR_VersionInfo().GitHash;
+}
+
 std::string FEEditor::GetEditorBuildInfo()
 {
 	return GetFE_EDITOR_VersionInfo().GetBuildInfo();
@@ -160,7 +165,6 @@ void FEEditor::InitializeResources()
 	ENGINE.AddDropCallback(DropCallback);
 	
 	SELECTED.InitializeResources();
-	PROJECT_MANAGER.InitializeResources();
 	PREVIEW_MANAGER.InitializeResources();
 	DRAG_AND_DROP_MANAGER.InitializeResources();
 	
@@ -447,6 +451,7 @@ void FEEditor::Render()
 							return;
 
 						PROJECT_MANAGER.GetCurrent()->SaveProjectTo(Path + "\\");
+						PROJECT_MANAGER.AddToProjectList(Path);
 					});
 				}
 
@@ -710,13 +715,8 @@ void FEEditor::DropCallback(const int Count, const char** Paths)
 {
 	for (size_t i = 0; i < size_t(Count); i++)
 	{
-		if (FILE_SYSTEM.DoesDirectoryExist(Paths[i]) && Count == 1)
-		{
-			if (PROJECT_MANAGER.GetCurrent() == nullptr)
-			{
-				PROJECT_MANAGER.SetProjectsFolder(Paths[i]);
-			}
-		}
+		if (FILE_SYSTEM.DoesDirectoryExist(Paths[i]) && PROJECT_MANAGER.GetCurrent() == nullptr)
+			PROJECT_MANAGER.AddProjectsFromFolderToList(Paths[i]);
 
 		if (PROJECT_MANAGER.GetCurrent() != nullptr)
 		{
@@ -965,10 +965,6 @@ bool FEEditor::RestartWithProject(const std::string& ProjectFolder)
 	std::string CommandLine = "\"" + ExecutablePath + "\"";
 	if (!ProjectFolder.empty())
 		CommandLine += " -load_project path=\"" + ProjectFolder + "\"";
-
-	const std::string ProjectsFolder = PROJECT_MANAGER.GetProjectsFolder();
-	if (!ProjectsFolder.empty() && ProjectsFolder != FILE_SYSTEM.GetCurrentWorkingPath())
-		CommandLine += " -set_projects_folder path=\"" + ProjectsFolder + "\"";
 
 	// New process waits for this one to exit, so plugin folders and settings files are used by one editor at a time.
 	CommandLine += " -wait_for_process id=" + std::to_string(GetCurrentProcessId());

@@ -6,41 +6,80 @@
 #include "../../FEEditorPreviewManager.h"
 #include "../../FEEditorVirtualFileSystem.h"
 
-#include "FEProject.h"
+#include "FEProjectInfo.h"
+#include <functional>
 
 class FEProjectManager
 {
-	std::vector<FEProject*> List;
-	int IndexChosen = -1;
+	std::vector<FEProjectInfo*> List;
 	FEProject* Current = nullptr;
-	std::string CustomProjectFolder;
+	bool bProjectListFileEnabled = false;
 public:
 	SINGLETON_PUBLIC_PART(FEProjectManager)
 	SINGLETON_PRIVATE_PART(FEProjectManager)
 
-	void InitializeResources();
-
 	FEProject* GetCurrent();
 	void SetCurrent(FEProject* Project);
 
-	std::vector<FEProject*> GetList();
-
-	void CreateNewProject(std::string ProjectName, std::string ProjectPath);
-	void OpenProject(int ProjectIndex);
-	// Folder that holds the project becomes projects folder if project is not in the list.
-	bool OpenProject(const std::string& ProjectFolder);
+	const std::vector<FEProjectInfo*>& GetProjectList();
 	void LoadProjectList();
+	std::string GetDefaultProjectsFolder() const;
+
+	FEProjectInfo* AddToProjectList(const std::string& ProjectFolder);
+	int AddProjectsFromFolderToList(const std::string& Folder);
+	// Projects of default projects folder are always in the list.
+	bool CanBeRemovedFromProjectList(const FEProjectInfo* Project) const;
+	bool RemoveFromProjectList(FEProjectInfo* Project);
+	// Folder of the project is moved to the Recycle Bin.
+	bool DeleteProject(FEProjectInfo* Project);
+	bool RenameProject(FEProjectInfo* Project, const std::string& NewName);
+	bool LocateProject(FEProjectInfo* Project, const std::string& NewFolder);
+
+	bool CreateNewProject(std::string ProjectName, std::string ProjectPath);
+	bool OpenProject(const std::string& ProjectFolder);
 	void CloseCurrentProject();
 
 	void DisplayProjectSelection();
+	// Look of the project list for windows that are shown over it.
+	void PushProjectListStyle();
+	void PopProjectListStyle();
 
 	bool ContainProject(std::string Path);
-	void SetProjectsFolder(std::string FolderPath);
-	std::string GetProjectsFolder() const;
 private:
-	int GetProjectIndex(const std::string& ProjectFolder);
-	void OpenChosenProject();
+	FEProjectInfo* GetProjectInfo(const std::string& ProjectFolder);
+	bool IsInProjectList(const FEProjectInfo* Project) const;
+	void RemoveEntry(FEProjectInfo* Project);
+	void SaveProjectList();
+	void RefreshProjectList();
+	// Editor is restarted if project needs other plugins.
+	void OpenProjectFromList(FEProjectInfo* Project);
+
+	FEProjectInfo* Selected = nullptr;
+	bool bListView = false;
+	int Sorting = 0;
+	char Filter[256] = "";
+
+	std::string RequestedPopup;
+	FEProjectInfo* PopupProject = nullptr;
+	char PopupName[512] = "";
+	char NewProjectLocation[1024] = "";
+	std::string PopupError;
+	std::string Message;
+	// Executed after list was rendered, because it could change the list.
+	std::function<void()> DeferredAction;
+
+	std::vector<FEProjectInfo*> GetVisibleProjects();
+	void DisplayTopBar(ImVec2 Origin, float Width);
+	void DisplayGridView(const std::vector<FEProjectInfo*>& Projects, ImVec2 Origin, float Width, float Height);
+	void DisplayListView(const std::vector<FEProjectInfo*>& Projects, ImVec2 Origin, float Width, float Height);
+	void DisplayDetailsPanel(ImVec2 Origin, float Height);
+	void DisplayBottomBar(ImVec2 Origin, float Width, float Height);
+	void DisplayProjectMenu(FEProjectInfo* Project);
+	void DisplayPopups();
+	void ShowPopup(const std::string& Name, FEProjectInfo* Project);
+	void ShowMessage(const std::string& Text);
+	void LocateProjectWithDialog(FEProjectInfo* Project);
 };
 
-#define PROJECTS_FOLDER PROJECT_MANAGER.CustomProjectFolder.c_str()
+#define PROJECT_LIST_FILE_VERSION 0.01f
 #define PROJECT_MANAGER FEProjectManager::GetInstance()

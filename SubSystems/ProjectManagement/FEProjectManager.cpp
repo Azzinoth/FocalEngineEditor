@@ -1,19 +1,10 @@
 #include "FEProjectManager.h"
 #include "../../FEEditor.h"
-#include "../../EditorWindows/PluginsWindow.h"
 
-FEProjectManager::FEProjectManager()
-{
-	CustomProjectFolder = FILE_SYSTEM.GetCurrentWorkingPath();
-}
+static const std::string ProjectListFile = "Resources/ProjectList.txt";
 
+FEProjectManager::FEProjectManager() {}
 FEProjectManager::~FEProjectManager() {}
-
-void FEProjectManager::InitializeResources()
-{
-	IndexChosen = -1;
-	LoadProjectList();
-}
 
 FEProject* FEProjectManager::GetCurrent()
 {
@@ -25,23 +16,301 @@ void FEProjectManager::SetCurrent(FEProject* Project)
 	Current = Project;
 }
 
-std::vector<FEProject*> FEProjectManager::GetList()
+const std::vector<FEProjectInfo*>& FEProjectManager::GetProjectList()
 {
 	return List;
 }
 
+std::string FEProjectManager::GetDefaultProjectsFolder() const
+{
+	return FILE_SYSTEM.GetNormalizedPath(FILE_SYSTEM.GetCurrentWorkingPath() + "/Projects");
+}
+
 void FEProjectManager::LoadProjectList()
 {
-	if (!FILE_SYSTEM.DoesDirectoryExist(PROJECTS_FOLDER))
-		CustomProjectFolder = "";
+	bProjectListFileEnabled = true;
 
-	const std::vector<std::string> ProjectNameList = FILE_SYSTEM.GetDirectoryList(PROJECTS_FOLDER);
-
-	for (size_t i = 0; i < ProjectNameList.size(); i++)
+	std::ifstream File;
+	File.open(ProjectListFile);
+	if (File.is_open())
 	{
-		if (ContainProject(std::string(PROJECTS_FOLDER) + std::string("/") + ProjectNameList[i]))
-			List.push_back(new FEProject(ProjectNameList[i].c_str(), std::string(PROJECTS_FOLDER) + std::string("/") + ProjectNameList[i].c_str() + "/"));
+		const std::string FileData((std::istreambuf_iterator<char>(File)), std::istreambuf_iterator<char>());
+		File.close();
+
+		Json::Value Root;
+		JSONCPP_STRING Error;
+		Json::CharReaderBuilder Builder;
+		const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
+		if (Reader->parse(FileData.c_str(), FileData.c_str() + FileData.size(), &Root, &Error) && Root.isObject())
+		{
+			bListView = Root["ListView"].asBool();
+			Sorting = std::clamp(Root["Sorting"].asInt(), 0, 2);
+
+			for (const Json::Value& ProjectData : Root["Projects"])
+			{
+				const std::string Folder = ProjectData["Folder"].asString();
+				if (Folder.empty() || GetProjectInfo(Folder) != nullptr)
+					continue;
+
+				FEProjectInfo* NewProject = new FEProjectInfo(Folder);
+				NewProject->ID = UNIQUE_ID.FromString(ProjectData["ID"].asString());
+				NewProject->Name = ProjectData["Name"].asString();
+				NewProject->LastOpenedTime = ProjectData["LastOpened"].asUInt64();
+				NewProject->AddedTime = ProjectData["Added"].asUInt64();
+				NewProject->Refresh();
+				List.push_back(NewProject);
+			}
+		}
+		else
+		{
+			LOG.Add("FEProjectManager::LoadProjectList: Failed to read \"" + ProjectListFile + "\"", "FE_LOG_LOADING", FE_LOG_ERROR);
+		}
 	}
+
+	AddProjectsFromFolderToList(GetDefaultProjectsFolder());
+	SaveProjectList();
+}
+
+void FEProjectManager::SaveProjectList()
+{
+	if (!bProjectListFileEnabled)
+		return;
+
+	Json::Value Root;
+	Root["Version"] = PROJECT_LIST_FILE_VERSION;
+	Root["ListView"] = bListView;
+	Root["Sorting"] = Sorting;
+
+	Json::Value ProjectsData(Json::arrayValue);
+	for (size_t i = 0; i < List.size(); i++)
+	{
+		Json::Value ProjectData;
+		ProjectData["Folder"] = List[i]->Folder;
+		ProjectData["ID"] = UNIQUE_ID.ToString(List[i]->ID);
+		ProjectData["Name"] = List[i]->Name;
+		ProjectData["LastOpened"] = static_cast<Json::UInt64>(List[i]->LastOpenedTime);
+		ProjectData["Added"] = static_cast<Json::UInt64>(List[i]->AddedTime);
+		ProjectsData.append(ProjectData);
+	}
+	Root["Projects"] = ProjectsData;
+
+	std::ofstream File;
+	File.open(ProjectListFile);
+	if (!File.is_open())
+	{
+		LOG.Add("FEProjectManager::SaveProjectList: Failed to write \"" + ProjectListFile + "\"", "FE_LOG_SAVING", FE_LOG_ERROR);
+		return;
+	}
+
+	Json::StreamWriterBuilder Builder;
+	File << Json::writeString(Builder, Root);
+	File.close();
+}
+
+void FEProjectManager::RefreshProjectList()
+{
+	for (size_t i = 0; i < List.size(); i++)
+		List[i]->Refresh();
+}
+
+FEProjectInfo* FEProjectManager::GetProjectInfo(const std::string& ProjectFolder)
+{
+	for (size_t i = 0; i < List.size(); i++)
+	{
+		if (FILE_SYSTEM.IsSamePath(List[i]->Folder, ProjectFolder))
+			return List[i];
+	}
+
+	return nullptr;
+}
+
+bool FEProjectManager::IsInProjectList(const FEProjectInfo* Project) const
+{
+	return Project != nullptr && std::find(List.begin(), List.end(), Project) != List.end();
+}
+
+FEProjectInfo* FEProjectManager::AddToProjectList(const std::string& ProjectFolder)
+{
+	if (!ContainProject(ProjectFolder))
+	{
+		LOG.Add("FEProjectManager::AddToProjectList: \"" + ProjectFolder + "\" is not a project folder", "FE_LOG_LOADING", FE_LOG_ERROR);
+		return nullptr;
+	}
+
+	bool bListChanged = false;
+	FEProjectInfo* Result = GetProjectInfo(ProjectFolder);
+	if (Result == nullptr)
+	{
+		const FEUUID ProjectID = FEProject::ReadProjectID(ProjectFolder);
+		if (UNIQUE_ID.IsNull(ProjectID))
+		{
+			LOG.Add("FEProjectManager::AddToProjectList: Failed to read Project.txt in \"" + ProjectFolder + "\"", "FE_LOG_LOADING", FE_LOG_ERROR);
+			return nullptr;
+		}
+
+		for (size_t i = 0; i < List.size(); i++)
+		{
+			if (!(List[i]->ID == ProjectID))
+				continue;
+
+			if (List[i]->bMissing)
+			{
+				// Project was moved to that folder.
+				Result = List[i];
+				Result->SetFolder(ProjectFolder);
+			}
+			else
+			{
+				// It is a copy of a project from the list, so it gets its own ID.
+				if (!FEProject::SetNewIDInProjectFile(ProjectFolder))
+				{
+					LOG.Add("FEProjectManager::AddToProjectList: Failed to write Project.txt in \"" + ProjectFolder + "\"", "FE_LOG_SAVING", FE_LOG_ERROR);
+					return nullptr;
+				}
+			}
+
+			break;
+		}
+
+		if (Result == nullptr)
+		{
+			Result = new FEProjectInfo(ProjectFolder);
+			Result->AddedTime = TIME.GetTimeStamp(FE_TIME_RESOLUTION_SECONDS);
+			List.push_back(Result);
+		}
+
+		bListChanged = true;
+	}
+
+	Result->Refresh();
+	if (Current != nullptr && FILE_SYSTEM.IsSamePath(Current->GetProjectFolder(), Result->Folder))
+	{
+		Result->LastOpenedTime = TIME.GetTimeStamp(FE_TIME_RESOLUTION_SECONDS);
+		bListChanged = true;
+	}
+
+	if (bListChanged)
+		SaveProjectList();
+
+	return Result;
+}
+
+int FEProjectManager::AddProjectsFromFolderToList(const std::string& Folder)
+{
+	if (ContainProject(Folder))
+		return AddToProjectList(Folder) != nullptr ? 1 : 0;
+
+	int Result = 0;
+	const std::vector<std::string> SubFolders = FILE_SYSTEM.GetDirectoryList(Folder);
+	for (size_t i = 0; i < SubFolders.size(); i++)
+	{
+		const std::string ProjectFolder = Folder + "/" + SubFolders[i];
+		if (!ContainProject(ProjectFolder))
+			continue;
+
+		if (GetProjectInfo(ProjectFolder) != nullptr || AddToProjectList(ProjectFolder) != nullptr)
+			Result++;
+	}
+
+	return Result;
+}
+
+bool FEProjectManager::CanBeRemovedFromProjectList(const FEProjectInfo* Project) const
+{
+	if (!IsInProjectList(Project))
+		return false;
+
+	if (Project->bMissing)
+		return true;
+
+	return !FILE_SYSTEM.IsSamePath(FILE_SYSTEM.GetDirectoryPath(Project->Folder), GetDefaultProjectsFolder());
+}
+
+void FEProjectManager::RemoveEntry(FEProjectInfo* Project)
+{
+	List.erase(std::remove(List.begin(), List.end(), Project), List.end());
+	if (Selected == Project)
+		Selected = nullptr;
+
+	if (PopupProject == Project)
+		PopupProject = nullptr;
+
+	delete Project;
+	SaveProjectList();
+}
+
+bool FEProjectManager::RemoveFromProjectList(FEProjectInfo* Project)
+{
+	if (!CanBeRemovedFromProjectList(Project))
+		return false;
+
+	RemoveEntry(Project);
+	return true;
+}
+
+bool FEProjectManager::DeleteProject(FEProjectInfo* Project)
+{
+	if (!IsInProjectList(Project))
+		return false;
+
+	if (Current != nullptr && FILE_SYSTEM.IsSamePath(Current->GetProjectFolder(), Project->Folder))
+	{
+		LOG.Add("FEProjectManager::DeleteProject: Project \"" + Project->Name + "\" is opened", "FE_LOG_GENERAL", FE_LOG_ERROR);
+		return false;
+	}
+
+	if (!Project->bMissing)
+	{
+		// Root directory and folder that contains the editor are never deleted.
+		const std::string EditorFolder = FILE_SYSTEM.GetCurrentWorkingPath();
+		const bool bRootDirectory = FILE_SYSTEM.IsSamePath(FILE_SYSTEM.GetDirectoryPath(Project->Folder), Project->Folder);
+		if (bRootDirectory || FILE_SYSTEM.IsSamePath(EditorFolder, Project->Folder) || FILE_SYSTEM.IsPathInsideDirectory(EditorFolder, Project->Folder))
+		{
+			LOG.Add("FEProjectManager::DeleteProject: Folder \"" + Project->Folder + "\" can not be deleted", "FE_LOG_GENERAL", FE_LOG_ERROR);
+			return false;
+		}
+
+		if (!FILE_SYSTEM.MoveToRecycleBin(Project->Folder))
+		{
+			LOG.Add("FEProjectManager::DeleteProject: Failed to move \"" + Project->Folder + "\" to the Recycle Bin", "FE_LOG_GENERAL", FE_LOG_ERROR);
+			return false;
+		}
+	}
+
+	RemoveEntry(Project);
+	return true;
+}
+
+bool FEProjectManager::RenameProject(FEProjectInfo* Project, const std::string& NewName)
+{
+	if (!IsInProjectList(Project) || NewName.empty())
+		return false;
+
+	if (!FEProject::SetNameInProjectFile(Project->Folder, NewName))
+		return false;
+
+	Project->Name = NewName;
+	SaveProjectList();
+	return true;
+}
+
+bool FEProjectManager::LocateProject(FEProjectInfo* Project, const std::string& NewFolder)
+{
+	if (!IsInProjectList(Project))
+		return false;
+
+	const FEUUID ProjectID = FEProject::ReadProjectID(NewFolder);
+	if (UNIQUE_ID.IsNull(ProjectID) || !(ProjectID == Project->ID))
+		return false;
+
+	const FEProjectInfo* ProjectOfNewFolder = GetProjectInfo(NewFolder);
+	if (ProjectOfNewFolder != nullptr && ProjectOfNewFolder != Project)
+		return false;
+
+	Project->SetFolder(NewFolder);
+	Project->Refresh();
+	SaveProjectList();
+	return true;
 }
 
 void FEProjectManager::CloseCurrentProject()
@@ -53,67 +322,13 @@ void FEProjectManager::CloseCurrentProject()
 	SELECTED.ClearAll();
 	GIZMO_MANAGER.ClearAllSceneData();
 	PREVIEW_MANAGER.Clear();
-	for (size_t i = 0; i < List.size(); i++)
-	{
-		delete List[i];
-	}
-	List.clear();
-	PROJECT_MANAGER.SetCurrent(nullptr);
-	LoadProjectList();
+
+	delete Current;
+	Current = nullptr;
+	RefreshProjectList();
 
 	VIRTUAL_FILE_SYSTEM.SetCurrentPath("/");
 	SCENE_MANAGER.Clear();
-}
-
-void FEProjectManager::OpenProject(const int ProjectIndex)
-{
-	if (ProjectIndex < 0 || ProjectIndex >= static_cast<int>(List.size()))
-	{
-		LOG.Add("FEProjectManager::OpenProject: Project index is out of range!", "FE_LOG_LOADING", FE_LOG_ERROR);
-		return;
-	}
-
-	PROJECT_MANAGER.SetCurrent(List[ProjectIndex]);
-	FEProject* CurrentProject = PROJECT_MANAGER.GetCurrent();
-	CurrentProject->LoadProject();
-	if (CurrentProject->bWasJustCreated)
-	{
-		CurrentProject->bWasJustCreated = false;
-		FEScene* StartScene = SCENE_MANAGER.GetStartingScene();
-		if (StartScene != nullptr)
-			EDITOR.CreateEditorWindowForScene(StartScene->GetID(), CurrentProject);
-	}
-	IndexChosen = -1;
-
-	PREVIEW_MANAGER.Clear();
-	SELECTED.ClearAll();
-}
-
-static std::string RemoveTrailingSlashes(std::string Path)
-{
-	while (!Path.empty() && (Path.back() == '/' || Path.back() == '\\'))
-		Path.pop_back();
-
-	return Path;
-}
-
-static std::string GetComparablePath(const std::string& Path)
-{
-	std::string Result = RemoveTrailingSlashes(FILE_SYSTEM.GetAbsolutePath(Path));
-	std::transform(Result.begin(), Result.end(), Result.begin(), [](const unsigned char Character) { return static_cast<char>(std::tolower(Character)); });
-	return Result;
-}
-
-int FEProjectManager::GetProjectIndex(const std::string& ProjectFolder)
-{
-	const std::string ComparablePath = GetComparablePath(ProjectFolder);
-	for (size_t i = 0; i < List.size(); i++)
-	{
-		if (GetComparablePath(List[i]->GetProjectFolder()) == ComparablePath)
-			return static_cast<int>(i);
-	}
-
-	return -1;
 }
 
 bool FEProjectManager::OpenProject(const std::string& ProjectFolder)
@@ -124,253 +339,72 @@ bool FEProjectManager::OpenProject(const std::string& ProjectFolder)
 		return false;
 	}
 
-	int ProjectIndex = GetProjectIndex(ProjectFolder);
-	if (ProjectIndex == -1)
+	if (Current != nullptr)
 	{
-		SetProjectsFolder(FILE_SYSTEM.GetDirectoryPath(RemoveTrailingSlashes(FILE_SYSTEM.GetAbsolutePath(ProjectFolder))));
-		ProjectIndex = GetProjectIndex(ProjectFolder);
-	}
-
-	if (ProjectIndex == -1)
-	{
-		LOG.Add("FEProjectManager::OpenProject: Project \"" + ProjectFolder + "\" was not found in projects folder", "FE_LOG_LOADING", FE_LOG_ERROR);
+		LOG.Add("FEProjectManager::OpenProject: Project \"" + Current->GetName() + "\" should be closed first", "FE_LOG_LOADING", FE_LOG_ERROR);
 		return false;
 	}
 
-	OpenProject(ProjectIndex);
+	// Thumbnails are needed only by the project list.
+	for (size_t i = 0; i < List.size(); i++)
+		List[i]->ReleaseThumbnail();
+
+	const std::string Folder = FILE_SYSTEM.GetNormalizedPath(ProjectFolder);
+	Current = new FEProject(FILE_SYSTEM.GetFileName(Folder), Folder + "/");
+	Current->LoadProject();
+	if (Current->bWasJustCreated)
+	{
+		Current->bWasJustCreated = false;
+		FEScene* StartScene = SCENE_MANAGER.GetStartingScene();
+		if (StartScene != nullptr)
+			EDITOR.CreateEditorWindowForScene(StartScene->GetID(), Current);
+	}
+
+	FEProjectInfo* Project = GetProjectInfo(Folder);
+	if (Project != nullptr)
+	{
+		Project->LastOpenedTime = TIME.GetTimeStamp(FE_TIME_RESOLUTION_SECONDS);
+		SaveProjectList();
+	}
+
+	PREVIEW_MANAGER.Clear();
+	SELECTED.ClearAll();
 	return true;
 }
 
-void FEProjectManager::OpenChosenProject()
+void FEProjectManager::OpenProjectFromList(FEProjectInfo* Project)
 {
-	if (IndexChosen < 0 || IndexChosen >= static_cast<int>(List.size()))
+	if (!IsInProjectList(Project) || Project->bMissing)
 		return;
 
-	const int ProjectIndex = IndexChosen;
-	IndexChosen = -1;
-
-	const std::string ProjectFolder = List[ProjectIndex]->GetProjectFolder();
+	const std::string ProjectFolder = Project->Folder;
 	if (EDITOR.IsRestartNeededForProject(ProjectFolder))
 	{
 		EDITOR.RestartWithProject(ProjectFolder);
 	}
 	else
 	{
-		OpenProject(ProjectIndex);
+		OpenProject(ProjectFolder);
 	}
 }
 
-void FEProjectManager::DisplayProjectSelection()
-{
-	static float LowerPanelHeight = 90.0f;
-	const float MainWindowWidth = static_cast<float>(APPLICATION.GetMainWindow()->GetWidth());
-	const float MainWindowHeight = static_cast<float>(APPLICATION.GetMainWindow()->GetHeight());
-
-	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
-	ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
-	ImGui::SetNextWindowSize(ImVec2(MainWindowWidth, MainWindowHeight - LowerPanelHeight));
-	ImGui::Begin("Project Browser", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
-	{
-		ImGui::SetWindowFontScale(2.0f);
-		ImGui::Text("CHOOSE WHAT PROJECT TO LOAD :");
-		ImGui::SetWindowFontScale(1.0f);
-
-		ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor(0.5f, 0.5f, 0.5f)));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::ImColor(0.95f, 0.90f, 0.0f)));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::ImColor(0.1f, 1.0f, 0.1f, 1.0f)));
-
-		const int ColumnCount = static_cast<int>(MainWindowWidth / (512.0f + 32.0f));
-		ImGui::Columns(ColumnCount, "projectColumns", false);
-		static bool bPushedStyle = false;
-		for (size_t i = 0; i < List.size(); i++)
-		{
-			ImGui::PushID(static_cast<int>(i));
-			bPushedStyle = false;
-			if (IndexChosen == i)
-			{
-				bPushedStyle = true;
-				ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor(0.1f, 1.0f, 0.1f, 1.0f)));
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::ImColor(0.1f, 1.0f, 0.1f, 1.0f)));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::ImColor(0.1f, 1.0f, 0.1f, 1.0f)));
-			}
-
-			// Project list could be covered by plugins window.
-			if (ImGui::IsMouseDoubleClicked(0) && ImGui::IsWindowHovered())
-			{
-				if (IndexChosen != -1)
-				{
-					OpenChosenProject();
-				}
-			}
-
-			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
-			if (ImGui::ImageButton(UNIQUE_ID.ToString(List[i]->GetID()).c_str(), List[i]->SceneScreenshot->GetTextureID(), ImVec2(512.0f, 288.0f), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
-			{
-				IndexChosen = static_cast<int>(i);
-			}
-			ImGui::PopStyleVar();
-			ImGui::Text(List[i]->GetName().c_str());
-
-			if (bPushedStyle)
-			{
-				ImGui::PopStyleColor();
-				ImGui::PopStyleColor();
-				ImGui::PopStyleColor();
-			}
-
-			ImGui::PopID();
-			ImGui::NextColumn();
-		}
-
-		ImGui::Columns(1);
-
-		ImGui::PopStyleColor();
-		ImGui::PopStyleColor();
-		ImGui::PopStyleColor();
-	}
-	ImGui::End();
-	ImGui::PopStyleVar();
-
-	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
-	ImGui::SetNextWindowPos(ImVec2(0.0f, MainWindowHeight - LowerPanelHeight));
-	ImGui::SetNextWindowSize(ImVec2(MainWindowWidth, LowerPanelHeight));
-	ImGui::Begin("##create project", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
-	{
-		ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor(0.0f, 162.0f / 255.0f, 232.0f / 255.0f, 1.0f)));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::ImColor(23.0f / 255.0f, 186.0f / 255.0f, 1.0f, 1.0f)));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::ImColor(0.0f, 125.0f / 255.0f, 179.0f / 255.0f, 1.0f)));
-
-		if (ImGui::Button("Create New Project", ImVec2(200.0f, 64.0f)))
-			ImGui::OpenPopup("New Project");
-
-		ImGui::SameLine();
-		if (ImGui::Button("Open Project", ImVec2(200.0f, 64.0f)) && IndexChosen != -1)
-		{
-			OpenChosenProject();
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("Delete Project", ImVec2(200.0f, 64.0f)) && IndexChosen != -1 && IndexChosen < static_cast<int>(List.size()))
-		{
-			std::string ProjectFolder = List[IndexChosen]->GetProjectFolder();
-			ProjectFolder.erase(ProjectFolder.begin() + ProjectFolder.size() - 1);
-
-			// Getting list of all files in project folder.
-			const auto FileList = FILE_SYSTEM.GetFileList(List[IndexChosen]->GetProjectFolder().c_str());
-			// We would delete all files in project folder, editor would not create folders there
-			// so we are deleting only files.
-			for (size_t i = 0; i < FileList.size(); i++)
-			{
-				FILE_SYSTEM.RemoveFile((List[IndexChosen]->GetProjectFolder() + FileList[i]).c_str());
-			}
-			// Then we can try to delete project folder, but if user created some folders in it we will fail.
-			FILE_SYSTEM.DeleteDirectory(ProjectFolder.c_str());
-
-			for (size_t i = 0; i < List.size(); i++)
-			{
-				delete List[i];
-			}
-			List.clear();
-			PROJECT_MANAGER.SetCurrent(nullptr);
-
-			LoadProjectList();
-		}
-
-		ImGui::PopStyleColor();
-		ImGui::PopStyleColor();
-		ImGui::PopStyleColor();
-		ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor(0.0f, 242.0f / 255.0f, 79.0f / 255.0f, 1.0f)));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::ImColor(34.0f / 255.0f, 1.0f, 106.0f / 255.0f, 1.0f)));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::ImColor(0.0f, 202.0f / 255.0f, 66.0f / 255.0f, 1.0f)));
-
-		// Two buttons are aligned to the right side of the panel.
-		ImGui::SameLine();
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - 200.0f - ImGui::GetStyle().ItemSpacing.x - 280.0f);
-		if (ImGui::Button("Plugins", ImVec2(200.0f, 64.0f)))
-			PLUGINS_WINDOW.SetVisible(true);
-
-		ImGui::SameLine();
-		if (ImGui::Button("Choose projects directory", ImVec2(280.0f, 64.0f)))
-		{
-			FILE_SYSTEM.OpenFolderDialog([this](const std::string& Path) {
-				SetProjectsFolder(Path);
-			});
-		}
-
-		ImGui::PopStyleColor();
-		ImGui::PopStyleColor();
-		ImGui::PopStyleColor();
-
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-		if (ImGui::BeginPopupModal("New Project", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-		{
-			ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
-			ImGui::Text("Insert name of new project :");
-			static char ProjectName[512] = "";
-
-			ImGui::InputText("##newProjectName", ProjectName, IM_ARRAYSIZE(ProjectName));
-
-			ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 4.0f - 120.0f / 2.0f);
-			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10.0f);
-			if (ImGui::Button("Create", ImVec2(120, 0)))
-			{
-				bool bAlreadyCreated = false;
-				for (size_t i = 0; i < List.size(); i++)
-				{
-					if (List[i]->GetName() == std::string(ProjectName))
-					{
-						bAlreadyCreated = true;
-						break;
-					}
-				}
-
-				if (strlen(ProjectName) != 0 && !bAlreadyCreated)
-				{
-					FILE_SYSTEM.MakeDirectory((std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/").c_str());
-					List.push_back(new FEProject(ProjectName, std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/"));
-					List.back()->CreateDummyScreenshot();
-
-					CreateNewProject(ProjectName, std::string(PROJECTS_FOLDER) + std::string("/") + ProjectName + "/");
-
-					ImGui::CloseCurrentPopup();
-					strcpy_s(ProjectName, "");
-				}
-			}
-
-			ImGui::SetItemDefaultFocus();
-			ImGui::SameLine();
-			ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f + ImGui::GetWindowWidth() / 4.0f - 120.0f / 2.0f);
-			if (ImGui::Button("Cancel", ImVec2(120, 0)))
-			{
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::EndPopup();
-		}
-	}
-
-	ImGui::PopStyleVar();
-	ImGui::End();
-	ImGui::PopStyleVar();
-}
-
-void FEProjectManager::CreateNewProject(std::string ProjectName, std::string ProjectPath)
+bool FEProjectManager::CreateNewProject(std::string ProjectName, std::string ProjectPath)
 {
 	if (ProjectName.empty() || ProjectPath.empty())
 	{
 		LOG.Add("FEProjectManager::CreateNewProject: Project name or path is empty!", "FE_LOG_LOADING", FE_LOG_ERROR);
-		return;
+		return false;
 	}
 
 	if (ContainProject(ProjectPath))
 	{
 		LOG.Add("FEProjectManager::CreateNewProject: Project already exists!", "FE_LOG_LOADING", FE_LOG_ERROR);
-		return;
+		return false;
 	}
 
 	FEProject* NewProject = new FEProject(ProjectName, ProjectPath);
 	FEScene* NewScene = SCENE_MANAGER.CreateScene(ProjectName + "_main_scene", FEUUID(), FESceneFlag::Active);
-	
+
 	FEEntity* SunEntity = NewScene->CreateEntity("Sun");
 	SunEntity->AddComponent<FELightComponent>(FE_DIRECTIONAL_LIGHT);
 	FELightComponent& LightComponent = SunEntity->GetComponent<FELightComponent>();
@@ -390,6 +424,7 @@ void FEProjectManager::CreateNewProject(std::string ProjectName, std::string Pro
 
 	CloseCurrentProject();
 	delete NewProject;
+	return true;
 }
 
 bool FEProjectManager::ContainProject(const std::string Path)
@@ -401,23 +436,4 @@ bool FEProjectManager::ContainProject(const std::string Path)
 		return false;
 
 	return true;
-}
-
-std::string FEProjectManager::GetProjectsFolder() const
-{
-	return CustomProjectFolder;
-}
-
-void FEProjectManager::SetProjectsFolder(const std::string FolderPath)
-{
-	if (FolderPath != "")
-	{
-		CustomProjectFolder = FolderPath;
-		for (size_t i = 0; i < List.size(); i++)
-		{
-			delete List[i];
-		}
-		List.clear();
-		LoadProjectList();
-	}
 }

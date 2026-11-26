@@ -54,7 +54,6 @@ static void WaitForDebugger()
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	std::string ProjectToLoadPath;
-	std::string ProjectsFolder;
 	const std::vector<CommandLineAction> Actions = APPLICATION.ParseCommandLine(lpCmdLine);
 	for (size_t i = 0; i < Actions.size(); i++)
 	{
@@ -72,10 +71,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		{
 			ProjectToLoadPath = Settings.at("path");
 		}
-		else if (Actions[i].Action == "set_projects_folder" && Settings.find("path") != Settings.end())
-		{
-			ProjectsFolder = Settings.at("path");
-		}
 	}
 
 	// Only plugins of the editor and of the project are loaded.
@@ -88,11 +83,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	NODE_SYSTEM.Initialize();
 	EDITOR_PLUGIN_MANAGER.Initialize(PluginsToLoad);
 
-	if (!ProjectsFolder.empty())
-		PROJECT_MANAGER.SetProjectsFolder(ProjectsFolder);
-
+	PROJECT_MANAGER.LoadProjectList();
 	if (!ProjectToLoadPath.empty())
+	{
+		PROJECT_MANAGER.AddToProjectList(ProjectToLoadPath);
 		PROJECT_MANAGER.OpenProject(ProjectToLoadPath);
+	}
 
 	const int FrameCountTillMeasure = 20;
 	double CPUFrameDurations[FrameCountTillMeasure] = { 0.0f };

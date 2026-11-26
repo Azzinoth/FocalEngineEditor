@@ -155,7 +155,10 @@ endif()
 
 file(GLOB ProjectManagement_SRC
 	"SubSystems/ProjectManagement/FEProjectManager.cpp"
+	"SubSystems/ProjectManagement/FEProjectManagerUI.cpp"
 	"SubSystems/ProjectManagement/FEProjectManager.h"
+	"SubSystems/ProjectManagement/FEProjectInfo.cpp"
+	"SubSystems/ProjectManagement/FEProjectInfo.h"
 	"SubSystems/ProjectManagement/FEProject.cpp"
 	"SubSystems/ProjectManagement/FEProject.h"
 )

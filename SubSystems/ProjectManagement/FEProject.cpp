@@ -6,25 +6,10 @@ FEProject::FEProject(const std::string Name, const std::string ProjectFolder)
 	ID = UNIQUE_ID.GenerateID();
 	this->Name = Name;
 	this->ProjectFolder = ProjectFolder;
-
-	std::ifstream ScreenshotFile((this->GetProjectFolder() + "Thumbnail.texture").c_str());
-
-	if (!ScreenshotFile.good())
-	{
-		SceneScreenshot = RESOURCE_MANAGER.NoTexture;
-}
-	else
-	{
-		SceneScreenshot = RESOURCE_MANAGER.LoadFETextureUnmanaged((this->GetProjectFolder() + "Thumbnail.texture"));
-	}
-	ScreenshotFile.close();
 }
 
 FEProject::~FEProject()
 {
-	if (SceneScreenshot != RESOURCE_MANAGER.NoTexture)
-		delete SceneScreenshot;
-
 	RESOURCE_MANAGER.Clear();
 	VIRTUAL_FILE_SYSTEM.Clear();
 	SCENE_MANAGER.Clear();
@@ -383,6 +368,18 @@ void FEProject::LoadResourcesFromAssetPackage(FEAssetPackage* AssetPackage)
 		LOG.Add("FEProject::LoadResourcesFromAssetPackage: Error deleting Temporary_Project_Resources directory", "FE_LOG_LOADING", FE_LOG_WARNING);
 }
 
+static Json::Value GetCurrentVersionData()
+{
+	Json::Value Result;
+	Result["Editor"]["Version"] = EDITOR.GetEditorVersion();
+	Result["Editor"]["BuildNumber"] = EDITOR.GetEditorBuildNumber();
+	Result["Editor"]["Commit"] = EDITOR.GetEditorCommitHash();
+	Result["Engine"]["Version"] = ENGINE.GetEngineVersion();
+	Result["Engine"]["BuildNumber"] = ENGINE.GetEngineBuildNumber();
+	Result["Engine"]["Commit"] = ENGINE.GetEngineCommitHash();
+	return Result;
+}
+
 void FEProject::SaveProject(bool bFullSave)
 {
 	Json::Value Root;
@@ -392,6 +389,14 @@ void FEProject::SaveProject(bool bFullSave)
 	Root["ID"] = UNIQUE_ID.ToString(ID);
 	Root["Name"] = Name;
 	Root["bWasJustCreated"] = bWasJustCreated;
+
+	if (bWasJustCreated && CreatedWith.isNull())
+		CreatedWith = GetCurrentVersionData();
+
+	if (!CreatedWith.isNull())
+		Root["CreatedWith"] = CreatedWith;
+
+	Root["SavedWith"] = GetCurrentVersionData();
 
 	// Missing plugins keep name and version they were saved with.
 	const std::vector<DiscoveredPlugin>& InstalledPlugins = PLUGIN_MANAGER.GetDiscoveredPlugins();
@@ -687,6 +692,9 @@ void FEProject::LoadProject()
 	if (Root.isMember("bWasJustCreated"))
 		bWasJustCreated = Root["bWasJustCreated"].asBool();
 
+	if (Root.isMember("CreatedWith"))
+		CreatedWith = Root["CreatedWith"];
+
 	Plugins.clear();
 	if (Root.isMember("Plugins"))
 	{
@@ -946,6 +954,7 @@ void FEProject::SaveProjectTo(const std::string NewPath)
 	}
 
 	SetProjectFolder(NewPath);
+	ID = UNIQUE_ID.GenerateID();
 	SaveProject(true);
 }
 
@@ -1163,29 +1172,75 @@ std::vector<FEUUID> FEProject::ReadPluginIDs(const std::string& ProjectFolder)
 {
 	std::vector<FEUUID> Result;
 
-	std::ifstream ProjectFile;
-	ProjectFile.open(ProjectFolder + "/Project.txt");
-	if (!ProjectFile.is_open())
-		return Result;
-
-	const std::string FileData((std::istreambuf_iterator<char>(ProjectFile)), std::istreambuf_iterator<char>());
-	ProjectFile.close();
-
 	Json::Value Root;
-	JSONCPP_STRING Error;
-	Json::CharReaderBuilder Builder;
-
-	const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
-	if (!Reader->parse(FileData.c_str(), FileData.c_str() + FileData.size(), &Root, &Error))
-		return Result;
-
-	if (!Root.isObject() || !Root.isMember("Plugins"))
+	if (!ReadProjectFile(ProjectFolder, Root) || !Root.isMember("Plugins"))
 		return Result;
 
 	for (const Json::Value& PluginData : Root["Plugins"])
 		Result.push_back(UNIQUE_ID.FromString(PluginData["ID"].asString()));
 
 	return Result;
+}
+
+bool FEProject::ReadProjectFile(const std::string& ProjectFolder, Json::Value& Root)
+{
+	std::ifstream ProjectFile;
+	ProjectFile.open(ProjectFolder + "/Project.txt");
+	if (!ProjectFile.is_open())
+		return false;
+
+	const std::string FileData((std::istreambuf_iterator<char>(ProjectFile)), std::istreambuf_iterator<char>());
+	ProjectFile.close();
+
+	JSONCPP_STRING Error;
+	Json::CharReaderBuilder Builder;
+	const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
+	if (!Reader->parse(FileData.c_str(), FileData.c_str() + FileData.size(), &Root, &Error))
+		return false;
+
+	return Root.isObject() && Root.isMember("ID");
+}
+
+bool FEProject::WriteProjectFile(const std::string& ProjectFolder, const Json::Value& Root)
+{
+	std::ofstream ProjectFile;
+	ProjectFile.open(ProjectFolder + "/Project.txt");
+	if (!ProjectFile.is_open())
+		return false;
+
+	Json::StreamWriterBuilder Builder;
+	ProjectFile << Json::writeString(Builder, Root);
+	ProjectFile.close();
+	return true;
+}
+
+FEUUID FEProject::ReadProjectID(const std::string& ProjectFolder)
+{
+	Json::Value Root;
+	if (!ReadProjectFile(ProjectFolder, Root))
+		return FEUUID();
+
+	return UNIQUE_ID.FromString(Root["ID"].asString());
+}
+
+bool FEProject::SetNameInProjectFile(const std::string& ProjectFolder, const std::string& NewName)
+{
+	Json::Value Root;
+	if (!ReadProjectFile(ProjectFolder, Root))
+		return false;
+
+	Root["Name"] = NewName;
+	return WriteProjectFile(ProjectFolder, Root);
+}
+
+bool FEProject::SetNewIDInProjectFile(const std::string& ProjectFolder)
+{
+	Json::Value Root;
+	if (!ReadProjectFile(ProjectFolder, Root))
+		return false;
+
+	Root["ID"] = UNIQUE_ID.ToString(UNIQUE_ID.GenerateID());
+	return WriteProjectFile(ProjectFolder, Root);
 }
 
 bool FEProject::UsesPlugin(const FEUUID& PluginID) const

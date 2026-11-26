@@ -34,7 +34,6 @@ public:
 	void SaveProject(bool bFullSave = false);
 	void SaveProjectTo(std::string NewPath);
 
-	FETexture* SceneScreenshot;
 	void CreateDummyScreenshot();
 
 	void AddFileToDeleteList(std::string FileName);
@@ -63,7 +62,16 @@ public:
 	std::vector<FEUUID> GetEnabledPluginsWithDependencies() const;
 	// Reads only list of plugins from Project.txt, it could be called before engine is initialized.
 	static std::vector<FEUUID> ReadPluginIDs(const std::string& ProjectFolder);
+
+	// Functions for Project.txt of a project that is not opened.
+	static bool ReadProjectFile(const std::string& ProjectFolder, Json::Value& Root);
+	// Returns null ID if file could not be read.
+	static FEUUID ReadProjectID(const std::string& ProjectFolder);
+	static bool SetNameInProjectFile(const std::string& ProjectFolder, const std::string& NewName);
+	static bool SetNewIDInProjectFile(const std::string& ProjectFolder);
 private:
+	static bool WriteProjectFile(const std::string& ProjectFolder, const Json::Value& Root);
+
 	// Plugins enabled in the project, editor loads them when project is opened.
 	// Missing plugins stay in the list until they are removed explicitly.
 	std::vector<FEProjectPluginInfo> Plugins;
@@ -74,6 +82,8 @@ private:
 
 	bool bWasJustCreated = false;
 	bool bModified = false;
+	// Versions of editor and engine that project was created with.
+	Json::Value CreatedWith;
 	std::vector<FEObject*> UnSavedObjects;
 
 	std::vector<std::string> FilesToDelete;

@@ -18,6 +18,7 @@ public:
 	std::string GetEditorFullVersion();    // "Focal Engine Editor 1.0.0 build 231+52 (dev, ed4c7ce-dirty)"
     std::string GetEditorBuildTimestamp(); // "20260207232613"
     int GetEditorBuildNumber();            // 231
+	std::string GetEditorCommitHash();     // "ed4c7ce"
 
     // Initialization and rendering
     void InitializeResources();
