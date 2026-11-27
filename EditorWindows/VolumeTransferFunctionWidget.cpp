@@ -25,7 +25,7 @@ void VolumeTransferFunctionWidget::ApplyColorPreset(FEEntity* CurrentEntity, int
 		ColorPoints.push_back({ Stop.Position, glm::vec3(Stop.R, Stop.G, Stop.B) });
 }
 
-void VolumeTransferFunctionWidget::Render(FEEntity* CurrentEntity, float DataValueLow, float DataValueHigh)
+void VolumeTransferFunctionWidget::Render(FEEntity* CurrentEntity, float DataValueLow, float DataValueHigh, float LabelWidth)
 {
 	if (CurrentEntity == nullptr)
 		return;
@@ -221,27 +221,44 @@ void VolumeTransferFunctionWidget::Render(FEEntity* CurrentEntity, float DataVal
 		DrawList->AddTriangle(ImVec2(X - 6.0f, Y + MarkerStripHeight), ImVec2(X + 6.0f, Y + MarkerStripHeight), ImVec2(X, Y), Border, 1.5f);
 	}
 
-	ImGui::Text("Data range: %.4g  ..  %.4g", DataValueLow, DataValueHigh);
+	// Values of the data at the ends of the canvas.
+	const float SmallFontSize = 16.0f;
+	char LowText[32] = {};
+	char HighText[32] = {};
+	snprintf(LowText, sizeof(LowText), "%.4g", DataValueLow);
+	snprintf(HighText, sizeof(HighText), "%.4g", DataValueHigh);
+	const char* AxisTitle = "data value";
+
+	ImGui::PushFont(nullptr, SmallFontSize);
+	const ImVec2 AxisPosition = ImGui::GetCursorScreenPos();
+	DrawList->AddText(AxisPosition, FEEditorStyle::TextMuted, LowText);
+	DrawList->AddText(ImVec2(AxisPosition.x + CanvasWidth - ImGui::CalcTextSize(HighText).x, AxisPosition.y), FEEditorStyle::TextMuted, HighText);
+	DrawList->AddText(ImVec2(AxisPosition.x + (CanvasWidth - ImGui::CalcTextSize(AxisTitle).x) / 2.0f, AxisPosition.y), FEEditorStyle::TextDisabled, AxisTitle);
+	ImGui::Dummy(ImVec2(CanvasWidth, SmallFontSize));
+
+	ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::TextDisabled);
+	ImGui::TextWrapped("Double-click adds an opacity point. Right-click removes a point or a color stop.");
+	ImGui::PopStyleColor();
+	ImGui::PopFont();
 
 	// Controls below the canvas.
-	if (SelectedColorPoint >= 0 && SelectedColorPoint < static_cast<int>(ColorPoints.size()))
-	{
-		if (ImGui::ColorEdit3("Selected stop color", &ColorPoints[SelectedColorPoint].Color.x))
-			bChanged = true;
+	const float ButtonSpacing = 6.0f;
+	std::vector<const char*> PresetNames;
+	for (const ColorPreset& Preset : ColorPresets)
+		PresetNames.push_back(Preset.Name.c_str());
 
-		const bool bEndpoint = (SelectedColorPoint == 0 || SelectedColorPoint == static_cast<int>(ColorPoints.size()) - 1);
-		if (!bEndpoint)
-		{
-			if (ImGui::Button("Remove stop"))
-			{
-				ColorPoints.erase(ColorPoints.begin() + SelectedColorPoint);
-				SelectedColorPoint = -1;
-				bChanged = true;
-			}
-		}
+	RenderRowLabel("Preset", LabelWidth);
+	const float AddButtonWidth = ImGui::CalcTextSize("Add stop").x + 20.0f;
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - AddButtonWidth - ButtonSpacing);
+	if (ImGui::Combo("##ColorPreset", &CurrentPreset, PresetNames.data(), static_cast<int>(PresetNames.size())))
+	{
+		ApplyColorPreset(CurrentEntity, CurrentPreset);
+		SelectedColorPoint = -1;
+		bChanged = true;
 	}
 
-	if (ImGui::Button("Add color stop"))
+	ImGui::SameLine(0.0f, ButtonSpacing);
+	if (ImGui::Button("Add stop", ImVec2(AddButtonWidth, 0.0f)))
 	{
 		// Insert at the midpoint of the widest gap so it never collides with an existing stop.
 		int GapIndex = 0;
@@ -264,17 +281,25 @@ void VolumeTransferFunctionWidget::Render(FEEntity* CurrentEntity, float DataVal
 		bChanged = true;
 	}
 
-	// Presets.
-	std::vector<const char*> PresetNames;
-	for (const ColorPreset& Preset : ColorPresets)
-		PresetNames.push_back(Preset.Name.c_str());
-
-	ImGui::SetNextItemWidth(160.0f);
-	if (ImGui::Combo("Color preset", &CurrentPreset, PresetNames.data(), static_cast<int>(PresetNames.size())))
+	if (SelectedColorPoint >= 0 && SelectedColorPoint < static_cast<int>(ColorPoints.size()))
 	{
-		ApplyColorPreset(CurrentEntity, CurrentPreset);
-		SelectedColorPoint = -1;
-		bChanged = true;
+		RenderRowLabel("Stop color", LabelWidth);
+		const bool bEndpoint = (SelectedColorPoint == 0 || SelectedColorPoint == static_cast<int>(ColorPoints.size()) - 1);
+		const float RemoveButtonWidth = ImGui::CalcTextSize("Remove").x + 20.0f;
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - (bEndpoint ? 0.0f : RemoveButtonWidth + ButtonSpacing));
+		if (ImGui::ColorEdit3("##SelectedStopColor", &ColorPoints[SelectedColorPoint].Color.x, ImGuiColorEditFlags_DisplayHex))
+			bChanged = true;
+
+		if (!bEndpoint)
+		{
+			ImGui::SameLine(0.0f, ButtonSpacing);
+			if (ImGui::Button("Remove", ImVec2(RemoveButtonWidth, 0.0f)))
+			{
+				ColorPoints.erase(ColorPoints.begin() + SelectedColorPoint);
+				SelectedColorPoint = -1;
+				bChanged = true;
+			}
+		}
 	}
 
 	if (bChanged)

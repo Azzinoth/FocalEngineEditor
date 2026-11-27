@@ -55,41 +55,11 @@ FEEditorInspectorWindow::FEEditorInspectorWindow()
 
 void FEEditorInspectorWindow::InitializeResources()
 {
-	// ************** Terrain Settings **************
-	ExportHeightMapButton = new ImGuiButton("Export HeightMap");
-	ExportHeightMapButton->SetSize(ImVec2(200, 0));
-
-	ImportHeightMapButton = new ImGuiButton("Import HeightMap");
-	ImportHeightMapButton->SetSize(ImVec2(200, 0));
-
-	SculptBrushIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/sculptBrush.png", "sculptBrushIcon");
-	RESOURCE_MANAGER.SetTag(SculptBrushIcon, EDITOR_RESOURCE_TAG);
-	SculptBrushButton = new ImGuiImageButton(SculptBrushIcon);
-	SculptBrushButton->SetSize(ImVec2(24, 24));
-
-	LevelBrushIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/levelBrush.png", "levelBrushIcon");
-	RESOURCE_MANAGER.SetTag(LevelBrushIcon, EDITOR_RESOURCE_TAG);
-	LevelBrushButton = new ImGuiImageButton(LevelBrushIcon);
-	LevelBrushButton->SetSize(ImVec2(24, 24));
-
-	SmoothBrushIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/smoothBrush.png", "smoothBrushIcon");
-	RESOURCE_MANAGER.SetTag(SmoothBrushIcon, EDITOR_RESOURCE_TAG);
-	SmoothBrushButton = new ImGuiImageButton(SmoothBrushIcon);
-	SmoothBrushButton->SetSize(ImVec2(24, 24));
-
-	DrawBrushIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/paintbrush.png", "drawBrushIcon");
-	RESOURCE_MANAGER.SetTag(DrawBrushIcon, EDITOR_RESOURCE_TAG);
-	LayerBrushButton = new ImGuiImageButton(DrawBrushIcon);
-	LayerBrushButton->SetSize(ImVec2(48, 48));
-
 	EntityChangeGameModelTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_GAMEMODEL, EntityChangeGameModelTargetCallback, nullptr, "Drop to assign game model");
 	EntityChangePointCloudTarget = DRAG_AND_DROP_MANAGER.AddTarget(FE_POINT_CLOUD, EntityChangePointCloudTargetCallback, nullptr, "Drop to assign point cloud");
-	// ************** Terrain Settings END **************
 
-	MouseCursorIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/mouseCursorIcon.png", "mouseCursorIcon");
-	RESOURCE_MANAGER.SetTag(MouseCursorIcon, EDITOR_RESOURCE_TAG);
-	ArrowToGroundIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/arrowToGroundIcon.png", "arrowToGroundIcon");
-	RESOURCE_MANAGER.SetTag(ArrowToGroundIcon, EDITOR_RESOURCE_TAG);
+	LockIcon = RESOURCE_MANAGER.LoadPNGTexture("Resources/Images/lockIcon.png", "lockIcon");
+	RESOURCE_MANAGER.SetTag(LockIcon, EDITOR_RESOURCE_TAG);
 }
 
 void FEEditorInspectorWindow::Clear()
@@ -168,328 +138,385 @@ bool FEEditorInspectorWindow::TerrainChangeMaterialTargetCallback(FEObject* Obje
 	return true;
 }
 
+// Label of a row with the width that is used by rows of entity and transform.
+static void RenderRowLabel(const char* Label)
+{
+	RenderRowLabel(Label, ImGui::CalcTextSize("Rotation").x + 14.0f);
+}
+
+// ID in a small font, it is cut when it does not fit in the rest of the row. Click copies the whole ID.
+static void RenderIDText(const std::string& ID)
+{
+	const float FontSize = 16.0f;
+	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (ImGui::GetFontSize() - FontSize) / 2.0f);
+	ImGui::PushFont(nullptr, FontSize);
+
+	std::string ShownID = ID;
+	const float AvailableWidth = ImGui::GetContentRegionAvail().x;
+	if (ImGui::CalcTextSize(ShownID.c_str()).x > AvailableWidth)
+	{
+		while (ShownID.size() > 1 && ImGui::CalcTextSize((ShownID + "...").c_str()).x > AvailableWidth)
+			ShownID.pop_back();
+
+		ShownID += "...";
+	}
+
+	ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::TextMuted);
+	ImGui::TextUnformatted(ShownID.c_str());
+	ImGui::PopStyleColor();
+	ImGui::PopFont();
+
+	if (ImGui::IsItemClicked())
+		ImGui::SetClipboardText(ID.c_str());
+	ShowToolTip((ID + "\nClick to copy").c_str());
+}
+
+// Returns index of the changed axis or -1.
+static int RenderTransformRow(const char* Label, glm::vec3& Value, const float Speed, const float Min, const float Max, const float WidthToLeave = 0.0f)
+{
+	const ImU32 AxisColors[] = { FEEditorStyle::AxisX, FEEditorStyle::AxisY, FEEditorStyle::AxisZ };
+	const char* AxisNames[] = { "X", "Y", "Z" };
+	const float FieldSpacing = 6.0f;
+
+	RenderRowLabel(Label);
+
+	std::string LabelInToolTip = Label;
+	LabelInToolTip[0] = static_cast<char>(std::tolower(LabelInToolTip[0]));
+
+	int ChangedAxis = -1;
+	const float FieldWidth = std::max(floorf((ImGui::GetContentRegionAvail().x - WidthToLeave - FieldSpacing * 2.0f) / 3.0f), 40.0f);
+	ImGui::PushID(Label);
+	for (int i = 0; i < 3; i++)
+	{
+		ImGui::PushID(i);
+		ImGui::SetNextItemWidth(FieldWidth);
+		if (ImGui::DragFloat("##Value", &Value[i], Speed, Min, Max))
+			ChangedAxis = i;
+		ShowToolTip((std::string(AxisNames[i]) + " " + LabelInToolTip).c_str());
+
+		const ImVec2 FieldMin = ImGui::GetItemRectMin();
+		const ImVec2 FieldMax = ImGui::GetItemRectMax();
+		ImGui::GetWindowDrawList()->AddRectFilled(FieldMin, ImVec2(FieldMin.x + 4.0f, FieldMax.y), AxisColors[i], 4.0f, ImDrawFlags_RoundCornersLeft);
+		ImGui::PopID();
+
+		if (i < 2)
+			ImGui::SameLine(0.0f, FieldSpacing);
+	}
+	ImGui::PopID();
+
+	return ChangedAxis;
+}
+
+// Icon should be white, it is tinted.
+static bool RenderIconToggle(const char* ID, FETexture* Icon, const bool bSelected)
+{
+	const float Size = ImGui::GetFrameHeight();
+	const ImVec2 Min = ImGui::GetCursorScreenPos();
+	const ImVec2 Max = ImVec2(Min.x + Size, Min.y + Size);
+	const bool bPressed = ImGui::InvisibleButton(ID, ImVec2(Size, Size));
+	const bool bHovered = ImGui::IsItemHovered();
+
+	ImU32 Fill = bHovered ? FEEditorStyle::ButtonHovered : FEEditorStyle::Button;
+	if (bSelected)
+		Fill = bHovered ? FEEditorStyle::AccentHovered : FEEditorStyle::Accent;
+
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	DrawList->AddRectFilled(Min, Max, Fill, 4.0f);
+	if (!bSelected)
+		DrawList->AddRect(Min, Max, FEEditorStyle::ButtonBorder, 4.0f);
+
+	const float IconPadding = 5.0f;
+	DrawList->AddImage(Icon->GetTextureID(), ImVec2(Min.x + IconPadding, Min.y + IconPadding), ImVec2(Max.x - IconPadding, Max.y - IconPadding), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), bSelected ? FEEditorStyle::TextOnAccent : FEEditorStyle::TextMuted);
+	return bPressed;
+}
+
 void FEEditorInspectorWindow::ShowTransformConfiguration(const std::string Name, FETransformComponent* Transform) const
 {
-	static float EditWidth = 70.0f;
-	bool bModified = false;
-	// ********************* POSITION *********************
-	glm::vec3 Position = Transform->GetPosition();
-	ImGui::Text("Position : ");
+	static bool bWorldSpace = false;
+
+	ImGui::PushID(Name.c_str());
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 6.0f));
+
+	ImGui::AlignTextToFramePadding();
+	ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::TextMuted);
+	ImGui::TextUnformatted("Values in");
+	ImGui::PopStyleColor();
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##X pos : ") + Name).c_str(), &Position[0], 0.1f))
-		bModified = true;
-	ShowToolTip("X position");
+	if (RenderSwitchButton("Local", !bWorldSpace, ImDrawFlags_RoundCornersLeft))
+		bWorldSpace = false;
 
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##Y pos : ") + Name).c_str(), &Position[1], 0.1f))
-		bModified = true;
-	ShowToolTip("Y position");
+	ImGui::SameLine(0.0f, 0.0f);
+	if (RenderSwitchButton("World", bWorldSpace, ImDrawFlags_RoundCornersRight))
+		bWorldSpace = true;
 
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##Z pos : ") + Name).c_str(), &Position[2], 0.1f))
-		bModified = true;
-	ShowToolTip("Z position");
-	
-	if (bModified)
-		Transform->SetPosition(Position);
+	const FE_COORDINATE_SPACE_TYPE Space = bWorldSpace ? FE_WORLD_SPACE : FE_LOCAL_SPACE;
 
-	bModified = false;
+	glm::vec3 Position = Transform->GetPosition(Space);
+	if (RenderTransformRow("Position", Position, 0.1f, 0.0f, 0.0f) != -1)
+		Transform->SetPosition(Position, Space);
 
-	// ********************* WORLD POSITION *********************
-	glm::vec3 WorldPosition = Transform->GetPosition(FE_WORLD_SPACE);
-	ImGui::Text("World Position : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##World X pos : ") + Name).c_str(), &WorldPosition[0], 0.1f))
-		bModified = true;
-	ShowToolTip("X position");
+	glm::vec3 Rotation = Transform->GetRotation(Space);
+	if (RenderTransformRow("Rotation", Rotation, 0.1f, -360.0f, 360.0f) != -1)
+		Transform->SetRotation(Rotation, Space);
 
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##World Y pos : ") + Name).c_str(), &WorldPosition[1], 0.1f))
-		bModified = true;
-	ShowToolTip("Y position");
-
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##World Z pos : ") + Name).c_str(), &WorldPosition[2], 0.1f))
-		bModified = true;
-	ShowToolTip("Z position");
-
-	if (bModified)
-		Transform->SetPosition(WorldPosition, FE_WORLD_SPACE);
-
-	bModified = false;
-
-	// ********************* ROTATION *********************
-	glm::vec3 Rotation = Transform->GetRotation();
-	ImGui::Text("Rotation : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##X rot : ") + Name).c_str(), &Rotation[0], 0.1f, -360.0f, 360.0f))
-		bModified = true;
-	ShowToolTip("X rotation");
-
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##Y rot : ") + Name).c_str(), &Rotation[1], 0.1f, -360.0f, 360.0f))
-		bModified = true;
-	ShowToolTip("Y rotation");
-
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##Z rot : ") + Name).c_str(), &Rotation[2], 0.1f, -360.0f, 360.0f))
-		bModified = true;
-	ShowToolTip("Z rotation");
-
-	if (bModified)
-		Transform->SetRotation(Rotation);
-
-	bModified = false;
-
-	// ********************* WORLD ROTATION *********************
-	glm::vec3 WorldRotation = Transform->GetRotation(FE_WORLD_SPACE);
-	ImGui::Text("World Rotation : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##World X rot : ") + Name).c_str(), &WorldRotation[0], 0.1f, -360.0f, 360.0f))
-		bModified = true;
-	ShowToolTip("X rotation");
-
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##World Y rot : ") + Name).c_str(), &WorldRotation[1], 0.1f, -360.0f, 360.0f))
-		bModified = true;
-	ShowToolTip("Y rotation");
-
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##World Z rot : ") + Name).c_str(), &WorldRotation[2], 0.1f, -360.0f, 360.0f))
-		bModified = true;
-	ShowToolTip("Z rotation");
-
-	if (bModified)
-		Transform->SetRotation(WorldRotation, FE_WORLD_SPACE);
-
-	bModified = false;
-
-	// ********************* SCALE *********************
-	bool bUniformScaling = Transform->IsUniformScalingSet();
-	ImGui::Checkbox("Uniform scaling", &bUniformScaling);
-	Transform->SetUniformScaling(bUniformScaling);
-
-	glm::vec3 Scale = Transform->GetScale();
-	float ScaleChangeSpeed = Scale.x * 0.01f;
-	ImGui::Text("Scale : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##X scale : ") + Name).c_str(), &Scale[0], ScaleChangeSpeed, 0.001f, 1000.0f))
+	const bool bUniformScaling = Transform->IsUniformScalingSet();
+	const float LockButtonSpacing = 6.0f;
+	glm::vec3 Scale = Transform->GetScale(Space);
+	const int ChangedAxis = RenderTransformRow("Scale", Scale, Scale.x * 0.01f, 0.001f, 1000.0f, ImGui::GetFrameHeight() + LockButtonSpacing);
+	if (ChangedAxis != -1)
 	{
-		bModified = true;
 		if (bUniformScaling)
-		{
-			Scale[1] = Scale[0];
-			Scale[2] = Scale[0];
-		}
-	}
-	ShowToolTip("X scale");
+			Scale = glm::vec3(Scale[ChangedAxis]);
 
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##Y scale : ") + Name).c_str(), &Scale[1], ScaleChangeSpeed, 0.001f, 1000.0f))
+		Transform->SetScale(Scale, Space);
+	}
+
+	ImGui::SameLine(0.0f, LockButtonSpacing);
+	if (RenderIconToggle("##UniformScaling", LockIcon, bUniformScaling))
+		Transform->SetUniformScaling(!bUniformScaling);
+	ShowToolTip("Uniform scaling");
+
+	ImGui::PopStyleVar();
+	ImGui::PopID();
+}
+
+// Title of a group of rows that can be collapsed. Note is shown at the right end of the title.
+static bool RenderGroupTitle(const std::string Title, const std::string Note = "", const bool bOpenAtFirst = true)
+{
+	ImGui::PushStyleColor(ImGuiCol_Header, IM_COL32(0, 0, 0, 0));
+	ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::Accent);
+	ImGui::SetNextItemOpen(bOpenAtFirst, ImGuiCond_FirstUseEver);
+	const bool bOpen = ImGui::TreeNodeEx(Title.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_NoTreePushOnOpen);
+	ImGui::PopStyleColor(2);
+
+	if (!Note.empty())
 	{
-		bModified = true;
-		if (bUniformScaling)
-		{
-			Scale[0] = Scale[1];
-			Scale[2] = Scale[1];
-		}
+		const float NoteFontSize = 16.0f;
+		const ImVec2 TitleMin = ImGui::GetItemRectMin();
+		const ImVec2 TitleMax = ImGui::GetItemRectMax();
+		ImGui::PushFont(nullptr, NoteFontSize);
+		const float NoteWidth = ImGui::CalcTextSize(Note.c_str()).x;
+		ImGui::GetWindowDrawList()->AddText(ImVec2(TitleMax.x - NoteWidth - 6.0f, TitleMin.y + (TitleMax.y - TitleMin.y - NoteFontSize) / 2.0f), FEEditorStyle::TextMuted, Note.c_str());
+		ImGui::PopFont();
 	}
-	ShowToolTip("Y scale");
 
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##Z scale : ") + Name).c_str(), &Scale[2], ScaleChangeSpeed, 0.001f, 1000.0f))
-	{
-		bModified = true;
-		if (bUniformScaling)
-		{
-			Scale[0] = Scale[2];
-			Scale[1] = Scale[2];
-		}
-	}
-	ShowToolTip("Z scale");
-
-	if (bModified)
-		Transform->SetScale(Scale);
-
-	bModified = false;
-
-	// ********************* WORLD SCALE *********************
-	glm::vec3 WorldScale = Transform->GetScale(FE_WORLD_SPACE);
-	ScaleChangeSpeed = WorldScale.x * 0.01f;
-	ImGui::Text("World Scale : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##World X scale : ") + Name).c_str(), &WorldScale[0], ScaleChangeSpeed, 0.001f, 1000.0f))
-	{
-		bModified = true;
-		if (bUniformScaling)
-		{
-			WorldScale[1] = WorldScale[0];
-			WorldScale[2] = WorldScale[0];
-		}
-	}
-	ShowToolTip("X scale");
-
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##World Y scale : ") + Name).c_str(), &WorldScale[1], ScaleChangeSpeed, 0.001f, 1000.0f))
-	{
-		bModified = true;
-		if (bUniformScaling)
-		{
-			WorldScale[0] = WorldScale[1];
-			WorldScale[2] = WorldScale[1];
-		}
-	}
-	ShowToolTip("Y scale");
-
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(EditWidth);
-	if (ImGui::DragFloat((std::string("##World Z scale : ") + Name).c_str(), &WorldScale[2], ScaleChangeSpeed, 0.001f, 1000.0f))
-	{
-		bModified = true;
-		if (bUniformScaling)
-		{
-			WorldScale[0] = WorldScale[2];
-			WorldScale[1] = WorldScale[2];
-		}
-	}
-	ShowToolTip("Z scale");
-
-	if (bModified)
-		Transform->SetScale(WorldScale, FE_WORLD_SPACE);
+	return bOpen;
 }
 
 void FEEditorInspectorWindow::DisplayLightProperties(FEEntity* LightEntity) const
 {
 	FELightComponent& LightComponent = LightEntity->GetComponent<FELightComponent>();
+	const bool bDirectional = LightComponent.GetType() == FE_DIRECTIONAL_LIGHT;
 
+	const char* TypeName = "Unknown";
 	if (LightComponent.GetType() == FE_DIRECTIONAL_LIGHT)
 	{
-		ImGui::Text("Cast shadows:");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(200);
+		TypeName = "Directional";
+	}
+	else if (LightComponent.GetType() == FE_POINT_LIGHT)
+	{
+		TypeName = "Point";
+	}
+	else if (LightComponent.GetType() == FE_SPOT_LIGHT)
+	{
+		TypeName = "Spot";
+	}
+
+	const float LabelWidth = ImGui::CalcTextSize(bDirectional ? "Cast shadows" : "Outer angle").x + 14.0f;
+	const float FieldSpacing = 6.0f;
+
+	ImGui::PushID(UNIQUE_ID.ToString(LightEntity->GetID()).c_str());
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 6.0f));
+
+	RenderRowLabel("Type", LabelWidth);
+	ImGui::TextUnformatted(TypeName);
+
+	RenderRowLabel("Color", LabelWidth);
+	glm::vec3 Color = LightComponent.GetColor();
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	if (ImGui::ColorEdit3("##Color", &Color.x))
+		LightComponent.SetColor(Color);
+
+	RenderRowLabel("Intensity", LabelWidth);
+	float Intensity = LightComponent.GetIntensity();
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	if (ImGui::SliderFloat("##Intensity", &Intensity, 0.0f, 100.0f))
+		LightComponent.SetIntensity(Intensity);
+
+	if (LightComponent.GetType() == FE_POINT_LIGHT)
+	{
+		RenderRowLabel("Range", LabelWidth);
+		float LightRange = LightComponent.GetRange();
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if (ImGui::DragFloat("##LightRadius", &LightRange, 0.1f, 0.1f, 100.0f))
+			LightComponent.SetRange(LightRange);
+	}
+	else if (LightComponent.GetType() == FE_SPOT_LIGHT)
+	{
+		RenderRowLabel("Inner angle", LabelWidth);
+		float SpotAngle = LightComponent.GetSpotAngle();
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if (ImGui::SliderFloat("##InnerAngle", &SpotAngle, 0.0f, 90.0f, "%.1f deg"))
+			LightComponent.SetSpotAngle(SpotAngle);
+
+		RenderRowLabel("Outer angle", LabelWidth);
+		float SpotAngleOuter = LightComponent.GetSpotAngleOuter();
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if (ImGui::SliderFloat("##OuterAngle", &SpotAngleOuter, 0.0f, 90.0f, "%.1f deg"))
+			LightComponent.SetSpotAngleOuter(SpotAngleOuter);
+
+		// Direction comes from rotation of the entity, so it is only shown.
+		const glm::vec3 Direction = LIGHT_SYSTEM.GetDirection(LightEntity);
+		RenderRowLabel("Direction", LabelWidth);
+		ImGui::Text("%.2f, %.2f, %.2f", Direction.x, Direction.y, Direction.z);
+		ShowToolTip("Direction follows the rotation of the entity.");
+	}
+
+	if (bDirectional && RenderGroupTitle("Shadows###LightShadows"))
+	{
+		RenderRowLabel("Cast shadows", LabelWidth);
 		bool bCastShadows = LightComponent.IsCastShadows();
-		ImGui::Checkbox("##Cast shadows", &bCastShadows);
-		LightComponent.SetCastShadows(bCastShadows);
+		if (ImGui::Checkbox("##Cast shadows", &bCastShadows))
+			LightComponent.SetCastShadows(bCastShadows);
 		ShowToolTip("Will this light cast shadows.");
 
 		if (!LightComponent.IsCastShadows())
 			ImGui::BeginDisabled();
 
-		ImGui::Text("Number of cascades :");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(200);
-		int CascadesCount = LightComponent.GetActiveCascades();
-		ImGui::SliderInt("##cascades", &CascadesCount, 1, 4);
-		LightComponent.SetActiveCascades(CascadesCount);
-		ShowToolTip("How much steps of shadow quality will be used.");
+		RenderRowLabel("Cascades", LabelWidth);
+		const int MaxCascades = 4;
+		ImGui::PushID("Cascades");
+		for (int i = 1; i <= MaxCascades; i++)
+		{
+			ImDrawFlags RoundFlags = ImDrawFlags_RoundCornersNone;
+			if (i == 1)
+			{
+				RoundFlags = ImDrawFlags_RoundCornersLeft;
+			}
+			else if (i == MaxCascades)
+			{
+				RoundFlags = ImDrawFlags_RoundCornersRight;
+			}
 
-		ImGui::Text("Shadow coverage in M :");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(200);
+			if (RenderSwitchButton(std::to_string(i).c_str(), LightComponent.GetActiveCascades() == i, RoundFlags))
+				LightComponent.SetActiveCascades(i);
+			ShowToolTip("How much steps of shadow quality will be used.");
+
+			if (i < MaxCascades)
+				ImGui::SameLine(0.0f, 0.0f);
+		}
+		ImGui::PopID();
+
+		RenderRowLabel("Coverage", LabelWidth);
 		float FirstCascadeSize = LightComponent.GetShadowCoverage();
-		ImGui::DragFloat("##shadowCoverage", &FirstCascadeSize, 0.1f, 0.1f, 500.0f);
-		LightComponent.SetShadowCoverage(FirstCascadeSize);
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if (ImGui::DragFloat("##shadowCoverage", &FirstCascadeSize, 0.1f, 0.1f, 500.0f, "%.1f m"))
+			LightComponent.SetShadowCoverage(FirstCascadeSize);
 		ShowToolTip("Distance from camera at which shadows would be present.");
 
-		ImGui::Text("Z depth of shadow map :");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(200);
+		RenderRowLabel("Map depth", LabelWidth);
+		const float DepthFieldWidth = floorf((ImGui::GetContentRegionAvail().x - FieldSpacing) / 2.0f);
 		float CSMZDepth = LightComponent.GetCSMZDepth();
-		ImGui::DragFloat("##CSMZDepth", &CSMZDepth, 0.01f, 0.1f, 100.0f);
-		LightComponent.SetCSMZDepth(CSMZDepth);
+		ImGui::SetNextItemWidth(DepthFieldWidth);
+		if (ImGui::DragFloat("##CSMZDepth", &CSMZDepth, 0.01f, 0.1f, 100.0f, "Z %.2f"))
+			LightComponent.SetCSMZDepth(CSMZDepth);
 		ShowToolTip("If you have problems with shadow disapearing when camera is at close distance to shadow reciver, tweaking this parameter could help. Otherwise this parameter should be as small as possible.");
 
-		ImGui::Text("XY depth of shadow map :");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(200);
+		ImGui::SameLine(0.0f, FieldSpacing);
 		float CSMXYDepth = LightComponent.GetCSMXYDepth();
-		ImGui::DragFloat("##CSMXYDepth", &CSMXYDepth, 0.01f, 0.0f, 100.0f);
-		LightComponent.SetCSMXYDepth(CSMXYDepth);
+		ImGui::SetNextItemWidth(DepthFieldWidth);
+		if (ImGui::DragFloat("##CSMXYDepth", &CSMXYDepth, 0.01f, 0.0f, 100.0f, "XY %.2f"))
+			LightComponent.SetCSMXYDepth(CSMXYDepth);
 		ShowToolTip("If you have problems with shadow on edges of screen, tweaking this parameter could help. Otherwise this parameter should be as small as possible.");
 
-		ImGui::Text("Shadows blur factor:");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(200.0f);
+		RenderRowLabel("Blur", LabelWidth);
 		float ShadowsBlurFactor = LightComponent.GetShadowBlurFactor();
-		ImGui::DragFloat("##Shadows blur factor", &ShadowsBlurFactor, 0.001f, 0.0f, 10.0f);
-		LightComponent.SetShadowBlurFactor(ShadowsBlurFactor);
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if (ImGui::DragFloat("##Shadows blur factor", &ShadowsBlurFactor, 0.001f, 0.0f, 10.0f))
+			LightComponent.SetShadowBlurFactor(ShadowsBlurFactor);
 
-		bool bStaticShadowBias = LightComponent.IsStaticShadowBias();
-		ImGui::Checkbox("Static shadow bias :", &bStaticShadowBias);
-		LightComponent.SetIsStaticShadowBias(bStaticShadowBias);
+		RenderRowLabel("Bias", LabelWidth);
+		ImGui::PushID("Bias");
+		if (RenderSwitchButton("Static", LightComponent.IsStaticShadowBias(), ImDrawFlags_RoundCornersLeft))
+			LightComponent.SetIsStaticShadowBias(true);
 
+		ImGui::SameLine(0.0f, 0.0f);
+		if (RenderSwitchButton("Variable", !LightComponent.IsStaticShadowBias(), ImDrawFlags_RoundCornersRight))
+			LightComponent.SetIsStaticShadowBias(false);
+		ImGui::PopID();
+
+		ImGui::SameLine(0.0f, FieldSpacing);
+		ImGui::SetNextItemWidth(-FLT_MIN);
 		if (LightComponent.IsStaticShadowBias())
 		{
-			ImGui::Text("Static shadow bias value :");
-			ImGui::SameLine();
-			ImGui::SetNextItemWidth(200);
 			float ShadowBias = LightComponent.GetShadowBias();
-			ImGui::DragFloat("##shadowBias", &ShadowBias, 0.0001f, 0.00001f, 0.1f);
-			LightComponent.SetShadowBias(ShadowBias);
+			if (ImGui::DragFloat("##shadowBias", &ShadowBias, 0.0001f, 0.00001f, 0.1f, "%.5f"))
+				LightComponent.SetShadowBias(ShadowBias);
+			ShowToolTip("Static shadow bias value.");
 		}
 		else
 		{
-			ImGui::Text("Intensity of variable shadow bias :");
-			ImGui::SameLine();
-			ImGui::SetNextItemWidth(200);
 			float ShadowBiasIntensity = LightComponent.GetShadowBiasVariableIntensity();
-			ImGui::DragFloat("##shadowBiasIntensity", &ShadowBiasIntensity, 0.01f, 0.01f, 10.0f);
-			LightComponent.SetShadowBiasVariableIntensity(ShadowBiasIntensity);
+			if (ImGui::DragFloat("##shadowBiasIntensity", &ShadowBiasIntensity, 0.01f, 0.01f, 10.0f))
+				LightComponent.SetShadowBiasVariableIntensity(ShadowBiasIntensity);
+			ShowToolTip("Intensity of variable shadow bias.");
 		}
 
 		if (!LightComponent.IsCastShadows())
 			ImGui::EndDisabled();
 	}
-	else if (LightComponent.GetType() == FE_POINT_LIGHT)
-	{
-		ImGui::Text("Light range :");
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(200);
-		float LightRange = LightComponent.GetRange();
-		ImGui::DragFloat("##LightRadius", &LightRange, 0.1f, 0.1f, 100.0f);
-		LightComponent.SetRange(LightRange);
-	
-	}
-	else if (LightComponent.GetType() == FE_SPOT_LIGHT)
-	{
-		glm::vec3 Direction = LIGHT_SYSTEM.GetDirection(LightEntity);
-		ImGui::DragFloat("##x", &Direction[0], 0.01f, 0.0f, 1.0f);
-		ImGui::DragFloat("##y", &Direction[1], 0.01f, 0.0f, 1.0f);
-		ImGui::DragFloat("##z", &Direction[2], 0.01f, 0.0f, 1.0f);
 
-		float SpotAngle = LightComponent.GetSpotAngle();
-		ImGui::SliderFloat((std::string("Inner angle##") + LightEntity->GetName()).c_str(), &SpotAngle, 0.0f, 90.0f);
-		LightComponent.SetSpotAngle(SpotAngle);
+	ImGui::PopStyleVar();
+	ImGui::PopID();
+}
 
-		float SpotAngleOuter = LightComponent.GetSpotAngleOuter();
-		ImGui::SliderFloat((std::string("Outer angle ##") + LightEntity->GetName()).c_str(), &SpotAngleOuter, 0.0f, 90.0f);
-		LightComponent.SetSpotAngleOuter(SpotAngleOuter);
-	}
+static bool RenderFloatRow(const char* Label, const char* ID, float& Value, const float Speed, const float Min, const float Max, const float LabelWidth, const char* Format = "%.3f")
+{
+	RenderRowLabel(Label, LabelWidth);
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	return ImGui::DragFloat(ID, &Value, Speed, Min, Max, Format);
+}
 
-	glm::vec3 Color = LightComponent.GetColor();
-	ImGui::ColorEdit3((std::string("Color##") + LightEntity->GetName()).c_str(), &Color.x);
-	LightComponent.SetColor(Color);
+// Row with "Enabled" checkbox of an effect, returns true if the value was changed.
+static bool RenderEnabledRow(const char* ID, bool& bEnabled, const float LabelWidth)
+{
+	RenderRowLabel("Enabled", LabelWidth);
+	return ImGui::Checkbox(ID, &bEnabled);
+}
 
-	float Intensity = LightComponent.GetIntensity();
-	ImGui::SliderFloat((std::string("Intensity##") + LightEntity->GetName()).c_str(), &Intensity, 0.0f, 100.0f);
-	LightComponent.SetIntensity(Intensity);
+static const char* GetFXAAStrengthName(const float FXAASpanMax)
+{
+	if (FXAASpanMax == 0.0f)
+		return "none";
+
+	if (FXAASpanMax > 0.1f && FXAASpanMax < 1.1f)
+		return "1x";
+
+	if (FXAASpanMax > 1.1f && FXAASpanMax < 2.1f)
+		return "2x";
+
+	if (FXAASpanMax > 2.1f && FXAASpanMax < 4.1f)
+		return "4x";
+
+	if (FXAASpanMax > 4.1f && FXAASpanMax < 8.1f)
+		return "8x";
+
+	return "custom";
+}
+
+static const char* GetSSAOQualityName(FECameraComponent& CameraComponent)
+{
+	const int SampleCount = CameraComponent.GetSSAOSampleCount();
+	if (SampleCount == 4)
+		return "Low";
+
+	if (SampleCount == 16 && CameraComponent.GetSSAORadiusSmallDetails())
+		return "Medium";
+
+	if (SampleCount == 32 && CameraComponent.GetSSAORadiusSmallDetails())
+		return "High";
+
+	return "Custom";
 }
 
 void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) const
@@ -499,513 +526,364 @@ void FEEditorInspectorWindow::DisplayCameraProperties(FEEntity* CameraEntity) co
 	if (EDITOR.GetFocusedScene() == nullptr)
 		return;
 
-	// Because of editor camera system, we need to check if it is main camera in a different way.
-	FEUUID MainCameraID = PROJECT_MANAGER.GetCurrent()->GetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetID());
-	bool bIsMainCamera = MainCameraID == CameraEntity->GetID();
-	if (ImGui::Checkbox("Main camera", &bIsMainCamera))
+	const float LabelWidth = ImGui::CalcTextSize("Details weight").x + 14.0f;
+	const float FieldSpacing = 6.0f;
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 6.0f));
+
+	// Settings are split into pages, only one page is shown.
+	static int CurrentPage = 0;
+	const char* PageNames[] = { "Camera", "Image", "Effects" };
+	const int PageCount = 3;
+	ImGui::PushID("CameraPages");
+	for (int i = 0; i < PageCount; i++)
 	{
-		if (bIsMainCamera)
+		ImDrawFlags RoundFlags = ImDrawFlags_RoundCornersNone;
+		if (i == 0)
 		{
-			PROJECT_MANAGER.GetCurrent()->SetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetID(), CameraEntity->GetID());
+			RoundFlags = ImDrawFlags_RoundCornersLeft;
+		}
+		else if (i == PageCount - 1)
+		{
+			RoundFlags = ImDrawFlags_RoundCornersRight;
+		}
+
+		if (RenderSwitchButton(PageNames[i], CurrentPage == i, RoundFlags))
+			CurrentPage = i;
+
+		if (i < PageCount - 1)
+			ImGui::SameLine(0.0f, 0.0f);
+	}
+	ImGui::PopID();
+
+	if (CurrentPage == 0)
+	{
+		// Because of editor camera system, we need to check if it is main camera in a different way.
+		FEUUID MainCameraID = PROJECT_MANAGER.GetCurrent()->GetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetID());
+		bool bIsMainCamera = MainCameraID == CameraEntity->GetID();
+		RenderRowLabel("Main camera", LabelWidth);
+		if (ImGui::Checkbox("##MainCamera", &bIsMainCamera))
+		{
+			if (bIsMainCamera)
+			{
+				PROJECT_MANAGER.GetCurrent()->SetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetID(), CameraEntity->GetID());
+			}
+			else
+			{
+				PROJECT_MANAGER.GetCurrent()->SetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetID(), FEUUID());
+			}
+		}
+
+		// Rendering pipeline settings
+		RenderRowLabel("Pipeline", LabelWidth);
+		static const char* RenderingPipelineOptions[2] = { "Deferred", "Forward simplified" };
+		int CurrentIndex = CameraComponent.GetRenderingPipeline() == FERenderingPipeline::Forward_Simplified ? 1 : 0;
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if (ImGui::Combo("##RenderingPipeline", &CurrentIndex, RenderingPipelineOptions, 2))
+			CAMERA_SYSTEM.SetCameraRenderingPipeline(CameraEntity, CurrentIndex == 0 ? FERenderingPipeline::Deferred : FERenderingPipeline::Forward_Simplified);
+
+		// Rendering scale
+		float RenderScale = CameraComponent.GetRenderScale();
+		if (RenderFloatRow("Render scale", "##RenderScale", RenderScale, 0.01f, 0.05f, 2.0f, LabelWidth, "%.2f"))
+			CAMERA_SYSTEM.SetCameraRenderScale(CameraEntity, RenderScale);
+
+		float FOV = CameraComponent.GetFOV();
+		if (RenderFloatRow("Field of view", "##FOV", FOV, 0.1f, 1.0f, 179.0f, LabelWidth, "%.1f deg"))
+			CameraComponent.SetFOV(FOV);
+
+		RenderRowLabel("Clip planes", LabelWidth);
+		const float PlaneFieldWidth = floorf((ImGui::GetContentRegionAvail().x - FieldSpacing) / 2.0f);
+		float NearPlane = CameraComponent.GetNearPlane();
+		ImGui::SetNextItemWidth(PlaneFieldWidth);
+		if (ImGui::DragFloat("##NearPlane", &NearPlane, 0.1f, 0.01f, 1000.0f, "Near %.2f"))
+			CameraComponent.SetNearPlane(NearPlane);
+
+		ImGui::SameLine(0.0f, FieldSpacing);
+		float FarPlane = CameraComponent.GetFarPlane();
+		ImGui::SetNextItemWidth(PlaneFieldWidth);
+		if (ImGui::DragFloat("##FarPlane", &FarPlane, 0.1f, 0.01f, 10000.0f, "Far %.1f"))
+			CameraComponent.SetFarPlane(FarPlane);
+
+		// Camera Preview
+		const int PreviewWidth = 452;
+		const int PreviewHeight = 256;
+		FEScene* CurrentScene = CameraEntity->GetParentScene();
+		FETexture* CameraPreviewTexture = nullptr;
+
+		// If it is an editor camera, we do not need to render scene again.
+		if (CameraEntity->GetID() == PROJECT_MANAGER.GetCurrent()->GetEditorCameraIDBySceneID(CurrentScene->GetID()))
+		{
+			CameraPreviewTexture = RENDERER.GetCameraResult(CameraEntity);
 		}
 		else
 		{
-			PROJECT_MANAGER.GetCurrent()->SetProperMainCameraIDBySceneID(EDITOR.GetFocusedScene()->GetID(), FEUUID());
+			FEEntity* OldMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene());
+			CAMERA_SYSTEM.SetMainCamera(CameraEntity);
+
+			CameraComponent.TryToSetViewportSize(PreviewWidth, PreviewHeight);
+			RENDERER.Render(CurrentScene);
+			CameraPreviewTexture = RENDERER.GetCameraResult(CameraEntity);
+
+			CAMERA_SYSTEM.SetMainCamera(OldMainCameraEntity);
+		}
+
+		// Preview takes the whole width and keeps its proportions.
+		if (CameraPreviewTexture != nullptr)
+		{
+			const float ShownWidth = ImGui::GetContentRegionAvail().x;
+			ImGui::Image(CameraPreviewTexture->GetTextureID(), ImVec2(ShownWidth, floorf(ShownWidth * PreviewHeight / PreviewWidth)), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 		}
 	}
-
-	// Rendering scale
-	ImGui::Text("Rendering scale:");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(200);
-	float RenderScale = CameraComponent.GetRenderScale();
-	ImGui::DragFloat("##RenderScale", &RenderScale, 0.01f, 0.05f, 2.0f);
-	CAMERA_SYSTEM.SetCameraRenderScale(CameraEntity, RenderScale);
-
-	// Camera Preview
-	ImGui::Text("Camera Preview:");
-
-	FEScene* CurrentScene = CameraEntity->GetParentScene();
-	FETexture* CameraPreviewTexture = nullptr;
-
-	// If it is an editor camera, we do not need to render scene again.
-	if (CameraEntity->GetID() == PROJECT_MANAGER.GetCurrent()->GetEditorCameraIDBySceneID(CurrentScene->GetID()))
+	else if (CurrentPage == 1)
 	{
-		CameraPreviewTexture = RENDERER.GetCameraResult(CameraEntity);
-	}
-	else
-	{
-		FEEntity* OldMainCameraEntity = CAMERA_SYSTEM.GetMainCamera(EDITOR.GetFocusedScene());
-		CAMERA_SYSTEM.SetMainCamera(CameraEntity);
+		RenderRowLabel("Clear color", LabelWidth);
+		glm::vec4 CurrentClearColor = CameraComponent.GetClearColor();
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if (ImGui::ColorEdit4("##ClearColor", &CurrentClearColor.x, ImGuiColorEditFlags_DisplayHex))
+			CameraComponent.SetClearColor(CurrentClearColor);
 
-		CameraComponent.TryToSetViewportSize(452, 256);
-		RENDERER.Render(CurrentScene);
-		CameraPreviewTexture = RENDERER.GetCameraResult(CameraEntity);
-		
-		CAMERA_SYSTEM.SetMainCamera(OldMainCameraEntity);
-	}
+		float Gamma = CameraComponent.GetGamma();
+		if (RenderFloatRow("Gamma", "##Gamma", Gamma, 0.1f, 0.1f, 10.0f, LabelWidth, "%.2f"))
+			CameraComponent.SetGamma(Gamma);
 
-	if (CameraPreviewTexture != nullptr)
-		ImGui::Image(CameraPreviewTexture->GetTextureID(), ImVec2(452, 256), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		float Exposure = CameraComponent.GetExposure();
+		if (RenderFloatRow("Exposure", "##Exposure", Exposure, 0.1f, 0.1f, 10.0f, LabelWidth, "%.2f"))
+			CameraComponent.SetExposure(Exposure);
 
-	// Rendering pipeline settings
-	ImGui::Text("Rendering pipeline:");
-	static const char* RenderingPipelineOptions[2] = { "Deferred", "Forward_Simplified" };
-	FERenderingPipeline SelectedRenderingPipeline = CameraComponent.GetRenderingPipeline();
-	static int CurrentIndex = 0;
-	if (SelectedRenderingPipeline == FERenderingPipeline::Deferred)
-	{
-		CurrentIndex = 0;
-	}
-	else if (SelectedRenderingPipeline == FERenderingPipeline::Forward_Simplified)
-	{
-		CurrentIndex = 1;
-	}
-
-	ImGui::SetNextItemWidth(200);
-	if (ImGui::Combo("##RenderingPipeline", &CurrentIndex, RenderingPipelineOptions, 2))
-	{
-		CAMERA_SYSTEM.SetCameraRenderingPipeline(CameraEntity, CurrentIndex == 0 ? FERenderingPipeline::Deferred : FERenderingPipeline::Forward_Simplified);
-	}
-
-	float FOV = CameraComponent.GetFOV();
-	ImGui::Text("Field of view : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(70);
-	ImGui::DragFloat("##FOV", &FOV, 0.1f, 1.0f, 179.0f);
-	CameraComponent.SetFOV(FOV);
-
-	float NearPlane = CameraComponent.GetNearPlane();
-	ImGui::Text("Near plane : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(70);
-	ImGui::DragFloat("##NearPlane", &NearPlane, 0.1f, 0.01f, 1000.0f);
-	CameraComponent.SetNearPlane(NearPlane);
-
-	float FarPlane = CameraComponent.GetFarPlane();
-	ImGui::Text("Far plane : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(70);
-	ImGui::DragFloat("##FarPlane", &FarPlane, 0.1f, 0.01f, 10000.0f);
-	CameraComponent.SetFarPlane(FarPlane);
-
-	glm::vec4 CurrentClearColor = CameraComponent.GetClearColor();
-	ImGui::ColorEdit4("Clear color", &CurrentClearColor.x);
-	CameraComponent.SetClearColor(CurrentClearColor);
-
-	float Gamma = CameraComponent.GetGamma();
-	ImGui::Text("Gamma : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(70);
-	ImGui::DragFloat("##Gamma", &Gamma, 0.1f, 0.1f, 10.0f);
-	CameraComponent.SetGamma(Gamma);
-
-	float Exposure = CameraComponent.GetExposure();
-	ImGui::Text("Exposure : ");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(70);
-	ImGui::DragFloat("##Exposure", &Exposure, 0.1f, 0.1f, 10.0f);
-	CameraComponent.SetExposure(Exposure);
-
-	// *********** Bloom ***********
-	ImGui::Separator();
-	ImGui::Text("Bloom:");
-	ImGui::Text("Threshold:");
-	float Threshold = CameraComponent.GetBloomThreshold();
-	ImGui::SetNextItemWidth(70);
-	ImGui::DragFloat("##Threshold", &Threshold, 0.01f, 0.001f, 30.0f);
-	CameraComponent.SetBloomThreshold(Threshold);
-
-	/*ImGui::PushID(GUIID++);
-	ImGui::SameLine();
-	ResetButton->Render();
-	if (ResetButton->IsClicked())
-	{
-		CameraComponent.SetBloomThreshold(1.5f);
-	}
-	ImGui::PopID();*/
-
-	ImGui::Text("Size:");
-	float Size = CameraComponent.GetBloomSize();
-	ImGui::SetNextItemWidth(70);
-	ImGui::DragFloat("##BloomSize", &Size, 0.01f, 0.001f, 100.0f);
-	CameraComponent.SetBloomSize(Size);
-
-	/*ImGui::PushID(GUIID++);
-	ImGui::SameLine();
-	ResetButton->Render();
-	if (ResetButton->IsClicked())
-	{
-		CameraComponent.SetBloomSize(5.0f);
-	}
-	ImGui::PopID();*/
-
-	// *********** Anti-Aliasing(FXAA) ***********
-	ImGui::Separator();
-
-	bool bTemporalJitterEnabled = CameraComponent.IsTemporalJitterEnabled();
-	ImGui::Checkbox("Sub pixel jitter", &bTemporalJitterEnabled);
-	CameraComponent.SetTemporalJitterEnabled(bTemporalJitterEnabled);
-
-	const std::vector<size_t> SEQUENCE_OPTIONS = { 72, 32, 24, 18, 8 };
-	static size_t TemporalJitterSequenceLength = 64;
-
-	if (ImGui::BeginCombo("Jitter phase sequence Count", std::to_string(TemporalJitterSequenceLength).c_str()))
-	{
-		for (const auto& SequenceLength : SEQUENCE_OPTIONS)
+		// *********** Bloom ***********
+		if (RenderGroupTitle("Bloom###CameraBloom", CameraComponent.IsBloomEnabled() ? "" : "off"))
 		{
-			bool bIsSelected = (TemporalJitterSequenceLength == SequenceLength);
-			if (ImGui::Selectable(std::to_string(SequenceLength).c_str(), bIsSelected))
-				TemporalJitterSequenceLength = SequenceLength;
-			if (bIsSelected)
-				ImGui::SetItemDefaultFocus();
+			bool bBloomEnabled = CameraComponent.IsBloomEnabled();
+			if (RenderEnabledRow("##BloomEnabled", bBloomEnabled, LabelWidth))
+				CameraComponent.SetBloomEnabled(bBloomEnabled);
+
+			ImGui::BeginDisabled(!bBloomEnabled);
+			float Threshold = CameraComponent.GetBloomThreshold();
+			if (RenderFloatRow("Threshold", "##Threshold", Threshold, 0.01f, 0.001f, 30.0f, LabelWidth))
+				CameraComponent.SetBloomThreshold(Threshold);
+
+			float Size = CameraComponent.GetBloomSize();
+			if (RenderFloatRow("Size", "##BloomSize", Size, 0.01f, 0.001f, 100.0f, LabelWidth))
+				CameraComponent.SetBloomSize(Size);
+			ImGui::EndDisabled();
 		}
-		ImGui::EndCombo();
-	}
-	CameraComponent.SetTemporalJitterSequenceLength(TemporalJitterSequenceLength);
 
-	ImGui::Text("Anti-Aliasing(FXAA)");
-	static const char* Options[5] = { "none", "1x", "2x", "4x", "8x" };
-	static std::string SelectedOption = "1x";
+		// *********** Anti-Aliasing(FXAA) ***********
+		if (RenderGroupTitle("Anti-aliasing###CameraAntiAliasing"))
+		{
+			static const char* Options[5] = { "none", "1x", "2x", "4x", "8x" };
+			const int OptionCount = 5;
+			const std::string SelectedOption = GetFXAAStrengthName(CameraComponent.GetFXAASpanMax());
 
-	const float FXAASpanMax = CameraComponent.GetFXAASpanMax();
-	if (FXAASpanMax == 0.0f)
-	{
-		SelectedOption = Options[0];
-	}
-	else if (FXAASpanMax > 0.1f && FXAASpanMax < 1.1f)
-	{
-		SelectedOption = Options[1];
-	}
-	else if (FXAASpanMax > 1.1f && FXAASpanMax < 2.1f)
-	{
-		SelectedOption = Options[2];
-	}
-	else if (FXAASpanMax > 2.1f && FXAASpanMax < 4.1f)
-	{
-		SelectedOption = Options[3];
-	}
-	else if (FXAASpanMax > 4.1f && FXAASpanMax < 8.1f)
-	{
-		SelectedOption = Options[4];
-	}
-	else
-	{
-		SelectedOption = Options[5];
-	}
-
-	// TO-DO: it should be per camera.
-	static bool bDebugSettings = false;
-	if (ImGui::Checkbox("debug view", &bDebugSettings))
-	{
-		const float FXAASpanMax = CameraComponent.GetFXAASpanMax();
-		if (FXAASpanMax == 0.0f)
-		{
-			SelectedOption = Options[0];
-		}
-		else if (FXAASpanMax > 0.1f && FXAASpanMax < 1.1f)
-		{
-			SelectedOption = Options[1];
-		}
-		else if (FXAASpanMax > 1.1f && FXAASpanMax < 2.1f)
-		{
-			SelectedOption = Options[2];
-		}
-		else if (FXAASpanMax > 2.1f && FXAASpanMax < 4.1f)
-		{
-			SelectedOption = Options[3];
-		}
-		else if (FXAASpanMax > 4.1f && FXAASpanMax < 8.1f)
-		{
-			SelectedOption = Options[4];
-		}
-		else
-		{
-			SelectedOption = Options[5];
-		}
-	}
-
-	if (!bDebugSettings)
-	{
-		ImGui::Text("Anti Aliasing Strength:");
-		if (ImGui::BeginCombo("##Anti Aliasing Strength", SelectedOption.c_str(), ImGuiWindowFlags_None))
-		{
-			for (size_t i = 0; i < 5; i++)
+			RenderRowLabel("FXAA", LabelWidth);
+			ImGui::PushID("FXAAStrength");
+			for (int i = 0; i < OptionCount; i++)
 			{
-				const bool bIsSelected = (SelectedOption == Options[i]);
-				if (ImGui::Selectable(Options[i], bIsSelected))
+				ImDrawFlags RoundFlags = ImDrawFlags_RoundCornersNone;
+				if (i == 0)
 				{
-					CameraComponent.SetFXAASpanMax(float(pow(2.0, (i - 1))));
-					if (i == 0)
-						CameraComponent.SetFXAASpanMax(0.0f);
-					SelectedOption = Options[i];
+					RoundFlags = ImDrawFlags_RoundCornersLeft;
+				}
+				else if (i == OptionCount - 1)
+				{
+					RoundFlags = ImDrawFlags_RoundCornersRight;
 				}
 
-				if (bIsSelected)
-					ImGui::SetItemDefaultFocus();
+				if (RenderSwitchButton(Options[i], SelectedOption == Options[i], RoundFlags))
+					CameraComponent.SetFXAASpanMax(i == 0 ? 0.0f : static_cast<float>(pow(2.0, (i - 1))));
+
+				if (i < OptionCount - 1)
+					ImGui::SameLine(0.0f, 0.0f);
 			}
-			ImGui::EndCombo();
-		}
-	}
-	else
-	{
-		ImGui::Text("FXAASpanMax:");
-		ImGui::SetNextItemWidth(70);
-		float FXAASpanMax = CameraComponent.GetFXAASpanMax();
-		ImGui::DragFloat("##FXAASpanMax", &FXAASpanMax, 0.0f, 0.001f, 32.0f);
-		CameraComponent.SetFXAASpanMax(FXAASpanMax);
+			ImGui::PopID();
 
-		/*ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
-		{
-			CameraComponent.SetFXAASpanMax(8.0f);
-		}
-		ImGui::PopID();*/
-
-		ImGui::Text("FXAAReduceMin:");
-		ImGui::SetNextItemWidth(70);
-		float FXAAReduceMin = CameraComponent.GetFXAAReduceMin();
-		ImGui::DragFloat("##FXAAReduceMin", &FXAAReduceMin, 0.01f, 0.001f, 100.0f);
-		CameraComponent.SetFXAAReduceMin(FXAAReduceMin);
-
-		/*ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
-		{
-			CameraComponent.SetFXAAReduceMin(0.008f);
-		}
-		ImGui::PopID();*/
-
-		ImGui::Text("FXAAReduceMul:");
-		ImGui::SetNextItemWidth(70);
-		float FXAAReduceMul = CameraComponent.GetFXAAReduceMul();
-		ImGui::DragFloat("##FXAAReduceMul", &FXAAReduceMul, 0.01f, 0.001f, 100.0f);
-		CameraComponent.SetFXAAReduceMul(FXAAReduceMul);
-
-		/*ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
-		{
-			CameraComponent.SetFXAAReduceMul(0.400f);
-		}
-		ImGui::PopID();*/
-	}
-
-	ImGui::Separator();
-	ImGui::Text("Depth of Field:");
-	// *********** Depth of Field ***********
-	ImGui::Text("Near distance:");
-	ImGui::SetNextItemWidth(70);
-	float DepthThreshold = CameraComponent.GetDOFNearDistance();
-	ImGui::DragFloat("##depthThreshold", &DepthThreshold, 0.0f, 0.001f, 100.0f);
-	CameraComponent.SetDOFNearDistance(DepthThreshold);
-
-	ImGui::Text("Far distance:");
-	ImGui::SetNextItemWidth(70);
-	float DepthThresholdFar = CameraComponent.GetDOFFarDistance();
-	ImGui::DragFloat("##depthThresholdFar", &DepthThresholdFar, 0.0f, 0.001f, 100.0f);
-	CameraComponent.SetDOFFarDistance(DepthThresholdFar);
-
-	ImGui::Text("Strength:");
-	ImGui::SetNextItemWidth(70);
-	float Strength = CameraComponent.GetDOFStrength();
-	ImGui::DragFloat("##Strength", &Strength, 0.0f, 0.001f, 10.0f);
-	CameraComponent.SetDOFStrength(Strength);
-
-	ImGui::Text("Distance dependent strength:");
-	ImGui::SetNextItemWidth(70);
-	float IntMult = CameraComponent.GetDOFDistanceDependentStrength();
-	ImGui::DragFloat("##Distance dependent strength", &IntMult, 0.0f, 0.001f, 100.0f);
-	CameraComponent.SetDOFDistanceDependentStrength(IntMult);
-
-	ImGui::Separator();
-	ImGui::Text("Chromatic Aberration:");
-	ImGui::Text("Shift strength:");
-	ImGui::SetNextItemWidth(70);
-	float Intensity = CameraComponent.GetChromaticAberrationIntensity();
-	ImGui::DragFloat("##intensity", &Intensity, 0.01f, 0.0f, 30.0f);
-	CameraComponent.SetChromaticAberrationIntensity(Intensity);
-
-	/*ImGui::PushID(GUIID++);
-	ImGui::SameLine();
-	ResetButton->Render();
-	if (ResetButton->IsClicked())
-	{
-		CameraComponent.SetChromaticAberrationIntensity(1.0f);
-	}
-	ImGui::PopID();*/
-
-	ImGui::Separator();
-	ImGui::Text("SSAO:");
-	// *********** SSAO ***********
-	static const char* SSAO_Options[5] = { "Off", "Low", "Medium", "High", "Custom" };
-	static std::string SSAO_SelectedOption = "Medium";
-	const int SampleCount = CameraComponent.GetSSAOSampleCount();
-
-	if (!CameraComponent.IsSSAOEnabled())
-	{
-		SSAO_SelectedOption = SSAO_Options[0];
-	}
-	else if (SampleCount == 4)
-	{
-		SSAO_SelectedOption = SSAO_Options[1];
-	}
-	else if (SampleCount == 16 && CameraComponent.GetSSAORadiusSmallDetails())
-	{
-		SSAO_SelectedOption = SSAO_Options[2];
-	}
-	else if (SampleCount == 32 && CameraComponent.GetSSAORadiusSmallDetails())
-	{
-		SSAO_SelectedOption = SSAO_Options[3];
-	}
-	else
-	{
-		SSAO_SelectedOption = SSAO_Options[4];
-	}
-
-	static bool bSSAO_DebugSettings = false;
-	if (ImGui::Checkbox("Debug view", &bSSAO_DebugSettings))
-	{
-
-	}
-
-	if (!bSSAO_DebugSettings)
-	{
-		ImGui::Text("SSAO Quality:");
-		ImGui::SetNextItemWidth(150);
-		if (ImGui::BeginCombo("##SSAO Quality", SSAO_SelectedOption.c_str(), ImGuiWindowFlags_None))
-		{
-			for (size_t i = 0; i < 5; i++)
+			// TO-DO: it should be per camera.
+			static bool bDebugSettings = false;
+			RenderRowLabel("Custom values", LabelWidth);
+			ImGui::Checkbox("##FXAACustomValues", &bDebugSettings);
+			if (bDebugSettings)
 			{
-				const bool bIsSelected = (SSAO_SelectedOption == SSAO_Options[i]);
-				if (ImGui::Selectable(SSAO_Options[i], bIsSelected))
-				{
-					CameraComponent.SetSSAOResultBlurred(true);
-					CameraComponent.SetSSAOBias(0.013f);
-					CameraComponent.SetSSAORadius(10.0f);
-					CameraComponent.SetSSAORadiusSmallDetails(0.4f);
-					CameraComponent.SetSSAOSmallDetailsWeight(0.2f);
+				float FXAASpanMax = CameraComponent.GetFXAASpanMax();
+				if (RenderFloatRow("Span max", "##FXAASpanMax", FXAASpanMax, 0.01f, 0.0f, 32.0f, LabelWidth))
+					CameraComponent.SetFXAASpanMax(FXAASpanMax);
 
-					if (i == 0)
-					{
-						CameraComponent.SetSSAOEnabled(false);
-					}
-					else if (i == 1)
-					{
-						CameraComponent.SetSSAOEnabled(true);
+				float FXAAReduceMin = CameraComponent.GetFXAAReduceMin();
+				if (RenderFloatRow("Reduce min", "##FXAAReduceMin", FXAAReduceMin, 0.01f, 0.001f, 100.0f, LabelWidth))
+					CameraComponent.SetFXAAReduceMin(FXAAReduceMin);
 
-						CameraComponent.SetSSAOSampleCount(4);
-						CameraComponent.SetSSAOSmallDetailsEnabled(false);
-					}
-					else if (i == 2)
-					{
-						CameraComponent.SetSSAOEnabled(true);
-
-						CameraComponent.SetSSAOSampleCount(16);
-						CameraComponent.SetSSAOSmallDetailsEnabled(true);
-					}
-					else if (i == 3)
-					{
-						CameraComponent.SetSSAOEnabled(true);
-
-						CameraComponent.SetSSAOSampleCount(32);
-						CameraComponent.SetSSAOSmallDetailsEnabled(true);
-					}
-
-					SSAO_SelectedOption = SSAO_Options[i];
-				}
-
-				if (bIsSelected)
-					ImGui::SetItemDefaultFocus();
+				float FXAAReduceMul = CameraComponent.GetFXAAReduceMul();
+				if (RenderFloatRow("Reduce mul", "##FXAAReduceMul", FXAAReduceMul, 0.01f, 0.001f, 100.0f, LabelWidth))
+					CameraComponent.SetFXAAReduceMul(FXAAReduceMul);
 			}
-			ImGui::EndCombo();
+
+			RenderRowLabel("Jitter", LabelWidth);
+			bool bTemporalJitterEnabled = CameraComponent.IsTemporalJitterEnabled();
+			ImGui::Checkbox("##SubPixelJitter", &bTemporalJitterEnabled);
+			CameraComponent.SetTemporalJitterEnabled(bTemporalJitterEnabled);
+			ShowToolTip("Sub pixel jitter");
+
+			const std::vector<size_t> SEQUENCE_OPTIONS = { 72, 32, 24, 18, 8 };
+			static size_t TemporalJitterSequenceLength = 64;
+
+			RenderRowLabel("Jitter phases", LabelWidth);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (ImGui::BeginCombo("##JitterPhaseSequenceCount", std::to_string(TemporalJitterSequenceLength).c_str()))
+			{
+				for (const auto& SequenceLength : SEQUENCE_OPTIONS)
+				{
+					bool bIsSelected = (TemporalJitterSequenceLength == SequenceLength);
+					if (ImGui::Selectable(std::to_string(SequenceLength).c_str(), bIsSelected))
+						TemporalJitterSequenceLength = SequenceLength;
+					if (bIsSelected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+			ShowToolTip("Jitter phase sequence count");
+			CameraComponent.SetTemporalJitterSequenceLength(TemporalJitterSequenceLength);
 		}
 	}
 	else
 	{
-		bool TemporaryBool = CameraComponent.IsSSAOEnabled();
-		ImGui::Checkbox("SSAO active", &TemporaryBool);
-		CameraComponent.SetSSAOEnabled(TemporaryBool);
-
-		TemporaryBool = CameraComponent.IsSSAOSmallDetailsEnabled();
-		ImGui::Checkbox("SSAO small details", &TemporaryBool);
-		CameraComponent.SetSSAOSmallDetailsEnabled(TemporaryBool);
-
-		TemporaryBool = CameraComponent.IsSSAOResultBlurred();
-		ImGui::Checkbox("SSAO blurred", &TemporaryBool);
-		CameraComponent.SetSSAOResultBlurred(TemporaryBool);
-
-		int TemporaryInt = CameraComponent.GetSSAOSampleCount();
-		ImGui::SetNextItemWidth(100);
-		ImGui::DragInt("SSAO sample count", &TemporaryInt);
-		CameraComponent.SetSSAOSampleCount(TemporaryInt);
-
-		float TemporaryFloat = CameraComponent.GetSSAOBias();
-		ImGui::SetNextItemWidth(100);
-		ImGui::DragFloat("SSAO bias", &TemporaryFloat, 0.1f);
-		CameraComponent.SetSSAOBias(TemporaryFloat);
-
-		TemporaryFloat = CameraComponent.GetSSAORadius();
-		ImGui::SetNextItemWidth(100);
-		ImGui::DragFloat("SSAO radius", &TemporaryFloat, 0.1f);
-		CameraComponent.SetSSAORadius(TemporaryFloat);
-
-		TemporaryFloat = CameraComponent.GetSSAORadiusSmallDetails();
-		ImGui::SetNextItemWidth(100);
-		ImGui::DragFloat("SSAO radius small details", &TemporaryFloat, 0.1f);
-		CameraComponent.SetSSAORadiusSmallDetails(TemporaryFloat);
-
-		TemporaryFloat = CameraComponent.GetSSAOSmallDetailsWeight();
-		ImGui::SetNextItemWidth(100);
-		ImGui::DragFloat("SSAO small details weight", &TemporaryFloat, 0.01f);
-		CameraComponent.SetSSAOSmallDetailsWeight(TemporaryFloat);
-	}
-	
-	// *********** Distance Fog ***********
-	ImGui::Separator();
-	ImGui::Text("Distance Fog:");
-	bool bEnabledFog = CameraComponent.IsDistanceFogEnabled();
-	if (ImGui::Checkbox("Enable fog", &bEnabledFog))
-	{
-		CameraComponent.SetDistanceFogEnabled(bEnabledFog);
-	}
-
-	if (bEnabledFog)
-	{
-		ImGui::Text("Density:");
-		ImGui::SetNextItemWidth(70);
-		float FogDensity = CameraComponent.GetDistanceFogDensity();
-		ImGui::DragFloat("##fogDensity", &FogDensity, 0.0001f, 0.0f, 5.0f);
-		CameraComponent.SetDistanceFogDensity(FogDensity);
-
-		/*ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
+		// *********** Depth of Field ***********
+		if (RenderGroupTitle("Depth of field###CameraDepthOfField", CameraComponent.IsDOFEnabled() ? "" : "off"))
 		{
-			CameraComponent.SetDistanceFogDensity(0.007f);
+			bool bDOFEnabled = CameraComponent.IsDOFEnabled();
+			if (RenderEnabledRow("##DOFEnabled", bDOFEnabled, LabelWidth))
+				CameraComponent.SetDOFEnabled(bDOFEnabled);
+
+			ImGui::BeginDisabled(!bDOFEnabled);
+			float DepthThreshold = CameraComponent.GetDOFNearDistance();
+			if (RenderFloatRow("Near distance", "##depthThreshold", DepthThreshold, 0.01f, 0.001f, 100.0f, LabelWidth))
+				CameraComponent.SetDOFNearDistance(DepthThreshold);
+			ShowToolTip("What is closer than this distance is blurred.");
+
+			float DepthThresholdFar = CameraComponent.GetDOFFarDistance();
+			if (RenderFloatRow("Far distance", "##depthThresholdFar", DepthThresholdFar, 1.0f, 0.001f, 10000.0f, LabelWidth))
+				CameraComponent.SetDOFFarDistance(DepthThresholdFar);
+			ShowToolTip("What is further than this distance is blurred.");
+
+			float Strength = CameraComponent.GetDOFStrength();
+			if (RenderFloatRow("Strength", "##Strength", Strength, 0.01f, 0.001f, 10.0f, LabelWidth))
+				CameraComponent.SetDOFStrength(Strength);
+
+			float IntMult = CameraComponent.GetDOFDistanceDependentStrength();
+			if (RenderFloatRow("By distance", "##Distance dependent strength", IntMult, 0.01f, 0.001f, 100.0f, LabelWidth))
+				CameraComponent.SetDOFDistanceDependentStrength(IntMult);
+			ShowToolTip("Distance dependent strength");
+			ImGui::EndDisabled();
 		}
-		ImGui::PopID();*/
 
-		ImGui::Text("Gradient:");
-		ImGui::SetNextItemWidth(70);
-		float FogGradient = CameraComponent.GetDistanceFogGradient();
-		ImGui::DragFloat("##fogGradient", &FogGradient, 0.001f, 0.0f, 5.0f);
-		CameraComponent.SetDistanceFogGradient(FogGradient);
-
-		/*ImGui::PushID(GUIID++);
-		ImGui::SameLine();
-		ResetButton->Render();
-		if (ResetButton->IsClicked())
+		// *********** Chromatic Aberration ***********
+		if (RenderGroupTitle("Chromatic aberration###CameraChromaticAberration", CameraComponent.IsChromaticAberrationEnabled() ? "" : "off"))
 		{
-			CameraComponent.SetDistanceFogGradient(2.5f);
+			bool bChromaticAberrationEnabled = CameraComponent.IsChromaticAberrationEnabled();
+			if (RenderEnabledRow("##ChromaticAberrationEnabled", bChromaticAberrationEnabled, LabelWidth))
+				CameraComponent.SetChromaticAberrationEnabled(bChromaticAberrationEnabled);
+
+			ImGui::BeginDisabled(!bChromaticAberrationEnabled);
+			float Intensity = CameraComponent.GetChromaticAberrationIntensity();
+			if (RenderFloatRow("Shift strength", "##intensity", Intensity, 0.01f, 0.0f, 30.0f, LabelWidth))
+				CameraComponent.SetChromaticAberrationIntensity(Intensity);
+			ImGui::EndDisabled();
 		}
-		ImGui::PopID();*/
+
+		// *********** SSAO ***********
+		if (RenderGroupTitle("SSAO###CameraSSAO", CameraComponent.IsSSAOEnabled() ? "" : "off"))
+		{
+			bool bSSAOEnabled = CameraComponent.IsSSAOEnabled();
+			if (RenderEnabledRow("##SSAOEnabled", bSSAOEnabled, LabelWidth))
+				CameraComponent.SetSSAOEnabled(bSSAOEnabled);
+
+			ImGui::BeginDisabled(!bSSAOEnabled);
+			static const char* SSAO_Options[3] = { "Low", "Medium", "High" };
+			static const int SSAO_SampleCounts[3] = { 4, 16, 32 };
+			const std::string SSAO_SelectedOption = GetSSAOQualityName(CameraComponent);
+
+			RenderRowLabel("Quality", LabelWidth);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (ImGui::BeginCombo("##SSAO Quality", SSAO_SelectedOption.c_str(), ImGuiWindowFlags_None))
+			{
+				for (size_t i = 0; i < 3; i++)
+				{
+					const bool bIsSelected = (SSAO_SelectedOption == SSAO_Options[i]);
+					if (ImGui::Selectable(SSAO_Options[i], bIsSelected))
+					{
+						CameraComponent.SetSSAOResultBlurred(true);
+						CameraComponent.SetSSAOBias(0.013f);
+						CameraComponent.SetSSAORadius(10.0f);
+						CameraComponent.SetSSAORadiusSmallDetails(0.4f);
+						CameraComponent.SetSSAOSmallDetailsWeight(0.2f);
+
+						CameraComponent.SetSSAOSampleCount(SSAO_SampleCounts[i]);
+						CameraComponent.SetSSAOSmallDetailsEnabled(i != 0);
+					}
+
+					if (bIsSelected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			static bool bSSAO_DebugSettings = false;
+			RenderRowLabel("Custom values", LabelWidth);
+			ImGui::Checkbox("##SSAOCustomValues", &bSSAO_DebugSettings);
+			if (bSSAO_DebugSettings)
+			{
+				RenderRowLabel("Small details", LabelWidth);
+				bool TemporaryBool = CameraComponent.IsSSAOSmallDetailsEnabled();
+				if (ImGui::Checkbox("##SSAO small details", &TemporaryBool))
+					CameraComponent.SetSSAOSmallDetailsEnabled(TemporaryBool);
+
+				RenderRowLabel("Blurred", LabelWidth);
+				TemporaryBool = CameraComponent.IsSSAOResultBlurred();
+				if (ImGui::Checkbox("##SSAO blurred", &TemporaryBool))
+					CameraComponent.SetSSAOResultBlurred(TemporaryBool);
+
+				RenderRowLabel("Samples", LabelWidth);
+				int TemporaryInt = CameraComponent.GetSSAOSampleCount();
+				ImGui::SetNextItemWidth(-FLT_MIN);
+				if (ImGui::DragInt("##SSAO sample count", &TemporaryInt))
+					CameraComponent.SetSSAOSampleCount(TemporaryInt);
+
+				float TemporaryFloat = CameraComponent.GetSSAOBias();
+				if (RenderFloatRow("Bias", "##SSAO bias", TemporaryFloat, 0.1f, 0.0f, 0.0f, LabelWidth))
+					CameraComponent.SetSSAOBias(TemporaryFloat);
+
+				TemporaryFloat = CameraComponent.GetSSAORadius();
+				if (RenderFloatRow("Radius", "##SSAO radius", TemporaryFloat, 0.1f, 0.0f, 0.0f, LabelWidth))
+					CameraComponent.SetSSAORadius(TemporaryFloat);
+
+				TemporaryFloat = CameraComponent.GetSSAORadiusSmallDetails();
+				if (RenderFloatRow("Details radius", "##SSAO radius small details", TemporaryFloat, 0.1f, 0.0f, 0.0f, LabelWidth))
+					CameraComponent.SetSSAORadiusSmallDetails(TemporaryFloat);
+
+				TemporaryFloat = CameraComponent.GetSSAOSmallDetailsWeight();
+				if (RenderFloatRow("Details weight", "##SSAO small details weight", TemporaryFloat, 0.01f, 0.0f, 0.0f, LabelWidth))
+					CameraComponent.SetSSAOSmallDetailsWeight(TemporaryFloat);
+			}
+			ImGui::EndDisabled();
+		}
+
+		// *********** Distance Fog ***********
+		if (RenderGroupTitle("Distance fog###CameraDistanceFog", CameraComponent.IsDistanceFogEnabled() ? "" : "off"))
+		{
+			bool bEnabledFog = CameraComponent.IsDistanceFogEnabled();
+			if (RenderEnabledRow("##FogEnabled", bEnabledFog, LabelWidth))
+				CameraComponent.SetDistanceFogEnabled(bEnabledFog);
+
+			ImGui::BeginDisabled(!bEnabledFog);
+			float FogDensity = CameraComponent.GetDistanceFogDensity();
+			if (RenderFloatRow("Density", "##fogDensity", FogDensity, 0.0001f, 0.0f, 5.0f, LabelWidth, "%.4f"))
+				CameraComponent.SetDistanceFogDensity(FogDensity);
+
+			float FogGradient = CameraComponent.GetDistanceFogGradient();
+			if (RenderFloatRow("Gradient", "##fogGradient", FogGradient, 0.001f, 0.0f, 5.0f, LabelWidth))
+				CameraComponent.SetDistanceFogGradient(FogGradient);
+			ImGui::EndDisabled();
+		}
 	}
+
+	ImGui::PopStyleVar();
 }
 
 void FEEditorInspectorWindow::ChangeGameModelOfEntityCallback(const std::vector<FEObject*> SelectionsResult)
@@ -1050,20 +928,155 @@ void FEEditorInspectorWindow::AddCameraComponent(FEEntity* Entity)
 	Entity->AddComponent<FECameraComponent>();
 }
 
-std::vector<std::string> FEEditorInspectorWindow::GetAvailableComponentsToAdd(FEEntity* Entity) const
+void FEEditorInspectorWindow::RenderAddComponentMenu(FEEntity* Entity)
 {
-	std::vector<std::string> Result;
-	if (Entity == nullptr)
-		return Result;
+	static std::string Filter;
 
-	auto RegisteredComponentList = COMPONENTS_TOOL.GetComponentInfoList();
-	for (size_t i = 0; i < RegisteredComponentList.size(); i++)
+	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 8.0f);
+
+	const ImVec2 ButtonSize = ImVec2(ImGui::GetContentRegionAvail().x, 36.0f);
+	const ImVec2 ButtonMin = ImGui::GetCursorScreenPos();
+	const ImVec2 ButtonMax = ImVec2(ButtonMin.x + ButtonSize.x, ButtonMin.y + ButtonSize.y);
+	const bool bPressed = ImGui::InvisibleButton("##AddComponentButton", ButtonSize);
+	const bool bHovered = ImGui::IsItemHovered();
+	const bool bMenuOpen = ImGui::IsPopupOpen("AddComponentMenu");
+
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	DrawList->AddRectFilled(ButtonMin, ButtonMax, (bHovered || bMenuOpen) ? FEEditorStyle::ButtonHovered : FEEditorStyle::Button, 4.0f);
+	DrawList->AddRect(ButtonMin, ButtonMax, bMenuOpen ? FEEditorStyle::Accent : FEEditorStyle::ButtonBorder, 4.0f);
+
+	const char* ButtonText = "Add Component";
+	const float PlusSize = 12.0f;
+	const float PlusToTextSpacing = 10.0f;
+	const float ContentWidth = PlusSize + PlusToTextSpacing + ImGui::CalcTextSize(ButtonText).x;
+	const ImVec2 PlusCenter = ImVec2(floorf(ButtonMin.x + (ButtonSize.x - ContentWidth) / 2.0f + PlusSize / 2.0f), floorf(ButtonMin.y + ButtonSize.y / 2.0f));
+	DrawList->AddRectFilled(ImVec2(PlusCenter.x - PlusSize / 2.0f, PlusCenter.y - 1.0f), ImVec2(PlusCenter.x + PlusSize / 2.0f, PlusCenter.y + 1.0f), FEEditorStyle::Accent);
+	DrawList->AddRectFilled(ImVec2(PlusCenter.x - 1.0f, PlusCenter.y - PlusSize / 2.0f), ImVec2(PlusCenter.x + 1.0f, PlusCenter.y + PlusSize / 2.0f), FEEditorStyle::Accent);
+	DrawList->AddText(ImVec2(PlusCenter.x + PlusSize / 2.0f + PlusToTextSpacing, ButtonMin.y + (ButtonSize.y - ImGui::GetFontSize()) / 2.0f), FEEditorStyle::Text, ButtonText);
+
+	if (bPressed)
 	{
-		if (RegisteredComponentList[i].CanBeAddedToEntity(Entity))
-			Result.push_back(RegisteredComponentList[i].Name);
+		Filter = "";
+		ImGui::OpenPopup("AddComponentMenu");
 	}
 
-	return Result;
+	// Menu is under the button, or above it when there is not enough space below.
+	const float MenuMaxHeight = 460.0f;
+	const ImGuiViewport* Viewport = ImGui::GetMainViewport();
+	const float SpaceBelow = Viewport->WorkPos.y + Viewport->WorkSize.y - ButtonMax.y;
+	const float SpaceAbove = ButtonMin.y - Viewport->WorkPos.y;
+	if (SpaceBelow < MenuMaxHeight && SpaceAbove > SpaceBelow)
+	{
+		ImGui::SetNextWindowPos(ImVec2(ButtonMin.x, ButtonMin.y - 4.0f), ImGuiCond_Always, ImVec2(0.0f, 1.0f));
+	}
+	else
+	{
+		ImGui::SetNextWindowPos(ImVec2(ButtonMin.x, ButtonMax.y + 4.0f));
+	}
+
+	std::string ComponentToAdd;
+	ImGui::SetNextWindowSizeConstraints(ImVec2(ButtonSize.x, 0.0f), ImVec2(ButtonSize.x, MenuMaxHeight));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
+	if (ImGui::BeginPopup("AddComponentMenu"))
+	{
+		if (ImGui::IsWindowAppearing())
+			ImGui::SetKeyboardFocusHere();
+
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		ImGui::InputTextWithHint("##AddComponentFilter", "Filter components...", &Filter);
+		ImGui::Dummy(ImVec2(0.0f, 2.0f));
+
+		struct ComponentRow
+		{
+			std::string Name;
+			std::string Label;
+			FETexture* Icon = nullptr;
+			bool bCanBeAdded = false;
+			std::string Note;
+			std::string Reason;
+		};
+
+		// Only components that the inspector knows how to add. Ones that can not be added now are listed in grey.
+		std::vector<ComponentRow> Rows;
+		const std::vector<FEComponentTypeInfo> EntityComponents = Entity->GetComponentsInfoList();
+		std::vector<FEComponentTypeInfo> RegisteredComponents = COMPONENTS_TOOL.GetComponentInfoList();
+		for (size_t i = 0; i < RegisteredComponents.size(); i++)
+		{
+			if (AddComponentHandlers.find(std::type_index(*RegisteredComponents[i].Type)) == AddComponentHandlers.end())
+				continue;
+
+			ComponentRow Row;
+			Row.Name = RegisteredComponents[i].Name;
+			Row.Label = Row.Name == "Volume" ? "Volumetric" : Row.Name;
+			Row.Icon = SCENE_GRAPH_WINDOW.GetComponentIcon(*RegisteredComponents[i].Type);
+			Row.bCanBeAdded = RegisteredComponents[i].CanBeAddedToEntity(Entity, &Row.Reason);
+			if (!Row.bCanBeAdded)
+			{
+				Row.Note = "not available";
+				for (size_t j = 0; j < EntityComponents.size(); j++)
+				{
+					if (EntityComponents[j].Name == Row.Name)
+						Row.Note = "already added";
+				}
+			}
+
+			Rows.push_back(Row);
+		}
+
+		std::sort(Rows.begin(), Rows.end(), [](const ComponentRow& First, const ComponentRow& Second) {
+			return First.Label < Second.Label;
+		});
+
+		const float RowHeight = 34.0f;
+		const float IconSize = 26.0f;
+		const float NoteFontSize = 16.0f;
+		const std::string LowerCaseFilter = ToLowerCase(Filter);
+		bool bAnyRowShown = false;
+		ImDrawList* MenuDrawList = ImGui::GetWindowDrawList();
+		for (size_t i = 0; i < Rows.size(); i++)
+		{
+			if (!LowerCaseFilter.empty() && ToLowerCase(Rows[i].Label).find(LowerCaseFilter) == std::string::npos)
+				continue;
+
+			bAnyRowShown = true;
+			const ImVec2 RowMin = ImGui::GetCursorScreenPos();
+			const float RowWidth = ImGui::GetContentRegionAvail().x;
+			if (Rows[i].bCanBeAdded)
+			{
+				if (ImGui::Selectable(("##" + Rows[i].Name).c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.0f, RowHeight)))
+					ComponentToAdd = Rows[i].Name;
+			}
+			else
+			{
+				ImGui::Dummy(ImVec2(RowWidth, RowHeight));
+				if (!Rows[i].Reason.empty())
+					ShowToolTip(Rows[i].Reason.c_str());
+			}
+
+			const ImU32 ContentColor = Rows[i].bCanBeAdded ? FEEditorStyle::Text : FEEditorStyle::TextDisabled;
+			const float IconY = RowMin.y + (RowHeight - IconSize) / 2.0f;
+			if (Rows[i].Icon != nullptr)
+				MenuDrawList->AddImage(Rows[i].Icon->GetTextureID(), ImVec2(RowMin.x + 6.0f, IconY), ImVec2(RowMin.x + 6.0f + IconSize, IconY + IconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ContentColor);
+
+			MenuDrawList->AddText(ImVec2(RowMin.x + 6.0f + IconSize + 10.0f, RowMin.y + (RowHeight - ImGui::GetFontSize()) / 2.0f), ContentColor, Rows[i].Label.c_str());
+			if (!Rows[i].bCanBeAdded)
+			{
+				ImGui::PushFont(nullptr, NoteFontSize);
+				const float NoteWidth = ImGui::CalcTextSize(Rows[i].Note.c_str()).x;
+				MenuDrawList->AddText(ImVec2(RowMin.x + RowWidth - NoteWidth - 6.0f, RowMin.y + (RowHeight - NoteFontSize) / 2.0f), FEEditorStyle::TextDisabled, Rows[i].Note.c_str());
+				ImGui::PopFont();
+			}
+		}
+
+		if (!bAnyRowShown)
+			ImGui::TextDisabled("No component with this name");
+
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar();
+
+	if (!ComponentToAdd.empty())
+		AddComponent(Entity, ComponentToAdd);
 }
 
 bool FEEditorInspectorWindow::AddComponent(FEEntity* Entity, std::string ComponentName)
@@ -1098,17 +1111,34 @@ bool FEEditorInspectorWindow::RenderComponentDeleteButton(FEEntity* Entity, FECo
 	if (!ComponentInfo->CanBeRemovedFromEntity(Entity))
 		return false;
 
-	float HeaderHeight = ImGui::GetFrameHeight();
 	float HeaderWidth = ImGui::GetContentRegionAvail().x;
-
-	float ButtonSize = 24;
 	ImVec2 PreviousCursorPosition = ImGui::GetCursorPos();
 
-	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.9f, 0.5f, 0.5f, 1.0f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.95f, 0.90f, 0.0f, 1.0f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.1f, 1.0f, 0.1f, 1.0f));
-	ImGui::SetCursorPos(ImVec2(HeaderWidth - ButtonSize / 8.0f - 2.0f, PreviousCursorPosition.y + 2.0f));
-	if (ImGui::Button(std::string("x##" + ComponentInfo->Name).c_str(), ImVec2(ButtonSize, ButtonSize)))
+	// Button is inside the header, with the same space above, under and at the right of it.
+	const float HeaderPadding = 3.0f;
+	float ButtonSize = ImGui::GetFrameHeight() - HeaderPadding * 2.0f;
+	ImGui::SetCursorPos(ImVec2(PreviousCursorPosition.x + HeaderWidth - ButtonSize - HeaderPadding, PreviousCursorPosition.y + HeaderPadding));
+	// Button is in a child window, so header of the component that is rendered after it does not cover it.
+	ImGui::BeginChild(std::string("##DeleteButton" + ComponentInfo->Name).c_str(), ImVec2(ButtonSize, ButtonSize), ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground);
+	const ImVec2 Min = ImGui::GetCursorScreenPos();
+	const ImVec2 Max = ImVec2(Min.x + ButtonSize, Min.y + ButtonSize);
+	const ImVec2 Center = ImVec2(floorf(Min.x + ButtonSize / 2.0f), floorf(Min.y + ButtonSize / 2.0f));
+	const bool bPressed = ImGui::InvisibleButton("##Button", ImVec2(ButtonSize, ButtonSize));
+	const bool bHovered = ImGui::IsItemHovered();
+	const bool bHeld = ImGui::IsItemActive();
+	ShowToolTip(("Remove " + ComponentInfo->Name + " component").c_str());
+
+	// Trash can: handle, lid and body.
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	if (bHovered || bHeld)
+		DrawList->AddRectFilled(Min, Max, bHeld ? FEEditorStyle::DangerButtonHovered : FEEditorStyle::DangerButton, 4.0f);
+
+	const ImU32 IconColor = bHovered || bHeld ? IM_COL32_WHITE : FEEditorStyle::TextMuted;
+	DrawList->AddRectFilled(ImVec2(Center.x - 2.0f, Center.y - 8.0f), ImVec2(Center.x + 2.0f, Center.y - 6.0f), IconColor);
+	DrawList->AddRectFilled(ImVec2(Center.x - 6.0f, Center.y - 6.0f), ImVec2(Center.x + 6.0f, Center.y - 4.0f), IconColor);
+	DrawList->AddQuadFilled(ImVec2(Center.x - 5.0f, Center.y - 3.0f), ImVec2(Center.x + 5.0f, Center.y - 3.0f), ImVec2(Center.x + 4.0f, Center.y + 7.0f), ImVec2(Center.x - 4.0f, Center.y + 7.0f), IconColor);
+	ImGui::EndChild();
+	if (bPressed)
 	{
 		size_t ComponentHashCode = ComponentInfo->Type->hash_code();
 
@@ -1119,7 +1149,6 @@ bool FEEditorInspectorWindow::RenderComponentDeleteButton(FEEntity* Entity, FECo
 			{
 				ComponentIterator->second(Entity);
 
-				ImGui::PopStyleColor(3);
 				ImGui::SetCursorPos(PreviousCursorPosition);
 				return true;
 			}
@@ -1128,10 +1157,426 @@ bool FEEditorInspectorWindow::RenderComponentDeleteButton(FEEntity* Entity, FECo
 		}
 	}
 
-	ImGui::PopStyleColor(3);
 	ImGui::SetCursorPos(PreviousCursorPosition);
 
 	return false;
+}
+
+void FEEditorInspectorWindow::DisplayVolumeProperties(FEEntity* VolumeEntity)
+{
+	FEVolumeComponent& VolumeComponent = VolumeEntity->GetComponent<FEVolumeComponent>();
+	FENewMaterial* VolumeMaterial = VolumeComponent.GetMaterial();
+	if (VolumeMaterial == nullptr)
+	{
+		if (ImGui::Button("Create new volume material"))
+		{
+			FENewMaterial* DefaultStartingMaterial = RESOURCE_MANAGER.CreateNewMaterial();
+			DefaultStartingMaterial->SetMaterialType(FEMaterialType::Volumetric);
+			DefaultStartingMaterial->SetBlendMode(FEMaterialBlendMode::Additive);
+			DefaultStartingMaterial->SetShader(VOLUME_SYSTEM.GetVolumetricShaders()[0]);
+			VolumeComponent.SetMaterial(DefaultStartingMaterial);
+		}
+
+		std::vector<FEUUID> ListOfVolumetricMaterials = RESOURCE_MANAGER.GetNewMaterialIDList();
+		for (size_t i = 0; i < ListOfVolumetricMaterials.size(); i++)
+		{
+			FENewMaterial* CurrentMaterial = RESOURCE_MANAGER.GetNewMaterial(ListOfVolumetricMaterials[i]);
+			if (CurrentMaterial == nullptr)
+			{
+				ListOfVolumetricMaterials.erase(ListOfVolumetricMaterials.begin() + i);
+				i--;
+				continue;
+			}
+
+			if (CurrentMaterial->GetMaterialType() != FEMaterialType::Volumetric)
+			{
+				ListOfVolumetricMaterials.erase(ListOfVolumetricMaterials.begin() + i);
+				i--;
+				continue;
+			}
+		}
+
+		// FE_TO_DO: Add combo box to select a volumetric material.
+		return;
+	}
+
+	// Only scalar/vector uniforms are editable here; samplers and matrices are skipped by type.
+	std::vector<std::string> ParameterNames;
+	const std::vector<std::string> UniformOverrideNames = VolumeMaterial->GetUniformOverrideNameList();
+	for (size_t i = 0; i < UniformOverrideNames.size(); i++)
+	{
+		FEShaderUniformValue* UniformValue = VolumeMaterial->GetUniformOverride(UniformOverrideNames[i]);
+		if (UniformValue == nullptr)
+			continue;
+
+		if (VolumeMaterial->GetShader()->IsUniformProvidedByEngine(UniformOverrideNames[i]))
+			continue;
+
+		const bool bIsEditableType = UniformValue->IsType<float>() || UniformValue->IsType<int>() ||
+									 UniformValue->IsType<bool>() || UniformValue->IsType<glm::vec2>() ||
+									 UniformValue->IsType<glm::vec3>() || UniformValue->IsType<glm::vec4>();
+		if (bIsEditableType)
+			ParameterNames.push_back(UniformOverrideNames[i]);
+	}
+	// List of uniforms is not ordered, names are sorted to keep the same order of rows.
+	std::sort(ParameterNames.begin(), ParameterNames.end());
+
+	// All textures except LUT.
+	std::vector<std::pair<std::string, FETexture*>> VolumeTextures;
+	const std::vector<std::pair<std::string, FETexture*>> TextureOverrides = VolumeMaterial->GetAllTextureOverridePair();
+	for (size_t i = 0; i < TextureOverrides.size(); i++)
+	{
+		if (TextureOverrides[i].first != "TransferFunctionTexture")
+			VolumeTextures.push_back(TextureOverrides[i]);
+	}
+
+	float LabelWidth = ImGui::CalcTextSize("Stop color").x;
+	for (size_t i = 0; i < ParameterNames.size(); i++)
+		LabelWidth = std::max(LabelWidth, ImGui::CalcTextSize(ParameterNames[i].c_str()).x);
+
+	for (size_t i = 0; i < VolumeTextures.size(); i++)
+		LabelWidth = std::max(LabelWidth, ImGui::CalcTextSize(VolumeTextures[i].first.c_str()).x);
+
+	LabelWidth = std::min(LabelWidth + 14.0f, floorf(ImGui::GetContentRegionAvail().x / 2.0f));
+
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 6.0f));
+
+	// Shader selector, populated from the volume system's shader list.
+	RenderRowLabel("Shader", LabelWidth);
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	if (ImGui::BeginCombo("##VolumeShader", VolumeMaterial->GetShader()->GetName().c_str(), ImGuiWindowFlags_None))
+	{
+		std::vector<FEShader*> VolumetricShaders = VOLUME_SYSTEM.GetVolumetricShaders();
+		for (size_t i = 0; i < VolumetricShaders.size(); i++)
+		{
+			if (VolumetricShaders[i] == nullptr)
+				continue;
+
+			bool bSelected = (VolumetricShaders[i] == VolumeMaterial->GetShader());
+			ImGui::PushID(UNIQUE_ID.ToString(VolumetricShaders[i]->GetID()).c_str());
+			if (ImGui::Selectable(VolumetricShaders[i]->GetName().c_str(), bSelected))
+				VolumeMaterial->SetShader(VolumetricShaders[i]);
+
+			if (bSelected)
+				ImGui::SetItemDefaultFocus();
+			ImGui::PopID();
+		}
+		ImGui::EndCombo();
+	}
+
+	if (!ParameterNames.empty() && RenderGroupTitle("Shader parameters (" + std::to_string(ParameterNames.size()) + ")###VolumeParameters"))
+	{
+		for (size_t i = 0; i < ParameterNames.size(); i++)
+		{
+			const std::string& UniformName = ParameterNames[i];
+			FEShaderUniformValue* UniformValue = VolumeMaterial->GetUniformOverride(UniformName);
+			const std::string WidgetID = "##VolumeUniform_" + UniformName;
+
+			RenderRowLabel(UniformName.c_str(), LabelWidth);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (UniformValue->IsType<float>())
+			{
+				float Data = UniformValue->GetValue<float>();
+				if (ImGui::DragFloat(WidgetID.c_str(), &Data, 0.01f))
+					VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
+			}
+			else if (UniformValue->IsType<int>())
+			{
+				int Data = UniformValue->GetValue<int>();
+				if (ImGui::DragInt(WidgetID.c_str(), &Data, 1.0f, 1, 4096))
+					VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
+			}
+			else if (UniformValue->IsType<bool>())
+			{
+				bool Data = UniformValue->GetValue<bool>();
+				if (ImGui::Checkbox(WidgetID.c_str(), &Data))
+					VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
+			}
+			else if (UniformValue->IsType<glm::vec2>())
+			{
+				glm::vec2 Data = UniformValue->GetValue<glm::vec2>();
+				if (ImGui::DragFloat2(WidgetID.c_str(), &Data.x, 0.01f))
+					VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
+			}
+			else if (UniformValue->IsType<glm::vec3>())
+			{
+				glm::vec3 Data = UniformValue->GetValue<glm::vec3>();
+				if (ImGui::DragFloat3(WidgetID.c_str(), &Data.x, 0.01f))
+					VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
+			}
+			else if (UniformValue->IsType<glm::vec4>())
+			{
+				glm::vec4 Data = UniformValue->GetValue<glm::vec4>();
+				if (ImGui::DragFloat4(WidgetID.c_str(), &Data.x, 0.01f))
+					VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
+			}
+		}
+	}
+
+	if (!VolumeTextures.empty() && RenderGroupTitle("Volume textures (" + std::to_string(VolumeTextures.size()) + ")###VolumeTextures"))
+	{
+		for (size_t i = 0; i < VolumeTextures.size(); i++)
+		{
+			FETexture* CurrentTexture = VolumeTextures[i].second;
+			std::string CurrentTextureCaption = CurrentTexture != nullptr ? CurrentTexture->GetName() : "None";
+
+			RenderRowLabel(VolumeTextures[i].first.c_str(), LabelWidth);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (ImGui::BeginCombo(("##VolumeTexture" + VolumeTextures[i].first).c_str(), CurrentTextureCaption.c_str(), ImGuiWindowFlags_None))
+			{
+				std::vector<FEUUID> TextureIDList = RESOURCE_MANAGER.GetTextureIDList();
+				for (size_t j = 0; j < TextureIDList.size(); j++)
+				{
+					FETexture* Texture = RESOURCE_MANAGER.GetTexture(TextureIDList[j]);
+					if (Texture == nullptr || Texture->GetType() != FE_TEXTURE_TYPE::FE_TEXTURE_3D)
+						continue;
+
+					bool bSelected = Texture == CurrentTexture;
+					ImGui::PushID(UNIQUE_ID.ToString(Texture->GetID()).c_str());
+					if (ImGui::Selectable(Texture->GetName().c_str(), bSelected))
+						VolumeMaterial->SetTextureOverride(VolumeTextures[i].first, Texture->GetID());
+
+					if (bSelected)
+						ImGui::SetItemDefaultFocus();
+					ImGui::PopID();
+				}
+				ImGui::EndCombo();
+			}
+		}
+	}
+
+	// Transfer function editor, only for shaders that sample the LUT (TransferFunctionTexture).
+	if (VOLUME_SYSTEM.DoesVolumeComponentHaveTransferFunction(VolumeComponent) && RenderGroupTitle("Transfer function###VolumeTransferFunction"))
+	{
+		// Show volume non-normalized value range.
+		FETexture* VolumeTexture = VolumeMaterial->GetTextureOverride("VolumeTexture");
+		const float DataValueLow = VolumeTexture != nullptr ? VolumeTexture->GetMinValue().x : 0.0f;
+		const float DataValueHigh = VolumeTexture != nullptr ? VolumeTexture->GetMaxValue().x : 1.0f;
+		TransferFunctionWidget.Render(VolumeEntity, DataValueLow, DataValueHigh, LabelWidth);
+	}
+
+	ImGui::PopStyleVar();
+}
+
+// Card of a resource that is assigned to a component: preview, name, lines of information and actions.
+void FEEditorInspectorWindow::RenderResourceCard(const std::string ID, FETexture* PreviewTexture, const std::string Name, const std::vector<std::string>& InformationLines, DragAndDropTarget* DropTarget, const bool bHasResource, bool& bChangeRequested, bool& bShowInFolderRequested, const std::string ActionName)
+{
+	ImGui::PushID(ID.c_str());
+
+	const float Padding = 10.0f;
+	const float PreviewSize = 96.0f;
+	const ImVec2 CardMin = ImGui::GetCursorScreenPos();
+	const ImVec2 CardMax = ImVec2(CardMin.x + ImGui::GetContentRegionAvail().x, CardMin.y + PreviewSize + Padding * 2.0f);
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	DrawList->AddRectFilled(CardMin, CardMax, FEEditorStyle::Card, 4.0f);
+	DrawList->AddRect(CardMin, CardMax, FEEditorStyle::CardBorder, 4.0f);
+
+	ImGui::SetCursorScreenPos(ImVec2(CardMin.x + Padding, CardMin.y + Padding));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+	if (ImGui::ImageButton("PreviewButton", PreviewTexture->GetTextureID(), ImVec2(PreviewSize, PreviewSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)))
+		bChangeRequested = true;
+	ImGui::PopStyleVar(2);
+	if (DropTarget != nullptr)
+		DropTarget->StickToItem();
+
+	if (ImGui::IsItemHovered())
+	{
+		DrawList->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), FEEditorStyle::Accent, 0.0f, 2.0f);
+		if (bHasResource && ImGui::IsMouseClicked(1))
+			ImGui::OpenPopup("##Inspector_context_menu");
+	}
+
+	const float TextX = CardMin.x + Padding + PreviewSize + 14.0f;
+	const float NameHeight = ImGui::GetFontSize();
+	const float SmallFontSize = 16.0f;
+	DrawList->PushClipRect(ImVec2(TextX, CardMin.y), ImVec2(CardMax.x - Padding, CardMax.y), true);
+	DrawList->AddText(ImVec2(TextX, CardMin.y + Padding - 2.0f), bHasResource ? FEEditorStyle::Text : FEEditorStyle::TextMuted, Name.c_str());
+
+	ImGui::PushFont(nullptr, SmallFontSize);
+	float LineY = CardMin.y + Padding + NameHeight + 8.0f;
+	for (size_t i = 0; i < InformationLines.size(); i++)
+	{
+		DrawList->AddText(ImVec2(TextX, LineY), FEEditorStyle::TextMuted, InformationLines[i].c_str());
+		LineY += SmallFontSize + 4.0f;
+	}
+	DrawList->PopClipRect();
+
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10.0f, 4.0f));
+	ImGui::SetCursorScreenPos(ImVec2(TextX, CardMax.y - Padding - (SmallFontSize + 8.0f)));
+	const std::string DefaultActionName = bHasResource ? "Change..." : "Select...";
+	if (ImGui::Button(ActionName.empty() ? DefaultActionName.c_str() : ActionName.c_str()))
+		bChangeRequested = true;
+
+	if (bHasResource)
+	{
+		ImGui::SameLine(0.0f, 8.0f);
+		if (ImGui::Button("Show in folder"))
+			bShowInFolderRequested = true;
+	}
+	ImGui::PopStyleVar();
+	ImGui::PopFont();
+
+	ImGui::SetCursorScreenPos(ImVec2(CardMin.x, CardMax.y));
+	ImGui::Dummy(ImVec2(0.0f, 0.0f));
+
+	bContextMenuOpened = false;
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
+	if (ImGui::BeginPopup("##Inspector_context_menu"))
+	{
+		bContextMenuOpened = true;
+
+		if (ImGui::MenuItem("Show in folder"))
+			bShowInFolderRequested = true;
+
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar();
+
+	ImGui::PopID();
+}
+
+void FEEditorInspectorWindow::DisplayGameModelProperties(FEEntity* GameModelEntity)
+{
+	FEGameModelComponent& GameModelComponent = GameModelEntity->GetComponent<FEGameModelComponent>();
+	FEGameModel* GameModel = GameModelComponent.GetGameModel();
+
+	std::vector<std::string> InformationLines;
+	// Mesh is rendered as a list of triangles, with three indices or vertices for each one.
+	if (GameModel->GetMesh() != nullptr)
+		InformationLines.push_back("Mesh (" + GetNumberWithSeparators(GameModel->GetMesh()->GetVertexCount() / 3) + " triangles): " + GameModel->GetMesh()->GetName());
+
+	if (GameModel->GetMaterial() != nullptr)
+		InformationLines.push_back("Material: " + GameModel->GetMaterial()->GetName());
+
+	bool bChangeGameModel = false;
+	bool bShowInFolder = false;
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 6.0f));
+	RenderResourceCard("GameModelCard", PREVIEW_MANAGER.GetGameModelPreview(GameModel->GetID()), GameModel->GetName(), InformationLines, EntityChangeGameModelTarget, true, bChangeGameModel, bShowInFolder);
+
+	RenderRowLabel("Wireframe", ImGui::CalcTextSize("Wireframe").x + 14.0f);
+	bool bWireframe = GameModelComponent.IsWireframeMode();
+	if (ImGui::Checkbox("##WireframeMode", &bWireframe))
+		GameModelComponent.SetWireframeMode(bWireframe);
+
+	ImGui::PopStyleVar();
+
+	if (bChangeGameModel)
+	{
+		EntityToModify = GameModelEntity;
+		SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, ChangeGameModelOfEntityCallback, GameModel);
+	}
+
+	if (bShowInFolder)
+		CONTENT_BROWSER_WINDOW.OpenItemParentFolder(GameModel);
+}
+
+void FEEditorInspectorWindow::DisplayPointCloudProperties(FEEntity* PointCloudEntity)
+{
+	FEPointCloudComponent& PointCloudComponent = PointCloudEntity->GetComponent<FEPointCloudComponent>();
+	FEPointCloud* PointCloud = PointCloudComponent.GetPointCloud();
+
+	std::string Name = "No point cloud";
+	FETexture* PreviewTexture = RESOURCE_MANAGER.NoTexture;
+	std::vector<std::string> InformationLines;
+	if (PointCloud != nullptr)
+	{
+		Name = PointCloud->GetName();
+		PreviewTexture = PREVIEW_MANAGER.GetPreview(PointCloud->GetID());
+		InformationLines.push_back("Points: " + GetNumberWithSeparators(PointCloud->GetPointCount()));
+	}
+
+	bool bChangePointCloud = false;
+	bool bShowInFolder = false;
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 6.0f));
+	RenderResourceCard("PointCloudCard", PreviewTexture, Name, InformationLines, EntityChangePointCloudTarget, PointCloud != nullptr, bChangePointCloud, bShowInFolder);
+	ImGui::PopStyleVar();
+
+	if (bChangePointCloud)
+	{
+		EntityToModify = PointCloudEntity;
+		SELECT_FEOBJECT_POPUP.Show(FE_POINT_CLOUD, ChangePointCloudOfEntityCallback, PointCloud);
+	}
+
+	if (bShowInFolder)
+		CONTENT_BROWSER_WINDOW.OpenItemParentFolder(PointCloud);
+}
+
+void FEEditorInspectorWindow::DisplayPrefabInstanceProperties(FEEntity* PrefabInstanceEntity)
+{
+	FEPrefab* Prefab = PrefabInstanceEntity->GetComponent<FEPrefabInstanceComponent>().GetPrefab();
+	if (Prefab == nullptr)
+	{
+		ImGui::TextUnformatted("No prefab");
+		return;
+	}
+
+	std::vector<std::string> InformationLines;
+	if (Prefab->GetScene() != nullptr)
+	{
+		const size_t EntityCount = Prefab->GetScene()->GetEntityIDList().size();
+		InformationLines.push_back("Prefab, " + GetNumberWithSeparators(EntityCount) + (EntityCount == 1 ? " entity" : " entities"));
+	}
+	InformationLines.push_back(UNIQUE_ID.ToString(Prefab->GetID()));
+
+	bool bEditPrefab = false;
+	bool bShowInFolder = false;
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 6.0f));
+	RenderResourceCard("PrefabCard", PREVIEW_MANAGER.GetPrefabPreview(Prefab->GetID()), Prefab->GetName(), InformationLines, nullptr, true, bEditPrefab, bShowInFolder, "Edit prefab");
+	ImGui::PopStyleVar();
+
+	if (bEditPrefab)
+		PREFAB_EDITOR_MANAGER.PrepareEditWinow(Prefab);
+
+	if (bShowInFolder)
+		CONTENT_BROWSER_WINDOW.OpenItemParentFolder(Prefab);
+}
+
+// Text field and a list of tags that are already used in the scene.
+static void RenderTagField(FEScene* Scene, FEEntity* Entity)
+{
+	FETagComponent& TagComponent = Entity->GetComponent<FETagComponent>();
+	std::string CurrentTag = TagComponent.GetTag();
+
+	const float ListButtonWidth = ImGui::GetFrameHeight();
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - ListButtonWidth);
+	if (ImGui::InputTextWithHint(("##Tag Edit" + UNIQUE_ID.ToString(Entity->GetID())).c_str(), "No tag", &CurrentTag))
+		TagComponent.SetTag(CurrentTag);
+
+	const ImVec2 FieldMin = ImGui::GetItemRectMin();
+	const ImVec2 FieldMax = ImGui::GetItemRectMax();
+	ImGui::SameLine(0.0f, 0.0f);
+	if (ImGui::ArrowButton("##SceneTags", ImGuiDir_Down))
+		ImGui::OpenPopup("SceneTags");
+	ShowToolTip("Tags used in this scene");
+
+	const float ListWidth = FieldMax.x - FieldMin.x + ListButtonWidth;
+	ImGui::SetNextWindowPos(ImVec2(FieldMin.x, FieldMax.y + 2.0f));
+	ImGui::SetNextWindowSizeConstraints(ImVec2(ListWidth, 0.0f), ImVec2(ListWidth, 300.0f));
+	if (ImGui::BeginPopup("SceneTags"))
+	{
+		std::set<std::string> SceneTags;
+		const std::vector<FEUUID> EntityIDList = Scene->GetEntityIDListWithComponent<FETagComponent>();
+		for (size_t i = 0; i < EntityIDList.size(); i++)
+		{
+			FEEntity* CurrentEntity = Scene->GetEntity(EntityIDList[i]);
+			if (CurrentEntity == nullptr)
+				continue;
+
+			const std::string Tag = CurrentEntity->GetComponent<FETagComponent>().GetTag();
+			if (!Tag.empty())
+				SceneTags.insert(Tag);
+		}
+
+		ImGui::TextDisabled(SceneTags.empty() ? "No tags in this scene" : "Tags used in this scene");
+		for (const std::string& Tag : SceneTags)
+		{
+			if (ImGui::Selectable(Tag.c_str(), Tag == CurrentTag))
+				TagComponent.SetTag(Tag);
+		}
+
+		ImGui::EndPopup();
+	}
 }
 
 void FEEditorInspectorWindow::Render()
@@ -1159,8 +1604,11 @@ void FEEditorInspectorWindow::Render()
 
 	FEEntity* EntitySelected = SELECTED.GetSelected(CurrentScene);
 
-	ImGui::Text("ID : %s", UNIQUE_ID.ToString(EntitySelected->GetID()).c_str());
-	ImGui::Text("Name : %s", EntitySelected->GetName().c_str());
+	RenderRowLabel("ID");
+	RenderIDText(UNIQUE_ID.ToString(EntitySelected->GetID()));
+
+	RenderRowLabel("Name");
+	ImGui::TextUnformatted(EntitySelected->GetName().c_str());
 
 	if (EntitySelected->HasComponent<FETagComponent>())
 	{
@@ -1172,12 +1620,7 @@ void FEEditorInspectorWindow::Render()
 		}
 
 		if (ImGui::CollapsingHeader("Tag", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			FETagComponent& TagComponent = EntitySelected->GetComponent<FETagComponent>();
-			std::string CurrentTag = TagComponent.GetTag();
-			if (ImGui::InputText(("##Tag Edit" + UNIQUE_ID.ToString(EntitySelected->GetID())).c_str(), &CurrentTag))
-				TagComponent.SetTag(CurrentTag);
-		}
+			RenderTagField(CurrentScene, EntitySelected);
 	}
 
 	if (EntitySelected->HasComponent<FETransformComponent>())
@@ -1206,55 +1649,7 @@ void FEEditorInspectorWindow::Render()
 		}
 
 		if (ImGui::CollapsingHeader("Game Model", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.5f, 0.5f, 0.5f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.95f, 0.90f, 0.0f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.1f, 1.0f, 0.1f, 1.0f));
-
-			FEGameModelComponent& GameModelComponent = EntitySelected->GetComponent<FEGameModelComponent>();
-			bool bActive = GameModelComponent.IsWireframeMode();
-			ImGui::Checkbox("WireframeMode", &bActive);
-			GameModelComponent.SetWireframeMode(bActive);
-
-			ImGui::Text("Game Model : ");
-			FETexture* PreviewTexture = PREVIEW_MANAGER.GetGameModelPreview(GameModelComponent.GetGameModel()->GetID());
-
-			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
-			if (ImGui::ImageButton("GameModelPreviewButton", PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
-			{
-				EntityToModify = EntitySelected;
-				FEGameModelComponent& GameModelComponent = EntityToModify->GetComponent<FEGameModelComponent>();
-				SELECT_FEOBJECT_POPUP.Show(FE_GAMEMODEL, ChangeGameModelOfEntityCallback, GameModelComponent.GetGameModel());
-			}
-			ImGui::PopStyleVar();
-			EntityChangeGameModelTarget->StickToItem();
-
-			bool bOpenContextMenu = false;
-			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
-				bOpenContextMenu = true;
-
-			if (bOpenContextMenu)
-				ImGui::OpenPopup("##Inspector_context_menu");
-
-			bContextMenuOpened = false;
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-			if (ImGui::BeginPopup("##Inspector_context_menu"))
-			{
-				bContextMenuOpened = true;
-
-				if (ImGui::MenuItem("Show in folder"))
-				{
-					CONTENT_BROWSER_WINDOW.OpenItemParentFolder(GameModelComponent.GetGameModel());
-				}
-
-				ImGui::EndPopup();
-			}
-			ImGui::PopStyleVar();
-
-			ImGui::PopStyleColor();
-			ImGui::PopStyleColor();
-			ImGui::PopStyleColor();
-		}
+			DisplayGameModelProperties(EntitySelected);
 	}
 
 	if (EntitySelected->HasComponent<FEPointCloudComponent>())
@@ -1267,53 +1662,7 @@ void FEEditorInspectorWindow::Render()
 		}
 
 		if (ImGui::CollapsingHeader("Point cloud", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.5f, 0.5f, 0.5f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.95f, 0.90f, 0.0f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.1f, 1.0f, 0.1f, 1.0f));
-
-			FEPointCloudComponent& PointCloudComponent = EntitySelected->GetComponent<FEPointCloudComponent>();
-
-			ImGui::Text("Point Cloud : ");
-			FETexture* PreviewTexture = RESOURCE_MANAGER.NoTexture;
-			if (PointCloudComponent.GetPointCloud() != nullptr)
-				PreviewTexture = PREVIEW_MANAGER.GetPreview(PointCloudComponent.GetPointCloud()->GetID());
-
-			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
-			if (ImGui::ImageButton("PointCloudPreviewButton", PreviewTexture->GetTextureID(), ImVec2(128, 128), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
-			{
-				EntityToModify = EntitySelected;
-				SELECT_FEOBJECT_POPUP.Show(FE_POINT_CLOUD, ChangePointCloudOfEntityCallback, PointCloudComponent.GetPointCloud());
-			}
-			ImGui::PopStyleVar();
-			EntityChangePointCloudTarget->StickToItem();
-
-			bool bOpenContextMenu = false;
-			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
-				bOpenContextMenu = true;
-
-			if (bOpenContextMenu)
-				ImGui::OpenPopup("##Inspector_context_menu");
-
-			bContextMenuOpened = false;
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-			if (ImGui::BeginPopup("##Inspector_context_menu"))
-			{
-				bContextMenuOpened = true;
-
-				if (ImGui::MenuItem("Show in folder"))
-				{
-					CONTENT_BROWSER_WINDOW.OpenItemParentFolder(PointCloudComponent.GetPointCloud());
-				}
-
-				ImGui::EndPopup();
-			}
-			ImGui::PopStyleVar();
-
-			ImGui::PopStyleColor();
-			ImGui::PopStyleColor();
-			ImGui::PopStyleColor();
-		}
+			DisplayPointCloudProperties(EntitySelected);
 	}
 
 	if (EntitySelected->HasComponent<FEVolumeComponent>())
@@ -1326,186 +1675,7 @@ void FEEditorInspectorWindow::Render()
 		}
 
 		if (ImGui::CollapsingHeader("Volumetric", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			FEVolumeComponent& VolumeComponent = EntitySelected->GetComponent<FEVolumeComponent>();
-			FENewMaterial* VolumeMaterial = VolumeComponent.GetMaterial();
-			
-			if (VolumeMaterial != nullptr)
-			{
-				// Shader selector, populated from the volume system's shader list.
-				ImGui::Text("Volume shader : ");
-				std::string CurrentShaderCaption = VolumeComponent.GetMaterial() != nullptr ? VolumeComponent.GetMaterial()->GetShader()->GetName() : "None";
-				if (ImGui::BeginCombo("##VolumeShader", CurrentShaderCaption.c_str(), ImGuiWindowFlags_None))
-				{
-					std::vector<FEShader*> VolumetricShaders = VOLUME_SYSTEM.GetVolumetricShaders();
-					for (size_t i = 0; i < VolumetricShaders.size(); i++)
-					{
-						if (VolumetricShaders[i] == nullptr)
-							continue;
-
-						bool bSelected = (VolumetricShaders[i] == VolumeComponent.GetMaterial()->GetShader());
-						ImGui::PushID(UNIQUE_ID.ToString(VolumetricShaders[i]->GetID()).c_str());
-						if (ImGui::Selectable(VolumetricShaders[i]->GetName().c_str(), bSelected))
-							VolumeComponent.GetMaterial()->SetShader(VolumetricShaders[i]);
-
-						if (bSelected)
-							ImGui::SetItemDefaultFocus();
-						ImGui::PopID();
-					}
-					ImGui::EndCombo();
-				}
-
-				const std::vector<std::string> UniformOverrideNames = VolumeMaterial->GetUniformOverrideNameList();
-				bool bShownParametersHeader = false;
-				for (size_t i = 0; i < UniformOverrideNames.size(); i++)
-				{
-					const std::string& UniformName = UniformOverrideNames[i];
-
-					FEShaderUniformValue* UniformValue = VolumeMaterial->GetUniformOverride(UniformName);
-					if (UniformValue == nullptr)
-						continue;
-
-					if (VolumeMaterial->GetShader()->IsUniformProvidedByEngine(UniformName))
-						continue;
-
-					// Only scalar/vector uniforms are editable here; samplers and matrices are skipped by type.
-					const bool bIsEditableType = UniformValue->IsType<float>() || UniformValue->IsType<int>() ||
-												 UniformValue->IsType<bool>() || UniformValue->IsType<glm::vec2>() ||
-												 UniformValue->IsType<glm::vec3>() || UniformValue->IsType<glm::vec4>();
-					if (!bIsEditableType)
-						continue;
-
-					if (!bShownParametersHeader)
-					{
-						ImGui::Separator();
-						ImGui::Text("Shader parameters : ");
-						bShownParametersHeader = true;
-					}
-
-					const std::string WidgetID = "##VolumeUniform_" + UniformName;
-
-					if (UniformValue->IsType<float>())
-					{
-						float Data = UniformValue->GetValue<float>();
-						ImGui::Text("%s", UniformName.c_str());
-						if (ImGui::DragFloat(WidgetID.c_str(), &Data, 0.01f))
-							VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
-					}
-					else if (UniformValue->IsType<int>())
-					{
-						int Data = UniformValue->GetValue<int>();
-						ImGui::Text("%s", UniformName.c_str());
-						if (ImGui::DragInt(WidgetID.c_str(), &Data, 1.0f, 1, 4096))
-							VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
-					}
-					else if (UniformValue->IsType<bool>())
-					{
-						bool Data = UniformValue->GetValue<bool>();
-						if (ImGui::Checkbox(UniformName.c_str(), &Data))
-							VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
-					}
-					else if (UniformValue->IsType<glm::vec2>())
-					{
-						glm::vec2 Data = UniformValue->GetValue<glm::vec2>();
-						ImGui::Text("%s", UniformName.c_str());
-						if (ImGui::DragFloat2(WidgetID.c_str(), &Data.x, 0.01f))
-							VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
-					}
-					else if (UniformValue->IsType<glm::vec3>())
-					{
-						glm::vec3 Data = UniformValue->GetValue<glm::vec3>();
-						ImGui::Text("%s", UniformName.c_str());
-						if (ImGui::DragFloat3(WidgetID.c_str(), &Data.x, 0.01f))
-							VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
-					}
-					else if (UniformValue->IsType<glm::vec4>())
-					{
-						glm::vec4 Data = UniformValue->GetValue<glm::vec4>();
-						ImGui::Text("%s", UniformName.c_str());
-						if (ImGui::DragFloat4(WidgetID.c_str(), &Data.x, 0.01f))
-							VolumeMaterial->UpdateUniformOverrideData(UniformName, Data);
-					}
-				}
-
-				// All textures except LUT.
-				ImGui::Text("Shader volume textures : ");
-				const std::vector<std::pair<std::string, FETexture*>> TextureOverrides = VolumeMaterial->GetAllTextureOverridePair();
-				for (size_t i = 0; i < TextureOverrides.size(); i++)
-				{
-					if (TextureOverrides[i].first == "TransferFunctionTexture")
-						continue;
-
-					FETexture* CurrentTexture = TextureOverrides[i].second;
-					std::string CurrentTextureCaption = CurrentTexture != nullptr ? CurrentTexture->GetName() : "None";
-					std::string ComboLabel = "##VolumeTexture" + std::to_string(i) + (CurrentTexture != nullptr ? UNIQUE_ID.ToString(CurrentTexture->GetID()) : "None");
-					if (ImGui::BeginCombo(ComboLabel.c_str(), CurrentTextureCaption.c_str(), ImGuiWindowFlags_None))
-					{
-						std::vector<FEUUID> TextureIDList = RESOURCE_MANAGER.GetTextureIDList();
-						for (size_t j = 0; j < TextureIDList.size(); j++)
-						{
-							FETexture* Texture = RESOURCE_MANAGER.GetTexture(TextureIDList[j]);
-							if (Texture == nullptr || Texture->GetType() != FE_TEXTURE_TYPE::FE_TEXTURE_3D)
-								continue;
-
-							bool bSelected = Texture == CurrentTexture;
-							ImGui::PushID(UNIQUE_ID.ToString(Texture->GetID()).c_str());
-							if (ImGui::Selectable(Texture->GetName().c_str(), bSelected))
-								VolumeMaterial->SetTextureOverride(TextureOverrides[i].first, Texture->GetID());
-
-							if (bSelected)
-								ImGui::SetItemDefaultFocus();
-							ImGui::PopID();
-						}
-						ImGui::EndCombo();
-					}
-				}
-
-				// Transfer function editor, only for shaders that sample the LUT (TransferFunctionTexture).
-				if (VOLUME_SYSTEM.DoesVolumeComponentHaveTransferFunction(VolumeComponent))
-				{
-					ImGui::Separator();
-					ImGui::Text("Transfer function :");
-
-					// Show volume non-normalized value range.
-					FETexture* VolumeTexture = VolumeMaterial != nullptr ? VolumeMaterial->GetTextureOverride("VolumeTexture") : nullptr;
-					const float DataValueLow = VolumeTexture != nullptr ? VolumeTexture->GetMinValue().x : 0.0f;
-					const float DataValueHigh = VolumeTexture != nullptr ? VolumeTexture->GetMaxValue().x : 1.0f;
-					TransferFunctionWidget.Render(EntitySelected, DataValueLow, DataValueHigh);
-				}
-			}
-			else
-			{
-				if (ImGui::Button("Create new volume material"))
-				{
-					FENewMaterial* DefaultStartingMaterial = RESOURCE_MANAGER.CreateNewMaterial();
-					DefaultStartingMaterial->SetMaterialType(FEMaterialType::Volumetric);
-					DefaultStartingMaterial->SetBlendMode(FEMaterialBlendMode::Additive);
-					DefaultStartingMaterial->SetShader(VOLUME_SYSTEM.GetVolumetricShaders()[0]);
-					VolumeComponent.SetMaterial(DefaultStartingMaterial);
-				}
-
-				std::vector<FEUUID> ListOfVolumetricMaterials = RESOURCE_MANAGER.GetNewMaterialIDList();
-				for (size_t i = 0; i < ListOfVolumetricMaterials.size(); i++)
-				{
-					FENewMaterial* CurrentMaterial = RESOURCE_MANAGER.GetNewMaterial(ListOfVolumetricMaterials[i]);
-					if (CurrentMaterial == nullptr)
-					{
-						ListOfVolumetricMaterials.erase(ListOfVolumetricMaterials.begin() + i);
-						i--;
-						continue;
-					}
-
-					if (CurrentMaterial->GetMaterialType() != FEMaterialType::Volumetric)
-					{
-						ListOfVolumetricMaterials.erase(ListOfVolumetricMaterials.begin() + i);
-						i--;
-						continue;
-					}
-				}
-
-				// FE_TO_DO: Add combo box to select a volumetric material.
-			}
-		}
+			DisplayVolumeProperties(EntitySelected);
 	}
 
 	if (EntitySelected->HasComponent<FEPrefabInstanceComponent>())
@@ -1518,9 +1688,7 @@ void FEEditorInspectorWindow::Render()
 		}
 
 		if (ImGui::CollapsingHeader("Prefab Instance", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			ImGui::Text("Prefab ID : %s", UNIQUE_ID.ToString(EntitySelected->GetComponent<FEPrefabInstanceComponent>().GetPrefab()->GetID()).c_str());
-		}
+			DisplayPrefabInstanceProperties(EntitySelected);
 	}
 
 	if (EntitySelected->HasComponent<FEInstancedComponent>())
@@ -1533,275 +1701,7 @@ void FEEditorInspectorWindow::Render()
 		}
 
 		if (ImGui::CollapsingHeader("Instanced", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			FESelectionData* CurrentSelectionData = SELECTED.GetSceneData(CurrentScene->GetID());
-			FEInstancedComponent& InstancedComponent = EntitySelected->GetComponent<FEInstancedComponent>();
-
-			if (CurrentSelectionData->InstancedSubObjectIndexSelected != -1)
-			{
-				std::string InstancedSubObjectInfo = "index: ";
-
-				ImGui::Text("Selected instance info:");
-				InstancedSubObjectInfo = "index: " + std::to_string(CurrentSelectionData->InstancedSubObjectIndexSelected);
-				ImGui::Text(InstancedSubObjectInfo.c_str());
-
-				FETransformComponent TemporaryTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(CurrentSelectionData->InstancedSubObjectIndexSelected));
-				TemporaryTransform.SetSceneIndependent(true);
-				ShowTransformConfiguration("Selected instance", &TemporaryTransform);
-
-				INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(EntitySelected, CurrentSelectionData->InstancedSubObjectIndexSelected, TemporaryTransform.GetWorldMatrix());
-
-				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.55f, 0.55f, 0.95f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
-
-				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
-				if (ImGui::ImageButton("InstanceAttachToTerrainButton", ArrowToGroundIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
-				{
-					INSTANCED_RENDERING_SYSTEM.TryToSnapIndividualInstance(EntitySelected, CurrentSelectionData->InstancedSubObjectIndexSelected);
-				}
-				ImGui::PopStyleVar();
-				ShowToolTip("Selected instance will attempt to snap to the terrain.");
-
-				ImGui::PopStyleColor();
-				ImGui::PopStyleColor();
-				ImGui::PopStyleColor();
-			}
-			else
-			{
-				ImGui::Text("Snapped to: ");
-				ImGui::SameLine();
-
-				const std::vector<FEUUID> TerrainIDList = CurrentScene->GetEntityIDListWithComponent<FETerrainComponent>();
-				static std::string CurrentTerrain = "none";
-
-				if (InstancedComponent.GetSnappedToTerrain() == nullptr)
-				{
-					CurrentTerrain = "none";
-				}
-				else
-				{
-					CurrentTerrain = InstancedComponent.GetSnappedToTerrain()->GetName();
-				}
-
-				ImGui::SetNextItemWidth(220);
-				if (ImGui::BeginCombo("##Terrain", CurrentTerrain.c_str(), ImGuiWindowFlags_None))
-				{
-					const bool bIsSelected = (InstancedComponent.GetSnappedToTerrain() == nullptr);
-					if (ImGui::Selectable("none", bIsSelected))
-					{
-						if (InstancedComponent.GetSnappedToTerrain() != nullptr)
-						{
-							TERRAIN_SYSTEM.UnSnapInstancedEntity(InstancedComponent.GetSnappedToTerrain(), EntitySelected);
-						}
-					}
-
-					if (bIsSelected)
-						ImGui::SetItemDefaultFocus();
-
-					for (size_t i = 0; i < TerrainIDList.size(); i++)
-					{
-						const bool bIsSelected = (InstancedComponent.GetSnappedToTerrain() != nullptr && InstancedComponent.GetSnappedToTerrain()->GetID() == TerrainIDList[i]);
-						ImGui::PushID(UNIQUE_ID.ToString(TerrainIDList[i]).c_str());
-						if (ImGui::Selectable(CurrentScene->GetEntity(TerrainIDList[i])->GetName().c_str(), bIsSelected))
-						{
-							TERRAIN_SYSTEM.SnapInstancedEntity(CurrentScene->GetEntity(TerrainIDList[i]), EntitySelected);
-						}
-						ImGui::PopID();
-
-						if (bIsSelected)
-							ImGui::SetItemDefaultFocus();
-					}
-					ImGui::EndCombo();
-				}
-
-				if (InstancedComponent.GetSnappedToTerrain() != nullptr)
-				{
-					ImGui::Text("Terrain layer: ");
-					ImGui::SameLine();
-
-					const int CurrentLayer = InstancedComponent.GetTerrainLayer();
-					FEEntity* TerrainEntity = InstancedComponent.GetSnappedToTerrain();
-					FETerrainComponent& TerrainComponent = TerrainEntity->GetComponent<FETerrainComponent>();
-
-					std::string Caption = "none";
-					FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(CurrentLayer);
-					if (Layer != nullptr)
-						Caption = Layer->GetName();
-
-					ImGui::SetNextItemWidth(220);
-					if (ImGui::BeginCombo("##TerrainLayers", Caption.c_str(), ImGuiWindowFlags_None))
-					{
-						const bool bIsSelected = (CurrentLayer == -1);
-						ImGui::PushID("none_TerrainLayers_entity");
-						if (ImGui::Selectable("none", bIsSelected))
-						{
-							TERRAIN_SYSTEM.UnConnectInstancedEntityFromLayer(EntitySelected);
-						}
-						ImGui::PopID();
-
-						if (bIsSelected)
-							ImGui::SetItemDefaultFocus();
-
-						for (size_t i = 0; i < FE_TERRAIN_MAX_LAYERS; i++)
-						{
-							FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(i);
-							if (Layer == nullptr)
-								break;
-
-							const bool bIsSelected = (CurrentLayer == i);
-							ImGui::PushID(/*Layer->GetID().c_str()*/static_cast<int>(i));
-							if (ImGui::Selectable(Layer->GetName().c_str(), bIsSelected))
-							{
-								TERRAIN_SYSTEM.ConnectInstancedEntityToLayer(TerrainEntity, EntitySelected, static_cast<int>(i));
-							}
-							ImGui::PopID();
-
-							if (bIsSelected)
-								ImGui::SetItemDefaultFocus();
-						}
-						ImGui::EndCombo();
-					}
-
-					if (CurrentLayer != -1)
-					{
-						ImGui::Text("Minimal layer intensity to spawn:");
-						float MinLevel = InstancedComponent.GetMinimalLayerIntensityToSpawn();
-						ImGui::SameLine();
-						ImGui::SetNextItemWidth(80);
-						ImGui::DragFloat("##minLevel", &MinLevel);
-						InstancedComponent.SetMinimalLayerIntensityToSpawn(MinLevel);
-					}
-				}
-
-				ImGui::Separator();
-
-				ImGui::Text("Seed:");
-				int Seed = InstancedComponent.SpawnInfo.Seed;
-				ImGui::SameLine();
-				ImGui::SetNextItemWidth(200);
-				ImGui::DragInt("##Seed", &Seed);
-				InstancedComponent.SpawnInfo.Seed = Seed;
-
-				ImGui::Text("Object count:");
-				int ObjectCount = InstancedComponent.SpawnInfo.ObjectCount;
-				ImGui::SameLine();
-				ImGui::SetNextItemWidth(200);
-				ImGui::DragInt("##Object count", &ObjectCount);
-				if (ObjectCount <= 0)
-					ObjectCount = 1;
-				InstancedComponent.SpawnInfo.ObjectCount = ObjectCount;
-
-				ImGui::Text("Radius:");
-				float Radius = InstancedComponent.SpawnInfo.Radius;
-				ImGui::SameLine();
-				ImGui::SetNextItemWidth(200);
-				ImGui::DragFloat("##Radius", &Radius);
-				if (Radius < 0.0f)
-					Radius = 0.1f;
-				InstancedComponent.SpawnInfo.Radius = Radius;
-
-				// Scale deviation.
-				ImGui::Text("Scale: ");
-
-				ImGui::SameLine();
-				ImGui::Text("min ");
-
-				ImGui::SameLine();
-				ImGui::SetNextItemWidth(100);
-				float MinScale = InstancedComponent.SpawnInfo.GetMinScale();
-				ImGui::DragFloat("##minScale", &MinScale, 0.01f);
-				InstancedComponent.SpawnInfo.SetMinScale(MinScale);
-
-				ImGui::SameLine();
-				ImGui::Text("max ");
-
-				ImGui::SameLine();
-				float MaxScale = InstancedComponent.SpawnInfo.GetMaxScale();
-				ImGui::SetNextItemWidth(100);
-				ImGui::DragFloat("##maxScale", &MaxScale, 0.01f);
-				InstancedComponent.SpawnInfo.SetMaxScale(MaxScale);
-
-				ImGui::Text("Rotation deviation:");
-				float RotationDeviationX = InstancedComponent.SpawnInfo.RotationDeviation.x;
-				ImGui::Text("X:");
-				ImGui::SameLine();
-				ImGui::DragFloat("##Rotation deviation X", &RotationDeviationX, 0.01f);
-				if (RotationDeviationX < 0.01f)
-					RotationDeviationX = 0.01f;
-				if (RotationDeviationX > 1.0f)
-					RotationDeviationX = 1.0f;
-				InstancedComponent.SpawnInfo.RotationDeviation.x = RotationDeviationX;
-
-				float RotationDeviationY = InstancedComponent.SpawnInfo.RotationDeviation.y;
-				ImGui::Text("Y:");
-				ImGui::SameLine();
-				ImGui::DragFloat("##Rotation deviation Y", &RotationDeviationY, 0.01f);
-				if (RotationDeviationY < 0.01f)
-					RotationDeviationY = 0.01f;
-				if (RotationDeviationY > 1.0f)
-					RotationDeviationY = 1.0f;
-				InstancedComponent.SpawnInfo.RotationDeviation.y = RotationDeviationY;
-
-				float RotationDeviationZ = InstancedComponent.SpawnInfo.RotationDeviation.z;
-				ImGui::Text("Z:");
-				ImGui::SameLine();
-				ImGui::DragFloat("##Rotation deviation z", &RotationDeviationZ, 0.01f);
-				if (RotationDeviationZ < 0.01f)
-					RotationDeviationZ = 0.01f;
-				if (RotationDeviationZ > 1.0f)
-					RotationDeviationZ = 1.0f;
-				InstancedComponent.SpawnInfo.RotationDeviation.z = RotationDeviationZ;
-
-				if (ImGui::Button("Spawn/Re-Spawn"))
-				{
-					INSTANCED_RENDERING_SYSTEM.ClearInstance(EntitySelected);
-					INSTANCED_RENDERING_SYSTEM.PopulateInstance(EntitySelected, InstancedComponent.SpawnInfo);
-				}
-
-				if (ImGui::Button("Add instance"))
-				{
-					glm::mat4 NewInstanceMatrix = glm::identity<glm::mat4>();
-					FETransformComponent& CameraTransformComponent = MainCameraEntity->GetComponent<FETransformComponent>();
-					FECameraComponent& CameraComponent = MainCameraEntity->GetComponent<FECameraComponent>();
-					NewInstanceMatrix = glm::translate(NewInstanceMatrix, CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
-					INSTANCED_RENDERING_SYSTEM.AddIndividualInstance(EntitySelected, NewInstanceMatrix);
-
-					PROJECT_MANAGER.GetCurrent()->SetModified(true);
-				}
-
-				if (INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected))
-				{
-					ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.0f, 0.75f, 0.0f));
-					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.0f, 1.0f, 0.0f));
-					ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.0f, 1.0f, 0.0f));
-				}
-				else
-				{
-					ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.55f, 0.55f, 0.95f));
-					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
-					ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.75f, 0.75f, 0.95f));
-				}
-
-				ImGui::Separator();
-				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
-				if (ImGui::ImageButton("SetIndividualSelectModeButton", MouseCursorIcon->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImColor(0.0f, 0.0f, 0.0f, 0.0f), ImColor(1.0f, 1.0f, 1.0f, 1.0f)))
-				{
-					INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(EntitySelected, !INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected));
-					if (!INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(EntitySelected))
-					{
-						SELECTED.Clear(CurrentScene);
-						SELECTED.SetSelected(EntitySelected);
-					}
-				}
-				ImGui::PopStyleVar();
-				ShowToolTip("Individual selection mode - Used to select individual instances.");
-
-				ImGui::PopStyleColor();
-				ImGui::PopStyleColor();
-				ImGui::PopStyleColor();
-			}
-		}
+			DisplayInstancedProperties(EntitySelected);
 	}
 
 	if (EntitySelected->HasComponent<FETerrainComponent>())
@@ -1906,26 +1806,7 @@ void FEEditorInspectorWindow::Render()
 
 	EDITOR_PLUGIN_MANAGER.RenderInspectorSections(EntitySelected);
 
-	std::vector<std::string> AvailableComponentTypes = GetAvailableComponentsToAdd(EntitySelected);
-
-	ImGui::SetNextItemWidth(220.0f);
-	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6.0f);
-
-	float RegionWidth = ImGui::GetContentRegionAvail().x;
-	ImGui::SetCursorPosX(RegionWidth * 0.5f - 220.0f / 2.0f + 20.0f);
-
-	if (ImGui::BeginCombo("##Add Component", "   Add Component", ImGuiComboFlags_NoArrowButton))
-	{
-		for (size_t i = 0; i < AvailableComponentTypes.size(); i++)
-		{
-			std::string ComponentLabel = (AvailableComponentTypes[i] == "Volume") ? "Volumetric" : AvailableComponentTypes[i];
-			if (ImGui::Selectable((ComponentLabel + "##" + AvailableComponentTypes[i]).c_str(), false))
-			{
-				AddComponent(EntitySelected, AvailableComponentTypes[i]);
-			}
-		}
-		ImGui::EndCombo();
-	}
+	RenderAddComponentMenu(EntitySelected);
 
 	ImGui::PopStyleVar();
 	ImGui::End();
@@ -1968,6 +1849,447 @@ void FEEditorInspectorWindow::ChangeMaterialInTerrainLayerCallback(std::vector<F
 	TemporaryLayerIndex = -1;
 }
 
+struct TerrainTool
+{
+	FE_TERRAIN_BRUSH_MODE BrushMode;
+	const char* Name;
+	const char* Hint;
+};
+
+// The first one shows the settings, the others are brushes.
+static const TerrainTool TerrainTools[] = {
+	{ FE_TERRAIN_BRUSH_NONE, "Settings", "" },
+	{ FE_TERRAIN_BRUSH_SCULPT_DRAW, "Raise", "Left mouse raises the terrain, with Shift it lowers." },
+	{ FE_TERRAIN_BRUSH_SCULPT_LEVEL, "Level", "Left mouse levels the terrain." },
+	{ FE_TERRAIN_BRUSH_SCULPT_SMOOTH, "Smooth", "Left mouse smooths the terrain." },
+	{ FE_TERRAIN_BRUSH_LAYER_DRAW, "Paint", "Left mouse paints the selected layer, with Shift it removes it." }
+};
+static const int TerrainToolCount = 5;
+static const int TerrainPaintToolIndex = 4;
+
+static int GetTerrainToolIndex(const FE_TERRAIN_BRUSH_MODE BrushMode)
+{
+	if (BrushMode == FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED)
+		return 1;
+
+	for (int i = 0; i < TerrainToolCount; i++)
+	{
+		if (TerrainTools[i].BrushMode == BrushMode)
+			return i;
+	}
+
+	return 0;
+}
+
+// Center should have integer coordinates.
+static void RenderTerrainToolIcon(ImDrawList* DrawList, const FE_TERRAIN_BRUSH_MODE BrushMode, const ImVec2 Center, const ImU32 Color)
+{
+	const float HalfWidth = 10.0f;
+	const float Base = Center.y + 8.0f;
+	const ImU32 FaintColor = (Color & ~IM_COL32_A_MASK) | (static_cast<ImU32>(110) << IM_COL32_A_SHIFT);
+
+	auto RenderMound = [&](const float RadiusX, const float RadiusY, const float CutHeight, const ImU32 MoundColor) {
+		const int Steps = 16;
+		for (int i = 0; i <= Steps; i++)
+		{
+			const float Angle = IM_PI * static_cast<float>(i) / static_cast<float>(Steps);
+			DrawList->PathLineTo(ImVec2(Center.x + cosf(Angle) * RadiusX, Base - std::min(sinf(Angle) * RadiusY, CutHeight)));
+		}
+		DrawList->PathFillConvex(MoundColor);
+	};
+
+	if (BrushMode == FE_TERRAIN_BRUSH_NONE)
+	{
+		const float LineOffsets[] = { -6.0f, 0.0f, 6.0f };
+		const float KnobOffsets[] = { 4.0f, -5.0f, 1.0f };
+		for (int i = 0; i < 3; i++)
+		{
+			DrawList->AddRectFilled(ImVec2(Center.x - HalfWidth, Center.y + LineOffsets[i] - 1.0f), ImVec2(Center.x + HalfWidth, Center.y + LineOffsets[i] + 1.0f), FaintColor);
+			DrawList->AddCircleFilled(ImVec2(Center.x + KnobOffsets[i], Center.y + LineOffsets[i]), 3.0f, Color);
+		}
+	}
+	else if (BrushMode == FE_TERRAIN_BRUSH_SCULPT_DRAW)
+	{
+		RenderMound(HalfWidth, 9.0f, 9.0f, Color);
+		DrawList->AddRectFilled(ImVec2(Center.x - 1.0f, Center.y - 7.0f), ImVec2(Center.x + 1.0f, Center.y - 3.0f), Color);
+		DrawList->AddTriangleFilled(ImVec2(Center.x, Center.y - 12.0f), ImVec2(Center.x + 4.5f, Center.y - 6.5f), ImVec2(Center.x - 4.5f, Center.y - 6.5f), Color);
+	}
+	else if (BrushMode == FE_TERRAIN_BRUSH_SCULPT_LEVEL)
+	{
+		RenderMound(HalfWidth, 17.0f, 7.0f, Color);
+		const float ArrowY = Center.y - 6.0f;
+		DrawList->AddRectFilled(ImVec2(Center.x - 6.0f, ArrowY - 1.0f), ImVec2(Center.x + 6.0f, ArrowY + 1.0f), Color);
+		DrawList->AddTriangleFilled(ImVec2(Center.x - HalfWidth, ArrowY), ImVec2(Center.x - 5.0f, ArrowY - 4.0f), ImVec2(Center.x - 5.0f, ArrowY + 4.0f), Color);
+		DrawList->AddTriangleFilled(ImVec2(Center.x + HalfWidth, ArrowY), ImVec2(Center.x + 5.0f, ArrowY + 4.0f), ImVec2(Center.x + 5.0f, ArrowY - 4.0f), Color);
+	}
+	else if (BrushMode == FE_TERRAIN_BRUSH_SCULPT_SMOOTH)
+	{
+		RenderMound(6.0f, 17.0f, 17.0f, FaintColor);
+		RenderMound(HalfWidth, 8.0f, 8.0f, Color);
+	}
+	else if (BrushMode == FE_TERRAIN_BRUSH_LAYER_DRAW)
+	{
+		const ImVec2 HandleEnd = ImVec2(Center.x + 9.0f, Center.y - 9.0f);
+		const ImVec2 HandleStart = ImVec2(Center.x - 1.0f, Center.y + 1.0f);
+		DrawList->AddQuadFilled(ImVec2(HandleEnd.x - 1.5f, HandleEnd.y - 1.5f), ImVec2(HandleEnd.x + 1.5f, HandleEnd.y + 1.5f), ImVec2(HandleStart.x + 2.0f, HandleStart.y + 2.0f), ImVec2(HandleStart.x - 2.0f, HandleStart.y - 2.0f), Color);
+		DrawList->AddQuadFilled(ImVec2(Center.x - 4.0f, Center.y - 1.0f), ImVec2(Center.x + 1.0f, Center.y + 4.0f), ImVec2(Center.x - 3.0f, Center.y + 8.0f), ImVec2(Center.x - 8.0f, Center.y + 3.0f), Color);
+		DrawList->AddTriangleFilled(ImVec2(Center.x - 8.0f, Center.y + 3.0f), ImVec2(Center.x - 3.0f, Center.y + 8.0f), ImVec2(Center.x - 10.0f, Center.y + 10.0f), Color);
+	}
+}
+
+static bool RenderTerrainToolTile(const TerrainTool& Tool, const bool bSelected, const ImVec2 Size)
+{
+	const ImVec2 Min = ImGui::GetCursorScreenPos();
+	const ImVec2 Max = ImVec2(Min.x + Size.x, Min.y + Size.y);
+	const bool bPressed = ImGui::InvisibleButton(Tool.Name, Size);
+	const bool bHovered = ImGui::IsItemHovered();
+
+	ImU32 Fill = bHovered ? FEEditorStyle::ButtonHovered : FEEditorStyle::Button;
+	if (bSelected)
+		Fill = bHovered ? FEEditorStyle::AccentHovered : FEEditorStyle::Accent;
+
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	DrawList->AddRectFilled(Min, Max, Fill, 4.0f);
+	if (!bSelected)
+		DrawList->AddRect(Min, Max, FEEditorStyle::ButtonBorder, 4.0f);
+
+	const ImU32 ContentColor = bSelected ? FEEditorStyle::TextOnAccent : FEEditorStyle::Text;
+	const float NameFontSize = 16.0f;
+	RenderTerrainToolIcon(DrawList, Tool.BrushMode, ImVec2(floorf(Min.x + Size.x / 2.0f), floorf(Min.y + 24.0f)), ContentColor);
+	ImGui::PushFont(nullptr, NameFontSize);
+	const float NameWidth = ImGui::CalcTextSize(Tool.Name).x;
+	DrawList->AddText(ImVec2(floorf(Min.x + (Size.x - NameWidth) / 2.0f), Max.y - NameFontSize - 8.0f), ContentColor, Tool.Name);
+	ImGui::PopFont();
+	return bPressed;
+}
+
+static void RenderHintText(const std::string& Text)
+{
+	ImGui::PushFont(nullptr, 16.0f);
+	ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::TextMuted);
+	ImGui::PushTextWrapPos(0.0f);
+	ImGui::TextUnformatted(Text.c_str());
+	ImGui::PopTextWrapPos();
+	ImGui::PopStyleColor();
+	ImGui::PopFont();
+}
+
+enum class TerrainLayerAction
+{
+	None,
+	Rename,
+	ChangeMaterial,
+	Fill,
+	Clear,
+	ImportMask,
+	ExportMask,
+	Delete
+};
+
+static TerrainLayerAction RenderTerrainLayerMenuItems(const bool bAllActions)
+{
+	TerrainLayerAction Action = TerrainLayerAction::None;
+	if (bAllActions)
+	{
+		if (ImGui::MenuItem("Rename"))
+			Action = TerrainLayerAction::Rename;
+
+		if (ImGui::MenuItem("Change material..."))
+			Action = TerrainLayerAction::ChangeMaterial;
+
+		ImGui::Separator();
+		if (ImGui::MenuItem("Fill"))
+			Action = TerrainLayerAction::Fill;
+
+		if (ImGui::MenuItem("Clear"))
+			Action = TerrainLayerAction::Clear;
+
+		ImGui::Separator();
+	}
+
+	if (ImGui::MenuItem("Import mask..."))
+		Action = TerrainLayerAction::ImportMask;
+
+	if (ImGui::MenuItem("Export mask..."))
+		Action = TerrainLayerAction::ExportMask;
+
+	ImGui::Separator();
+	ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::Danger);
+	if (ImGui::MenuItem("Delete"))
+		Action = TerrainLayerAction::Delete;
+	ImGui::PopStyleColor();
+
+	return Action;
+}
+
+// LayerIndex -1 adds a new layer.
+void FEEditorInspectorWindow::SelectMaterialForTerrainLayer(FEEntity* TerrainEntity, const int LayerIndex)
+{
+	std::vector<FEObject*> SuitableMaterials;
+	const std::vector<FEUUID> MaterialIDs = RESOURCE_MANAGER.GetMaterialIDList();
+	for (size_t i = 0; i < MaterialIDs.size(); i++)
+	{
+		if (RESOURCE_MANAGER.GetMaterial(MaterialIDs[i])->IsCompactPacking())
+			SuitableMaterials.push_back(RESOURCE_MANAGER.GetMaterial(MaterialIDs[i]));
+	}
+
+	if (SuitableMaterials.empty())
+	{
+		MessagePopUp::GetInstance().Show("No suitable material", "There are no materials with compact packing.");
+		return;
+	}
+
+	TerrainToWorkWith = TerrainEntity;
+	if (LayerIndex == -1)
+	{
+		SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, CreateNewTerrainLayerWithMaterialCallback, nullptr, SuitableMaterials);
+	}
+	else
+	{
+		TemporaryLayerIndex = static_cast<size_t>(LayerIndex);
+		SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialInTerrainLayerCallback, TerrainEntity->GetComponent<FETerrainComponent>().GetLayerInSlot(LayerIndex)->GetMaterial(), SuitableMaterials);
+	}
+}
+
+void FEEditorInspectorWindow::RenderTerrainLayers(FEEntity* TerrainEntity)
+{
+	FETerrainComponent& TerrainComponent = TerrainEntity->GetComponent<FETerrainComponent>();
+
+	const int Columns = 4;
+	const float Spacing = 8.0f;
+	const float SmallFontSize = 16.0f;
+	const float SwatchSize = floorf((ImGui::GetContentRegionAvail().x - Spacing * static_cast<float>(Columns - 1)) / static_cast<float>(Columns));
+	const float NameHeight = SmallFontSize + 8.0f;
+	const int LayerCount = TerrainComponent.LayersUsed();
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+
+	int SelectedLayer = -1;
+	if (TerrainComponent.GetLayerInSlot(TERRAIN_SYSTEM.GetBrushLayerIndex()) != nullptr)
+		SelectedLayer = static_cast<int>(TERRAIN_SYSTEM.GetBrushLayerIndex());
+
+	TerrainLayerAction Action = TerrainLayerAction::None;
+	bool bOpenLayerMenu = false;
+
+	// One more tile adds a layer while there is a free slot.
+	const int TileCount = LayerCount < FE_TERRAIN_MAX_LAYERS ? LayerCount + 1 : LayerCount;
+	const ImVec2 GridStart = ImGui::GetCursorScreenPos();
+	for (int i = 0; i < TileCount; i++)
+	{
+		const ImVec2 Min = ImVec2(GridStart.x + static_cast<float>(i % Columns) * (SwatchSize + Spacing), GridStart.y + static_cast<float>(i / Columns) * (SwatchSize + NameHeight + Spacing));
+		const ImVec2 Max = ImVec2(Min.x + SwatchSize, Min.y + SwatchSize);
+
+		ImGui::SetCursorScreenPos(Min);
+		ImGui::PushID(i);
+		const bool bPressed = ImGui::InvisibleButton("##TerrainLayer", ImVec2(SwatchSize, SwatchSize + NameHeight));
+		const bool bHovered = ImGui::IsItemHovered();
+
+		if (i == LayerCount)
+		{
+			ImGui::PopID();
+			if (bPressed)
+				SelectMaterialForTerrainLayer(TerrainEntity, -1);
+
+			DrawList->AddRectFilled(Min, Max, bHovered ? FEEditorStyle::ButtonHovered : FEEditorStyle::Button, 4.0f);
+			DrawList->AddRect(Min, Max, FEEditorStyle::ButtonBorder, 4.0f);
+			const ImVec2 Center = ImVec2(floorf(Min.x + SwatchSize / 2.0f), floorf(Min.y + SwatchSize / 2.0f));
+			DrawList->AddRectFilled(ImVec2(Center.x - 10.0f, Center.y - 1.0f), ImVec2(Center.x + 10.0f, Center.y + 1.0f), FEEditorStyle::Text);
+			DrawList->AddRectFilled(ImVec2(Center.x - 1.0f, Center.y - 10.0f), ImVec2(Center.x + 1.0f, Center.y + 10.0f), FEEditorStyle::Text);
+
+			ImGui::PushFont(nullptr, SmallFontSize);
+			DrawList->AddText(ImVec2(floorf(Min.x + (SwatchSize - ImGui::CalcTextSize("Add layer").x) / 2.0f), Max.y + 4.0f), FEEditorStyle::TextMuted, "Add layer");
+			ImGui::PopFont();
+			continue;
+		}
+
+		if (i < static_cast<int>(TerrainChangeLayerMaterialTargets.size()))
+			TerrainChangeLayerMaterialTargets[i]->StickToItem();
+		ImGui::PopID();
+
+		FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(i);
+		ShowToolTip(Layer->GetName().c_str());
+		if (bPressed || (bHovered && ImGui::IsMouseClicked(1)))
+		{
+			TERRAIN_SYSTEM.SetBrushLayerIndex(static_cast<size_t>(i));
+			SelectedLayer = i;
+			bOpenLayerMenu = !bPressed;
+		}
+
+		if (Layer->GetMaterial() != nullptr)
+			DrawList->AddImageRounded(PREVIEW_MANAGER.GetMaterialPreview(Layer->GetMaterial()->GetID())->GetTextureID(), Min, Max, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), IM_COL32_WHITE, 4.0f);
+
+		const bool bSelected = SelectedLayer == i;
+		if (bSelected)
+		{
+			DrawList->AddRect(Min, Max, FEEditorStyle::Accent, 4.0f, 3.0f);
+		}
+		else if (bHovered)
+		{
+			DrawList->AddRect(Min, Max, FEEditorStyle::TextMuted, 4.0f, 2.0f);
+		}
+
+		ImGui::PushFont(nullptr, SmallFontSize);
+		std::string ShownName = Layer->GetName();
+		if (ImGui::CalcTextSize(ShownName.c_str()).x > SwatchSize)
+		{
+			while (ShownName.size() > 1 && ImGui::CalcTextSize((ShownName + "...").c_str()).x > SwatchSize)
+				ShownName.pop_back();
+
+			ShownName += "...";
+		}
+
+		DrawList->AddText(ImVec2(floorf(Min.x + (SwatchSize - ImGui::CalcTextSize(ShownName.c_str()).x) / 2.0f), Max.y + 4.0f), bSelected ? FEEditorStyle::Text : FEEditorStyle::TextMuted, ShownName.c_str());
+		ImGui::PopFont();
+	}
+
+	const int RowCount = (TileCount + Columns - 1) / Columns;
+	ImGui::SetCursorScreenPos(ImVec2(GridStart.x, GridStart.y + static_cast<float>(RowCount) * (SwatchSize + NameHeight + Spacing)));
+	ImGui::Dummy(ImVec2(0.0f, 0.0f));
+
+	if (SelectedLayer == -1)
+		return;
+
+	if (TerrainLayerRenameIndex != SelectedLayer)
+		TerrainLayerRenameIndex = -1;
+
+	// Card with the selected layer and its actions.
+	FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(SelectedLayer);
+	const float Padding = 10.0f;
+	const float ButtonHeight = SmallFontSize + 8.0f;
+	const float CardHeight = Padding * 2.0f + ImGui::GetFrameHeight() + SmallFontSize + ButtonHeight + 18.0f;
+	const ImVec2 CardMin = ImGui::GetCursorScreenPos();
+	const ImVec2 CardMax = ImVec2(CardMin.x + ImGui::GetContentRegionAvail().x, CardMin.y + CardHeight);
+	DrawList->AddRectFilled(CardMin, CardMax, FEEditorStyle::Card, 4.0f);
+	DrawList->AddRect(CardMin, CardMax, FEEditorStyle::CardBorder, 4.0f);
+
+	if (TerrainLayerRenameIndex == SelectedLayer)
+	{
+		ImGui::SetCursorScreenPos(ImVec2(CardMin.x + Padding, CardMin.y + Padding));
+		ImGui::SetNextItemWidth(CardMax.x - CardMin.x - Padding * 2.0f);
+		if (!bLastFrameTerrainLayerRenameEditWasVisible)
+		{
+			ImGui::SetKeyboardFocusHere();
+			bLastFrameTerrainLayerRenameEditWasVisible = true;
+		}
+
+		const bool bEnterPressed = ImGui::InputText("##TerrainLayerName", &TerrainLayerRenameBuffer, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+		if (bEnterPressed || ImGui::IsItemDeactivated())
+		{
+			if (!ImGui::IsKeyPressed(ImGuiKey_Escape) && !TerrainLayerRenameBuffer.empty() && TerrainLayerRenameBuffer != Layer->GetName())
+			{
+				Layer->SetName(TerrainLayerRenameBuffer);
+				PROJECT_MANAGER.GetCurrent()->SetModified(true);
+			}
+
+			TerrainLayerRenameIndex = -1;
+		}
+	}
+	else
+	{
+		DrawList->PushClipRect(CardMin, ImVec2(CardMax.x - Padding, CardMax.y), true);
+		DrawList->AddText(ImVec2(CardMin.x + Padding, CardMin.y + Padding + ImGui::GetStyle().FramePadding.y), FEEditorStyle::Text, Layer->GetName().c_str());
+		DrawList->PopClipRect();
+	}
+
+	ImGui::PushFont(nullptr, SmallFontSize);
+	const std::string MaterialText = "Material: " + (Layer->GetMaterial() != nullptr ? Layer->GetMaterial()->GetName() : std::string("none"));
+	DrawList->PushClipRect(CardMin, ImVec2(CardMax.x - Padding, CardMax.y), true);
+	DrawList->AddText(ImVec2(CardMin.x + Padding, CardMin.y + Padding + ImGui::GetFrameHeight() + 4.0f), FEEditorStyle::TextMuted, MaterialText.c_str());
+	DrawList->PopClipRect();
+
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10.0f, 4.0f));
+	ImGui::SetCursorScreenPos(ImVec2(CardMin.x + Padding, CardMax.y - Padding - ButtonHeight));
+	if (ImGui::Button("Rename"))
+		Action = TerrainLayerAction::Rename;
+
+	ImGui::SameLine(0.0f, 6.0f);
+	if (ImGui::Button("Material..."))
+		Action = TerrainLayerAction::ChangeMaterial;
+
+	ImGui::SameLine(0.0f, 6.0f);
+	if (ImGui::Button("Fill"))
+		Action = TerrainLayerAction::Fill;
+
+	ImGui::SameLine(0.0f, 6.0f);
+	if (ImGui::Button("Clear"))
+		Action = TerrainLayerAction::Clear;
+
+	ImGui::SameLine(0.0f, 6.0f);
+	if (ImGui::Button("More"))
+		ImGui::OpenPopup("##TerrainLayerMoreMenu");
+	ImGui::PopStyleVar();
+	ImGui::PopFont();
+
+	ImGui::SetCursorScreenPos(ImVec2(CardMin.x, CardMax.y));
+	ImGui::Dummy(ImVec2(0.0f, 0.0f));
+
+	if (bOpenLayerMenu)
+		ImGui::OpenPopup("##TerrainLayerMenu");
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15.0f, 15.0f));
+	if (ImGui::BeginPopup("##TerrainLayerMenu"))
+	{
+		const TerrainLayerAction MenuAction = RenderTerrainLayerMenuItems(true);
+		if (MenuAction != TerrainLayerAction::None)
+			Action = MenuAction;
+
+		ImGui::EndPopup();
+	}
+
+	if (ImGui::BeginPopup("##TerrainLayerMoreMenu"))
+	{
+		const TerrainLayerAction MenuAction = RenderTerrainLayerMenuItems(false);
+		if (MenuAction != TerrainLayerAction::None)
+			Action = MenuAction;
+
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar();
+
+	if (Action == TerrainLayerAction::Rename)
+	{
+		TerrainLayerRenameIndex = SelectedLayer;
+		TerrainLayerRenameBuffer = Layer->GetName();
+		bLastFrameTerrainLayerRenameEditWasVisible = false;
+	}
+	else if (Action == TerrainLayerAction::ChangeMaterial)
+	{
+		SelectMaterialForTerrainLayer(TerrainEntity, SelectedLayer);
+	}
+	else if (Action == TerrainLayerAction::Fill)
+	{
+		TERRAIN_SYSTEM.FillTerrainLayerMask(TerrainEntity, SelectedLayer);
+	}
+	else if (Action == TerrainLayerAction::Clear)
+	{
+		TERRAIN_SYSTEM.ClearTerrainLayerMask(TerrainEntity, SelectedLayer);
+	}
+	else if (Action == TerrainLayerAction::ImportMask)
+	{
+		FILE_SYSTEM.OpenFileDialog(TEXTURE_LOAD_FILTER, [TerrainEntity, SelectedLayer](const std::string& FilePath) {
+			if (FilePath.empty())
+				return;
+
+			TERRAIN_SYSTEM.LoadTerrainLayerMask(TerrainEntity, FilePath, SelectedLayer);
+			PROJECT_MANAGER.GetCurrent()->SetModified(true);
+		});
+	}
+	else if (Action == TerrainLayerAction::ExportMask)
+	{
+		// The dialog already adds ".png" when the user does not type an extension.
+		FILE_SYSTEM.SaveFileDialog("", TEXTURE_LOAD_FILTER, [TerrainEntity, SelectedLayer](std::string FilePath, int ChosenFilterIndex) {
+			if (FILE_SYSTEM.GetFileExtension(FilePath) != ".png")
+				FilePath += ".png";
+
+			TERRAIN_SYSTEM.SaveTerrainLayerMask(TerrainEntity, FilePath, SelectedLayer);
+			return true;
+		});
+	}
+	else if (Action == TerrainLayerAction::Delete)
+	{
+		TERRAIN_SYSTEM.DeleteTerrainLayerMask(TerrainEntity, SelectedLayer);
+	}
+}
+
 void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 {
 	FETerrainComponent& TerrainComponent = TerrainEntity->GetComponent<FETerrainComponent>();
@@ -1987,425 +2309,555 @@ void FEEditorInspectorWindow::DisplayTerrainSettings(FEEntity* TerrainEntity)
 		}
 	}
 
-	if (ImGui::BeginTabBar("##terrainSettings", ImGuiTabBarFlags_None))
+	const bool bHasLayers = TerrainComponent.GetLayerInSlot(0) != nullptr;
+	if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_LAYER_DRAW && TerrainComponent.GetLayerInSlot(TERRAIN_SYSTEM.GetBrushLayerIndex()) == nullptr)
 	{
-		if (ImGui::BeginTabItem("General"))
+		if (bHasLayers)
 		{
-			bool bActive = TerrainComponent.IsWireframeMode();
-			ImGui::Checkbox("WireframeMode", &bActive);
-			TerrainComponent.SetWireframeMode(bActive);
+			TERRAIN_SYSTEM.SetBrushLayerIndex(0);
+		}
+		else
+		{
+			TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_NONE);
+			TerrainWithLayersShown = TerrainEntity;
+		}
+	}
+
+	// Layers of a terrain without layers are shown with the brush off, the brush is turned on with the first layer.
+	if (TERRAIN_SYSTEM.GetBrushMode() != FE_TERRAIN_BRUSH_NONE)
+	{
+		TerrainWithLayersShown = nullptr;
+	}
+	else if (TerrainWithLayersShown == TerrainEntity && bHasLayers)
+	{
+		TERRAIN_SYSTEM.SetBrushLayerIndex(0);
+		TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_LAYER_DRAW);
+		TerrainWithLayersShown = nullptr;
+	}
+
+	int CurrentTool = GetTerrainToolIndex(TERRAIN_SYSTEM.GetBrushMode());
+	if (TerrainWithLayersShown == TerrainEntity)
+		CurrentTool = TerrainPaintToolIndex;
+
+	const float LabelWidth = ImGui::CalcTextSize("Chunks per side").x + 14.0f;
+	const float FieldSpacing = 6.0f;
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 6.0f));
+
+	const ImVec2 TileSize = ImVec2(floorf((ImGui::GetContentRegionAvail().x - FieldSpacing * static_cast<float>(TerrainToolCount - 1)) / static_cast<float>(TerrainToolCount)), 68.0f);
+	for (int i = 0; i < TerrainToolCount; i++)
+	{
+		if (RenderTerrainToolTile(TerrainTools[i], CurrentTool == i, TileSize))
+		{
+			// Click on the active brush turns it off.
+			FE_TERRAIN_BRUSH_MODE NewBrushMode = CurrentTool == i ? FE_TERRAIN_BRUSH_NONE : TerrainTools[i].BrushMode;
+			TerrainWithLayersShown = nullptr;
+			if (NewBrushMode == FE_TERRAIN_BRUSH_LAYER_DRAW)
+			{
+				if (!bHasLayers)
+				{
+					NewBrushMode = FE_TERRAIN_BRUSH_NONE;
+					TerrainWithLayersShown = TerrainEntity;
+				}
+				else if (TerrainComponent.GetLayerInSlot(TERRAIN_SYSTEM.GetBrushLayerIndex()) == nullptr)
+				{
+					TERRAIN_SYSTEM.SetBrushLayerIndex(0);
+				}
+			}
+
+			TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, NewBrushMode);
+		}
+
+		if (i < TerrainToolCount - 1)
+			ImGui::SameLine(0.0f, FieldSpacing);
+	}
+
+	if (CurrentTool == 0)
+	{
+		const FEAABB RealAABB = TERRAIN_SYSTEM.GetAABB(TerrainEntity);
+		const glm::vec3 Size = RealAABB.GetMax() - RealAABB.GetMin();
+		char SizeText[64] = {};
+		snprintf(SizeText, sizeof(SizeText), "%.0f x %.0f m", fabsf(Size.x), fabsf(Size.z));
+		RenderRowLabel("Size", LabelWidth);
+		ImGui::TextUnformatted(SizeText);
+
+		float HeightScale = TerrainComponent.GetHeightScale();
+		if (RenderFloatRow("Height range", "##HeightRange", HeightScale, 1.0f, 0.001f, 100000.0f, LabelWidth, "%.1f m"))
+			TerrainComponent.SetHeightScale(HeightScale);
+
+		float LODLevel = TerrainComponent.GetLODLevel();
+		if (RenderFloatRow("Detail level", "##LODLevel", LODLevel, 2.0f, 2.0f, 128.0f, LabelWidth, "%.0f"))
+			TerrainComponent.SetLODLevel(LODLevel);
+		ShowToolTip("Bigger detail level more details terrain will have and less performance you will get.");
+
+		float ChunkPerSide = TerrainComponent.GetChunkPerSide();
+		if (RenderFloatRow("Chunks per side", "##ChunkPerSide", ChunkPerSide, 2.0f, 1.0f, 16.0f, LabelWidth, "%.0f"))
+			TerrainComponent.SetChunkPerSide(ChunkPerSide);
+
+		float DisplacementScale = TerrainComponent.GetDisplacementScale();
+		if (RenderFloatRow("Displacement", "##DisplacementScale", DisplacementScale, 0.02f, -10.0f, 10.0f, LabelWidth))
+			TerrainComponent.SetDisplacementScale(DisplacementScale);
+
+		RenderRowLabel("Height map", LabelWidth);
+		const float HalfWidth = floorf((ImGui::GetContentRegionAvail().x - FieldSpacing) / 2.0f);
+		if (ImGui::Button("Import...", ImVec2(HalfWidth, 0.0f)))
+		{
+			FILE_SYSTEM.OpenFileDialog(TEXTURE_LOAD_FILTER, [TerrainEntity](const std::string& FilePath) {
+				if (FilePath.empty())
+					return;
+
+				TERRAIN_SYSTEM.LoadHeightMap(FilePath.c_str(), TerrainEntity);
+				FETexture* LoadedTexture = TerrainEntity->GetComponent<FETerrainComponent>().GetHeightMap();
+				if (LoadedTexture == RESOURCE_MANAGER.NoTexture)
+				{
+					LOG.Add(std::string("can't load height map: ") + FilePath, "FE_LOG_LOADING", FE_LOG_ERROR);
+				}
+				else
+				{
+					LoadedTexture->SetDirtyFlag(true);
+					PROJECT_MANAGER.GetCurrent()->SetModified(true);
+				}
+			});
+		}
+
+		ImGui::SameLine(0.0f, FieldSpacing);
+		if (ImGui::Button("Export...", ImVec2(HalfWidth, 0.0f)))
+		{
+			// The dialog already adds ".png" when the user does not type an extension.
+			FILE_SYSTEM.SaveFileDialog("", TEXTURE_LOAD_FILTER, [HeightMap = TerrainComponent.GetHeightMap()](std::string FilePath, int ChosenFilterIndex) {
+				if (FILE_SYSTEM.GetFileExtension(FilePath) != ".png")
+					FilePath += ".png";
+
+				return RESOURCE_MANAGER.ExportFETextureToPNG(HeightMap, FilePath);
+			});
+		}
+
+		if (TerrainComponent.GetHeightMap() != nullptr)
+		{
+			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + LabelWidth, ImGui::GetCursorPosY() - 2.0f));
+			RenderHintText(std::to_string(TerrainComponent.GetHeightMap()->GetWidth()) + " x " + std::to_string(TerrainComponent.GetHeightMap()->GetHeight()) + " pixels");
+		}
+
+		glm::vec2 TileMult = TerrainComponent.GetTileMult();
+		RenderRowLabel("Tiling", LabelWidth);
+		ImGui::SetNextItemWidth(HalfWidth);
+		bool bTilingChanged = ImGui::DragFloat("##TilingX", &TileMult.x, 0.1f, 1.0f, 100.0f, "X %.1f");
+		ImGui::SameLine(0.0f, FieldSpacing);
+		ImGui::SetNextItemWidth(HalfWidth);
+		bTilingChanged |= ImGui::DragFloat("##TilingY", &TileMult.y, 0.1f, 1.0f, 100.0f, "Y %.1f");
+		if (bTilingChanged)
+			TerrainComponent.SetTileMult(TileMult);
+
+		if (RenderGroupTitle("Debug", "", false))
+		{
+			bool bWireframe = TerrainComponent.IsWireframeMode();
+			RenderRowLabel("Wireframe", LabelWidth);
+			if (ImGui::Checkbox("##Wireframe", &bWireframe))
+				TerrainComponent.SetWireframeMode(bWireframe);
 
 			FEShaderUniformValue CurrentValue;
 			if (RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::PBRShader)->GetUniformData("debugFlag", CurrentValue))
 			{
-
-				int IData = CurrentValue.GetValue<int>();
-				ImGui::SliderInt("debugFlag", &IData, 0, 10);
-				RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::PBRShader)->UpdateUniformData("debugFlag", IData);
+				int DebugFlag = CurrentValue.GetValue<int>();
+				RenderRowLabel("Shader view", LabelWidth);
+				ImGui::SetNextItemWidth(-FLT_MIN);
+				if (ImGui::SliderInt("##DebugFlag", &DebugFlag, 0, 10))
+					RESOURCE_MANAGER.GetShader(FEEngineResourceIDs::PBRShader)->UpdateUniformData("debugFlag", DebugFlag);
+				ShowToolTip("Debug view of the PBR shader, it is the same for all objects.");
 			}
-
-			float DisplacementScale = TerrainComponent.GetDisplacementScale();
-			ImGui::DragFloat("displacementScale", &DisplacementScale, 0.02f, -10.0f, 10.0f);
-			TerrainComponent.SetDisplacementScale(DisplacementScale);
-
-			float LODLevel = TerrainComponent.GetLODLevel();
-			ImGui::DragFloat("LODlevel", &LODLevel, 2.0f, 2.0f, 128.0f);
-			TerrainComponent.SetLODLevel(LODLevel);
-			ShowToolTip("Bigger LODlevel more details terraine will have and less performance you will get.");
-
-			float ChunkPerSide = TerrainComponent.GetChunkPerSide();
-			ImGui::DragFloat("chunkPerSide", &ChunkPerSide, 2.0f, 1.0f, 16.0f);
-			TerrainComponent.SetChunkPerSide(ChunkPerSide);
-
-			// ********************* REAL WORLD COMPARISON SCALE *********************
-			FEAABB RealAABB = TERRAIN_SYSTEM.GetAABB(TerrainEntity);
-			glm::vec3 Min = RealAABB.GetMin();
-			glm::vec3 Max = RealAABB.GetMax();
-
-			float XSize = sqrt((Max.x - Min.x) * (Max.x - Min.x));
-			float YSize = sqrt((Max.y - Min.y) * (Max.y - Min.y));
-			float ZSize = sqrt((Max.z - Min.z) * (Max.z - Min.z));
-
-			std::string SizeInM = "Approximate terrain size: ";
-			SizeInM += std::to_string(std::max(XSize, std::max(YSize, ZSize)));
-			SizeInM += " m";
-			ImGui::Text(SizeInM.c_str());
-			// ********************* REAL WORLD COMPARISON SCALE END *********************
-
-			ImGui::EndTabItem();
 		}
-		if (ImGui::BeginTabItem("Sculpt"))
-		{
-			ExportHeightMapButton->Render();
-			if (ExportHeightMapButton->IsClicked())
-			{
-				// The dialog already adds ".png" when the user does not type an extension.
-				FILE_SYSTEM.SaveFileDialog("", TEXTURE_LOAD_FILTER, [HeightMap = TerrainComponent.GetHeightMap()](std::string FilePath, int ChosenFilterIndex) {
-					if (FILE_SYSTEM.GetFileExtension(FilePath) != ".png")
-						FilePath += ".png";
-
-					return RESOURCE_MANAGER.ExportFETextureToPNG(HeightMap, FilePath);
-				});
-			}
-
-			ImGui::SameLine();
-			ImportHeightMapButton->Render();
-			if (ImportHeightMapButton->IsClicked())
-			{
-				FILE_SYSTEM.OpenFileDialog(TEXTURE_LOAD_FILTER, [TerrainEntity](const std::string& FilePath) {
-					if (FilePath.empty())
-						return;
-
-					TERRAIN_SYSTEM.LoadHeightMap(FilePath.c_str(), TerrainEntity);
-					FETexture* LoadedTexture = TerrainEntity->GetComponent<FETerrainComponent>().GetHeightMap();
-					if (LoadedTexture == RESOURCE_MANAGER.NoTexture)
-					{
-						LOG.Add(std::string("can't load height map: ") + FilePath, "FE_LOG_LOADING", FE_LOG_ERROR);
-					}
-					else
-					{
-						LoadedTexture->SetDirtyFlag(true);
-						PROJECT_MANAGER.GetCurrent()->SetModified(true);
-					}
-				});
-			}
-
-			float HighScale = TerrainComponent.GetHeightScale();
-			ImGui::DragFloat("Height range in m", &HighScale);
-			TerrainComponent.SetHeightScale(HighScale);
-
-			float CurrentBrushSize = TERRAIN_SYSTEM.GetBrushSize();
-			ImGui::DragFloat("brushSize", &CurrentBrushSize, 0.1f, 0.01f, 100.0f);
-			TERRAIN_SYSTEM.SetBrushSize(CurrentBrushSize);
-
-			float CurrentBrushIntensity = TERRAIN_SYSTEM.GetBrushIntensity();
-			ImGui::DragFloat("brushIntensity", &CurrentBrushIntensity, 0.0001f, 0.0001f, 10.0f);
-			TERRAIN_SYSTEM.SetBrushIntensity(CurrentBrushIntensity);
-
-			SetDefaultStyle(SculptBrushButton);
-			if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW ||
-				TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED)
-				SetSelectedStyle(SculptBrushButton);
-
-			SculptBrushButton->Render();
-			ShowToolTip("Sculpt Brush. Left mouse to increase height, hold shift to decrease height.");
-
-			if (SculptBrushButton->IsClicked())
-			{
-				if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW ||
-					TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_DRAW_INVERSED)
-				{
-					TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_NONE);
-				}
-				else
-				{
-					TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_SCULPT_DRAW);
-				}
-			}
-
-			SetDefaultStyle(LevelBrushButton);
-			if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_LEVEL)
-				SetSelectedStyle(LevelBrushButton);
-
-			ImGui::SameLine();
-			LevelBrushButton->Render();
-			ShowToolTip("Level Brush.");
-
-			if (LevelBrushButton->IsClicked())
-			{
-				if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_LEVEL)
-				{
-					TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_NONE);
-				}
-				else
-				{
-					TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_SCULPT_LEVEL);
-				}
-			}
-
-			SetDefaultStyle(SmoothBrushButton);
-			if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_SMOOTH)
-				SetSelectedStyle(SmoothBrushButton);
-
-			ImGui::SameLine();
-			SmoothBrushButton->Render();
-			ShowToolTip("Smooth Brush.");
-
-			if (SmoothBrushButton->IsClicked())
-			{
-				if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_SCULPT_SMOOTH)
-				{
-					TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_NONE);
-				}
-				else
-				{
-					TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_SCULPT_SMOOTH);
-				}
-			}
-
-			ImGui::EndTabItem();
-		}
-		if (ImGui::BeginTabItem("Paint"))
-		{
-			glm::vec2 TileMult = TerrainComponent.GetTileMult();
-			ImGui::DragFloat2("all layers tile factors", &TileMult[0], 0.1f, 1.0f, 100.0f);
-			TerrainComponent.SetTileMult(TileMult);
-
-			float CurrentBrushSize = TERRAIN_SYSTEM.GetBrushSize();
-			ImGui::DragFloat("brushSize", &CurrentBrushSize, 0.1f, 0.01f, 100.0f);
-			TERRAIN_SYSTEM.SetBrushSize(CurrentBrushSize);
-
-			float CurrentBrushIntensity = TERRAIN_SYSTEM.GetBrushIntensity();
-			ImGui::DragFloat("brushIntensity", &CurrentBrushIntensity, 0.0001f, 0.0001f, 10.0f);
-			TERRAIN_SYSTEM.SetBrushIntensity(CurrentBrushIntensity);
-
-			SetDefaultStyle(LayerBrushButton);
-			if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_LAYER_DRAW)
-				SetSelectedStyle(LayerBrushButton);
-
-			LayerBrushButton->Render();
-			ShowToolTip("Layer draw brush. Left mouse to paint currently selected layer, hold shift to decrease layer influence.");
-			static int SelectedLayer = -1;
-			if (SelectedLayer != -1 && TerrainComponent.GetLayerInSlot(SelectedLayer) == nullptr)
-				SelectedLayer = -1;
-
-			if (LayerBrushButton->IsClicked())
-			{
-				if (SelectedLayer != -1)
-				{
-					if (TERRAIN_SYSTEM.GetBrushMode() == FE_TERRAIN_BRUSH_LAYER_DRAW)
-					{
-						TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_NONE);
-					}
-					else
-					{
-						TERRAIN_SYSTEM.SetBrushMode(TerrainEntity, FE_TERRAIN_BRUSH_LAYER_DRAW);
-					}
-				}
-
-			}
-
-			ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
-			static bool bContextMenuOpened = false;
-
-			ImGui::Text("Layers:");
-
-			ImGui::BeginChild(ImGui::GetID("Layers ListBox Child"),
-							 ImVec2(ImGui::GetContentRegionAvail().x - 10.0f, 500.0f),
-							 ImGuiChildFlags_Borders,
-							 ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-			bool bListBoxHovered = false;
-			if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
-				bListBoxHovered = true;
-
-			static bool bShouldOpenContextMenu = false;
-			if (ImGui::IsMouseClicked(1))
-			{
-				if (bListBoxHovered)
-				{
-					bShouldOpenContextMenu = true;
-				}
-			}
-
-			ImGui::BeginListBox("##Layers ListBox", ImVec2(ImGui::GetContentRegionAvail().x - 10.0f, 500.0f));
-
-			for (size_t i = 0; i < FE_TERRAIN_MAX_LAYERS; i++)
-			{
-				FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(i);
-				if (Layer == nullptr)
-					break;
-
-				ImVec2 PostionBeforeDraw = ImGui::GetCursorPos();
-
-				ImVec2 TextSize = ImGui::CalcTextSize(Layer->GetName().c_str());
-				ImGui::SetCursorPos(PostionBeforeDraw + ImVec2(ImGui::GetContentRegionAvail().x / 2.0f - TextSize.x / 2.0f, 16));
-
-				if (TerrainLayerRenameIndex == i)
-				{
-					if (!bLastFrameTerrainLayerRenameEditWasVisible)
-					{
-						ImGui::SetKeyboardFocusHere(0);
-						ImGui::SetFocusID(ImGui::GetID("##NewNameTerrainLayerEditor"), FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl());
-						ImGui::SetItemDefaultFocus();
-						bLastFrameTerrainLayerRenameEditWasVisible = true;
-					}
-
-					ImGui::SetNextItemWidth(350.0f);
-					ImGui::SetCursorPos(ImVec2(PostionBeforeDraw.x + 64.0f + (ImGui::GetContentRegionAvail().x - 64.0f) / 2.0f - 350.0f / 2.0f, PostionBeforeDraw.y + 12));
-					if (ImGui::InputText("##NewNameTerrainLayerEditor", &TerrainLayerRenameBuffer, ImGuiInputTextFlags_EnterReturnsTrue) ||
-						ImGui::IsMouseClicked(0) && !ImGui::IsItemHovered() || ImGui::IsItemFocused()/*FE_IMGUI_WINDOW_MANAGER.GetCurrentFocusID() != ImGui::GetID("##newNameTerrainLayerEditor")*/)
-					{
-						PROJECT_MANAGER.GetCurrent()->SetModified(true);
-						Layer->SetName(TerrainLayerRenameBuffer);
-
-						TerrainLayerRenameIndex = -1;
-					}
-				}
-				else
-				{
-					ImGui::Text(Layer->GetName().c_str());
-				}
-				ImGui::SetCursorPos(PostionBeforeDraw);
-
-				ImGui::PushID(int(i));
-				if (ImGui::Selectable("##item", SelectedLayer == i ? true : false, ImGuiSelectableFlags_None, ImVec2(ImGui::GetContentRegionAvail().x - 0, 64)))
-				{
-					SelectedLayer = int(i);
-					TERRAIN_SYSTEM.SetBrushLayerIndex(SelectedLayer);
-				}
-				TerrainChangeLayerMaterialTargets[i]->StickToItem();
-				ImGui::PopID();
-
-				if (ImGui::IsItemHovered())
-					HoveredTerrainLayerItem = int(i);
-
-				ImGui::SetCursorPos(PostionBeforeDraw);
-				ImColor ImageTint = ImGui::IsItemHovered() ? ImColor(1.0f, 1.0f, 1.0f, 0.5f) : ImColor(1.0f, 1.0f, 1.0f, 1.0f);
-				FETexture* PreviewTexture = PREVIEW_MANAGER.GetMaterialPreview(Layer->GetMaterial()->GetID());
-				ImGui::Image(PreviewTexture->GetTextureID(), ImVec2(64, 64), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
-			}
-
-			ImGui::EndListBox();
-			ImGui::PopFont();
-
-			ImGui::EndChild();
-			ImGui::EndTabItem();
-
-			if (bShouldOpenContextMenu)
-			{
-				bShouldOpenContextMenu = false;
-				ImGui::OpenPopup("##layers_listBox_context_menu");
-			}
-
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-			if (ImGui::BeginPopup("##layers_listBox_context_menu"))
-			{
-				bContextMenuOpened = true;
-
-				if (TerrainComponent.GetLayerInSlot(FE_TERRAIN_MAX_LAYERS - 1) != nullptr)
-					ImGui::BeginDisabled();
-
-				if (ImGui::MenuItem("Add layer..."))
-				{
-					std::vector<FEUUID> TemporaryMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
-					std::vector<FEObject*> FinalMaterialList;
-					for (size_t i = 0; i < TemporaryMaterialList.size(); i++)
-					{
-						if (RESOURCE_MANAGER.GetMaterial(TemporaryMaterialList[i])->IsCompactPacking())
-						{
-							FinalMaterialList.push_back(RESOURCE_MANAGER.GetMaterial(TemporaryMaterialList[i]));
-						}
-					}
-
-					if (FinalMaterialList.empty())
-					{
-						MessagePopUp::GetInstance().Show("No suitable material", "There are no materials with compact packing.");
-					}
-					else
-					{
-						TerrainToWorkWith = TerrainEntity;
-						SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, CreateNewTerrainLayerWithMaterialCallback, nullptr, FinalMaterialList);
-					}
-				}
-
-				if (TerrainComponent.GetLayerInSlot(FE_TERRAIN_MAX_LAYERS - 1) != nullptr)
-					ImGui::EndDisabled();
-
-				if (HoveredTerrainLayerItem != -1)
-				{
-					FETerrainLayer* Layer = TerrainComponent.GetLayerInSlot(HoveredTerrainLayerItem);
-					if (Layer != nullptr)
-					{
-						ImGui::Separator();
-						std::string LayerName = Layer->GetName();
-						ImGui::Text((std::string("Actions with ") + LayerName).c_str());
-						ImGui::Separator();
-
-						if (ImGui::MenuItem("Rename"))
-						{
-							TerrainLayerRenameIndex = HoveredTerrainLayerItem;
-
-							TerrainLayerRenameBuffer = Layer->GetName();
-							bLastFrameTerrainLayerRenameEditWasVisible = false;
-						}
-
-						if (ImGui::MenuItem("Fill"))
-						{
-							TERRAIN_SYSTEM.FillTerrainLayerMask(TerrainEntity, HoveredTerrainLayerItem);
-						}
-
-						if (ImGui::MenuItem("Clear"))
-						{
-							TERRAIN_SYSTEM.ClearTerrainLayerMask(TerrainEntity, HoveredTerrainLayerItem);
-						}
-
-						if (ImGui::MenuItem("Delete"))
-						{
-							TERRAIN_SYSTEM.DeleteTerrainLayerMask(TerrainEntity, HoveredTerrainLayerItem);
-						}
-
-						ImGui::Separator();
-
-						if (ImGui::MenuItem("Change material..."))
-						{
-							std::vector<FEUUID> TemporaryMaterialList = RESOURCE_MANAGER.GetMaterialIDList();
-							std::vector<FEObject*> FinalMaterialList;
-							for (size_t i = 0; i < TemporaryMaterialList.size(); i++)
-							{
-								if (RESOURCE_MANAGER.GetMaterial(TemporaryMaterialList[i])->IsCompactPacking())
-								{
-									FinalMaterialList.push_back(RESOURCE_MANAGER.GetMaterial(TemporaryMaterialList[i]));
-								}
-							}
-
-							if (FinalMaterialList.empty())
-							{
-								MessagePopUp::GetInstance().Show("No suitable material", "There are no materials with compact packing.");
-							}
-							else
-							{
-								TerrainToWorkWith = TerrainEntity;
-								TemporaryLayerIndex = HoveredTerrainLayerItem;
-								SELECT_FEOBJECT_POPUP.Show(FE_MATERIAL, ChangeMaterialInTerrainLayerCallback, TerrainComponent.GetLayerInSlot(HoveredTerrainLayerItem)->GetMaterial(), FinalMaterialList);
-							}
-						}
-
-						if (ImGui::MenuItem("Export mask..."))
-						{
-							// The dialog already adds ".png" when the user does not type an extension.
-							FILE_SYSTEM.SaveFileDialog("", TEXTURE_LOAD_FILTER, [TerrainEntity, LayerIndex = HoveredTerrainLayerItem](std::string FilePath, int ChosenFilterIndex) {
-								if (FILE_SYSTEM.GetFileExtension(FilePath) != ".png")
-									FilePath += ".png";
-
-								TERRAIN_SYSTEM.SaveTerrainLayerMask(TerrainEntity, FilePath, LayerIndex);
-								return true;
-							});
-						}
-
-						if (ImGui::MenuItem("Import mask..."))
-						{
-							FILE_SYSTEM.OpenFileDialog(TEXTURE_LOAD_FILTER, [TerrainEntity, LayerIndex = HoveredTerrainLayerItem](const std::string& FilePath) {
-								if (FilePath.empty())
-									return;
-
-								TERRAIN_SYSTEM.LoadTerrainLayerMask(TerrainEntity, FilePath, LayerIndex);
-								PROJECT_MANAGER.GetCurrent()->SetModified(true);
-							});
-						}
-					}
-				}
-
-				ImGui::EndPopup();
-			}
-			ImGui::PopStyleVar();
-
-			if (!bContextMenuOpened)
-				HoveredTerrainLayerItem = -1;
-
-			bContextMenuOpened = false;
-		}
-		ImGui::EndTabBar();
 	}
+	else
+	{
+		const bool bPaintWithoutLayers = CurrentTool == TerrainPaintToolIndex && !bHasLayers;
+		RenderHintText(bPaintWithoutLayers ? "Add a layer to paint it on the terrain." : TerrainTools[CurrentTool].Hint);
+
+		float BrushSize = TERRAIN_SYSTEM.GetBrushSize();
+		if (RenderFloatRow("Size", "##BrushSize", BrushSize, 0.1f, 0.01f, 100.0f, LabelWidth, "%.2f"))
+			TERRAIN_SYSTEM.SetBrushSize(BrushSize);
+
+		float BrushIntensity = TERRAIN_SYSTEM.GetBrushIntensity();
+		if (RenderFloatRow("Strength", "##BrushIntensity", BrushIntensity, 0.0001f, 0.0001f, 10.0f, LabelWidth, "%.4f"))
+			TERRAIN_SYSTEM.SetBrushIntensity(BrushIntensity);
+
+		if (CurrentTool == TerrainPaintToolIndex)
+		{
+			if (RenderGroupTitle("Layers", std::to_string(TerrainComponent.LayersUsed()) + " of " + std::to_string(FE_TERRAIN_MAX_LAYERS)))
+				RenderTerrainLayers(TerrainEntity);
+		}
+	}
+
+	ImGui::PopStyleVar();
+}
+
+enum class InstancedIcon
+{
+	None,
+	Scatter,
+	Cursor,
+	Respawn,
+	Add,
+	ToGround,
+	Delete
+};
+
+// Center should have integer coordinates.
+static void RenderInstancedIcon(ImDrawList* DrawList, const InstancedIcon Icon, const ImVec2 Center, const ImU32 Color)
+{
+	if (Icon == InstancedIcon::Scatter)
+	{
+		const ImVec2 Offsets[] = { ImVec2(-7.0f, -6.0f), ImVec2(2.0f, -8.0f), ImVec2(8.0f, -1.0f), ImVec2(-2.0f, 0.0f), ImVec2(-8.0f, 6.0f), ImVec2(4.0f, 7.0f) };
+		const float Sizes[] = { 2.5f, 2.0f, 2.5f, 3.0f, 2.0f, 2.5f };
+		for (int i = 0; i < 6; i++)
+			DrawList->AddCircleFilled(ImVec2(Center.x + Offsets[i].x, Center.y + Offsets[i].y), Sizes[i], Color);
+	}
+	else if (Icon == InstancedIcon::Cursor)
+	{
+		const ImVec2 Tip = ImVec2(Center.x - 6.0f, Center.y - 9.0f);
+		DrawList->AddTriangleFilled(Tip, ImVec2(Tip.x + 12.0f, Tip.y + 11.0f), ImVec2(Tip.x, Tip.y + 16.0f), Color);
+		DrawList->AddQuadFilled(ImVec2(Tip.x + 3.5f, Tip.y + 11.0f), ImVec2(Tip.x + 6.5f, Tip.y + 9.5f), ImVec2(Tip.x + 10.5f, Tip.y + 17.5f), ImVec2(Tip.x + 7.5f, Tip.y + 19.0f), Color);
+	}
+	else if (Icon == InstancedIcon::Respawn)
+	{
+		DrawList->PathArcTo(Center, 7.0f, 0.2f * IM_PI, 1.6f * IM_PI, 24);
+		DrawList->PathStroke(Color, ImDrawFlags_None, 2.0f);
+		DrawList->AddTriangleFilled(ImVec2(Center.x + 7.5f, Center.y - 7.0f), ImVec2(Center.x + 1.0f, Center.y - 3.5f), ImVec2(Center.x + 1.0f, Center.y - 10.5f), Color);
+	}
+	else if (Icon == InstancedIcon::Add)
+	{
+		DrawList->AddRectFilled(ImVec2(Center.x - 7.0f, Center.y - 1.0f), ImVec2(Center.x + 7.0f, Center.y + 1.0f), Color);
+		DrawList->AddRectFilled(ImVec2(Center.x - 1.0f, Center.y - 7.0f), ImVec2(Center.x + 1.0f, Center.y + 7.0f), Color);
+	}
+	else if (Icon == InstancedIcon::ToGround)
+	{
+		DrawList->AddRectFilled(ImVec2(Center.x - 1.0f, Center.y - 9.0f), ImVec2(Center.x + 1.0f, Center.y), Color);
+		DrawList->AddTriangleFilled(ImVec2(Center.x, Center.y + 5.0f), ImVec2(Center.x - 5.0f, Center.y - 1.0f), ImVec2(Center.x + 5.0f, Center.y - 1.0f), Color);
+		DrawList->AddRectFilled(ImVec2(Center.x - 8.0f, Center.y + 7.0f), ImVec2(Center.x + 8.0f, Center.y + 9.0f), Color);
+	}
+	else if (Icon == InstancedIcon::Delete)
+	{
+		DrawList->AddLine(ImVec2(Center.x - 5.5f, Center.y - 5.5f), ImVec2(Center.x + 5.5f, Center.y + 5.5f), Color, 2.0f);
+		DrawList->AddLine(ImVec2(Center.x - 5.5f, Center.y + 5.5f), ImVec2(Center.x + 5.5f, Center.y - 5.5f), Color, 2.0f);
+	}
+}
+
+enum class InstancedButtonKind
+{
+	Normal,
+	Primary,
+	Danger
+};
+
+static bool RenderInstancedButton(const char* Name, const InstancedIcon Icon, const InstancedButtonKind Kind, const float Width)
+{
+	const float IconAreaSize = Icon == InstancedIcon::None ? 0.0f : 22.0f;
+	const float IconToNameSpacing = Icon == InstancedIcon::None ? 0.0f : 8.0f;
+	const float ContentWidth = IconAreaSize + IconToNameSpacing + ImGui::CalcTextSize(Name).x;
+	const ImVec2 Size = ImVec2(Width, ImGui::GetFrameHeight() + 6.0f);
+	const ImVec2 Min = ImGui::GetCursorScreenPos();
+	const ImVec2 Max = ImVec2(Min.x + Size.x, Min.y + Size.y);
+	const bool bPressed = ImGui::InvisibleButton(Name, Size);
+	const bool bHovered = ImGui::IsItemHovered();
+
+	ImU32 Fill = bHovered ? FEEditorStyle::ButtonHovered : FEEditorStyle::Button;
+	ImU32 ContentColor = FEEditorStyle::Text;
+	if (Kind == InstancedButtonKind::Primary)
+	{
+		Fill = bHovered ? FEEditorStyle::PrimaryButtonHovered : FEEditorStyle::PrimaryButton;
+	}
+	else if (Kind == InstancedButtonKind::Danger)
+	{
+		ContentColor = FEEditorStyle::Danger;
+	}
+
+	// GetColorU32 applies alpha of the style, so the button fades when it is disabled.
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	DrawList->AddRectFilled(Min, Max, ImGui::GetColorU32(Fill), 4.0f);
+	if (Kind != InstancedButtonKind::Primary)
+		DrawList->AddRect(Min, Max, ImGui::GetColorU32(FEEditorStyle::ButtonBorder), 4.0f);
+
+	const float ContentX = floorf(Min.x + (Size.x - ContentWidth) / 2.0f);
+	RenderInstancedIcon(DrawList, Icon, ImVec2(floorf(ContentX + IconAreaSize / 2.0f), floorf(Min.y + Size.y / 2.0f)), ImGui::GetColorU32(ContentColor));
+	DrawList->AddText(ImVec2(ContentX + IconAreaSize + IconToNameSpacing, Min.y + (Size.y - ImGui::GetFontSize()) / 2.0f), ImGui::GetColorU32(ContentColor), Name);
+	return bPressed;
+}
+
+// Tile with an icon and a name, and a note under them.
+static bool RenderInstancedModeTile(const char* Name, const std::string& Note, const InstancedIcon Icon, const bool bSelected, const ImVec2 Size)
+{
+	const ImVec2 Min = ImGui::GetCursorScreenPos();
+	const ImVec2 Max = ImVec2(Min.x + Size.x, Min.y + Size.y);
+	const bool bPressed = ImGui::InvisibleButton(Name, Size);
+	const bool bHovered = ImGui::IsItemHovered();
+
+	ImU32 Fill = bHovered ? FEEditorStyle::ButtonHovered : FEEditorStyle::Button;
+	if (bSelected)
+		Fill = bHovered ? FEEditorStyle::AccentHovered : FEEditorStyle::Accent;
+
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	DrawList->AddRectFilled(Min, Max, Fill, 4.0f);
+	if (!bSelected)
+		DrawList->AddRect(Min, Max, FEEditorStyle::ButtonBorder, 4.0f);
+
+	const ImU32 ContentColor = bSelected ? FEEditorStyle::TextOnAccent : FEEditorStyle::Text;
+	const float IconAreaSize = 22.0f;
+	const float IconToNameSpacing = 8.0f;
+	const float NameCenterY = floorf(Min.y + 22.0f);
+	const float ContentX = floorf(Min.x + (Size.x - IconAreaSize - IconToNameSpacing - ImGui::CalcTextSize(Name).x) / 2.0f);
+	RenderInstancedIcon(DrawList, Icon, ImVec2(floorf(ContentX + IconAreaSize / 2.0f), NameCenterY), ContentColor);
+	DrawList->AddText(ImVec2(ContentX + IconAreaSize + IconToNameSpacing, NameCenterY - ImGui::GetFontSize() / 2.0f), ContentColor, Name);
+
+	const float NoteFontSize = 16.0f;
+	ImGui::PushFont(nullptr, NoteFontSize);
+	DrawList->AddText(ImVec2(floorf(Min.x + (Size.x - ImGui::CalcTextSize(Note.c_str()).x) / 2.0f), Max.y - NoteFontSize - 9.0f), bSelected ? FEEditorStyle::TextOnAccent : FEEditorStyle::TextMuted, Note.c_str());
+	ImGui::PopFont();
+	return bPressed;
+}
+
+void FEEditorInspectorWindow::DisplayInstancedProperties(FEEntity* InstancedEntity)
+{
+	FEScene* CurrentScene = EDITOR.GetFocusedScene();
+	if (CurrentScene == nullptr)
+		return;
+
+	FESelectionData* CurrentSelectionData = SELECTED.GetSceneData(CurrentScene->GetID());
+	FEInstancedComponent& InstancedComponent = InstancedEntity->GetComponent<FEInstancedComponent>();
+	const bool bSelectMode = INSTANCED_RENDERING_SYSTEM.IsIndividualSelectMode(InstancedEntity);
+
+	const float LabelWidth = ImGui::CalcTextSize("Layer strength").x + 14.0f;
+	const float FieldSpacing = 6.0f;
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 6.0f));
+
+	const size_t ChangeCount = InstancedComponent.GetSpawnModificationCount();
+	const ImVec2 TileSize = ImVec2(floorf((ImGui::GetContentRegionAvail().x - FieldSpacing) / 2.0f), 68.0f);
+	if (RenderInstancedModeTile("Scatter", GetNumberWithSeparators(InstancedComponent.GetInstanceCount()) + " instances", InstancedIcon::Scatter, !bSelectMode, TileSize) && bSelectMode)
+	{
+		INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(InstancedEntity, false);
+		SELECTED.Clear(CurrentScene);
+		SELECTED.SetSelected(InstancedEntity);
+	}
+
+	ImGui::SameLine(0.0f, FieldSpacing);
+	if (RenderInstancedModeTile("Edit by hand", ChangeCount == 0 ? "no changes" : GetNumberWithSeparators(ChangeCount) + " changes", InstancedIcon::Cursor, bSelectMode, TileSize) && !bSelectMode)
+		INSTANCED_RENDERING_SYSTEM.SetIndividualSelectMode(InstancedEntity, true);
+
+	if (!bSelectMode)
+	{
+		FEEntity* Terrain = InstancedComponent.GetSnappedToTerrain();
+		RenderRowLabel("Terrain", LabelWidth);
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if (ImGui::BeginCombo("##Terrain", Terrain == nullptr ? "none" : Terrain->GetName().c_str()))
+		{
+			if (ImGui::Selectable("none", Terrain == nullptr) && Terrain != nullptr)
+				TERRAIN_SYSTEM.UnSnapInstancedEntity(Terrain, InstancedEntity);
+
+			const std::vector<FEUUID> TerrainIDList = CurrentScene->GetEntityIDListWithComponent<FETerrainComponent>();
+			for (size_t i = 0; i < TerrainIDList.size(); i++)
+			{
+				ImGui::PushID(UNIQUE_ID.ToString(TerrainIDList[i]).c_str());
+				if (ImGui::Selectable(CurrentScene->GetEntity(TerrainIDList[i])->GetName().c_str(), Terrain != nullptr && Terrain->GetID() == TerrainIDList[i]))
+					TERRAIN_SYSTEM.SnapInstancedEntity(CurrentScene->GetEntity(TerrainIDList[i]), InstancedEntity);
+				ImGui::PopID();
+			}
+
+			ImGui::EndCombo();
+		}
+		ShowToolTip("Instances are placed on the surface of this terrain.");
+
+		Terrain = InstancedComponent.GetSnappedToTerrain();
+		if (Terrain != nullptr)
+		{
+			FETerrainComponent& TerrainComponent = Terrain->GetComponent<FETerrainComponent>();
+			const int CurrentLayer = InstancedComponent.GetTerrainLayer();
+			FETerrainLayer* Layer = CurrentLayer == -1 ? nullptr : TerrainComponent.GetLayerInSlot(CurrentLayer);
+
+			RenderRowLabel("Only on layer", LabelWidth);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (ImGui::BeginCombo("##TerrainLayer", Layer == nullptr ? "any" : Layer->GetName().c_str()))
+			{
+				if (ImGui::Selectable("any", CurrentLayer == -1))
+					TERRAIN_SYSTEM.UnConnectInstancedEntityFromLayer(InstancedEntity);
+
+				for (size_t i = 0; i < FE_TERRAIN_MAX_LAYERS; i++)
+				{
+					FETerrainLayer* LayerInSlot = TerrainComponent.GetLayerInSlot(i);
+					if (LayerInSlot == nullptr)
+						break;
+
+					ImGui::PushID(static_cast<int>(i));
+					if (ImGui::Selectable(LayerInSlot->GetName().c_str(), CurrentLayer == static_cast<int>(i)))
+						TERRAIN_SYSTEM.ConnectInstancedEntityToLayer(Terrain, InstancedEntity, static_cast<int>(i));
+					ImGui::PopID();
+				}
+
+				ImGui::EndCombo();
+			}
+			ShowToolTip("Instances are placed only where this layer is painted.");
+
+			if (InstancedComponent.GetTerrainLayer() != -1)
+			{
+				float MinLayerIntensity = InstancedComponent.GetMinimalLayerIntensityToSpawn();
+				if (RenderFloatRow("Layer strength", "##MinLayerIntensity", MinLayerIntensity, 0.01f, 0.0001f, 1.0f, LabelWidth, "at least %.2f"))
+					InstancedComponent.SetMinimalLayerIntensityToSpawn(MinLayerIntensity);
+				ShowToolTip("Minimal layer intensity to spawn.");
+			}
+		}
+
+		RenderGroupTitle("Spawn");
+
+		RenderRowLabel("Count", LabelWidth);
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		ImGui::DragInt("##ObjectCount", &InstancedComponent.SpawnInfo.ObjectCount, 1.0f, 1, 10000000);
+		if (InstancedComponent.SpawnInfo.ObjectCount <= 0)
+			InstancedComponent.SpawnInfo.ObjectCount = 1;
+
+		// Spawn takes a remainder of division by the whole part of the radius.
+		RenderFloatRow("Radius", "##Radius", InstancedComponent.SpawnInfo.Radius, 1.0f, 1.0f, 100000.0f, LabelWidth, "%.1f m");
+		if (InstancedComponent.SpawnInfo.Radius < 1.0f)
+			InstancedComponent.SpawnInfo.Radius = 1.0f;
+
+		RenderRowLabel("Scale", LabelWidth);
+		const float HalfWidth = floorf((ImGui::GetContentRegionAvail().x - FieldSpacing) / 2.0f);
+		float MinScale = InstancedComponent.SpawnInfo.GetMinScale();
+		ImGui::SetNextItemWidth(HalfWidth);
+		if (ImGui::DragFloat("##MinScale", &MinScale, 0.01f, 0.0f, 0.0f, "from %.2f"))
+			InstancedComponent.SpawnInfo.SetMinScale(MinScale);
+
+		ImGui::SameLine(0.0f, FieldSpacing);
+		float MaxScale = InstancedComponent.SpawnInfo.GetMaxScale();
+		ImGui::SetNextItemWidth(HalfWidth);
+		if (ImGui::DragFloat("##MaxScale", &MaxScale, 0.01f, 0.0f, 0.0f, "to %.2f"))
+			InstancedComponent.SpawnInfo.SetMaxScale(MaxScale);
+
+		// Deviation is a part of the full turn, it is shown in degrees.
+		RenderRowLabel("Rotation", LabelWidth);
+		const ImU32 AxisColors[] = { FEEditorStyle::AxisX, FEEditorStyle::AxisY, FEEditorStyle::AxisZ };
+		const char* AxisFormats[] = { "X %.0f\xC2\xB0", "Y %.0f\xC2\xB0", "Z %.0f\xC2\xB0" };
+		const float ThirdWidth = floorf((ImGui::GetContentRegionAvail().x - FieldSpacing * 2.0f) / 3.0f);
+		for (int i = 0; i < 3; i++)
+		{
+			float Degrees = InstancedComponent.SpawnInfo.RotationDeviation[i] * 360.0f;
+			ImGui::PushID(i);
+			ImGui::SetNextItemWidth(ThirdWidth);
+			if (ImGui::DragFloat("##RotationDeviation", &Degrees, 1.0f, 3.6f, 360.0f, AxisFormats[i]))
+				InstancedComponent.SpawnInfo.RotationDeviation[i] = std::clamp(Degrees / 360.0f, 0.01f, 1.0f);
+			ShowToolTip("Each instance is turned around this axis by a random angle up to this one.");
+
+			const ImVec2 FieldMin = ImGui::GetItemRectMin();
+			ImGui::GetWindowDrawList()->AddRectFilled(FieldMin, ImVec2(FieldMin.x + 4.0f, ImGui::GetItemRectMax().y), AxisColors[i], 4.0f, ImDrawFlags_RoundCornersLeft);
+			ImGui::PopID();
+
+			if (i < 2)
+				ImGui::SameLine(0.0f, FieldSpacing);
+		}
+
+		RenderRowLabel("Seed", LabelWidth);
+		const float RandomButtonWidth = ImGui::CalcTextSize("Random").x + 24.0f;
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - RandomButtonWidth - FieldSpacing);
+		ImGui::DragInt("##Seed", &InstancedComponent.SpawnInfo.Seed);
+		ImGui::SameLine(0.0f, FieldSpacing);
+		if (ImGui::Button("Random", ImVec2(RandomButtonWidth, 0.0f)))
+			InstancedComponent.SpawnInfo.Seed = rand();
+
+		if (RenderInstancedButton("Respawn", InstancedIcon::Respawn, InstancedButtonKind::Primary, ImGui::GetContentRegionAvail().x))
+		{
+			INSTANCED_RENDERING_SYSTEM.ClearInstance(InstancedEntity);
+			INSTANCED_RENDERING_SYSTEM.PopulateInstance(InstancedEntity, InstancedComponent.SpawnInfo);
+		}
+
+		if (ChangeCount != 0)
+		{
+			ImGui::PushFont(nullptr, 16.0f);
+			ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::Warning);
+			ImGui::PushTextWrapPos(0.0f);
+			ImGui::TextUnformatted(("Respawn drops " + GetNumberWithSeparators(ChangeCount) + (ChangeCount == 1 ? " change" : " changes") + " made by hand.").c_str());
+			ImGui::PopTextWrapPos();
+			ImGui::PopStyleColor();
+			ImGui::PopFont();
+		}
+	}
+	else
+	{
+		const int InstanceIndex = CurrentSelectionData->InstancedSubObjectIndexSelected;
+		if (InstanceIndex != -1)
+		{
+			RenderGroupTitle("Instance " + GetNumberWithSeparators(static_cast<size_t>(InstanceIndex)), "of " + GetNumberWithSeparators(InstancedComponent.GetInstanceCount()));
+
+			FETransformComponent TemporaryTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(InstanceIndex));
+			TemporaryTransform.SetSceneIndependent(true);
+			bool bChanged = false;
+
+			glm::vec3 Position = TemporaryTransform.GetPosition();
+			if (RenderTransformRow("Position", Position, 0.1f, 0.0f, 0.0f) != -1)
+			{
+				TemporaryTransform.SetPosition(Position);
+				bChanged = true;
+			}
+
+			glm::vec3 Rotation = TemporaryTransform.GetRotation();
+			if (RenderTransformRow("Rotation", Rotation, 0.1f, -360.0f, 360.0f) != -1)
+			{
+				TemporaryTransform.SetRotation(Rotation);
+				bChanged = true;
+			}
+
+			// Scale of an instance is uniform.
+			glm::vec3 Scale = TemporaryTransform.GetScale();
+			const int ChangedAxis = RenderTransformRow("Scale", Scale, Scale.x * 0.01f, 0.001f, 1000.0f);
+			if (ChangedAxis != -1)
+			{
+				TemporaryTransform.SetScale(glm::vec3(Scale[ChangedAxis]));
+				bChanged = true;
+			}
+
+			if (bChanged)
+			{
+				INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(InstancedEntity, InstanceIndex, TemporaryTransform.GetWorldMatrix());
+				PROJECT_MANAGER.GetCurrent()->SetModified(true);
+			}
+
+			const float ThirdWidth = floorf((ImGui::GetContentRegionAvail().x - FieldSpacing * 2.0f) / 3.0f);
+			ImGui::BeginDisabled(InstancedComponent.GetSnappedToTerrain() == nullptr);
+			if (RenderInstancedButton("To terrain", InstancedIcon::ToGround, InstancedButtonKind::Normal, ThirdWidth))
+				INSTANCED_RENDERING_SYSTEM.TryToSnapIndividualInstance(InstancedEntity, InstanceIndex);
+			ImGui::EndDisabled();
+			ShowToolTip("Selected instance will attempt to snap to the terrain.");
+
+			ImGui::SameLine(0.0f, FieldSpacing);
+			if (RenderInstancedButton("Delete", InstancedIcon::Delete, InstancedButtonKind::Danger, ThirdWidth))
+			{
+				INSTANCED_RENDERING_SYSTEM.DeleteIndividualInstance(InstancedEntity, InstanceIndex);
+				CurrentSelectionData->InstancedSubObjectIndexSelected = -1;
+				PROJECT_MANAGER.GetCurrent()->SetModified(true);
+			}
+
+			ImGui::SameLine(0.0f, FieldSpacing);
+			if (RenderInstancedButton("Done", InstancedIcon::None, InstancedButtonKind::Normal, ThirdWidth))
+				CurrentSelectionData->InstancedSubObjectIndexSelected = -1;
+			ShowToolTip("Back to all instances.");
+		}
+		else
+		{
+			RenderHintText("Click an instance in the scene to move, turn, scale or delete it.");
+		}
+
+		if (RenderInstancedButton("Add instance", InstancedIcon::Add, InstancedButtonKind::Normal, ImGui::GetContentRegionAvail().x))
+		{
+			FEEntity* MainCameraEntity = CAMERA_SYSTEM.GetMainCamera(CurrentScene);
+			if (MainCameraEntity != nullptr)
+			{
+				glm::mat4 NewInstanceMatrix = glm::identity<glm::mat4>();
+				FETransformComponent& CameraTransformComponent = MainCameraEntity->GetComponent<FETransformComponent>();
+				FECameraComponent& CameraComponent = MainCameraEntity->GetComponent<FECameraComponent>();
+				NewInstanceMatrix = glm::translate(NewInstanceMatrix, CameraTransformComponent.GetPosition(FE_WORLD_SPACE) + CameraComponent.GetForward() * 10.0f);
+				INSTANCED_RENDERING_SYSTEM.AddIndividualInstance(InstancedEntity, NewInstanceMatrix);
+
+				PROJECT_MANAGER.GetCurrent()->SetModified(true);
+			}
+		}
+		ShowToolTip("Adds one instance in front of the camera.");
+	}
+
+	ImGui::PopStyleVar();
 }
 
 void FEEditorInspectorWindow::AddVirtualUIComponent(FEEntity* Entity)
@@ -2414,6 +2866,24 @@ void FEEditorInspectorWindow::AddVirtualUIComponent(FEEntity* Entity)
 	FEVirtualUIComponent& VirtualUIComponent = Entity->GetComponent<FEVirtualUIComponent>();
 	VirtualUIComponent.SetWindowToListen(APPLICATION.GetMainWindow());
 }
+
+struct VirtualUIEventKind
+{
+	const char* Name;
+	bool (FEVirtualUIComponent::*IsPassedThrough)() const;
+	bool (FEVirtualUIComponent::*SetPassThrough)(bool);
+};
+
+// Three mouse kinds, two keyboard kinds and one for files.
+static const VirtualUIEventKind VirtualUIEventKinds[] = {
+	{ "Buttons", &FEVirtualUIComponent::IsMouseButtonPassThroughActive, &FEVirtualUIComponent::SetMouseButtonPassThrough },
+	{ "Move", &FEVirtualUIComponent::IsMouseMovePassThroughActive, &FEVirtualUIComponent::SetMouseMovePassThrough },
+	{ "Scroll", &FEVirtualUIComponent::IsScrollPassThroughActive, &FEVirtualUIComponent::SetScrollPassThrough },
+	{ "Keys", &FEVirtualUIComponent::IsKeyPassThroughActive, &FEVirtualUIComponent::SetKeyPassThrough },
+	{ "Text", &FEVirtualUIComponent::IsCharPassThroughActive, &FEVirtualUIComponent::SetCharPassThrough },
+	{ "Dropped files", &FEVirtualUIComponent::IsDropPassThroughActive, &FEVirtualUIComponent::SetDropPassThrough }
+};
+static const int VirtualUIEventKindCount = 6;
 
 void FEEditorInspectorWindow::DisplayVirtualUIProperties(FEEntity* VirtualUIEntity) const
 {
@@ -2425,39 +2895,107 @@ void FEEditorInspectorWindow::DisplayVirtualUIProperties(FEEntity* VirtualUIEnti
 	// TO-DO: Give user ability to change canvas mesh.
 	FEMesh* CurrentCanvasMesh = VirtualUIComponent.GetCanvasMesh();
 
-	// Internal resolution.
-	ImGui::Text("Internal Resolution:");
-	glm::vec2 InternalResolution = VirtualUIComponent.GetCanvasResolution();
-	ImGui::DragFloat2("##InternalResolution", &InternalResolution[0], 1.0f, 1.0f, 4096.0f);
-	VirtualUIComponent.SetCanvasResolution(InternalResolution);
+	int ActiveEventKindCount = 0;
+	for (int i = 0; i < VirtualUIEventKindCount; i++)
+	{
+		if ((VirtualUIComponent.*VirtualUIEventKinds[i].IsPassedThrough)())
+			ActiveEventKindCount++;
+	}
 
-	bool bActive = VirtualUIComponent.IsInputActive();
-	ImGui::Checkbox("Input Active", &bActive);
-	VirtualUIComponent.SetInputActive(bActive);
+	const std::string EventNote = std::to_string(ActiveEventKindCount) + " of " + std::to_string(VirtualUIEventKindCount);
+	const bool bInputActive = VirtualUIComponent.IsInputActive();
+	const float LabelWidth = ImGui::CalcTextSize("Resolution").x + 14.0f;
+	const float FieldSpacing = 6.0f;
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 6.0f));
 
-	bool bMouseButtonPassThrough = VirtualUIComponent.IsMouseButtonPassThroughActive();
-	ImGui::Checkbox("Mouse Button Pass Through", &bMouseButtonPassThrough);
-	VirtualUIComponent.SetMouseButtonPassThrough(bMouseButtonPassThrough);
+	// Card with the picture that the interface draws now.
+	const float Padding = 10.0f;
+	const float PreviewSize = 96.0f;
+	const float SmallFontSize = 16.0f;
+	const ImVec2 CardMin = ImGui::GetCursorScreenPos();
+	const ImVec2 CardMax = ImVec2(CardMin.x + ImGui::GetContentRegionAvail().x, CardMin.y + PreviewSize + Padding * 2.0f);
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	DrawList->AddRectFilled(CardMin, CardMax, FEEditorStyle::Card, 4.0f);
+	DrawList->AddRect(CardMin, CardMax, FEEditorStyle::CardBorder, 4.0f);
 
-	bool bMouseMovePassThrough = VirtualUIComponent.IsMouseMovePassThroughActive();
-	ImGui::Checkbox("Mouse Move Pass Through", &bMouseMovePassThrough);
-	VirtualUIComponent.SetMouseMovePassThrough(bMouseMovePassThrough);
+	const ImVec2 PreviewMin = ImVec2(CardMin.x + Padding, CardMin.y + Padding);
+	const ImVec2 PreviewMax = ImVec2(PreviewMin.x + PreviewSize, PreviewMin.y + PreviewSize);
+	DrawList->AddRectFilled(PreviewMin, PreviewMax, FEEditorStyle::Background);
+	if (VirtualUIComponent.GetCurrentFrameTexture() != nullptr)
+		DrawList->AddImage(VirtualUIComponent.GetCurrentFrameTexture()->GetTextureID(), PreviewMin, PreviewMax, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+	DrawList->AddRect(PreviewMin, PreviewMax, FEEditorStyle::CardBorder);
 
-	bool bMouseScrollPassThrough = VirtualUIComponent.IsScrollPassThroughActive();
-	ImGui::Checkbox("Mouse Scroll Pass Through", &bMouseScrollPassThrough);
-	VirtualUIComponent.SetScrollPassThrough(bMouseScrollPassThrough);
+	glm::vec2 Resolution = VirtualUIComponent.GetCanvasResolution();
+	char ResolutionText[64] = {};
+	snprintf(ResolutionText, sizeof(ResolutionText), "%.0f x %.0f pixels", Resolution.x, Resolution.y);
 
-	bool bCharPassThrough = VirtualUIComponent.IsCharPassThroughActive();
-	ImGui::Checkbox("Char Pass Through", &bCharPassThrough);
-	VirtualUIComponent.SetCharPassThrough(bCharPassThrough);
+	std::string WindowText = "No window to listen to";
+	if (CurrentWindow != nullptr)
+		WindowText = CurrentWindow == APPLICATION.GetMainWindow() ? "Listens to the main window" : "Listens to window " + CurrentWindow->GetTitle();
 
-	bool bKeyboardPassThrough = VirtualUIComponent.IsKeyPassThroughActive();
-	ImGui::Checkbox("Key Pass Through", &bKeyboardPassThrough);
-	VirtualUIComponent.SetKeyPassThrough(bKeyboardPassThrough);
+	const float TextX = PreviewMax.x + 14.0f;
+	DrawList->PushClipRect(ImVec2(TextX, CardMin.y), ImVec2(CardMax.x - Padding, CardMax.y), true);
+	DrawList->AddText(ImVec2(TextX, CardMin.y + Padding - 2.0f), FEEditorStyle::Text, ResolutionText);
+	ImGui::PushFont(nullptr, SmallFontSize);
+	float LineY = CardMin.y + Padding + ImGui::GetFontSize() + 12.0f;
+	DrawList->AddText(ImVec2(TextX, LineY), FEEditorStyle::TextMuted, ("Canvas: " + (CurrentCanvasMesh != nullptr ? CurrentCanvasMesh->GetName() : std::string("none"))).c_str());
+	LineY += SmallFontSize + 4.0f;
+	DrawList->AddText(ImVec2(TextX, LineY), FEEditorStyle::TextMuted, WindowText.c_str());
+	LineY += SmallFontSize + 4.0f;
+	DrawList->AddText(ImVec2(TextX, LineY), bInputActive ? FEEditorStyle::Success : FEEditorStyle::TextMuted, bInputActive ? ("Input on, " + EventNote + " kinds of events").c_str() : "Input off");
+	ImGui::PopFont();
+	DrawList->PopClipRect();
 
-	bool bDropPassThrough = VirtualUIComponent.IsDropPassThroughActive();
-	ImGui::Checkbox("Drop Pass Through", &bDropPassThrough);
-	VirtualUIComponent.SetDropPassThrough(bDropPassThrough);
+	ImGui::SetCursorScreenPos(ImVec2(CardMin.x, CardMax.y));
+	ImGui::Dummy(ImVec2(0.0f, 0.0f));
+
+	RenderRowLabel("Resolution", LabelWidth);
+	const float HalfWidth = floorf((ImGui::GetContentRegionAvail().x - FieldSpacing) / 2.0f);
+	ImGui::SetNextItemWidth(HalfWidth);
+	bool bResolutionChanged = ImGui::DragFloat("##ResolutionWidth", &Resolution.x, 1.0f, 1.0f, 4096.0f, "W %.0f");
+	ImGui::SameLine(0.0f, FieldSpacing);
+	ImGui::SetNextItemWidth(HalfWidth);
+	bResolutionChanged |= ImGui::DragFloat("##ResolutionHeight", &Resolution.y, 1.0f, 1.0f, 4096.0f, "H %.0f");
+	if (bResolutionChanged)
+		VirtualUIComponent.SetCanvasResolution(Resolution);
+
+	bool bNewInputActive = bInputActive;
+	RenderRowLabel("Input", LabelWidth);
+	if (ImGui::Checkbox("##InputActive", &bNewInputActive))
+		VirtualUIComponent.SetInputActive(bNewInputActive);
+
+	// Events are taken from the window, and only while the input is on.
+	ImGui::BeginDisabled(!bInputActive || CurrentWindow == nullptr);
+	if (RenderGroupTitle("Events from the window", EventNote))
+	{
+		const char* RowNames[] = { "Mouse", "Keyboard", "Files" };
+		const int RowStarts[] = { 0, 3, 5, VirtualUIEventKindCount };
+		for (int Row = 0; Row < 3; Row++)
+		{
+			RenderRowLabel(RowNames[Row], LabelWidth);
+			for (int i = RowStarts[Row]; i < RowStarts[Row + 1]; i++)
+			{
+				const bool bPassedThrough = (VirtualUIComponent.*VirtualUIEventKinds[i].IsPassedThrough)();
+				if (RenderSwitchButton(VirtualUIEventKinds[i].Name, bPassedThrough, ImDrawFlags_RoundCornersAll))
+					(VirtualUIComponent.*VirtualUIEventKinds[i].SetPassThrough)(!bPassedThrough);
+
+				if (i < RowStarts[Row + 1] - 1)
+					ImGui::SameLine(0.0f, FieldSpacing);
+			}
+		}
+	}
+	ImGui::EndDisabled();
+
+	if (CurrentWindow == nullptr)
+	{
+		RenderHintText("There is no window to take events from.");
+	}
+	else if (!bInputActive)
+	{
+		RenderHintText("Events are passed to the interface only while Input is on.");
+	}
+
+	ImGui::PopStyleVar();
 }
 
 void FEEditorInspectorWindow::AddGameModelComponent(FEEntity* Entity)
@@ -2515,265 +3053,379 @@ void FEEditorInspectorWindow::AddVolumeComponent(FEEntity* Entity)
 	Entity->AddComponent<FEVolumeComponent>();
 }
 
-// FE_TO_DO: Make it more general with more templated magic.
 template<typename T>
-void HandleScriptVariable(FENativeScriptComponent& Component, const std::string VariableName)
+constexpr bool bScriptVariableHasEditor = std::is_same_v<T, float> || std::is_same_v<T, int> || std::is_same_v<T, bool> || std::is_same_v<T, std::string> ||
+										  std::is_same_v<T, glm::vec2> || std::is_same_v<T, glm::vec3> || std::is_same_v<T, glm::vec4> || std::is_same_v<T, FEPrefab*>;
+
+// Field takes the rest of the row, WidthToLeave is kept free on the right. Returns true if value was changed.
+template<typename T>
+bool RenderScriptVariableEditor(const std::string ID, T& Value, const float WidthToLeave = 0.0f)
 {
-	T Value;
-	if (Component.GetVariableValue(VariableName, Value))
+	const float Width = ImGui::GetContentRegionAvail().x - WidthToLeave;
+	if constexpr (std::is_same_v<T, float>)
 	{
-		if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>)
+		ImGui::SetNextItemWidth(Width);
+		return ImGui::DragFloat(ID.c_str(), &Value, std::max(0.001f, std::abs(Value) * 0.01f));
+	}
+	else if constexpr (std::is_same_v<T, int>)
+	{
+		ImGui::SetNextItemWidth(Width);
+		return ImGui::DragInt(ID.c_str(), &Value);
+	}
+	else if constexpr (std::is_same_v<T, bool>)
+	{
+		return ImGui::Checkbox(ID.c_str(), &Value);
+	}
+	else if constexpr (std::is_same_v<T, std::string>)
+	{
+		ImGui::SetNextItemWidth(Width);
+		return ImGui::InputText(ID.c_str(), &Value);
+	}
+	else if constexpr (std::is_same_v<T, glm::vec2> || std::is_same_v<T, glm::vec3> || std::is_same_v<T, glm::vec4>)
+	{
+		const ImU32 AxisColors[] = { FEEditorStyle::AxisX, FEEditorStyle::AxisY, FEEditorStyle::AxisZ, FEEditorStyle::TextMuted };
+		const int VectorCardinality = std::is_same_v<T, glm::vec2> ? 2 : std::is_same_v<T, glm::vec3> ? 3 : 4;
+		const float FieldSpacing = 6.0f;
+		const float FieldWidth = floorf((Width - FieldSpacing * (VectorCardinality - 1)) / VectorCardinality);
+
+		bool bChanged = false;
+		ImGui::PushID(ID.c_str());
+		for (int i = 0; i < VectorCardinality; i++)
 		{
-			if (ImGui::InputScalar(VariableName.c_str(), ImGuiDataType_Float, &Value))
-				Component.SetVariableValue(VariableName, Value);
+			ImGui::PushID(i);
+			ImGui::SetNextItemWidth(FieldWidth);
+			if (ImGui::DragFloat("##Value", &Value[i], 0.1f))
+				bChanged = true;
+
+			const ImVec2 FieldMin = ImGui::GetItemRectMin();
+			const ImVec2 FieldMax = ImGui::GetItemRectMax();
+			ImGui::GetWindowDrawList()->AddRectFilled(FieldMin, ImVec2(FieldMin.x + 4.0f, FieldMax.y), AxisColors[i], 4.0f, ImDrawFlags_RoundCornersLeft);
+			ImGui::PopID();
+
+			if (i < VectorCardinality - 1)
+				ImGui::SameLine(0.0f, FieldSpacing);
 		}
-		else if constexpr (std::is_same_v<T, int>)
+		ImGui::PopID();
+
+		return bChanged;
+	}
+	else if constexpr (std::is_same_v<T, FEPrefab*>)
+	{
+		bool bChanged = false;
+		ImGui::SetNextItemWidth(Width);
+		if (ImGui::BeginCombo(ID.c_str(), Value != nullptr ? Value->GetName().c_str() : "None"))
 		{
-			if (ImGui::InputInt(VariableName.c_str(), &Value))
-				Component.SetVariableValue(VariableName, Value);
-		}
-		else if constexpr (std::is_same_v<T, bool>)
-		{
-			if (ImGui::Checkbox(VariableName.c_str(), &Value))
-				Component.SetVariableValue(VariableName, Value);
-		}
-		else if constexpr (std::is_same_v<T, std::string>)
-		{
-			if (ImGui::InputText(VariableName.c_str(), &Value))
-				Component.SetVariableValue(VariableName, Value);
-		}
-		else if constexpr (std::is_same_v<T, glm::vec2> || std::is_same_v<T, glm::vec3> || std::is_same_v<T, glm::vec4>)
-		{
-			int VectorCardinality = std::is_same_v<T, glm::vec2> ? 2 : std::is_same_v<T, glm::vec3> ? 3 : 4;
-			if (ImGui::InputScalarN(VariableName.c_str(), ImGuiDataType_Float, glm::value_ptr(Value), VectorCardinality))
-				Component.SetVariableValue(VariableName, Value);
-		}
-		else if constexpr (std::is_same_v<T, FEPrefab*>)
-		{
-			std::string PrefabName = "";
-			if (Value != nullptr)
-				PrefabName = Value->GetName();
-			if (ImGui::BeginCombo(VariableName.c_str(), PrefabName.c_str()))
+			if (ImGui::Selectable("None", Value == nullptr))
 			{
-				std::vector<FEUUID> PrefabIDList = RESOURCE_MANAGER.GetPrefabIDList();
-				for (size_t i = 0; i < PrefabIDList.size(); i++)
-				{
-					FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabIDList[i]);
-					bool bIsSelected = PrefabName == CurrentPrefab->GetName();
-					ImGui::PushID(UNIQUE_ID.ToString(PrefabIDList[i]).c_str());
-					if (ImGui::Selectable(CurrentPrefab->GetName().c_str(), bIsSelected))
-					{
-						Value = RESOURCE_MANAGER.GetPrefab(PrefabIDList[i]);
-						Component.SetVariableValue(VariableName, Value);
-					}
-					ImGui::PopID();
-
-					if (bIsSelected)
-						ImGui::SetItemDefaultFocus();
-				}
-
-				ImGui::EndCombo();
+				Value = nullptr;
+				bChanged = true;
 			}
+
+			std::vector<FEUUID> PrefabIDList = RESOURCE_MANAGER.GetPrefabIDList();
+			for (size_t i = 0; i < PrefabIDList.size(); i++)
+			{
+				FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabIDList[i]);
+				bool bIsSelected = CurrentPrefab == Value;
+				ImGui::PushID(UNIQUE_ID.ToString(PrefabIDList[i]).c_str());
+				if (ImGui::Selectable(CurrentPrefab->GetName().c_str(), bIsSelected))
+				{
+					Value = CurrentPrefab;
+					bChanged = true;
+				}
+				ImGui::PopID();
+
+				if (bIsSelected)
+					ImGui::SetItemDefaultFocus();
+			}
+
+			ImGui::EndCombo();
 		}
+
+		return bChanged;
+	}
+	else
+	{
+		return false;
 	}
 }
 
 // FE_TO_DO: Make it more general with more templated magic.
 template<typename T>
-void HandleScriptArrayVariable(FENativeScriptComponent& Component, const std::string VariableName)
+void HandleScriptVariable(FENativeScriptComponent& Component, const std::string VariableName, const float LabelWidth)
 {
-	std::vector<T> Value;
-	if (Component.GetVariableValue(VariableName, Value))
+	if constexpr (bScriptVariableHasEditor<T>)
 	{
+		T Value;
+		if (!Component.GetVariableValue(VariableName, Value))
+			return;
+
+		RenderRowLabel(VariableName.c_str(), LabelWidth);
+		if (RenderScriptVariableEditor("##" + VariableName, Value))
+			Component.SetVariableValue(VariableName, Value);
+	}
+}
+
+// FE_TO_DO: Make it more general with more templated magic.
+template<typename T>
+void HandleScriptArrayVariable(FENativeScriptComponent& Component, const std::string VariableName, const float LabelWidth)
+{
+	if constexpr (bScriptVariableHasEditor<T>)
+	{
+		std::vector<T> Value;
+		if (!Component.GetVariableValue(VariableName, Value))
+			return;
+
+		const float ButtonSize = ImGui::GetFrameHeight();
+		const float ButtonSpacing = 6.0f;
+
+		RenderRowLabel(VariableName.c_str(), LabelWidth);
+		if (ImGui::Button(("+##" + VariableName).c_str(), ImVec2(ButtonSize, ButtonSize)))
+		{
+			Value.push_back(T());
+			Component.SetVariableValue(VariableName, Value);
+		}
+		ShowToolTip("Add element");
+		ImGui::SameLine(0.0f, 8.0f);
+		ImGui::TextDisabled(Value.size() == 1 ? "%d element" : "%d elements", static_cast<int>(Value.size()));
+
+		const float ElementIndent = 16.0f;
+		const float ElementLabelWidth = ElementIndent + ImGui::CalcTextSize("[00]").x + 10.0f;
 		for (size_t i = 0; i < Value.size(); i++)
 		{
-			ImGui::Text((VariableName + "[" + std::to_string(i) + "]").c_str());
-			ImGui::SameLine();
-
 			std::string ElementName = "##" + VariableName + "[" + std::to_string(i) + "]";
-			if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>)
-			{
-				if (ImGui::InputScalar(ElementName.c_str(), ImGuiDataType_Float, &Value[i]))
-					Component.SetVariableValue(VariableName, Value);
-			}
-			else if constexpr (std::is_same_v<T, int>)
-			{
-				if (ImGui::InputInt(ElementName.c_str(), &Value[i]))
-					Component.SetVariableValue(VariableName, Value);
-			}
-			else if constexpr (std::is_same_v<T, bool>)
+			RenderRowLabel(("[" + std::to_string(i) + "]").c_str(), ElementLabelWidth, ElementIndent);
+			if constexpr (std::is_same_v<T, bool>)
 			{
 				// std::vector<bool> is a special case.
 				bool bTemporaryValue = Value[i];
-				if (ImGui::Checkbox(ElementName.c_str(), &bTemporaryValue))
+				if (RenderScriptVariableEditor(ElementName, bTemporaryValue, ButtonSize + ButtonSpacing))
 				{
 					Value[i] = bTemporaryValue;
 					Component.SetVariableValue(VariableName, Value);
 				}
 			}
-			else if constexpr (std::is_same_v<T, std::string>)
+			else
 			{
-				if (ImGui::InputText(ElementName.c_str(), &Value[i]))
-				{
-					Component.SetVariableValue(VariableName, Value);
-				}
-			}
-			else if constexpr (std::is_same_v<T, glm::vec2> || std::is_same_v<T, glm::vec3> || std::is_same_v<T, glm::vec4>)
-			{
-				int VectorCardinality = std::is_same_v<T, glm::vec2> ? 2 : std::is_same_v<T, glm::vec3> ? 3 : 4;
-				if (ImGui::InputScalarN(ElementName.c_str(), ImGuiDataType_Float, glm::value_ptr(Value[i]), VectorCardinality))
+				if (RenderScriptVariableEditor(ElementName, Value[i], ButtonSize + ButtonSpacing))
 					Component.SetVariableValue(VariableName, Value);
 			}
-			else if constexpr (std::is_same_v<T, FEPrefab*>)
+
+			ImGui::SameLine(0.0f, ButtonSpacing);
+			if (ImGui::Button(("x" + ElementName).c_str(), ImVec2(ButtonSize, ButtonSize)))
 			{
-				std::string PrefabName = "";
-				if (Value[i] != nullptr)
-					PrefabName = Value[i]->GetName();
-				if (ImGui::BeginCombo((VariableName + "[" + std::to_string(i) + "]").c_str(), PrefabName.c_str()))
-				{
-					std::vector<FEUUID> PrefabIDList = RESOURCE_MANAGER.GetPrefabIDList();
-					for (size_t j = 0; j < PrefabIDList.size(); j++)
-					{
-						FEPrefab* CurrentPrefab = RESOURCE_MANAGER.GetPrefab(PrefabIDList[j]);
-						bool bIsSelected = PrefabName == CurrentPrefab->GetName();
-						ImGui::PushID(UNIQUE_ID.ToString(PrefabIDList[j]).c_str());
-						if (ImGui::Selectable(CurrentPrefab->GetName().c_str(), bIsSelected))
-						{
-							Value[i] = RESOURCE_MANAGER.GetPrefab(PrefabIDList[j]);
-							Component.SetVariableValue(VariableName, Value);
-						}
-						ImGui::PopID();
-
-						if (bIsSelected)
-							ImGui::SetItemDefaultFocus();
-					}
-
-					ImGui::EndCombo();
-				}
+				Value.erase(Value.begin() + i);
+				Component.SetVariableValue(VariableName, Value);
+				break;
 			}
-		}
-
-		if (ImGui::Button(("Add##" + VariableName).c_str()))
-		{
-			Value.push_back(T());
-			Component.SetVariableValue(VariableName, Value);
+			ShowToolTip("Remove element");
 		}
 	}
+}
+
+static std::string GetScriptModuleName(const FEUUID& ModuleID)
+{
+	auto ModuleIterator = NATIVE_SCRIPT_SYSTEM.ActiveModules.find(ModuleID);
+	if (ModuleIterator == NATIVE_SCRIPT_SYSTEM.ActiveModules.end() || ModuleIterator->second == nullptr || ModuleIterator->second->GetName().empty())
+		return UNIQUE_ID.ToString(ModuleID);
+
+	return ModuleIterator->second->GetName();
+}
+
+// Combo with a filter that lists scripts of all active modules. Returns true if script of the entity was changed.
+static bool RenderScriptSelection(FEEntity* Entity)
+{
+	static std::string Filter;
+
+	FENativeScriptComponent& Component = Entity->GetComponent<FENativeScriptComponent>();
+	const bool bInitialized = Component.IsInitialized();
+	const std::string CurrentScriptName = bInitialized ? Component.GetScriptData()->Name : "";
+	const FEUUID CurrentModuleID = bInitialized ? Component.GetModuleID() : FEUUID();
+
+	FEUUID ChosenModuleID;
+	std::string ChosenScriptName;
+
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	ImGui::PushStyleColor(ImGuiCol_Text, bInitialized ? FEEditorStyle::Text : FEEditorStyle::TextMuted);
+	const bool bListOpen = ImGui::BeginCombo("##ScriptSelection", bInitialized ? CurrentScriptName.c_str() : "Select script...", ImGuiComboFlags_HeightLarge);
+	ImGui::PopStyleColor();
+	if (bListOpen)
+	{
+		if (ImGui::IsWindowAppearing())
+		{
+			Filter = "";
+			ImGui::SetKeyboardFocusHere();
+		}
+
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		ImGui::InputTextWithHint("##ScriptFilter", "Filter scripts...", &Filter);
+
+		const std::string LowerCaseFilter = ToLowerCase(Filter);
+		bool bAnyScriptShown = false;
+		std::vector<FEUUID> ModuleList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleIDList();
+		for (size_t i = 0; i < ModuleList.size(); i++)
+		{
+			std::vector<std::string> ScriptList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleScriptNameList(ModuleList[i]);
+			std::sort(ScriptList.begin(), ScriptList.end());
+
+			bool bModuleNameShown = false;
+			for (size_t j = 0; j < ScriptList.size(); j++)
+			{
+				if (!LowerCaseFilter.empty() && ToLowerCase(ScriptList[j]).find(LowerCaseFilter) == std::string::npos)
+					continue;
+
+				if (!bModuleNameShown)
+				{
+					ImGui::PushFont(nullptr, 16.0f);
+					ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::Accent);
+					ImGui::TextUnformatted(GetScriptModuleName(ModuleList[i]).c_str());
+					ImGui::PopStyleColor();
+					ImGui::PopFont();
+					bModuleNameShown = true;
+				}
+
+				bAnyScriptShown = true;
+				const bool bCurrent = ScriptList[j] == CurrentScriptName && ModuleList[i] == CurrentModuleID;
+				if (ImGui::Selectable((ScriptList[j] + "##" + UNIQUE_ID.ToString(ModuleList[i])).c_str(), bCurrent))
+				{
+					ChosenModuleID = ModuleList[i];
+					ChosenScriptName = ScriptList[j];
+				}
+			}
+		}
+
+		if (!bAnyScriptShown)
+			ImGui::TextDisabled("No script with this name");
+
+		ImGui::EndCombo();
+	}
+
+	if (ChosenScriptName.empty() || (ChosenScriptName == CurrentScriptName && ChosenModuleID == CurrentModuleID))
+		return false;
+
+	// Component can be initialized only once, so to change the script it is replaced.
+	if (bInitialized)
+	{
+		Entity->RemoveComponent<FENativeScriptComponent>();
+		Entity->AddComponent<FENativeScriptComponent>();
+	}
+
+	NATIVE_SCRIPT_SYSTEM.InitializeScriptComponent(Entity, ChosenModuleID, ChosenScriptName);
+	return true;
 }
 
 void FEEditorInspectorWindow::DisplayNativeScriptProperties(FEEntity* NativeScriptEntity) const
 {
 	FENativeScriptComponent& NativeScriptComponent = NativeScriptEntity->GetComponent<FENativeScriptComponent>();
 
-	if (!NativeScriptComponent.IsInitialized())
+	if (!NativeScriptComponent.IsInitialized() && NativeScriptComponent.IsFailedToLoad())
 	{
-		if (NativeScriptComponent.IsFailedToLoad())
-		{
-			ImGui::Text("Script failed to load.");
-			FENativeScriptFailedToLoadData* FailedToLoadData = NativeScriptComponent.GetFailedToLoadData();
-			ImGui::Text(("Module ID: " + UNIQUE_ID.ToString(FailedToLoadData->GetModuleID())).c_str());
-			// And show raw data in multiline text box.
-			Json::Value Data = FailedToLoadData->GetRawData();
-			std::string RawData = Data.toStyledString();
+		ImGui::Text("Script failed to load.");
+		FENativeScriptFailedToLoadData* FailedToLoadData = NativeScriptComponent.GetFailedToLoadData();
+		ImGui::Text(("Module ID: " + UNIQUE_ID.ToString(FailedToLoadData->GetModuleID())).c_str());
+		// And show raw data in multiline text box.
+		Json::Value Data = FailedToLoadData->GetRawData();
+		std::string RawData = Data.toStyledString();
 
-			static char RawDataBuffer[10240] = {};
+		static char RawDataBuffer[10240] = {};
 
-			strncpy_s(RawDataBuffer, RawData.c_str(), sizeof(RawDataBuffer) - 1);
+		strncpy_s(RawDataBuffer, RawData.c_str(), sizeof(RawDataBuffer) - 1);
 
-			ImGui::InputTextMultiline("##FailedToLoadData", RawDataBuffer, sizeof(RawDataBuffer), ImVec2(500, 500), ImGuiInputTextFlags_ReadOnly);
-
-		}
-		else
-		{
-			std::vector<FEUUID> ModuleList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleIDList();
-
-			for (size_t i = 0; i < ModuleList.size(); i++)
-			{
-				ImGui::Text(("Module ID: " + UNIQUE_ID.ToString(ModuleList[i])).c_str());
-
-				ImGui::Text("Script list: ");
-				std::vector<std::string> ScriptList = NATIVE_SCRIPT_SYSTEM.GetActiveModuleScriptNameList(ModuleList[i]);
-				for (size_t j = 0; j < ScriptList.size(); j++)
-				{
-					ImGui::Text(ScriptList[j].c_str());
-					ImGui::SameLine();
-					if (ImGui::Button(("Add##" + UNIQUE_ID.ToString(ModuleList[i]) + "_" + ScriptList[j]).c_str()))
-					{
-						NATIVE_SCRIPT_SYSTEM.InitializeScriptComponent(NativeScriptEntity, ModuleList[i], ScriptList[j]);
-					}
-				}
-			}
-		}
+		ImGui::InputTextMultiline("##FailedToLoadData", RawDataBuffer, sizeof(RawDataBuffer), ImVec2(500, 500), ImGuiInputTextFlags_ReadOnly);
+		return;
 	}
-	else
+
+	std::vector<std::string> VariableNames;
+	if (NativeScriptComponent.IsInitialized())
+	{
+		// Registry is not ordered, names are sorted to keep the same order of rows.
+		for (const auto& Variable : NativeScriptComponent.GetScriptData()->VariablesRegistry)
+			VariableNames.push_back(Variable.first);
+
+		std::sort(VariableNames.begin(), VariableNames.end());
+	}
+
+	float LabelWidth = ImGui::CalcTextSize("Module ID").x;
+	for (size_t i = 0; i < VariableNames.size(); i++)
+		LabelWidth = std::max(LabelWidth, ImGui::CalcTextSize(VariableNames[i].c_str()).x);
+
+	LabelWidth = std::min(LabelWidth + 14.0f, floorf(ImGui::GetContentRegionAvail().x / 2.0f));
+
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 6.0f));
+	RenderRowLabel("Script", LabelWidth);
+	// Component is replaced when the script is changed, so it is not used after that.
+	const bool bScriptChanged = RenderScriptSelection(NativeScriptEntity);
+	if (!bScriptChanged && NativeScriptComponent.IsInitialized())
 	{
 		FEUUID ModuleID = NativeScriptComponent.GetModuleID();
 		const FEScriptData* ScriptData = NativeScriptComponent.GetScriptData();
 
-		// Showing general information.
-		ImGui::Text(("Module: " + UNIQUE_ID.ToString(ModuleID)).c_str());
-		ImGui::Text(("Script name: " + ScriptData->Name).c_str());
-		ImGui::Text((std::string("Run in editor: ") + std::string(ScriptData->bRunInEditor ? "Yes" : "No")).c_str());
+		RenderRowLabel("Module", LabelWidth);
+		ImGui::TextUnformatted(GetScriptModuleName(ModuleID).c_str());
 
-		// Showing script variables.
-		std::unordered_map<std::string, FEScriptVariableInfo> VariablesRegistry = ScriptData->VariablesRegistry;
-		auto VariablesIterator = VariablesRegistry.begin();
-		while (VariablesIterator != VariablesRegistry.end())
+		RenderRowLabel("Module ID", LabelWidth);
+		RenderIDText(UNIQUE_ID.ToString(ModuleID));
+
+		RenderRowLabel("Runs in", LabelWidth);
+		ImGui::TextUnformatted(ScriptData->bRunInEditor ? "editor and game mode" : "game mode only");
+
+		if (!VariableNames.empty())
+			ImGui::Separator();
+
+		for (size_t i = 0; i < VariableNames.size(); i++)
 		{
-			std::string VariableName = VariablesIterator->first;
-			std::string VariableType = VariablesIterator->second.Type;
+			std::string VariableName = VariableNames[i];
+			std::string VariableType = ScriptData->VariablesRegistry.at(VariableName).Type;
 
 			// TO-DO: Make it more general with more templated magic.
 			if (VariableType.find("vector<") != std::string::npos || VariableType.find("std::vector<") != std::string::npos)
 			{
-				if (VariableType.find("float>") != std::string::npos) HandleScriptArrayVariable<float>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("int>") != std::string::npos) HandleScriptArrayVariable<int>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("bool>") != std::string::npos) HandleScriptArrayVariable<bool>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("std::string>") != std::string::npos) HandleScriptArrayVariable<std::string>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("glm::vec2>") != std::string::npos) HandleScriptArrayVariable<glm::vec2>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("glm::vec3>") != std::string::npos) HandleScriptArrayVariable<glm::vec3>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("glm::vec4>") != std::string::npos) HandleScriptArrayVariable<glm::vec4>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("FEShader*>") != std::string::npos) HandleScriptArrayVariable<FEShader*>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("FEMesh*>") != std::string::npos) HandleScriptArrayVariable<FEMesh*>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("FETexture*>") != std::string::npos) HandleScriptArrayVariable<FETexture*>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("FEMaterial*>") != std::string::npos) HandleScriptArrayVariable<FEMaterial*>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("FEGameModel*>") != std::string::npos) HandleScriptArrayVariable<FEGameModel*>(NativeScriptComponent, VariableName);
+				if (VariableType.find("float>") != std::string::npos) HandleScriptArrayVariable<float>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("int>") != std::string::npos) HandleScriptArrayVariable<int>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("bool>") != std::string::npos) HandleScriptArrayVariable<bool>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("std::string>") != std::string::npos) HandleScriptArrayVariable<std::string>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("glm::vec2>") != std::string::npos) HandleScriptArrayVariable<glm::vec2>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("glm::vec3>") != std::string::npos) HandleScriptArrayVariable<glm::vec3>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("glm::vec4>") != std::string::npos) HandleScriptArrayVariable<glm::vec4>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("FEShader*>") != std::string::npos) HandleScriptArrayVariable<FEShader*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("FEMesh*>") != std::string::npos) HandleScriptArrayVariable<FEMesh*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("FETexture*>") != std::string::npos) HandleScriptArrayVariable<FETexture*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("FEMaterial*>") != std::string::npos) HandleScriptArrayVariable<FEMaterial*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("FEGameModel*>") != std::string::npos) HandleScriptArrayVariable<FEGameModel*>(NativeScriptComponent, VariableName, LabelWidth);
 				// TO-DO: Think how to make it work with enitity. Right now it is not consistent between editor and game mode scenes.
-				//else if (VariableType.find("FEEntity*>") != std::string::npos) HandleScriptArrayVariable<FEEntity*>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("FEFramebuffer*>") != std::string::npos) HandleScriptArrayVariable<FEFramebuffer*>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("FEPostProcess*>") != std::string::npos) HandleScriptArrayVariable<FEPostProcess*>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("FEPrefab*>") != std::string::npos) HandleScriptArrayVariable<FEPrefab*>(NativeScriptComponent, VariableName);
+				//else if (VariableType.find("FEEntity*>") != std::string::npos) HandleScriptArrayVariable<FEEntity*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("FEFramebuffer*>") != std::string::npos) HandleScriptArrayVariable<FEFramebuffer*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("FEPostProcess*>") != std::string::npos) HandleScriptArrayVariable<FEPostProcess*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("FEPrefab*>") != std::string::npos) HandleScriptArrayVariable<FEPrefab*>(NativeScriptComponent, VariableName, LabelWidth);
 				// TO-DO: Check if it is working.
-				else if (VariableType.find("FEScene*>") != std::string::npos) HandleScriptArrayVariable<FEScene*>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("FEAssetPackage*>") != std::string::npos) HandleScriptArrayVariable<FEAssetPackage*>(NativeScriptComponent, VariableName);
-				else if (VariableType.find("FENativeScriptModule*>") != std::string::npos) HandleScriptArrayVariable<FENativeScriptModule*>(NativeScriptComponent, VariableName);
+				else if (VariableType.find("FEScene*>") != std::string::npos) HandleScriptArrayVariable<FEScene*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("FEAssetPackage*>") != std::string::npos) HandleScriptArrayVariable<FEAssetPackage*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType.find("FENativeScriptModule*>") != std::string::npos) HandleScriptArrayVariable<FENativeScriptModule*>(NativeScriptComponent, VariableName, LabelWidth);
 			}
 			else
 			{
-				if (VariableType == "float") HandleScriptVariable<float>(NativeScriptComponent, VariableName);
-				else if (VariableType == "int") HandleScriptVariable<int>(NativeScriptComponent, VariableName);
-				else if (VariableType == "bool") HandleScriptVariable<bool>(NativeScriptComponent, VariableName);
-				else if (VariableType == "std::string") HandleScriptVariable<std::string>(NativeScriptComponent, VariableName);
-				else if (VariableType == "glm::vec2") HandleScriptVariable<glm::vec2>(NativeScriptComponent, VariableName);
-				else if (VariableType == "glm::vec3") HandleScriptVariable<glm::vec3>(NativeScriptComponent, VariableName);
-				else if (VariableType == "glm::vec4") HandleScriptVariable<glm::vec4>(NativeScriptComponent, VariableName);
-				else if (VariableType == "FEShader*") HandleScriptVariable<FEShader*>(NativeScriptComponent, VariableName);
-				else if (VariableType == "FEMesh*") HandleScriptVariable<FEMesh*>(NativeScriptComponent, VariableName);
-				else if (VariableType == "FETexture*") HandleScriptVariable<FETexture*>(NativeScriptComponent, VariableName);
-				else if (VariableType == "FEMaterial*") HandleScriptVariable<FEMaterial*>(NativeScriptComponent, VariableName);
-				else if (VariableType == "FEGameModel*") HandleScriptVariable<FEGameModel*>(NativeScriptComponent, VariableName);
+				if (VariableType == "float") HandleScriptVariable<float>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "int") HandleScriptVariable<int>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "bool") HandleScriptVariable<bool>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "std::string") HandleScriptVariable<std::string>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "glm::vec2") HandleScriptVariable<glm::vec2>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "glm::vec3") HandleScriptVariable<glm::vec3>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "glm::vec4") HandleScriptVariable<glm::vec4>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "FEShader*") HandleScriptVariable<FEShader*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "FEMesh*") HandleScriptVariable<FEMesh*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "FETexture*") HandleScriptVariable<FETexture*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "FEMaterial*") HandleScriptVariable<FEMaterial*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "FEGameModel*") HandleScriptVariable<FEGameModel*>(NativeScriptComponent, VariableName, LabelWidth);
 				// TO-DO: Think how to make it work with enitity. Right now it is not consistent between editor and game mode scenes.
-				//else if (VariableType == "FEEntity*") HandleScriptVariable<FEEntity*>(NativeScriptComponent, VariableName);
-				else if (VariableType == "FEFramebuffer*") HandleScriptVariable<FEFramebuffer*>(NativeScriptComponent, VariableName);
-				else if (VariableType == "FEPostProcess*") HandleScriptVariable<FEPostProcess*>(NativeScriptComponent, VariableName);
-				else if (VariableType == "FEPrefab*") HandleScriptVariable<FEPrefab*>(NativeScriptComponent, VariableName);
+				//else if (VariableType == "FEEntity*") HandleScriptVariable<FEEntity*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "FEFramebuffer*") HandleScriptVariable<FEFramebuffer*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "FEPostProcess*") HandleScriptVariable<FEPostProcess*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "FEPrefab*") HandleScriptVariable<FEPrefab*>(NativeScriptComponent, VariableName, LabelWidth);
 				// TO-DO: Check if it is working.
-				else if (VariableType == "FEScene*") HandleScriptVariable<FEScene*>(NativeScriptComponent, VariableName);
-				else if (VariableType == "FEAssetPackage*") HandleScriptVariable<FEAssetPackage*>(NativeScriptComponent, VariableName);
-				else if (VariableType == "FENativeScriptModule*") HandleScriptVariable<FENativeScriptModule*>(NativeScriptComponent, VariableName);
+				else if (VariableType == "FEScene*") HandleScriptVariable<FEScene*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "FEAssetPackage*") HandleScriptVariable<FEAssetPackage*>(NativeScriptComponent, VariableName, LabelWidth);
+				else if (VariableType == "FENativeScriptModule*") HandleScriptVariable<FENativeScriptModule*>(NativeScriptComponent, VariableName, LabelWidth);
 			}
-
-			VariablesIterator++;
 		}
 	}
+	ImGui::PopStyleVar();
 }

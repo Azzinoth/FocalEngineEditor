@@ -5,31 +5,6 @@
 
 namespace
 {
-	const ImU32 ColorBackground = IM_COL32(0x16, 0x18, 0x1C, 255);
-	const ImU32 ColorBar = IM_COL32(0x1D, 0x20, 0x25, 255);
-	const ImU32 ColorCard = IM_COL32(0x23, 0x26, 0x2C, 255);
-	const ImU32 ColorCardHovered = IM_COL32(0x2A, 0x2E, 0x35, 255);
-	const ImU32 ColorBorder = IM_COL32(0x34, 0x39, 0x41, 255);
-	const ImU32 ColorText = IM_COL32(0xE8, 0xE9, 0xEB, 255);
-	const ImU32 ColorMuted = IM_COL32(0xA3, 0xA9, 0xB2, 255);
-	const ImU32 ColorDisabled = IM_COL32(0x6B, 0x71, 0x7A, 255);
-	const ImU32 ColorAccent = IM_COL32(0x00, 0xA2, 0xE8, 255);
-	const ImU32 ColorAccentHovered = IM_COL32(0x2B, 0xB6, 0xF2, 255);
-	const ImU32 ColorAccentText = IM_COL32(0x06, 0x20, 0x2D, 255);
-	const ImU32 ColorButton = IM_COL32(0x2E, 0x32, 0x39, 255);
-	const ImU32 ColorButtonHovered = IM_COL32(0x3A, 0x3F, 0x48, 255);
-	const ImU32 ColorButtonBorder = IM_COL32(0x45, 0x4B, 0x55, 255);
-	const ImU32 ColorWarning = IM_COL32(0xF0, 0xB8, 0x40, 255);
-	const ImU32 ColorDanger = IM_COL32(0xFF, 0x7A, 0x70, 255);
-	const ImU32 ColorDangerFill = IM_COL32(0xC8, 0x45, 0x3B, 255);
-	const ImU32 ColorDangerFillHovered = IM_COL32(0xD9, 0x56, 0x4C, 255);
-	const ImU32 ColorSelectedRow = IM_COL32(0x26, 0x30, 0x3A, 255);
-	const ImU32 ColorMissingThumbnail = IM_COL32(0x2A, 0x2D, 0x33, 255);
-	const ImU32 ColorMenu = IM_COL32(0x2A, 0x2D, 0x33, 255);
-	const ImU32 ColorMenuBorder = IM_COL32(0x4A, 0x50, 0x5A, 255);
-	const ImU32 ColorInput = IM_COL32(0x16, 0x18, 0x1C, 255);
-
-	const ImU32 ColorDim = IM_COL32(0x0E, 0x0F, 0x12, 200);
 
 	const float TopBarHeight = 64.0f;
 	const float BottomBarHeight = 80.0f;
@@ -38,42 +13,42 @@ namespace
 	enum class ListButtonKind { Normal, Accent, Danger, DangerFilled, Segment };
 
 	const std::pair<ImGuiCol, ImU32> ProjectListStyleColors[] = {
-		{ ImGuiCol_Text, ColorText },
-		{ ImGuiCol_TextDisabled, ColorMuted },
-		{ ImGuiCol_WindowBg, ColorBar },
+		{ ImGuiCol_Text, FEEditorStyle::Text },
+		{ ImGuiCol_TextDisabled, FEEditorStyle::TextMuted },
+		{ ImGuiCol_WindowBg, FEEditorStyle::Panel },
 		{ ImGuiCol_ChildBg, IM_COL32(0, 0, 0, 0) },
-		{ ImGuiCol_PopupBg, ColorCard },
-		{ ImGuiCol_Border, ColorButtonBorder },
-		{ ImGuiCol_TitleBg, ColorButton },
-		{ ImGuiCol_TitleBgActive, ColorButton },
-		{ ImGuiCol_TitleBgCollapsed, ColorButton },
-		{ ImGuiCol_FrameBg, ColorInput },
-		{ ImGuiCol_FrameBgHovered, ColorCard },
-		{ ImGuiCol_FrameBgActive, ColorCard },
-		{ ImGuiCol_Button, ColorButton },
-		{ ImGuiCol_ButtonHovered, ColorButtonHovered },
-		{ ImGuiCol_ButtonActive, ColorButtonBorder },
-		{ ImGuiCol_Header, ColorCard },
-		{ ImGuiCol_HeaderHovered, ColorCardHovered },
-		{ ImGuiCol_HeaderActive, ColorButton },
-		{ ImGuiCol_Separator, ColorBorder },
-		{ ImGuiCol_Tab, ColorCard },
-		{ ImGuiCol_TabHovered, ColorButtonHovered },
-		{ ImGuiCol_TabSelected, ColorButton },
-		{ ImGuiCol_TabSelectedOverline, ColorAccent },
-		{ ImGuiCol_TabDimmed, ColorCard },
-		{ ImGuiCol_TabDimmedSelected, ColorButton },
-		{ ImGuiCol_TableHeaderBg, ColorCard },
-		{ ImGuiCol_TableBorderStrong, ColorBorder },
-		{ ImGuiCol_TableBorderLight, ColorBorder },
+		{ ImGuiCol_PopupBg, FEEditorStyle::Card },
+		{ ImGuiCol_Border, FEEditorStyle::ButtonBorder },
+		{ ImGuiCol_TitleBg, FEEditorStyle::Button },
+		{ ImGuiCol_TitleBgActive, FEEditorStyle::Button },
+		{ ImGuiCol_TitleBgCollapsed, FEEditorStyle::Button },
+		{ ImGuiCol_FrameBg, FEEditorStyle::Background },
+		{ ImGuiCol_FrameBgHovered, FEEditorStyle::Card },
+		{ ImGuiCol_FrameBgActive, FEEditorStyle::Card },
+		{ ImGuiCol_Button, FEEditorStyle::Button },
+		{ ImGuiCol_ButtonHovered, FEEditorStyle::ButtonHovered },
+		{ ImGuiCol_ButtonActive, FEEditorStyle::ButtonBorder },
+		{ ImGuiCol_Header, FEEditorStyle::Card },
+		{ ImGuiCol_HeaderHovered, FEEditorStyle::CardHovered },
+		{ ImGuiCol_HeaderActive, FEEditorStyle::Button },
+		{ ImGuiCol_Separator, FEEditorStyle::CardBorder },
+		{ ImGuiCol_Tab, FEEditorStyle::Card },
+		{ ImGuiCol_TabHovered, FEEditorStyle::ButtonHovered },
+		{ ImGuiCol_TabSelected, FEEditorStyle::Button },
+		{ ImGuiCol_TabSelectedOverline, FEEditorStyle::Accent },
+		{ ImGuiCol_TabDimmed, FEEditorStyle::Card },
+		{ ImGuiCol_TabDimmedSelected, FEEditorStyle::Button },
+		{ ImGuiCol_TableHeaderBg, FEEditorStyle::Card },
+		{ ImGuiCol_TableBorderStrong, FEEditorStyle::CardBorder },
+		{ ImGuiCol_TableBorderLight, FEEditorStyle::CardBorder },
 		{ ImGuiCol_TableRowBg, IM_COL32(0, 0, 0, 0) },
 		{ ImGuiCol_TableRowBgAlt, IM_COL32(255, 255, 255, 6) },
-		{ ImGuiCol_CheckMark, ColorAccent },
+		{ ImGuiCol_CheckMark, FEEditorStyle::Accent },
 		{ ImGuiCol_ScrollbarBg, IM_COL32(0, 0, 0, 0) },
-		{ ImGuiCol_ScrollbarGrab, ColorButtonHovered },
-		{ ImGuiCol_ScrollbarGrabHovered, ColorButtonBorder },
-		{ ImGuiCol_ScrollbarGrabActive, ColorButtonBorder },
-		{ ImGuiCol_ModalWindowDimBg, ColorDim }
+		{ ImGuiCol_ScrollbarGrab, FEEditorStyle::ButtonHovered },
+		{ ImGuiCol_ScrollbarGrabHovered, FEEditorStyle::ButtonBorder },
+		{ ImGuiCol_ScrollbarGrabActive, FEEditorStyle::ButtonBorder },
+		{ ImGuiCol_ModalWindowDimBg, FEEditorStyle::Dim }
 	};
 }
 
@@ -231,40 +206,40 @@ static bool ListButton(const char* Label, const ImVec2 Size, const ListButtonKin
 	const bool bPressed = ImGui::InvisibleButton(Label, Size) && bEnabled;
 	const bool bHovered = ImGui::IsItemHovered() && bEnabled;
 
-	ImU32 Fill = bHovered ? ColorButtonHovered : ColorButton;
-	ImU32 Border = ColorButtonBorder;
-	ImU32 TextColor = ColorText;
+	ImU32 Fill = bHovered ? FEEditorStyle::ButtonHovered : FEEditorStyle::Button;
+	ImU32 Border = FEEditorStyle::ButtonBorder;
+	ImU32 TextColor = FEEditorStyle::Text;
 	ImFont* Font = GetListFont();
 	if (Kind == ListButtonKind::Accent && bEnabled)
 	{
-		Fill = bHovered ? ColorAccentHovered : ColorAccent;
+		Fill = bHovered ? FEEditorStyle::AccentHovered : FEEditorStyle::Accent;
 		Border = 0;
-		TextColor = ColorAccentText;
+		TextColor = FEEditorStyle::TextOnAccent;
 		Font = GetListBoldFont();
 	}
 	else if (Kind == ListButtonKind::Danger)
 	{
-		TextColor = ColorDanger;
+		TextColor = FEEditorStyle::Danger;
 	}
 	else if (Kind == ListButtonKind::DangerFilled)
 	{
-		Fill = bHovered ? ColorDangerFillHovered : ColorDangerFill;
+		Fill = bHovered ? FEEditorStyle::DangerButtonHovered : FEEditorStyle::DangerButton;
 		Border = 0;
 		TextColor = IM_COL32_WHITE;
 		Font = GetListBoldFont();
 	}
 	else if (Kind == ListButtonKind::Segment)
 	{
-		Fill = bHovered ? ColorButtonHovered : ColorCard;
+		Fill = bHovered ? FEEditorStyle::ButtonHovered : FEEditorStyle::Card;
 	}
 
 	if (!bEnabled)
-		TextColor = ColorDisabled;
+		TextColor = FEEditorStyle::TextDisabled;
 
 	ImDrawList* DrawList = ImGui::GetWindowDrawList();
 	DrawList->AddRectFilled(Min, Max, Fill, 4.0f, RoundFlags);
 	if (Border != 0)
-		DrawList->AddRect(Min, Max, Border, 4.0f, RoundFlags, 1.0f);
+		DrawList->AddRect(Min, Max, Border, 4.0f, 1.0f, RoundFlags);
 
 	std::string Text = Label;
 	if (Text.find("##") != std::string::npos)
@@ -286,16 +261,16 @@ static void PushInputStyle(const ImU32 Background)
 	ImGui::PushStyleColor(ImGuiCol_FrameBg, Background);
 	ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, Background);
 	ImGui::PushStyleColor(ImGuiCol_FrameBgActive, Background);
-	ImGui::PushStyleColor(ImGuiCol_Border, ColorButtonBorder);
-	ImGui::PushStyleColor(ImGuiCol_Text, ColorText);
-	ImGui::PushStyleColor(ImGuiCol_TextDisabled, ColorMuted);
-	ImGui::PushStyleColor(ImGuiCol_Button, ColorButton);
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ColorButtonHovered);
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ColorButtonHovered);
-	ImGui::PushStyleColor(ImGuiCol_PopupBg, ColorCard);
-	ImGui::PushStyleColor(ImGuiCol_Header, ColorButton);
-	ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ColorButtonHovered);
-	ImGui::PushStyleColor(ImGuiCol_HeaderActive, ColorButtonHovered);
+	ImGui::PushStyleColor(ImGuiCol_Border, FEEditorStyle::ButtonBorder);
+	ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::Text);
+	ImGui::PushStyleColor(ImGuiCol_TextDisabled, FEEditorStyle::TextMuted);
+	ImGui::PushStyleColor(ImGuiCol_Button, FEEditorStyle::Button);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, FEEditorStyle::ButtonHovered);
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, FEEditorStyle::ButtonHovered);
+	ImGui::PushStyleColor(ImGuiCol_PopupBg, FEEditorStyle::Card);
+	ImGui::PushStyleColor(ImGuiCol_Header, FEEditorStyle::Button);
+	ImGui::PushStyleColor(ImGuiCol_HeaderHovered, FEEditorStyle::ButtonHovered);
+	ImGui::PushStyleColor(ImGuiCol_HeaderActive, FEEditorStyle::ButtonHovered);
 }
 
 static void PopInputStyle()
@@ -310,12 +285,12 @@ static void DrawThumbnail(FEProjectInfo* Project, const ImVec2 Min, const ImVec2
 	FETexture* Thumbnail = Project->GetThumbnail();
 	if (Project->IsMissing() || Thumbnail == nullptr)
 	{
-		DrawList->AddRectFilled(Min, Max, ColorMissingThumbnail, Rounding);
+		DrawList->AddRectFilled(Min, Max, FEEditorStyle::CardHovered, Rounding);
 		if (Project->IsMissing() && bShowMissingText)
 		{
 			const std::string Text = "Folder not found";
 			const float TextWidth = GetTextWidth(GetListBoldFont(), 13.0f, Text);
-			DrawListText(GetListBoldFont(), 13.0f, ImVec2(Min.x + (Max.x - Min.x - TextWidth) / 2.0f, Min.y + (Max.y - Min.y - 13.0f) / 2.0f), ColorWarning, Text);
+			DrawListText(GetListBoldFont(), 13.0f, ImVec2(Min.x + (Max.x - Min.x - TextWidth) / 2.0f, Min.y + (Max.y - Min.y - 13.0f) / 2.0f), FEEditorStyle::Warning, Text);
 		}
 
 		return;
@@ -324,15 +299,15 @@ static void DrawThumbnail(FEProjectInfo* Project, const ImVec2 Min, const ImVec2
 	DrawList->AddImageRounded(static_cast<ImTextureID>(Thumbnail->GetTextureID()), Min, Max, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), IM_COL32_WHITE, Rounding);
 }
 
-static bool MenuRow(const char* Label, const ImU32 TextColor = ColorText, const bool bEnabled = true)
+static bool MenuRow(const char* Label, const ImU32 TextColor = FEEditorStyle::Text, const bool bEnabled = true)
 {
 	const ImVec2 Size = ImVec2(208.0f, 32.0f);
 	const ImVec2 Min = ImGui::GetCursorScreenPos();
 	const bool bPressed = ImGui::InvisibleButton(Label, Size) && bEnabled;
 	if (ImGui::IsItemHovered() && bEnabled)
-		ImGui::GetWindowDrawList()->AddRectFilled(Min, ImVec2(Min.x + Size.x, Min.y + Size.y), ColorButtonHovered, 3.0f);
+		ImGui::GetWindowDrawList()->AddRectFilled(Min, ImVec2(Min.x + Size.x, Min.y + Size.y), FEEditorStyle::ButtonHovered, 3.0f);
 
-	DrawListText(GetListFont(), 14.0f, ImVec2(Min.x + 10.0f, Min.y + 9.0f), bEnabled ? TextColor : ColorDisabled, Label);
+	DrawListText(GetListFont(), 14.0f, ImVec2(Min.x + 10.0f, Min.y + 9.0f), bEnabled ? TextColor : FEEditorStyle::TextDisabled, Label);
 	if (bPressed)
 		ImGui::CloseCurrentPopup();
 
@@ -343,7 +318,7 @@ static void MenuSeparator()
 {
 	const ImVec2 Min = ImGui::GetCursorScreenPos();
 	ImGui::Dummy(ImVec2(208.0f, 13.0f));
-	ImGui::GetWindowDrawList()->AddLine(ImVec2(Min.x + 4.0f, Min.y + 6.5f), ImVec2(Min.x + 204.0f, Min.y + 6.5f), ColorMenuBorder);
+	ImGui::GetWindowDrawList()->AddLine(ImVec2(Min.x + 4.0f, Min.y + 6.5f), ImVec2(Min.x + 204.0f, Min.y + 6.5f), FEEditorStyle::PopupBorder);
 }
 
 // Plugins window is shown over the project list.
@@ -359,7 +334,7 @@ static void DimCurrentWindowIfCovered()
 
 	const ImVec2 Position = ImGui::GetWindowPos();
 	const ImVec2 Size = ImGui::GetWindowSize();
-	ImGui::GetWindowDrawList()->AddRectFilled(Position, ImVec2(Position.x + Size.x, Position.y + Size.y), ColorDim);
+	ImGui::GetWindowDrawList()->AddRectFilled(Position, ImVec2(Position.x + Size.x, Position.y + Size.y), FEEditorStyle::Dim);
 }
 
 static void ShowInExplorer(const std::string& Folder)
@@ -438,8 +413,8 @@ void FEProjectManager::DisplayProjectMenu(FEProjectInfo* Project)
 	ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 4.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 1.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
-	ImGui::PushStyleColor(ImGuiCol_PopupBg, ColorMenu);
-	ImGui::PushStyleColor(ImGuiCol_Border, ColorMenuBorder);
+	ImGui::PushStyleColor(ImGuiCol_PopupBg, FEEditorStyle::CardHovered);
+	ImGui::PushStyleColor(ImGuiCol_Border, FEEditorStyle::PopupBorder);
 
 	if (ImGui::BeginPopupContextItem("##ProjectMenu"))
 	{
@@ -464,13 +439,13 @@ void FEProjectManager::DisplayProjectMenu(FEProjectInfo* Project)
 			MenuSeparator();
 		}
 
-		if (MenuRow("Remove from list", ColorText, bCanBeRemoved))
+		if (MenuRow("Remove from list", FEEditorStyle::Text, bCanBeRemoved))
 			DeferredAction = [this, Project]() { RemoveFromProjectList(Project); };
 
 		if (!bCanBeRemoved && ImGui::IsItemHovered())
 			ImGui::SetTooltip("Projects of the default Projects folder are always in the list.");
 
-		if (!Project->IsMissing() && MenuRow("Delete project", ColorDanger))
+		if (!Project->IsMissing() && MenuRow("Delete project", FEEditorStyle::Danger))
 			ShowPopup("Delete Project", Project);
 
 		ImGui::EndPopup();
@@ -484,12 +459,12 @@ void FEProjectManager::DisplayTopBar(const ImVec2 Origin, const float Width)
 {
 	const float Padding = bListView ? 24.0f : 32.0f;
 	ImDrawList* DrawList = ImGui::GetWindowDrawList();
-	DrawList->AddRectFilled(Origin, ImVec2(Origin.x + Width, Origin.y + TopBarHeight), ColorBar);
-	DrawList->AddLine(ImVec2(Origin.x, Origin.y + TopBarHeight - 0.5f), ImVec2(Origin.x + Width, Origin.y + TopBarHeight - 0.5f), ColorBorder);
+	DrawList->AddRectFilled(Origin, ImVec2(Origin.x + Width, Origin.y + TopBarHeight), FEEditorStyle::Panel);
+	DrawList->AddLine(ImVec2(Origin.x, Origin.y + TopBarHeight - 0.5f), ImVec2(Origin.x + Width, Origin.y + TopBarHeight - 0.5f), FEEditorStyle::CardBorder);
 
-	DrawListText(GetListBoldFont(), 20.0f, ImVec2(Origin.x + Padding, Origin.y + 21.0f), ColorText, "Projects");
+	DrawListText(GetListBoldFont(), 20.0f, ImVec2(Origin.x + Padding, Origin.y + 21.0f), FEEditorStyle::Text, "Projects");
 	const std::string CountText = List.size() == 1 ? "1 project" : std::to_string(List.size()) + " projects";
-	DrawListText(GetListFont(), 13.0f, ImVec2(Origin.x + Padding + GetTextWidth(GetListBoldFont(), 20.0f, "Projects") + 16.0f, Origin.y + 27.0f), ColorMuted, CountText);
+	DrawListText(GetListFont(), 13.0f, ImVec2(Origin.x + Padding + GetTextWidth(GetListBoldFont(), 20.0f, "Projects") + 16.0f, Origin.y + 27.0f), FEEditorStyle::TextMuted, CountText);
 
 	const float ControlY = Origin.y + 14.0f;
 	float X = Origin.x + Width - Padding;
@@ -513,23 +488,23 @@ void FEProjectManager::DisplayTopBar(const ImVec2 Origin, const float Width)
 	const float SortingWidth = bWasListView ? 150.0f : 170.0f;
 	X -= 16.0f + SortingWidth;
 	ImGui::SetCursorScreenPos(ImVec2(X, ControlY));
-	PushInputStyle(ColorCard);
+	PushInputStyle(FEEditorStyle::Card);
 	ImGui::SetNextItemWidth(SortingWidth);
 	if (ImGui::Combo("##Sorting", &Sorting, "Last opened\0Name\0Date added\0"))
 		SaveProjectList();
 	PopInputStyle();
 	X -= 8.0f + GetTextWidth(GetListFont(), 13.0f, "Sort by");
-	DrawListText(GetListFont(), 13.0f, ImVec2(X, Origin.y + 26.0f), ColorMuted, "Sort by");
+	DrawListText(GetListFont(), 13.0f, ImVec2(X, Origin.y + 26.0f), FEEditorStyle::TextMuted, "Sort by");
 
 	const float FilterWidth = bWasListView ? 220.0f : 260.0f;
 	X -= 16.0f + FilterWidth;
 	ImGui::SetCursorScreenPos(ImVec2(X, ControlY));
-	PushInputStyle(ColorCard);
+	PushInputStyle(FEEditorStyle::Card);
 	ImGui::SetNextItemWidth(FilterWidth);
 	ImGui::InputTextWithHint("##Filter", "Project name", Filter, IM_ARRAYSIZE(Filter));
 	PopInputStyle();
 	X -= 8.0f + GetTextWidth(GetListFont(), 13.0f, "Filter");
-	DrawListText(GetListFont(), 13.0f, ImVec2(X, Origin.y + 26.0f), ColorMuted, "Filter");
+	DrawListText(GetListFont(), 13.0f, ImVec2(X, Origin.y + 26.0f), FEEditorStyle::TextMuted, "Filter");
 }
 
 void FEProjectManager::DisplayGridView(const std::vector<FEProjectInfo*>& Projects, const ImVec2 Origin, const float Width, const float Height)
@@ -566,18 +541,18 @@ void FEProjectManager::DisplayGridView(const std::vector<FEProjectInfo*>& Projec
 
 		DisplayProjectMenu(Project);
 
-		ImU32 Fill = bHovered ? ColorCardHovered : ColorCard;
+		ImU32 Fill = bHovered ? FEEditorStyle::CardHovered : FEEditorStyle::Card;
 		if (Project->IsMissing())
-			Fill = ColorBar;
+			Fill = FEEditorStyle::Panel;
 
 		DrawList->AddRectFilled(Min, Max, Fill, 6.0f);
 		if (Selected == Project)
 		{
-			DrawList->AddRect(ImVec2(Min.x + 0.5f, Min.y + 0.5f), ImVec2(Max.x - 0.5f, Max.y - 0.5f), ColorAccent, 6.0f, 0, 2.0f);
+			DrawList->AddRect(ImVec2(Min.x + 0.5f, Min.y + 0.5f), ImVec2(Max.x - 0.5f, Max.y - 0.5f), FEEditorStyle::Accent, 6.0f, 2.0f);
 		}
 		else
 		{
-			DrawList->AddRect(Min, Max, ColorBorder, 6.0f);
+			DrawList->AddRect(Min, Max, FEEditorStyle::CardBorder, 6.0f);
 		}
 
 		const ImVec2 ThumbnailMin = ImVec2(Min.x + 8.0f, Min.y + 8.0f);
@@ -586,11 +561,11 @@ void FEProjectManager::DisplayGridView(const std::vector<FEProjectInfo*>& Projec
 
 		const float TextWidth = CardWidth - 16.0f;
 		float TextY = ThumbnailMax.y + 10.0f;
-		DrawListText(GetListBoldFont(), 15.0f, ImVec2(ThumbnailMin.x, TextY), Project->IsMissing() ? ColorMuted : ColorText, CutWithEllipsis(GetListBoldFont(), 15.0f, Project->GetName(), TextWidth));
+		DrawListText(GetListBoldFont(), 15.0f, ImVec2(ThumbnailMin.x, TextY), Project->IsMissing() ? FEEditorStyle::TextMuted : FEEditorStyle::Text, CutWithEllipsis(GetListBoldFont(), 15.0f, Project->GetName(), TextWidth));
 		TextY += 22.0f;
-		DrawListText(GetListFont(), 12.0f, ImVec2(ThumbnailMin.x, TextY), ColorMuted, CutPathWithEllipsis(GetListFont(), 12.0f, Project->GetDisplayFolder(), TextWidth));
+		DrawListText(GetListFont(), 12.0f, ImVec2(ThumbnailMin.x, TextY), FEEditorStyle::TextMuted, CutPathWithEllipsis(GetListFont(), 12.0f, Project->GetDisplayFolder(), TextWidth));
 		TextY += 19.0f;
-		DrawListText(GetListFont(), 12.0f, ImVec2(ThumbnailMin.x, TextY), ColorMuted, GetOpenedTimeText(Project->GetLastOpenedTime(), true));
+		DrawListText(GetListFont(), 12.0f, ImVec2(ThumbnailMin.x, TextY), FEEditorStyle::TextMuted, GetOpenedTimeText(Project->GetLastOpenedTime(), true));
 
 		ImGui::PopID();
 	}
@@ -630,18 +605,18 @@ void FEProjectManager::DisplayListView(const std::vector<FEProjectInfo*>& Projec
 
 		DisplayProjectMenu(Project);
 
-		ImU32 Fill = bHovered ? ColorCardHovered : ColorCard;
+		ImU32 Fill = bHovered ? FEEditorStyle::CardHovered : FEEditorStyle::Card;
 		if (Selected == Project)
 		{
-			Fill = ColorSelectedRow;
+			Fill = FEEditorStyle::SelectedRow;
 		}
 		else if (Project->IsMissing())
 		{
-			Fill = ColorBar;
+			Fill = FEEditorStyle::Panel;
 		}
 
 		DrawList->AddRectFilled(Min, Max, Fill, 6.0f);
-		DrawList->AddRect(Min, Max, Selected == Project ? ColorAccent : ColorBorder, 6.0f);
+		DrawList->AddRect(Min, Max, Selected == Project ? FEEditorStyle::Accent : FEEditorStyle::CardBorder, 6.0f);
 
 		const ImVec2 ThumbnailMin = ImVec2(Min.x + 12.0f, Min.y + 11.0f);
 		DrawThumbnail(Project, ThumbnailMin, ImVec2(ThumbnailMin.x + 96.0f, ThumbnailMin.y + 54.0f), 3.0f, false);
@@ -649,12 +624,12 @@ void FEProjectManager::DisplayListView(const std::vector<FEProjectInfo*>& Projec
 		const std::string RightText = Project->IsMissing() ? "Folder not found" : GetOpenedTimeText(Project->GetLastOpenedTime(), false);
 		ImFont* RightFont = Project->IsMissing() ? GetListBoldFont() : GetListFont();
 		const float RightX = Max.x - 12.0f - GetTextWidth(RightFont, 12.0f, RightText);
-		DrawListText(RightFont, 12.0f, ImVec2(RightX, Min.y + 31.0f), Project->IsMissing() ? ColorWarning : ColorMuted, RightText);
+		DrawListText(RightFont, 12.0f, ImVec2(RightX, Min.y + 31.0f), Project->IsMissing() ? FEEditorStyle::Warning : FEEditorStyle::TextMuted, RightText);
 
 		const float TextX = ThumbnailMin.x + 96.0f + 16.0f;
 		const float TextWidth = RightX - 16.0f - TextX;
-		DrawListText(GetListBoldFont(), 15.0f, ImVec2(TextX, Min.y + 19.0f), Project->IsMissing() ? ColorMuted : ColorText, CutWithEllipsis(GetListBoldFont(), 15.0f, Project->GetName(), TextWidth));
-		DrawListText(GetListFont(), 12.0f, ImVec2(TextX, Min.y + 42.0f), ColorMuted, CutPathWithEllipsis(GetListFont(), 12.0f, Project->GetDisplayFolder(), TextWidth));
+		DrawListText(GetListBoldFont(), 15.0f, ImVec2(TextX, Min.y + 19.0f), Project->IsMissing() ? FEEditorStyle::TextMuted : FEEditorStyle::Text, CutWithEllipsis(GetListBoldFont(), 15.0f, Project->GetName(), TextWidth));
+		DrawListText(GetListFont(), 12.0f, ImVec2(TextX, Min.y + 42.0f), FEEditorStyle::TextMuted, CutPathWithEllipsis(GetListFont(), 12.0f, Project->GetDisplayFolder(), TextWidth));
 
 		ImGui::PopID();
 	}
@@ -668,15 +643,15 @@ void FEProjectManager::DisplayListView(const std::vector<FEProjectInfo*>& Projec
 void FEProjectManager::DisplayDetailsPanel(const ImVec2 Origin, const float Height)
 {
 	ImDrawList* DrawList = ImGui::GetWindowDrawList();
-	DrawList->AddRectFilled(Origin, ImVec2(Origin.x + DetailsPanelWidth, Origin.y + Height), ColorBar);
-	DrawList->AddLine(ImVec2(Origin.x + 0.5f, Origin.y), ImVec2(Origin.x + 0.5f, Origin.y + Height), ColorBorder);
+	DrawList->AddRectFilled(Origin, ImVec2(Origin.x + DetailsPanelWidth, Origin.y + Height), FEEditorStyle::Panel);
+	DrawList->AddLine(ImVec2(Origin.x + 0.5f, Origin.y), ImVec2(Origin.x + 0.5f, Origin.y + Height), FEEditorStyle::CardBorder);
 
 	const float Padding = 24.0f;
 	const float ContentWidth = DetailsPanelWidth - Padding * 2.0f;
 	const float X = Origin.x + Padding;
 	if (!IsInProjectList(Selected))
 	{
-		DrawListText(GetListFont(), 14.0f, ImVec2(X, Origin.y + Padding), ColorMuted, "Select a project to see its details.");
+		DrawListText(GetListFont(), 14.0f, ImVec2(X, Origin.y + Padding), FEEditorStyle::TextMuted, "Select a project to see its details.");
 		return;
 	}
 
@@ -685,7 +660,7 @@ void FEProjectManager::DisplayDetailsPanel(const ImVec2 Origin, const float Heig
 	DrawThumbnail(Project, ImVec2(X, Y), ImVec2(X + 512.0f, Y + 288.0f), 4.0f, true);
 	Y += 288.0f + 20.0f;
 
-	DrawListText(GetListBoldFont(), 22.0f, ImVec2(X, Y), ColorText, CutWithEllipsis(GetListBoldFont(), 22.0f, Project->GetName(), ContentWidth));
+	DrawListText(GetListBoldFont(), 22.0f, ImVec2(X, Y), FEEditorStyle::Text, CutWithEllipsis(GetListBoldFont(), 22.0f, Project->GetName(), ContentWidth));
 	Y += 27.0f + 20.0f;
 
 	std::vector<std::pair<std::string, std::string>> Properties;
@@ -708,8 +683,8 @@ void FEProjectManager::DisplayDetailsPanel(const ImVec2 Origin, const float Heig
 	const float ValueWidth = ContentWidth - 136.0f;
 	for (size_t i = 0; i < Properties.size(); i++)
 	{
-		DrawListText(GetListFont(), 13.0f, ImVec2(X, Y), ColorMuted, Properties[i].first);
-		DrawListText(GetListFont(), 13.0f, ImVec2(ValueX, Y), ColorText, Properties[i].second, ValueWidth);
+		DrawListText(GetListFont(), 13.0f, ImVec2(X, Y), FEEditorStyle::TextMuted, Properties[i].first);
+		DrawListText(GetListFont(), 13.0f, ImVec2(ValueX, Y), FEEditorStyle::Text, Properties[i].second, ValueWidth);
 		Y += std::max(16.0f, GetListFont()->CalcTextSizeA(13.0f, FLT_MAX, ValueWidth, Properties[i].second.c_str()).y + 3.0f) + 10.0f;
 	}
 
@@ -758,8 +733,8 @@ void FEProjectManager::DisplayBottomBar(const ImVec2 Origin, const float Width, 
 	const float Padding = bListView ? 24.0f : 32.0f;
 	const float BarY = Origin.y + Height - BottomBarHeight;
 	ImDrawList* DrawList = ImGui::GetWindowDrawList();
-	DrawList->AddRectFilled(ImVec2(Origin.x, BarY), ImVec2(Origin.x + Width, Origin.y + Height), ColorBar);
-	DrawList->AddLine(ImVec2(Origin.x, BarY + 0.5f), ImVec2(Origin.x + Width, BarY + 0.5f), ColorBorder);
+	DrawList->AddRectFilled(ImVec2(Origin.x, BarY), ImVec2(Origin.x + Width, Origin.y + Height), FEEditorStyle::Panel);
+	DrawList->AddLine(ImVec2(Origin.x, BarY + 0.5f), ImVec2(Origin.x + Width, BarY + 0.5f), FEEditorStyle::CardBorder);
 
 	const float ButtonY = BarY + 16.0f;
 	const float CreateWidth = GetListButtonWidth("Create New Project", 24.0f);
@@ -834,12 +809,12 @@ static bool BeginListPopup(const char* Name)
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(16.0f, 13.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12.0f, 12.0f));
-	ImGui::PushStyleColor(ImGuiCol_PopupBg, ColorCard);
-	ImGui::PushStyleColor(ImGuiCol_Border, ColorMenuBorder);
-	ImGui::PushStyleColor(ImGuiCol_TitleBg, ColorButton);
-	ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ColorButton);
-	ImGui::PushStyleColor(ImGuiCol_ModalWindowDimBg, IM_COL32(0x0E, 0x0F, 0x12, 200));
-	ImGui::PushStyleColor(ImGuiCol_Text, ColorText);
+	ImGui::PushStyleColor(ImGuiCol_PopupBg, FEEditorStyle::Card);
+	ImGui::PushStyleColor(ImGuiCol_Border, FEEditorStyle::PopupBorder);
+	ImGui::PushStyleColor(ImGuiCol_TitleBg, FEEditorStyle::Button);
+	ImGui::PushStyleColor(ImGuiCol_TitleBgActive, FEEditorStyle::Button);
+	ImGui::PushStyleColor(ImGuiCol_ModalWindowDimBg, FEEditorStyle::Dim);
+	ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::Text);
 	ImGui::PushFont(GetListBoldFont(), 14.0f);
 	const bool bOpened = ImGui::BeginPopupModal(Name, nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 	ImGui::PopFont();
@@ -862,7 +837,7 @@ static void EndListPopup(const bool bOpened)
 	ImGui::PopStyleVar(5);
 }
 
-static void PopupLabel(const std::string& Text, const float Size = 13.0f, const float WrapWidth = 0.0f, const ImU32 Color = ColorMuted)
+static void PopupLabel(const std::string& Text, const float Size = 13.0f, const float WrapWidth = 0.0f, const ImU32 Color = FEEditorStyle::TextMuted)
 {
 	ImGui::PushFont(GetListFont(), Size);
 	ImGui::PushStyleColor(ImGuiCol_Text, Color);
@@ -881,7 +856,7 @@ static bool PopupInput(const char* Label, const char* ID, char* Buffer, const si
 {
 	PopupLabel(Label);
 	ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 6.0f);
-	PushInputStyle(ColorInput);
+	PushInputStyle(FEEditorStyle::Background);
 	ImGui::SetNextItemWidth(Width);
 	const bool bResult = ImGui::InputText(ID, Buffer, BufferSize);
 	PopInputStyle();
@@ -927,7 +902,7 @@ void FEProjectManager::DisplayPopups()
 		const std::string Folder = FILE_SYSTEM.GetNormalizedPath(Location + "/" + Name);
 		if (!PopupError.empty())
 		{
-			PopupLabel(PopupError, 12.0f, Width, ColorDanger);
+			PopupLabel(PopupError, 12.0f, Width, FEEditorStyle::Danger);
 		}
 		else if (!Name.empty() && !Location.empty())
 		{
@@ -1005,9 +980,9 @@ void FEProjectManager::DisplayPopups()
 		const float TextHeight = GetListFont()->CalcTextSizeA(13.0f, FLT_MAX, Width - 20.0f, Folder.c_str()).y;
 		const ImVec2 Max = ImVec2(Min.x + Width, Min.y + TextHeight + 20.0f);
 		ImGui::Dummy(ImVec2(Width, TextHeight + 20.0f));
-		ImGui::GetWindowDrawList()->AddRectFilled(Min, Max, ColorInput, 4.0f);
-		ImGui::GetWindowDrawList()->AddRect(Min, Max, ColorBorder, 4.0f);
-		DrawListText(GetListFont(), 13.0f, ImVec2(Min.x + 10.0f, Min.y + 10.0f), ColorText, Folder, Width - 20.0f);
+		ImGui::GetWindowDrawList()->AddRectFilled(Min, Max, FEEditorStyle::Background, 4.0f);
+		ImGui::GetWindowDrawList()->AddRect(Min, Max, FEEditorStyle::CardBorder, 4.0f);
+		DrawListText(GetListFont(), 13.0f, ImVec2(Min.x + 10.0f, Min.y + 10.0f), FEEditorStyle::Text, Folder, Width - 20.0f);
 
 		PopupLabel("The whole folder is moved, also files that the editor did not create.", 12.0f, Width);
 		if (PopupButtons(Width, "Delete project", 140.0f, ListButtonKind::DangerFilled) || !IsInProjectList(PopupProject))
@@ -1052,7 +1027,7 @@ void FEProjectManager::DisplayProjectSelection()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-	ImGui::PushStyleColor(ImGuiCol_WindowBg, ColorBackground);
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, FEEditorStyle::Background);
 	ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
 	ImGui::SetNextWindowSize(ImVec2(Width, Height));
 	ImGuiWindowFlags Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoDocking;
@@ -1078,7 +1053,7 @@ void FEProjectManager::DisplayProjectSelection()
 	if (Projects.empty())
 	{
 		const std::string Text = List.empty() ? "No projects yet. Create a new project or add an existing one." : "No project matches the filter.";
-		DrawListText(GetListFont(), 14.0f, ImVec2(Origin.x + (bDetailsPanel ? 24.0f : 32.0f), Origin.y + TopBarHeight + 24.0f), ColorMuted, Text);
+		DrawListText(GetListFont(), 14.0f, ImVec2(Origin.x + (bDetailsPanel ? 24.0f : 32.0f), Origin.y + TopBarHeight + 24.0f), FEEditorStyle::TextMuted, Text);
 	}
 
 	DisplayBottomBar(Origin, ContentWidth, Height);
@@ -1088,10 +1063,10 @@ void FEProjectManager::DisplayProjectSelection()
 	if (IsCoveredByWindow())
 	{
 		ImDrawList* DrawList = ImGui::GetWindowDrawList();
-		DrawList->AddRectFilled(Origin, ImVec2(Origin.x + ContentWidth, Origin.y + TopBarHeight), ColorDim);
-		DrawList->AddRectFilled(ImVec2(Origin.x, Origin.y + Height - BottomBarHeight), ImVec2(Origin.x + ContentWidth, Origin.y + Height), ColorDim);
+		DrawList->AddRectFilled(Origin, ImVec2(Origin.x + ContentWidth, Origin.y + TopBarHeight), FEEditorStyle::Dim);
+		DrawList->AddRectFilled(ImVec2(Origin.x, Origin.y + Height - BottomBarHeight), ImVec2(Origin.x + ContentWidth, Origin.y + Height), FEEditorStyle::Dim);
 		if (bDetailsPanel)
-			DrawList->AddRectFilled(ImVec2(Origin.x + ContentWidth, Origin.y), ImVec2(Origin.x + Width, Origin.y + Height), ColorDim);
+			DrawList->AddRectFilled(ImVec2(Origin.x + ContentWidth, Origin.y), ImVec2(Origin.x + Width, Origin.y + Height), FEEditorStyle::Dim);
 	}
 
 	ImGui::PopFont();

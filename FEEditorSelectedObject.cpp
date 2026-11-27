@@ -304,6 +304,9 @@ void FEEditorSelectedObject::RenderEntitySelectionColorID(FEEntity* Entity, glm:
 
 		FEPointCloudComponent& PointCloudComponent = Entity->GetComponent<FEPointCloudComponent>();
 		FEPointCloud* PointCloud = PointCloudComponent.GetPointCloud();
+		if (PointCloud == nullptr)
+			return;
+
 		PointCloudComponent.SetUseGlobalColorOverride(true);
 		PointCloudComponent.SetGlobalColorOverride(ColorID);
 		if (PointCloud->IsAdvancedRenderingEnabled())
@@ -597,6 +600,9 @@ void FEEditorSelectedObject::RenderEntityHaloEffectInternal(FEEntity* Entity, gl
 
 		FEPointCloudComponent& PointCloudComponent = Entity->GetComponent<FEPointCloudComponent>();
 		FEPointCloud* PointCloud = PointCloudComponent.GetPointCloud();
+		if (PointCloud == nullptr)
+			return;
+
 		PointCloudComponent.SetUseGlobalColorOverride(true);
 		PointCloudComponent.SetGlobalColorOverride(Color);
 		if (PointCloud->IsAdvancedRenderingEnabled())

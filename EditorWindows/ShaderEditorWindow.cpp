@@ -153,9 +153,9 @@ ShaderEditorWindow::ShaderEditorWindow()
 	CompileButton = new ImGuiButton("Compile");
 
 	CloseButton = new ImGuiButton("Close");
-	CloseButton->SetDefaultColor((ImVec4)ImColor(0.6f, 0.24f, 0.24f));
-	CloseButton->SetHoveredColor((ImVec4)ImColor(0.7f, 0.21f, 0.21f));
-	CloseButton->SetHoveredColor((ImVec4)ImColor(0.8f, 0.16f, 0.16f));
+	CloseButton->SetDefaultColor(FEEditorStyle::ToVec4(FEEditorStyle::DangerButton));
+	CloseButton->SetHoveredColor(FEEditorStyle::ToVec4(FEEditorStyle::DangerButtonHovered));
+	CloseButton->SetActiveColor(FEEditorStyle::ToVec4(FEEditorStyle::DangerButtonHovered));
 }
 
 ShaderEditorWindow::~ShaderEditorWindow()
@@ -311,7 +311,7 @@ void ShaderEditorWindow::Render()
 		CurrentEditor->CanUndo() ? "*" : " ",
 		CurrentEditor->GetLanguageDefinition().mName.c_str(), "none");
 
-	ImGui::PushStyleColor(ImGuiCol_TabActive, static_cast<ImVec4>(ImColor::ImColor(0.4f, 0.9f, 0.4f, 1.0f)));
+	ImGui::PushStyleColor(ImGuiCol_TabActive, FEEditorStyle::ButtonHovered);
 	if (ImGui::BeginTabBar("##Shaders Editors", ImGuiTabBarFlags_None))
 	{
 		if (bVertexShaderUsed)

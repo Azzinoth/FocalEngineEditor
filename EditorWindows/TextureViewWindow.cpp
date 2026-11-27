@@ -283,23 +283,52 @@ void TextureViewWindow::RebuildDisplayTexture(FETexture* RawDataSource)
 	delete[] DisplayData;
 }
 
-bool TextureViewWindow::RenderChannelToggle(const char* Label, bool& Toggle, const ImVec4& ActiveColor)
+// Format in plain words, for formats without such a name the OpenGL name is returned.
+std::string TextureViewWindow::GetFormatName(const GLint InternalFormat)
 {
-	const ImVec4 InactiveColor = ImVec4(0.18f, 0.18f, 0.18f, 1.0f);
-	const ImVec4 ButtonColor = Toggle ? ActiveColor : InactiveColor;
-	const ImVec4 HoverColor = ImVec4(ButtonColor.x + 0.15f, ButtonColor.y + 0.15f, ButtonColor.z + 0.15f, 1.0f);
+	switch (InternalFormat)
+	{
+		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT: return "DXT5, compressed RGBA";
+		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT: return "DXT1, compressed RGBA";
+		case GL_RGBA: return "RGBA, 8 bits per channel";
+		case GL_RGB: return "RGB, 8 bits per channel";
+		case GL_RED: return "One channel, 8 bits";
+		case GL_R16: return "One channel, 16 bits";
+		case GL_R32F: return "One channel, 32 bit float";
+		case GL_RGBA16F: return "RGBA, 16 bit float per channel";
+		default: break;
+	}
 
-	ImGui::PushStyleColor(ImGuiCol_Button, ButtonColor);
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, HoverColor);
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ButtonColor);
-	ImGui::PushStyleColor(ImGuiCol_Text, Toggle ? ImVec4(0.0f, 0.0f, 0.0f, 1.0f) : ImVec4(0.85f, 0.85f, 0.85f, 1.0f));
+	const std::string OpenGLName = FETexture::TextureInternalFormatToString(InternalFormat);
+	return OpenGLName.empty() ? "Unknown (" + std::to_string(InternalFormat) + ")" : OpenGLName;
+}
 
-	const bool bClicked = ImGui::Button(Label, ImVec2(28.0f, 24.0f));
-	if (bClicked)
-		Toggle = !Toggle;
+void TextureViewWindow::RenderPanelTitle(const char* Title)
+{
+	ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::Accent);
+	ImGui::TextUnformatted(Title);
+	ImGui::PopStyleColor();
+}
 
-	ImGui::PopStyleColor(4);
-	return bClicked;
+// A value that does not fit is cut, the whole value is in the tooltip.
+void TextureViewWindow::RenderFactRow(const char* Label, const std::string& Value, const float LabelWidth, const std::string& ToolTip, const bool bSmallValue)
+{
+	RenderRowLabel(Label, LabelWidth);
+	if (bSmallValue)
+		ImGui::PushFont(nullptr, 16.0f);
+
+	const ImVec2 ValueMin = ImGui::GetCursorScreenPos();
+	const float AvailableWidth = ImGui::GetContentRegionAvail().x;
+	const bool bCut = ImGui::CalcTextSize(Value.c_str()).x > AvailableWidth;
+	ImGui::PushClipRect(ValueMin, ImVec2(ValueMin.x + AvailableWidth, ValueMin.y + ImGui::GetFrameHeight()), true);
+	ImGui::AlignTextToFramePadding();
+	ImGui::TextUnformatted(Value.c_str());
+	ImGui::PopClipRect();
+	if (bSmallValue)
+		ImGui::PopFont();
+
+	if (ImGui::IsItemHovered() && (bCut || !ToolTip.empty()))
+		ImGui::SetTooltip("%s", (ToolTip.empty() ? Value : ToolTip).c_str());
 }
 
 std::string TextureViewWindow::ReadableSize(size_t Bytes)
@@ -344,54 +373,81 @@ size_t TextureViewWindow::EstimateBytesPerPixel(GLint InternalFormat)
 
 void TextureViewWindow::RenderToolbar()
 {
-	ImGui::BeginChild("##TextureViewToolbar", ImVec2(0.0f, ToolbarHeight), false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 6.0f));
+	const float ToolHeight = ImGui::GetFrameHeight();
 
-	ImGui::AlignTextToFramePadding();
-
-	RenderChannelToggle("R", bShowRed, ImVec4(0.95f, 0.25f, 0.25f, 1.0f));
-	ImGui::SameLine(0.0f, 4.0f);
-	RenderChannelToggle("G", bShowGreen, ImVec4(0.30f, 0.85f, 0.30f, 1.0f));
-	ImGui::SameLine(0.0f, 4.0f);
-	RenderChannelToggle("B", bShowBlue, ImVec4(0.30f, 0.55f, 0.95f, 1.0f));
-	ImGui::SameLine(0.0f, 4.0f);
-	RenderChannelToggle("A", bShowAlpha, ImVec4(0.85f, 0.85f, 0.85f, 1.0f));
-
-	ImGui::SameLine(0.0f, 24.0f);
-	ImGui::AlignTextToFramePadding();
-	ImGui::Text("Zoom");
-	ImGui::SameLine();
-
-	ImGui::SetNextItemWidth(180.0f);
-	int ZoomPercent = static_cast<int>(ZoomFactor * 100.0f + 0.5f);
-	if (ImGui::SliderInt("##ZoomSlider", &ZoomPercent, static_cast<int>(MinimumZoom * 100.0f), static_cast<int>(MaximumZoom * 100.0f), "%d%%"))
+	// Channels are one group of joined buttons.
+	struct ChannelToggle
 	{
-		ZoomFactor = ZoomPercent / 100.0f;
-		bFitToWindow = false;
-	}
+		const char* Name;
+		bool* bShown;
+		ImU32 Color;
+	};
+	const ChannelToggle Channels[] = { { "R", &bShowRed, FEEditorStyle::AxisX }, { "G", &bShowGreen, FEEditorStyle::AxisY }, { "B", &bShowBlue, FEEditorStyle::AxisZ }, { "A", &bShowAlpha, IM_COL32(0xC8, 0xCB, 0xD0, 255) } };
+	const int ChannelCount = 4;
+	const float ChannelWidth = 34.0f;
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	const ImVec2 ChannelsMin = ImGui::GetCursorScreenPos();
+	for (int i = 0; i < ChannelCount; i++)
+	{
+		const ImVec2 Min = ImGui::GetCursorScreenPos();
+		const ImVec2 Max = ImVec2(Min.x + ChannelWidth, Min.y + ToolHeight);
+		if (ImGui::InvisibleButton(Channels[i].Name, ImVec2(ChannelWidth, ToolHeight)))
+			*Channels[i].bShown = !*Channels[i].bShown;
 
-	ImGui::SameLine();
-	if (ImGui::Button("-", ImVec2(24.0f, 24.0f)))
+		ImDrawFlags Corners = ImDrawFlags_RoundCornersNone;
+		if (i == 0)
+		{
+			Corners = ImDrawFlags_RoundCornersLeft;
+		}
+		else if (i == ChannelCount - 1)
+		{
+			Corners = ImDrawFlags_RoundCornersRight;
+		}
+
+		ImU32 Fill = ImGui::IsItemHovered() ? FEEditorStyle::ButtonHovered : FEEditorStyle::Button;
+		if (*Channels[i].bShown)
+			Fill = Channels[i].Color;
+
+		DrawList->AddRectFilled(Min, Max, Fill, 4.0f, Corners);
+		const float LetterWidth = ImGui::CalcTextSize(Channels[i].Name).x;
+		DrawList->AddText(ImVec2(floorf(Min.x + (ChannelWidth - LetterWidth) / 2.0f), floorf(Min.y + (ToolHeight - ImGui::GetFontSize()) / 2.0f)), *Channels[i].bShown ? FEEditorStyle::Background : FEEditorStyle::TextMuted, Channels[i].Name);
+		ImGui::SameLine(0.0f, 0.0f);
+	}
+	DrawList->AddRect(ChannelsMin, ImVec2(ChannelsMin.x + ChannelWidth * ChannelCount, ChannelsMin.y + ToolHeight), FEEditorStyle::ButtonBorder, 4.0f);
+
+	ImGui::SameLine(0.0f, 20.0f);
+	if (ImGui::Button("-", ImVec2(ToolHeight, ToolHeight)))
 	{
 		ZoomFactor = std::max(MinimumZoom, ZoomFactor * 0.8f);
 		bFitToWindow = false;
 	}
 
 	ImGui::SameLine(0.0f, 4.0f);
-	if (ImGui::Button("+", ImVec2(24.0f, 24.0f)))
+	ImGui::SetNextItemWidth(90.0f);
+	int ZoomPercent = static_cast<int>(ZoomFactor * 100.0f + 0.5f);
+	if (ImGui::DragInt("##ZoomValue", &ZoomPercent, 1.0f, static_cast<int>(MinimumZoom * 100.0f), static_cast<int>(MaximumZoom * 100.0f), "%d%%", ImGuiSliderFlags_AlwaysClamp))
+	{
+		ZoomFactor = ZoomPercent / 100.0f;
+		bFitToWindow = false;
+	}
+
+	ImGui::SameLine(0.0f, 4.0f);
+	if (ImGui::Button("+", ImVec2(ToolHeight, ToolHeight)))
 	{
 		ZoomFactor = std::min(MaximumZoom, ZoomFactor * 1.25f);
 		bFitToWindow = false;
 	}
 
-	ImGui::SameLine(0.0f, 4.0f);
-	if (ImGui::Button("Fit", ImVec2(40.0f, 24.0f)))
+	ImGui::SameLine(0.0f, 8.0f);
+	if (ImGui::Button("Fit"))
 	{
 		bFitToWindow = true;
 		PanOffset = ImVec2(0.0f, 0.0f);
 	}
 
 	ImGui::SameLine(0.0f, 4.0f);
-	if (ImGui::Button("100%", ImVec2(54.0f, 24.0f)))
+	if (ImGui::Button("100%"))
 	{
 		ZoomFactor = 1.0f;
 		bFitToWindow = false;
@@ -400,19 +456,21 @@ void TextureViewWindow::RenderToolbar()
 
 	if (bUsesDisplayRange)
 	{
-		ImGui::SameLine(0.0f, 24.0f);
+		ImGui::SameLine(0.0f, 20.0f);
 		ImGui::AlignTextToFramePadding();
-		ImGui::Text("Range");
+		ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::TextMuted);
+		ImGui::TextUnformatted("Range");
+		ImGui::PopStyleColor();
 		ImGui::SameLine();
 
-		ImGui::SetNextItemWidth(220.0f);
+		ImGui::SetNextItemWidth(260.0f);
 		float SliderSpeed = std::max((DataMaxValue - DataMinValue) / 1000.0f, 1e-4f);
 		ImGui::DragFloatRange2("##DisplayRange", &DisplayMinValue, &DisplayMaxValue, SliderSpeed, DataMinValue, DataMaxValue, "Min: %.1f", "Max: %.1f");
 		const bool bRangeReleased = ImGui::IsItemDeactivatedAfterEdit();
 
 		ImGui::SameLine(0.0f, 4.0f);
 		bool bRequestRebuild = bRangeReleased;
-		if (ImGui::Button("Auto", ImVec2(48.0f, 24.0f)))
+		if (ImGui::Button("Auto"))
 		{
 			DisplayMinValue = DataMinValue;
 			DisplayMaxValue = DataMaxValue;
@@ -423,12 +481,13 @@ void TextureViewWindow::RenderToolbar()
 			RebuildDisplayTexture(GetRawDataSourceTexture());
 	}
 
-	ImGui::EndChild();
+	ImGui::PopStyleVar();
+	ImGui::Dummy(ImVec2(0.0f, 2.0f));
 }
 
 void TextureViewWindow::RenderImageCanvas(const ImVec2& CanvasSize)
 {
-	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, FEEditorStyle::Background);
 	ImGui::BeginChild("##TextureViewCanvas", CanvasSize, true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
 	if (TextureToView == nullptr)
@@ -437,7 +496,7 @@ void TextureViewWindow::RenderImageCanvas(const ImVec2& CanvasSize)
 		const ImVec2 InnerSizeEmpty = ImGui::GetContentRegionAvail();
 		const ImVec2 TextSize = ImGui::CalcTextSize(Message);
 		ImGui::SetCursorPos(ImVec2((InnerSizeEmpty.x - TextSize.x) * 0.5f, (InnerSizeEmpty.y - TextSize.y) * 0.5f));
-		ImGui::TextColored(ImVec4(0.95f, 0.5f, 0.5f, 1.0f), "%s", Message);
+		ImGui::TextColored(FEEditorStyle::ToVec4(FEEditorStyle::Danger), "%s", Message);
 		ImGui::EndChild();
 		ImGui::PopStyleColor();
 		return;
@@ -524,8 +583,9 @@ void TextureViewWindow::RenderImageCanvas(const ImVec2& CanvasSize)
 
 void TextureViewWindow::RenderDetailsPanel(const ImVec2& PanelSize)
 {
-	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.16f, 0.16f, 0.16f, 1.0f));
-	ImGui::BeginChild("##TextureViewDetails", PanelSize, true);
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, FEEditorStyle::Card);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(14.0f, 12.0f));
+	ImGui::BeginChild("##TextureViewDetails", PanelSize, ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysUseWindowPadding);
 
 	FETexture* SourceTexture = RESOURCE_MANAGER.GetTexture(SourceTextureObjectID);
 	if (SourceTexture == nullptr && TextureToView != nullptr)
@@ -533,110 +593,45 @@ void TextureViewWindow::RenderDetailsPanel(const ImVec2& PanelSize)
 	if (SourceTexture == nullptr)
 	{
 		ImGui::EndChild();
+		ImGui::PopStyleVar();
 		ImGui::PopStyleColor();
 		return;
 	}
 
+	const float LabelWidth = 110.0f;
+	const float SmallFontSize = 16.0f;
 	const int Width = SourceTexture->GetWidth();
 	const int Height = SourceTexture->GetHeight();
 	const GLint InternalFormat = SourceTexture->GetInternalFormat();
-	const std::string ResolvedFormatString = FETexture::TextureInternalFormatToString(InternalFormat);
-	const std::string FormatString = ResolvedFormatString.empty() ? ("Unknown (" + std::to_string(InternalFormat) + ")") : ResolvedFormatString;
 	const size_t ResourceSizeBytes = static_cast<size_t>(Width) * static_cast<size_t>(Height) * EstimateBytesPerPixel(InternalFormat);
+	const std::string ID = UNIQUE_ID.ToString(SourceTexture->GetID());
 
-	std::string ChannelsString;
-	if (bShowRed)
-		ChannelsString += "R";
-	if (bShowGreen)
-		ChannelsString += "G";
-	if (bShowBlue)
-		ChannelsString += "B";
-	if (bShowAlpha)
-		ChannelsString += "A";
-	if (ChannelsString.empty())
-		ChannelsString = "(none)";
+	RenderPanelTitle("Texture");
+	RenderFactRow("Name", SourceTexture->GetName(), LabelWidth);
+	RenderFactRow("ID", ID, LabelWidth, ID + "\nClick to copy", true);
+	if (ImGui::IsItemClicked())
+		ImGui::SetClipboardText(ID.c_str());
 
-	auto DrawSectionHeader = [](const char* Title)
+	RenderFactRow("Size", GetNumberWithSeparators(Width) + " x " + GetNumberWithSeparators(Height), LabelWidth);
+	RenderFactRow("Format", GetFormatName(InternalFormat), LabelWidth, FETexture::TextureInternalFormatToString(InternalFormat));
+	RenderFactRow("In memory", ReadableSize(ResourceSizeBytes), LabelWidth);
+	if (bUsesDisplayRange)
 	{
-		ImGui::TextColored(ImVec4(0.95f, 0.90f, 0.0f, 1.0f), "%s", Title);
-		ImGui::Separator();
-		ImGui::Spacing();
-	};
-
-	auto DrawRow = [](const char* Label, const std::string& Value)
-	{
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::TextColored(ImVec4(0.65f, 0.65f, 0.65f, 1.0f), "%s", Label);
-		ImGui::TableSetColumnIndex(1);
-		ImGui::TextWrapped("%s", Value.c_str());
-	};
-
-	const char* AllLabels[] = {
-		"Name:", "Object ID:", "Dimensions:", "Format:",
-		"Resource size:", "Data range:", "Display range:", "Zoom:", "Channels:"
-	};
-	float LabelColumnWidth = 0.0f;
-	for (const char* CurrentLabel : AllLabels)
-	{
-		const float LabelWidth = ImGui::CalcTextSize(CurrentLabel).x;
-		if (LabelWidth > LabelColumnWidth)
-			LabelColumnWidth = LabelWidth;
-	}
-	LabelColumnWidth += ImGui::GetStyle().CellPadding.x * 2.0f + 8.0f;
-
-	const ImGuiTableFlags TableFlags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoBordersInBody;
-
-	DrawSectionHeader("Details");
-	if (ImGui::BeginTable("##DetailsTable", 2, TableFlags))
-	{
-		ImGui::TableSetupColumn("##Label", ImGuiTableColumnFlags_WidthFixed, LabelColumnWidth);
-		ImGui::TableSetupColumn("##Value", ImGuiTableColumnFlags_WidthStretch);
-
-		DrawRow("Name:", SourceTexture->GetName());
-		DrawRow("Object ID:", UNIQUE_ID.ToString(SourceTexture->GetID()));
-
-		DrawRow("Dimensions:", std::to_string(Width) + " x " + std::to_string(Height));
-		DrawRow("Format:", FormatString);
-		DrawRow("Resource size:", ReadableSize(ResourceSizeBytes));
-
-		if (bUsesDisplayRange)
-		{
-			char RangeBuffer[64];
-			snprintf(RangeBuffer, sizeof(RangeBuffer), "%.1f - %.1f", DataMinValue, DataMaxValue);
-			DrawRow("Data range:", RangeBuffer);
-			snprintf(RangeBuffer, sizeof(RangeBuffer), "%.1f - %.1f", DisplayMinValue, DisplayMaxValue);
-			DrawRow("Display range:", RangeBuffer);
-		}
-
-		ImGui::EndTable();
+		char RangeBuffer[64];
+		snprintf(RangeBuffer, sizeof(RangeBuffer), "%.1f - %.1f", DataMinValue, DataMaxValue);
+		RenderFactRow("Data range", RangeBuffer, LabelWidth);
+		snprintf(RangeBuffer, sizeof(RangeBuffer), "%.1f - %.1f", DisplayMinValue, DisplayMaxValue);
+		RenderFactRow("Shown range", RangeBuffer, LabelWidth);
 	}
 
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-
-	DrawSectionHeader("View");
-	if (ImGui::BeginTable("##ViewTable", 2, TableFlags))
-	{
-		ImGui::TableSetupColumn("##Label", ImGuiTableColumnFlags_WidthFixed, LabelColumnWidth);
-		ImGui::TableSetupColumn("##Value", ImGuiTableColumnFlags_WidthStretch);
-
-		DrawRow("Zoom:", std::to_string(static_cast<int>(ZoomFactor * 100.0f + 0.5f)) + "%");
-		DrawRow("Channels:", ChannelsString);
-
-		ImGui::EndTable();
-	}
-
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-
-	DrawSectionHeader("Sampling");
+	ImGui::Dummy(ImVec2(0.0f, 6.0f));
+	RenderPanelTitle("Sampling");
 
 	const char* FilterOptions[] = { "Nearest", "Linear" };
+	RenderRowLabel("Filtering", LabelWidth);
+	ImGui::SetNextItemWidth(-1.0f);
 	int CurrentFilter = static_cast<int>(SourceTexture->GetFilterType());
-	if (ImGui::Combo("Filtering", &CurrentFilter, FilterOptions, IM_ARRAYSIZE(FilterOptions)))
+	if (ImGui::Combo("##Filtering", &CurrentFilter, FilterOptions, IM_ARRAYSIZE(FilterOptions)))
 	{
 		SourceTexture->SetFilterType(static_cast<FE_TEXTURE_MINMAG_FILTER_TYPE>(CurrentFilter));
 		if (DisplayTexture != nullptr)
@@ -644,94 +639,110 @@ void TextureViewWindow::RenderDetailsPanel(const ImVec2& PanelSize)
 	}
 
 	const char* WrapOptions[] = { "Repeat", "Mirrored repeat", "Clamp to edge", "Clamp to border" };
-
+	RenderRowLabel("Wrap U", LabelWidth);
+	ImGui::SetNextItemWidth(-1.0f);
 	int CurrentWrapU = static_cast<int>(SourceTexture->GetUWrapType());
-	if (ImGui::Combo("Wrap U", &CurrentWrapU, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
+	if (ImGui::Combo("##WrapU", &CurrentWrapU, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
 		SourceTexture->SetUWrapType(static_cast<FE_TEXTURE_WRAP_TYPE>(CurrentWrapU));
 
+	RenderRowLabel("Wrap V", LabelWidth);
+	ImGui::SetNextItemWidth(-1.0f);
 	int CurrentWrapV = static_cast<int>(SourceTexture->GetVWrapType());
-	if (ImGui::Combo("Wrap V", &CurrentWrapV, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
+	if (ImGui::Combo("##WrapV", &CurrentWrapV, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
 		SourceTexture->SetVWrapType(static_cast<FE_TEXTURE_WRAP_TYPE>(CurrentWrapV));
 
-	// Offer 2D flipbook => 3D conversion.
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-
-	DrawSectionHeader("Convert to 3D");
-
-	// R16/R32F keep their format; GL_RED is 8-bit single channel; RGBA / DXT1 / DXT5 are
-	// reduced to a single 8-bit red channel (GetRawData decompresses the DXT formats to RGBA8).
-	const bool bFormatSupported = (InternalFormat == GL_R16 || InternalFormat == GL_R32F || InternalFormat == GL_RED ||
-								   InternalFormat == GL_RGBA || InternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT || InternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT);
-
-	ImGui::TextWrapped("Interpret this texture as a flipbook grid and build a 3D texture from its slices.");
-	ImGui::Spacing();
-
-	ImGui::SetNextItemWidth(120.0f);
-	ImGui::InputInt("Columns", &ConvertColumns);
-	ImGui::SetNextItemWidth(120.0f);
-	ImGui::InputInt("Rows", &ConvertRows);
-
-	if (ConvertColumns < 1)
-		ConvertColumns = 1;
-
-	if (ConvertRows < 1)
-		ConvertRows = 1;
-
-	const bool bColumnsDivide = (Width % ConvertColumns) == 0;
-	const bool bRowsDivide = (Height % ConvertRows) == 0;
-	const bool bCanConvert = bFormatSupported && bColumnsDivide && bRowsDivide;
-
-	if (!bFormatSupported)
+	// 2D flipbook => 3D conversion is used rarely, so its group is closed at first.
+	ImGui::Dummy(ImVec2(0.0f, 6.0f));
+	ImGui::PushStyleColor(ImGuiCol_Header, IM_COL32(0, 0, 0, 0));
+	ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::Accent);
+	const bool bConvertGroupOpen = ImGui::TreeNodeEx("Convert to 3D texture", ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_NoTreePushOnOpen);
+	ImGui::PopStyleColor(2);
+	if (bConvertGroupOpen)
 	{
-		ImGui::TextColored(ImVec4(0.95f, 0.5f, 0.5f, 1.0f), "This texture's format cannot be converted (use R16, R32F, R8/RED, RGBA, or DXT1/DXT5).");
-	}
-	else if (!bColumnsDivide || !bRowsDivide)
-	{
-		ImGui::TextColored(ImVec4(0.95f, 0.5f, 0.5f, 1.0f), "Width must divide evenly by Columns and Height by Rows.");
-	}
-	else
-	{
-		ImGui::TextDisabled("%d slices of %d x %d", ConvertColumns* ConvertRows, Width / ConvertColumns, Height / ConvertRows);
-	}
+		// R16/R32F keep their format; GL_RED is 8-bit single channel; RGBA / DXT1 / DXT5 are
+		// reduced to a single 8-bit red channel (GetRawData decompresses the DXT formats to RGBA8).
+		const bool bFormatSupported = (InternalFormat == GL_R16 || InternalFormat == GL_R32F || InternalFormat == GL_RED ||
+									   InternalFormat == GL_RGBA || InternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT || InternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT);
 
-	ImGui::Spacing();
-	ImGui::BeginDisabled(!bCanConvert);
-	if (ImGui::Button("Convert to 3D Texture", ImVec2(-1.0f, 0.0f)))
-	{
-		FETexture* ResultTexture = RESOURCE_MANAGER.ConvertFlipbook2DTo3DTexture(SourceTexture, ConvertColumns, ConvertRows);
-		if (ResultTexture != nullptr)
+		ImGui::PushFont(nullptr, SmallFontSize);
+		ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::TextMuted);
+		ImGui::TextWrapped("Takes this texture as a grid of slices and builds a 3D texture from them.");
+		ImGui::PopStyleColor();
+		ImGui::PopFont();
+
+		RenderRowLabel("Columns", LabelWidth);
+		ImGui::SetNextItemWidth(-1.0f);
+		ImGui::InputInt("##ConvertColumns", &ConvertColumns);
+		RenderRowLabel("Rows", LabelWidth);
+		ImGui::SetNextItemWidth(-1.0f);
+		ImGui::InputInt("##ConvertRows", &ConvertRows);
+
+		if (ConvertColumns < 1)
+			ConvertColumns = 1;
+
+		if (ConvertRows < 1)
+			ConvertRows = 1;
+
+		const bool bColumnsDivide = (Width % ConvertColumns) == 0;
+		const bool bRowsDivide = (Height % ConvertRows) == 0;
+		const bool bCanConvert = bFormatSupported && bColumnsDivide && bRowsDivide;
+
+		ImGui::PushFont(nullptr, SmallFontSize);
+		if (!bFormatSupported)
 		{
-			bConvertSucceeded = true;
-
-			const bool bAddedToContentBrowser = VIRTUAL_FILE_SYSTEM.CreateFile(ResultTexture, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
-			if (PROJECT_MANAGER.GetCurrent() != nullptr)
-			{
-				PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(ResultTexture);
-				PROJECT_MANAGER.GetCurrent()->SetModified(true);
-			}
-
-			ConvertStatusMessage = "Created 3D texture \"" + ResultTexture->GetName() + "\" (" + std::to_string(ConvertColumns * ConvertRows) + " slices).";
+			ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::Danger);
+			ImGui::TextWrapped("This format can not be converted (use R16, R32F, R8/RED, RGBA, or DXT1/DXT5).");
+			ImGui::PopStyleColor();
+		}
+		else if (!bColumnsDivide || !bRowsDivide)
+		{
+			ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::Danger);
+			ImGui::TextWrapped("Width must divide evenly by Columns and Height by Rows.");
+			ImGui::PopStyleColor();
 		}
 		else
 		{
-			bConvertSucceeded = false;
-			ConvertStatusMessage = "Conversion failed. See the log for details.";
+			ImGui::TextDisabled("%d slices of %d x %d", ConvertColumns * ConvertRows, Width / ConvertColumns, Height / ConvertRows);
+		}
+		ImGui::PopFont();
+
+		ImGui::BeginDisabled(!bCanConvert);
+		if (ImGui::Button("Convert to 3D texture", ImVec2(-1.0f, 0.0f)))
+		{
+			FETexture* ResultTexture = RESOURCE_MANAGER.ConvertFlipbook2DTo3DTexture(SourceTexture, ConvertColumns, ConvertRows);
+			if (ResultTexture != nullptr)
+			{
+				bConvertSucceeded = true;
+
+				VIRTUAL_FILE_SYSTEM.CreateFile(ResultTexture, VIRTUAL_FILE_SYSTEM.GetCurrentPath());
+				if (PROJECT_MANAGER.GetCurrent() != nullptr)
+				{
+					PROJECT_MANAGER.GetCurrent()->AddUnSavedObject(ResultTexture);
+					PROJECT_MANAGER.GetCurrent()->SetModified(true);
+				}
+
+				ConvertStatusMessage = "Created 3D texture \"" + ResultTexture->GetName() + "\" (" + std::to_string(ConvertColumns * ConvertRows) + " slices).";
+			}
+			else
+			{
+				bConvertSucceeded = false;
+				ConvertStatusMessage = "Conversion failed. See the log for details.";
+			}
+		}
+		ImGui::EndDisabled();
+
+		if (!ConvertStatusMessage.empty())
+		{
+			ImGui::PushFont(nullptr, SmallFontSize);
+			ImGui::PushStyleColor(ImGuiCol_Text, bConvertSucceeded ? FEEditorStyle::Success : FEEditorStyle::Danger);
+			ImGui::TextWrapped("%s", ConvertStatusMessage.c_str());
+			ImGui::PopStyleColor();
+			ImGui::PopFont();
 		}
 	}
-	ImGui::EndDisabled();
-
-	if (!ConvertStatusMessage.empty())
-	{
-		const ImVec4 StatusColor = bConvertSucceeded ? ImVec4(0.4f, 0.9f, 0.4f, 1.0f) : ImVec4(0.95f, 0.5f, 0.5f, 1.0f);
-		ImGui::PushStyleColor(ImGuiCol_Text, StatusColor);
-		ImGui::TextWrapped("%s", ConvertStatusMessage.c_str());
-		ImGui::PopStyleColor();
-	}
-	
 
 	ImGui::EndChild();
+	ImGui::PopStyleVar();
 	ImGui::PopStyleColor();
 }
 

@@ -5,7 +5,7 @@
 class VolumeTransferFunctionWidget
 {
 public:
-	void Render(FEEntity* CurrentEntity, float DataValueLow, float DataValueHigh);
+	void Render(FEEntity* CurrentEntity, float DataValueLow, float DataValueHigh, float LabelWidth);
 
 private:
 	// A named color-map preset: a list of (position, RGB) stops used to populate the transfer function.

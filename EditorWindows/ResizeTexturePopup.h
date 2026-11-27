@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RenamePopups.h"
+#include "DeletePopups.h"
 
 class ResizeTexturePopup : public ImGuiModalPopup
 {
@@ -8,11 +8,10 @@ class ResizeTexturePopup : public ImGuiModalPopup
 	int NewWidth;
 	int NewHeight;
 	int Filtration;
-	bool bReplaceTexture = false;
+	bool bReplaceTexture = true;
 
-	ImGuiButton* CancelButton;
-	ImGuiButton* ApplyButton;
-	ImVec2 PopupSize = ImVec2(450, 260);
+	const int MinSize = 4;
+	const int MaxSize = 8196;
 public:
 	SINGLETON_PUBLIC_PART(ResizeTexturePopup)
 

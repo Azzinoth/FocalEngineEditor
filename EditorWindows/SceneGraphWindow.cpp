@@ -6,6 +6,10 @@ FEEditorSceneGraphWindow::FEEditorSceneGraphWindow()
 {
 	SceneGraphBackend = new FESceneGraphBackend();
 	SceneGraphUI = new TreeView(SceneGraphBackend);
+	SceneGraphUI->SetBackgroundColor(FEEditorStyle::ToVec4(FEEditorStyle::Background));
+	SceneGraphUI->SetNodeBackgroundColors(FEEditorStyle::ToVec4(FEEditorStyle::Panel), FEEditorStyle::ToVec4(FEEditorStyle::Card));
+	SceneGraphUI->SetConnectorLineColor(FEEditorStyle::ToVec4(FEEditorStyle::ButtonBorder));
+	SceneGraphUI->SetSelectedNodeConnectorLineColor(FEEditorStyle::ToVec4(FEEditorStyle::Accent));
 	SceneGraphUI->AddHiddenEntityTag(EDITOR_RESOURCE_TAG);
 
 	SceneGraphUI->AddOnNodeClickedCallback(FEEditorSceneGraphWindow::OnNodeClicked);
@@ -439,7 +443,10 @@ void FEEditorSceneGraphWindow::Render()
 	if (ImGui::Begin("Scene Graph", nullptr, ImGuiWindowFlags_None))
 	{
 		SceneGraphBackend->SetSceneID(CurrentScene->GetID());
+		// Rows of the tree have their own background, so selected one needs stronger color than in other windows.
+		ImGui::PushStyleColor(ImGuiCol_Header, FEEditorStyle::SelectedItem);
 		SceneGraphUI->Render(SceneGraphUI::NodeHandle(CurrentScene->SceneGraph.GetRoot(), SceneGraphBackend));
+		ImGui::PopStyleColor();
 		if (LastFrameRootNodeID != CurrentScene->SceneGraph.GetRoot()->GetID())
 		{
 			LastFrameRootNodeID = CurrentScene->SceneGraph.GetRoot()->GetID();
@@ -554,6 +561,47 @@ void FEEditorSceneGraphWindow::ContextMenuRenderingFunction(SceneGraphUI::NodeHa
 TreeView* FEEditorSceneGraphWindow::GetSceneGraphUI() const
 {
 	return SceneGraphUI;
+}
+
+FETexture* FEEditorSceneGraphWindow::GetComponentIcon(const std::type_info& ComponentType) const
+{
+	if (ComponentType == typeid(FECameraComponent))
+		return CameraIcon;
+
+	if (ComponentType == typeid(FELightComponent))
+		return PointLightIcon;
+
+	if (ComponentType == typeid(FEGameModelComponent))
+		return GameModelSceneGraphIcon;
+
+	if (ComponentType == typeid(FEPointCloudComponent))
+		return PointCloudIcon;
+
+	if (ComponentType == typeid(FEInstancedComponent))
+		return InstancedEntityIcon;
+
+	if (ComponentType == typeid(FETerrainComponent))
+		return TerrainIcon;
+
+	if (ComponentType == typeid(FEVirtualUIComponent))
+		return VirtualUIIcon;
+
+	if (ComponentType == typeid(FENativeScriptComponent))
+		return NativeScriptIcon;
+
+	if (ComponentType == typeid(FEVolumeComponent))
+		return VolumeIcon;
+
+	if (ComponentType == typeid(FELineComponent))
+		return LineIcon;
+
+	if (ComponentType == typeid(FESkyDomeComponent))
+		return SkyDomeIcon;
+
+	if (ComponentType == typeid(FEPrefabInstanceComponent))
+		return PrefabSceneGraphIcon;
+
+	return nullptr;
 }
 
 void FEEditorSceneGraphWindow::RenameNodeFunction(SceneGraphUI::NodeHandle Node, std::string NewName)

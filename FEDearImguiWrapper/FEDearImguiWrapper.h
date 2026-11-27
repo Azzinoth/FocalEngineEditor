@@ -2,6 +2,7 @@
 
 #include "../FEngine.h"
 #include "../ThirdParty/textEditor/TextEditor.h"
+#include "../FEEditorStyle.h"
 using namespace FocalEngine;
 
 //silly windows manager
@@ -60,9 +61,9 @@ protected:
 	ImVec2 Position = ImVec2(-1.0f, -1.0f);
 	ImVec2 Size = ImVec2(120.0f, 0.0f);
 
-	ImVec4 DefaultColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
-	ImVec4 HoveredColor = ImVec4(0.95f, 0.90f, 0.0f, 1.0f);
-	ImVec4 ActiveColor = ImVec4(0.1f, 1.0f, 0.1f, 1.0f);
+	ImVec4 DefaultColor = FEEditorStyle::ToVec4(FEEditorStyle::Button);
+	ImVec4 HoveredColor = FEEditorStyle::ToVec4(FEEditorStyle::ButtonHovered);
+	ImVec4 ActiveColor = FEEditorStyle::ToVec4(FEEditorStyle::Accent);
 
 	bool bHovered = false;
 	bool bWasClicked = false;
@@ -104,9 +105,9 @@ protected:
 	ImVec4 BackgroundColor = ImColor(0.0f, 0.0f, 0.0f, 0.0f);
 	ImVec4 TintColor = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-	ImVec4 DefaultColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
-	ImVec4 HoveredColor = ImVec4(0.95f, 0.90f, 0.0f, 1.0f);
-	ImVec4 ActiveColor = ImVec4(0.1f, 1.0f, 0.1f, 1.0f);
+	ImVec4 DefaultColor = FEEditorStyle::ToVec4(FEEditorStyle::Button);
+	ImVec4 HoveredColor = FEEditorStyle::ToVec4(FEEditorStyle::ButtonHovered);
+	ImVec4 ActiveColor = FEEditorStyle::ToVec4(FEEditorStyle::Accent);
 
 	FETexture* Texture = nullptr;
 
@@ -201,122 +202,39 @@ public:
 	void SetPadding(glm::vec2 NewValue);
 };
 
-class FEArrowScroller
-{
-	bool bHorizontal;
-
-	ImVec2 Position;
-	bool bSelected;
-	bool bMouseHover;
-
-	bool bWindowFlagWasAdded;
-	int OriginalWindowFlags;
-
-	RECT Area;
-	float Size;
-
-	ImColor Color;
-	ImColor SelectedColor;
-
-	float LastFrameMouseX;
-	float LastFrameMouseY;
-	float LastFrameDelta;
-
-	ImVec2 AvailableRange;
-public:
-	FEArrowScroller(bool Horizontal = true);
-
-	ImVec2 GetPosition() const;
-	void SetPosition(ImVec2 NewPosition);
-
-	float GetSize() const;
-	void SetSize(float NewValue);
-
-	bool IsSelected() const;
-	void SetSelected(bool NewValue);
-
-	ImColor GetColor() const;
-	void SetColor(ImColor NewValue);
-
-	ImColor GetSelectedColor() const;
-	void SetSelectedColor(ImColor NewValue);
-
-	float GetLastFrameDelta() const;
-
-	void Render();
-
-	void SetAvailableRange(ImVec2 NewValue);
-	void LiftRangeRestrictions();
-};
-
-class FERangeConfigurator;
-struct FERangeRecord
-{
-	friend FERangeConfigurator;
-private:
-	float RangeSpan;
-	std::string Caption;
-	std::string ToolTipText;
-	ImColor Color;
-
-	RECT Rect;
-	RECT ScrollRect;
-
-	FEArrowScroller Scroller;
-public:
-	float GetRangeSpan() const;
-
-	std::string GetCaption();
-	void SetCaption(std::string NewValue);
-
-	std::string GetToolTipText();
-	void SetToolTipText(std::string NewValue);
-
-	ImColor GetColor() const;
-	void SetColor(ImColor NewValue);
-};
-
-class FERangeConfigurator
-{
-	bool bVisible;
-	ImVec2 Position;
-	ImVec2 Size;
-	RECT Rect;
-
-	std::vector<FERangeRecord> Ranges;
-	float ScreenX, ScreenY;
-
-	void RecalculateRangeInfo();
-	void NormalizeRanges();
-	void InputCalculations();
-public:
-	FERangeConfigurator();
-
-	ImVec2 GetPosition() const;
-	void SetPosition(ImVec2 NewPosition);
-
-	ImVec2 GetSize() const;
-	void SetSize(ImVec2 NewSize);
-
-	bool IsVisible() const;
-	void Render();
-
-	int GetRangesCount() const;
-
-	bool AddRange(float RangeSpan, std::string Caption, std::string ToolTipText, ImColor Color);
-	void DeleteRange(size_t Index);
-
-	std::vector<FERangeRecord> GetRangesRecordsCopy();
-	FERangeRecord* GetRangesRecord(size_t Index);
-
-	void Clear();
-};
-
 void ShowToolTip(const char* Text);
-static ImVec4 DefaultColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
-static ImVec4 HoveredColor = ImVec4(0.95f, 0.90f, 0.0f, 1.0f);
-static ImVec4 ActiveColor = ImVec4(0.1f, 1.0f, 0.1f, 1.0f);
-static ImVec4 SelectedStyle = ImVec4(0.1f, 1.0f, 0.1f, 1.0f);
+// Label of a row, what is rendered after it starts at LabelWidth from the start of the row.
+void RenderRowLabel(const char* Label, float LabelWidth, float LabelIndent = 0.0f);
+std::string GetNumberWithSeparators(size_t Number);
+std::string ToLowerCase(std::string Text);
+// Text that is wider than Width in the current font is cut and gets "..." at the end.
+std::string CutTextToWidth(std::string Text, float Width);
+// One button of a switch, RoundFlags says which corners are round.
+bool RenderSwitchButton(const char* Label, bool bSelected, ImDrawFlags RoundFlags);
+
+enum class FEPopupTone { Neutral, Danger };
+enum class FEPopupButtonKind { Normal, Primary, Danger, DangerText };
+
+struct FEPopupButton
+{
+	const char* Name;
+	FEPopupButtonKind Kind = FEPopupButtonKind::Normal;
+};
+
+// Popup in the center of the editor, EndStyledPopup should be called even if it was not opened.
+bool BeginStyledPopup(const char* ID, FEPopupTone Tone = FEPopupTone::Neutral, float Width = 620.0f);
+void EndStyledPopup(bool bOpened);
+void RenderPopupHeading(const std::string& Text);
+// FontSize 0 is the size of the editor font.
+void RenderPopupText(const std::string& Text, ImU32 Color = FEEditorStyle::TextMuted, float FontSize = 16.0f);
+void RenderPopupCard(FETexture* Preview, const std::string& Name, const std::vector<std::string>& Lines);
+void RenderPopupNameList(const std::vector<std::string>& Names, size_t MaxShown = 4);
+// Returns index of the pressed button or -1, the last button is the main action and Escape presses the first one.
+int RenderPopupButtons(const std::vector<FEPopupButton>& Buttons);
+static ImVec4 DefaultColor = FEEditorStyle::ToVec4(FEEditorStyle::Button);
+static ImVec4 HoveredColor = FEEditorStyle::ToVec4(FEEditorStyle::ButtonHovered);
+static ImVec4 ActiveColor = FEEditorStyle::ToVec4(FEEditorStyle::Accent);
+static ImVec4 SelectedStyle = FEEditorStyle::ToVec4(FEEditorStyle::Accent);
 void SetSelectedStyle(ImGuiImageButton* Button);
 void SetDefaultStyle(ImGuiImageButton* Button);
 

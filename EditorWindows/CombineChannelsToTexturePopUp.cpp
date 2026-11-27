@@ -82,9 +82,9 @@ void CombineChannelsToTexturePopUp::Render()
 		FEImGuiWindow::Close();
 	}
 
-	ImGui::PushStyleColor(ImGuiCol_Button, static_cast<ImVec4>(ImColor::ImColor(0.6f, 0.24f, 0.24f)));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, static_cast<ImVec4>(ImColor::ImColor(0.7f, 0.21f, 0.21f)));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, static_cast<ImVec4>(ImColor::ImColor(0.8f, 0.16f, 0.16f)));
+	ImGui::PushStyleColor(ImGuiCol_Button, FEEditorStyle::DangerButton);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, FEEditorStyle::DangerButtonHovered);
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, FEEditorStyle::DangerButtonHovered);
 
 	ImGui::SetCursorPosY(YPosition);
 	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f + ImGui::GetWindowWidth() / 8.0f - 120.0f / 2.0f);

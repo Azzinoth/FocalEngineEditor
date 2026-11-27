@@ -550,6 +550,242 @@ void ShowToolTip(const char* Text)
 	}
 }
 
+void RenderRowLabel(const char* Label, const float LabelWidth, const float LabelIndent)
+{
+	const float RowStartX = ImGui::GetCursorPosX();
+	ImGui::AlignTextToFramePadding();
+	ImGui::SetCursorPosX(RowStartX + LabelIndent);
+	ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::TextMuted);
+	ImGui::TextUnformatted(Label);
+	ImGui::PopStyleColor();
+	ImGui::SameLine();
+	ImGui::SetCursorPosX(RowStartX + LabelWidth);
+}
+
+std::string GetNumberWithSeparators(const size_t Number)
+{
+	std::string Result = std::to_string(Number);
+	for (int Position = static_cast<int>(Result.size()) - 3; Position > 0; Position -= 3)
+		Result.insert(Position, ",");
+
+	return Result;
+}
+
+std::string ToLowerCase(std::string Text)
+{
+	std::transform(Text.begin(), Text.end(), Text.begin(), [](const unsigned char Character) { return static_cast<char>(std::tolower(Character)); });
+	return Text;
+}
+
+std::string CutTextToWidth(std::string Text, const float Width)
+{
+	if (ImGui::CalcTextSize(Text.c_str()).x <= Width)
+		return Text;
+
+	while (Text.size() > 1 && ImGui::CalcTextSize((Text + "...").c_str()).x > Width)
+		Text.pop_back();
+
+	return Text + "...";
+}
+
+bool RenderSwitchButton(const char* Label, const bool bSelected, const ImDrawFlags RoundFlags)
+{
+	const ImVec2 Size = ImVec2(ImGui::CalcTextSize(Label).x + 24.0f, ImGui::GetFrameHeight());
+	const ImVec2 Min = ImGui::GetCursorScreenPos();
+	const ImVec2 Max = ImVec2(Min.x + Size.x, Min.y + Size.y);
+	const bool bPressed = ImGui::InvisibleButton(Label, Size);
+	const bool bHovered = ImGui::IsItemHovered();
+
+	ImU32 Fill = bHovered ? FEEditorStyle::ButtonHovered : FEEditorStyle::Button;
+	if (bSelected)
+		Fill = FEEditorStyle::Accent;
+
+	// GetColorU32 applies alpha of the style, so the button fades when it is disabled.
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	DrawList->AddRectFilled(Min, Max, ImGui::GetColorU32(Fill), 4.0f, RoundFlags);
+	if (!bSelected)
+		DrawList->AddRect(Min, Max, ImGui::GetColorU32(FEEditorStyle::ButtonBorder), 4.0f, 1.0f, RoundFlags);
+
+	DrawList->AddText(ImVec2(Min.x + 12.0f, Min.y + (Size.y - ImGui::GetFontSize()) / 2.0f), ImGui::GetColorU32(bSelected ? FEEditorStyle::TextOnAccent : FEEditorStyle::Text), Label);
+	return bPressed;
+}
+
+static float StyledPopupWidth = 0.0f;
+
+bool BeginStyledPopup(const char* ID, const FEPopupTone Tone, const float Width)
+{
+	const ImVec2 Center = ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f);
+	ImGui::SetNextWindowPos(Center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20.0f, 20.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 10.0f));
+	ImGui::PushStyleColor(ImGuiCol_PopupBg, FEEditorStyle::Card);
+	ImGui::PushStyleColor(ImGuiCol_Border, FEEditorStyle::PopupBorder);
+	ImGui::PushStyleColor(ImGuiCol_ModalWindowDimBg, FEEditorStyle::Dim);
+	ImGui::PushStyleColor(ImGuiCol_FrameBg, FEEditorStyle::Background);
+
+	const bool bOpened = ImGui::BeginPopupModal(ID, nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+	if (bOpened)
+	{
+		StyledPopupWidth = Width;
+
+		// Line at the top says what kind of action the popup is about.
+		const ImVec2 WindowMin = ImGui::GetWindowPos();
+		const ImU32 ToneColor = Tone == FEPopupTone::Danger ? FEEditorStyle::DangerButton : FEEditorStyle::PrimaryButton;
+		ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(WindowMin.x + 1.0f, WindowMin.y + 1.0f), ImVec2(WindowMin.x + ImGui::GetWindowWidth() - 1.0f, WindowMin.y + 5.0f), ToneColor, 6.0f, ImDrawFlags_RoundCornersTop);
+
+		ImGui::Dummy(ImVec2(Width, 0.0f));
+		ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetStyle().ItemSpacing.y);
+	}
+
+	return bOpened;
+}
+
+void EndStyledPopup(const bool bOpened)
+{
+	if (bOpened)
+		ImGui::EndPopup();
+
+	ImGui::PopStyleColor(4);
+	ImGui::PopStyleVar(4);
+}
+
+void RenderPopupHeading(const std::string& Text)
+{
+	RenderPopupText(Text, FEEditorStyle::Text, 24.0f);
+}
+
+void RenderPopupText(const std::string& Text, const ImU32 Color, const float FontSize)
+{
+	if (FontSize > 0.0f)
+		ImGui::PushFont(nullptr, FontSize);
+
+	ImGui::PushStyleColor(ImGuiCol_Text, Color);
+	ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + StyledPopupWidth);
+	ImGui::TextUnformatted(Text.c_str());
+	ImGui::PopTextWrapPos();
+	ImGui::PopStyleColor();
+	if (FontSize > 0.0f)
+		ImGui::PopFont();
+}
+
+void RenderPopupCard(FETexture* Preview, const std::string& Name, const std::vector<std::string>& Lines)
+{
+	const float Padding = 10.0f;
+	const float PreviewSize = 72.0f;
+	const float SmallFontSize = 16.0f;
+	// Card without a picture is as high as its text.
+	const float TextHeight = ImGui::GetFontSize() + 10.0f + static_cast<float>(Lines.size()) * (SmallFontSize + 4.0f);
+	const float ContentHeight = Preview != nullptr ? PreviewSize : TextHeight;
+	const ImVec2 Min = ImGui::GetCursorScreenPos();
+	const ImVec2 Max = ImVec2(Min.x + StyledPopupWidth, Min.y + ContentHeight + Padding * 2.0f);
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	DrawList->AddRectFilled(Min, Max, FEEditorStyle::Background, 4.0f);
+	DrawList->AddRect(Min, Max, FEEditorStyle::CardBorder, 4.0f);
+
+	float TextX = Min.x + Padding + 4.0f;
+	if (Preview != nullptr)
+	{
+		DrawList->AddImage(Preview->GetTextureID(), ImVec2(Min.x + Padding, Min.y + Padding), ImVec2(Min.x + Padding + PreviewSize, Min.y + Padding + PreviewSize), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		TextX = Min.x + Padding + PreviewSize + 14.0f;
+	}
+
+	DrawList->PushClipRect(ImVec2(TextX, Min.y), ImVec2(Max.x - Padding, Max.y), true);
+	DrawList->AddText(ImVec2(TextX, Min.y + Padding + 2.0f), FEEditorStyle::Text, Name.c_str());
+	float LineY = Min.y + Padding + ImGui::GetFontSize() + 14.0f;
+	ImGui::PushFont(nullptr, SmallFontSize);
+	for (size_t i = 0; i < Lines.size(); i++)
+	{
+		DrawList->AddText(ImVec2(TextX, LineY), FEEditorStyle::TextMuted, Lines[i].c_str());
+		LineY += SmallFontSize + 4.0f;
+	}
+	ImGui::PopFont();
+	DrawList->PopClipRect();
+
+	ImGui::Dummy(ImVec2(StyledPopupWidth, ContentHeight + Padding * 2.0f));
+}
+
+void RenderPopupNameList(const std::vector<std::string>& Names, const size_t MaxShown)
+{
+	const float SmallFontSize = 16.0f;
+	const float NameIndent = 22.0f;
+	ImGui::PushFont(nullptr, SmallFontSize);
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 4.0f));
+	for (size_t i = 0; i < Names.size() && i < MaxShown; i++)
+	{
+		const ImVec2 Position = ImGui::GetCursorScreenPos();
+		ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(Position.x + 8.0f, floorf(Position.y + SmallFontSize / 2.0f)), 3.0f, FEEditorStyle::TextMuted);
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + NameIndent);
+		ImGui::TextUnformatted(Names[i].c_str());
+	}
+
+	if (Names.size() > MaxShown)
+	{
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + NameIndent);
+		ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::TextMuted);
+		ImGui::TextUnformatted(("and " + GetNumberWithSeparators(Names.size() - MaxShown) + " more").c_str());
+		ImGui::PopStyleColor();
+	}
+	ImGui::PopStyleVar();
+	ImGui::PopFont();
+}
+
+int RenderPopupButtons(const std::vector<FEPopupButton>& Buttons)
+{
+	const float Spacing = 10.0f;
+	std::vector<float> Widths;
+	float TotalWidth = 0.0f;
+	for (size_t i = 0; i < Buttons.size(); i++)
+	{
+		Widths.push_back(std::max(130.0f, ImGui::CalcTextSize(Buttons[i].Name).x + 40.0f));
+		TotalWidth += Widths[i] + (i == 0 ? 0.0f : Spacing);
+	}
+
+	int Result = -1;
+	const float Height = ImGui::GetFrameHeight() + 10.0f;
+	ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + StyledPopupWidth - TotalWidth, ImGui::GetCursorPosY() + 12.0f));
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	for (size_t i = 0; i < Buttons.size(); i++)
+	{
+		const ImVec2 Min = ImGui::GetCursorScreenPos();
+		const ImVec2 Max = ImVec2(Min.x + Widths[i], Min.y + Height);
+		if (ImGui::InvisibleButton(Buttons[i].Name, ImVec2(Widths[i], Height)))
+			Result = static_cast<int>(i);
+
+		const bool bHovered = ImGui::IsItemHovered();
+		ImU32 Fill = bHovered ? FEEditorStyle::ButtonHovered : FEEditorStyle::Button;
+		ImU32 TextColor = FEEditorStyle::Text;
+		if (Buttons[i].Kind == FEPopupButtonKind::Primary)
+		{
+			Fill = bHovered ? FEEditorStyle::PrimaryButtonHovered : FEEditorStyle::PrimaryButton;
+		}
+		else if (Buttons[i].Kind == FEPopupButtonKind::Danger)
+		{
+			Fill = bHovered ? FEEditorStyle::DangerButtonHovered : FEEditorStyle::DangerButton;
+			TextColor = IM_COL32(255, 255, 255, 255);
+		}
+		else if (Buttons[i].Kind == FEPopupButtonKind::DangerText)
+		{
+			TextColor = FEEditorStyle::Danger;
+		}
+
+		DrawList->AddRectFilled(Min, Max, Fill, 4.0f);
+		if (Buttons[i].Kind == FEPopupButtonKind::Normal || Buttons[i].Kind == FEPopupButtonKind::DangerText)
+			DrawList->AddRect(Min, Max, FEEditorStyle::ButtonBorder, 4.0f);
+
+		const ImVec2 TextSize = ImGui::CalcTextSize(Buttons[i].Name);
+		DrawList->AddText(ImVec2(floorf(Min.x + (Widths[i] - TextSize.x) / 2.0f), floorf(Min.y + (Height - TextSize.y) / 2.0f)), TextColor, Buttons[i].Name);
+		if (i + 1 < Buttons.size())
+			ImGui::SameLine(0.0f, Spacing);
+	}
+
+	if (Result == -1 && !Buttons.empty() && ImGui::IsKeyPressed(ImGuiKey_Escape))
+		Result = 0;
+
+	return Result;
+}
+
 void SetSelectedStyle(ImGuiImageButton* Button)
 {
 	Button->SetDefaultColor(SelectedStyle);
@@ -562,268 +798,6 @@ void SetDefaultStyle(ImGuiImageButton* Button)
 	Button->SetDefaultColor(DefaultColor);
 	Button->SetHoveredColor(HoveredColor);
 	Button->SetActiveColor(ActiveColor);
-}
-
-float FERangeRecord::GetRangeSpan() const
-{
-	return RangeSpan;
-}
-
-std::string FERangeRecord::GetCaption()
-{
-	return Caption;
-}
-
-void FERangeRecord::SetCaption(const std::string NewValue)
-{
-	Caption = NewValue;
-}
-
-std::string FERangeRecord::GetToolTipText()
-{
-	return ToolTipText;
-}
-
-void FERangeRecord::SetToolTipText(const std::string NewValue)
-{
-	ToolTipText = NewValue;
-}
-
-ImColor FERangeRecord::GetColor() const
-{
-	return Color;
-}
-
-void FERangeRecord::SetColor(const ImColor NewValue)
-{
-	Color = NewValue;
-}
-
-FERangeConfigurator::FERangeConfigurator()
-{
-}
-
-ImVec2 FERangeConfigurator::GetPosition() const
-{
-	return Position;
-}
-
-void FERangeConfigurator::SetPosition(const ImVec2 NewPosition)
-{
-	Position = NewPosition;
-}
-
-ImVec2 FERangeConfigurator::GetSize() const
-{
-	return Size;
-}
-
-void FERangeConfigurator::SetSize(ImVec2 NewSize)
-{
-	if (NewSize.x < 100)
-		NewSize.x = 100;
-	Size = NewSize;
-}
-
-bool FERangeConfigurator::IsVisible() const
-{
-	return bVisible;
-}
-
-void FERangeConfigurator::RecalculateRangeInfo()
-{
-	for (size_t i = 0; i < Ranges.size(); i++)
-	{
-		if (i == 0)
-		{
-			Ranges[i].Rect.left = static_cast<LONG>(Position.x);
-		}
-		else
-		{
-			Ranges[i].Rect.left = static_cast<LONG>(Ranges[i - 1].Rect.right);
-		}
-
-		Ranges[i].Rect.right = static_cast<LONG>(Ranges[i].Rect.left + Size.x * Ranges[i].RangeSpan);
-		Ranges[i].Rect.top = static_cast<LONG>(Position.y);
-		Ranges[i].Rect.bottom = static_cast<LONG>(Ranges[i].Rect.top + Size.y);
-	}
-}
-
-bool FERangeConfigurator::AddRange(float RangeSpan, std::string Caption, std::string ToolTipText, ImColor Color)
-{
-	if (Ranges.size() >= 100)
-		return false;
-
-	FERangeRecord NewRange;
-	NewRange.RangeSpan = RangeSpan;
-
-	NewRange.Caption = Caption;
-	NewRange.ToolTipText = ToolTipText;
-	NewRange.Color = Color;
-
-	Ranges.push_back(NewRange);	
-	RecalculateRangeInfo();
-
-	for (size_t i = 0; i < Ranges.size(); i++)
-	{
-		Ranges[i].Scroller.SetPosition(ImVec2(static_cast<float>(Ranges[i].Rect.right), static_cast<float>(Ranges[i].Rect.top)));
-	}
-
-	return true;
-}
-
-void FERangeConfigurator::NormalizeRanges()
-{
-	float Coverage = 0.0f;
-	for (size_t i = 0; i < Ranges.size(); i++)
-	{
-		Coverage += Ranges[i].RangeSpan;
-	}
-
-	const float Scale = 1.0f / Coverage;
-	if (abs(1.0f - Coverage) > 0.01f)
-	{
-		for (size_t i = 0; i < Ranges.size(); i++)
-		{
-			Ranges[i].RangeSpan *= Scale;
-		}
-
-		RecalculateRangeInfo();
-
-		for (size_t i = 0; i < Ranges.size(); i++)
-		{
-			Ranges[i].Scroller.SetPosition(ImVec2(static_cast<float>(Ranges[i].Rect.right), static_cast<float>(Ranges[i].Rect.top)));
-		}
-	}
-}
-
-void FERangeConfigurator::InputCalculations()
-{
-	ImGuiWindow* CurrentWindow = FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl();
-	const float MouseXWindows = ImGui::GetIO().MousePos.x - CurrentWindow->Pos.x;
-	const float MouseYWindows = ImGui::GetIO().MousePos.y - CurrentWindow->Pos.y;
-
-	for (size_t i = 0; i < Ranges.size(); i++)
-	{
-		if (MouseXWindows >= Ranges[i].Rect.left && MouseXWindows < Ranges[i].Rect.right &&
-			MouseYWindows >= Ranges[i].Rect.top && MouseYWindows < Ranges[i].Rect.bottom)
-		{
-			ImGui::BeginTooltip();
-			ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-			ImGui::TextUnformatted(Ranges[i].ToolTipText.c_str());
-			ImGui::PopTextWrapPos();
-			ImGui::EndTooltip();
-		}
-
-		if (i == Ranges.size() - 1)
-			break;
-	}
-
-	CurrentWindow->Flags = ImGuiWindowFlags_None;
-	for (size_t i = 0; i < Ranges.size(); i++)
-	{
-		const float NeedToAdd = Ranges[i].Scroller.GetLastFrameDelta() / Size.x;
-		if (NeedToAdd != 0.0f)
-		{
-			CurrentWindow->Flags = ImGuiWindowFlags_NoMove;
-			if (Ranges[i + 1].RangeSpan - NeedToAdd < 0.001f || Ranges[i].RangeSpan + NeedToAdd < 0.001f)
-				break;
-			
-			Ranges[i + 1].RangeSpan -= NeedToAdd;
-			Ranges[i].RangeSpan += NeedToAdd;
-			RecalculateRangeInfo();
-			
-			break;
-		}
-	}
-}
-
-void FERangeConfigurator::Render()
-{
-	NormalizeRanges();
-	InputCalculations();
-
-	ImGuiWindow* CurrentWindow = FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl();
-	ScreenX = CurrentWindow->Pos.x + Position.x;
-	ScreenY = CurrentWindow->Pos.y + Position.y;
-
-	float BeginX = ScreenX;
-	for (size_t i = 0; i < Ranges.size(); i++)
-	{
-		ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(ScreenX + (Ranges[i].Rect.left - Position.x), ScreenY), ImVec2(BeginX + (Ranges[i].Rect.right - Ranges[i].Rect.left), ScreenY + Size.y), Ranges[i].Color);
-		const ImVec2 TextSize = ImGui::CalcTextSize(Ranges[i].Caption.c_str());
-		ImGui::SetCursorPosX(Ranges[i].Rect.left + (Ranges[i].Rect.right - Ranges[i].Rect.left) / 2.0f - TextSize.x / 2.0f);
-		ImGui::SetCursorPosY(Position.y + Size.y / 2.0f - TextSize.y / 2.0f);
-		ImGui::Text(Ranges[i].Caption.c_str());
-
-		if (i == Ranges.size() - 1)
-			break;
-
-		Ranges[i].Scroller.Render();
-		if (Ranges[i].Scroller.IsSelected())
-		{
-			ImGui::GetWindowDrawList()->AddRect(ImVec2(ScreenX + (Ranges[i].Rect.left - Position.x), ScreenY), ImVec2(BeginX + (Ranges[i].Rect.right - Ranges[i].Rect.left), ScreenY + Size.y), ImColor(10, 10, 10, 255), 0.0f, 0, 3.0f);
-
-			ImGui::BeginTooltip();
-			ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-			ImGui::TextUnformatted(Ranges[i].ToolTipText.c_str());
-			ImGui::PopTextWrapPos();
-			ImGui::EndTooltip();
-		}
-
-		BeginX += Ranges[i].Rect.right - Ranges[i].Rect.left;
-	}
-
-	// Only one scroller should be selected at a time.
-	int SelectedCount = 0;
-	for (size_t i = 0; i < Ranges.size(); i++)
-	{
-		if (Ranges[i].Scroller.IsSelected())
-			SelectedCount++;
-		
-		if (SelectedCount > 1)
-			Ranges[i].Scroller.SetSelected(false);
-	}
-
-	if (Ranges.empty())
-	{
-		ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(ScreenX, ScreenY), ImVec2(ScreenX + Size.x, ScreenY + Size.y), ImColor(125, 125, 125, 255));
-		const ImVec2 TextSize = ImGui::CalcTextSize("No ranges");
-		ImGui::SetCursorPosX(Position.x + Size.x / 2.0f - TextSize.x / 2.0f);
-		ImGui::SetCursorPosY(Position.y + Size.y / 2.0f - TextSize.y / 2.0f);
-		ImGui::Text("No ranges");
-	}
-}
-
-void FERangeConfigurator::DeleteRange(const size_t Index)
-{
-	if (Index >= Ranges.size())
-		return;
-
-	Ranges.erase(Ranges.begin() + Index);
-}
-
-std::vector<FERangeRecord> FERangeConfigurator::GetRangesRecordsCopy()
-{
-	return Ranges;
-}
-
-FERangeRecord* FERangeConfigurator::GetRangesRecord(const size_t Index)
-{
-	if (Index >= Ranges.size())
-		return nullptr;
-
-	return &Ranges[Index];
-}
-
-int FERangeConfigurator::GetRangesCount() const
-{
-	return static_cast<int>(Ranges.size());
-}
-
-void FERangeConfigurator::Clear()
-{
-	Ranges.clear();
 }
 
 MessagePopUp::MessagePopUp() {};
@@ -839,213 +813,13 @@ void MessagePopUp::Render()
 {
 	ImGuiModalPopup::Render();
 
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-	if (ImGui::BeginPopupModal(PopupCaption.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	const bool bOpened = BeginStyledPopup(PopupCaption.c_str());
+	if (bOpened)
 	{
-		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
-		ImGui::Text(Message.c_str());
-		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f - 120.0f / 2.0f);
-		if (ImGui::Button("Ok", ImVec2(120, 0)))
-		{
+		RenderPopupHeading(PopupCaption);
+		RenderPopupText(Message, FEEditorStyle::Text, 0.0f);
+		if (RenderPopupButtons({ { "OK", FEPopupButtonKind::Primary } }) != -1)
 			ImGuiModalPopup::Close();
-		}
-
-		ImGui::PopStyleVar();
-		ImGui::EndPopup();
 	}
-	else
-	{
-		ImGui::PopStyleVar();
-	}
-}
-
-FEArrowScroller::FEArrowScroller(const bool Horizontal)
-{
-	bHorizontal = Horizontal;
-
-	bSelected = false;
-	bMouseHover = false;
-
-	bWindowFlagWasAdded = false;
-	OriginalWindowFlags = 0;
-
-	LastFrameDelta = 0;
-	Size = 20.0f;
-
-	Color = ImColor(10, 10, 40, 255);
-	SelectedColor = ImColor(115, 115, 255, 255);
-
-	AvailableRange = ImVec2(-std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-}
-
-ImVec2 FEArrowScroller::GetPosition() const
-{
-	return Position;
-}
-
-void FEArrowScroller::SetPosition(const ImVec2 NewPosition)
-{
-	Position = NewPosition;
-
-	if (bHorizontal)
-	{
-		Area.left = static_cast<LONG>(Position.x - Size / 2.0f);
-		Area.right = static_cast<LONG>(Position.x + Size / 2.0f);
-		Area.top = static_cast<LONG>(Position.y - Size);
-		Area.bottom = static_cast<LONG>(Position.y);
-	}
-	else
-	{
-		Area.left = static_cast<LONG>(Position.x - Size);
-		Area.right = static_cast<LONG>(Position.x);
-		Area.top = static_cast<LONG>(Position.y - Size / 2.0f);
-		Area.bottom = static_cast<LONG>(Position.y + Size / 2.0f);
-	}
-}
-
-bool FEArrowScroller::IsSelected() const
-{
-	return bSelected;
-}
-
-void FEArrowScroller::SetSelected(const bool NewValue)
-{
-	bSelected = NewValue;
-}
-
-void FEArrowScroller::Render()
-{
-	ImGuiWindow* CurrentWindow = FE_IMGUI_WINDOW_MANAGER.GetCurrentWindowImpl();
-	const float MouseXWindows = ImGui::GetIO().MousePos.x - CurrentWindow->Pos.x;
-	const float MouseYWindows = ImGui::GetIO().MousePos.y - CurrentWindow->Pos.y;
-
-	bMouseHover = false;
-	if (MouseXWindows >= Area.left && MouseXWindows < Area.right &&
-		MouseYWindows >= Area.top && MouseYWindows < Area.bottom)
-	{
-		bMouseHover = true;
-	}
-
-	if (!bMouseHover && bWindowFlagWasAdded)
-	{
-		bWindowFlagWasAdded = false;
-		CurrentWindow->Flags = OriginalWindowFlags;
-	}
-
-	if (!(CurrentWindow->Flags & ImGuiWindowFlags_NoMove) && bMouseHover)
-	{
-		bWindowFlagWasAdded = true;
-		OriginalWindowFlags = CurrentWindow->Flags;
-		CurrentWindow->Flags |= ImGuiWindowFlags_NoMove;
-	}
-
-	if (ImGui::GetIO().MouseClicked[0])
-	{
-		bMouseHover ? SetSelected(true) : SetSelected(false);
-	}
-
-	if (ImGui::GetIO().MouseReleased[0])
-		SetSelected(false);
-
-	LastFrameDelta = 0;
-	if (IsSelected())
-	{
-		LastFrameDelta = bHorizontal ? MouseXWindows - LastFrameMouseX : MouseYWindows - LastFrameMouseY;
-
-		if (bHorizontal)
-		{
-			if (GetPosition().x + LastFrameDelta <= AvailableRange.y && GetPosition().x + LastFrameDelta >= AvailableRange.x)
-			{
-				SetPosition(ImVec2(GetPosition().x + LastFrameDelta, GetPosition().y));
-			}
-		}
-		else
-		{
-			if (GetPosition().y + LastFrameDelta <= AvailableRange.y && GetPosition().y + LastFrameDelta >= AvailableRange.x)
-			{
-				SetPosition(ImVec2(GetPosition().x, GetPosition().y + LastFrameDelta));
-			}
-		}
-	}
-
-	LastFrameMouseX = MouseXWindows;
-	LastFrameMouseY = MouseYWindows;
-
-	ImVec2 P1;
-	ImVec2 P2;
-	ImVec2 P3;
-
-	if (bHorizontal)
-	{
-		P1 = ImVec2(CurrentWindow->Pos.x + Area.left,
-			CurrentWindow->Pos.y + Area.top);
-		P2 = ImVec2(CurrentWindow->Pos.x + Area.right,
-			CurrentWindow->Pos.y + Area.top);
-		P3 = ImVec2(CurrentWindow->Pos.x + Area.left + (Area.right - Area.left) / 2.0f,
-			CurrentWindow->Pos.y + Area.bottom);
-	}
-	else
-	{
-		P1 = ImVec2(CurrentWindow->Pos.x + Area.left,
-			CurrentWindow->Pos.y + Area.top);
-		P2 = ImVec2(CurrentWindow->Pos.x + Area.left,
-			CurrentWindow->Pos.y + Area.bottom);
-		P3 = ImVec2(CurrentWindow->Pos.x + Area.right,
-			CurrentWindow->Pos.y + Area.top + (Area.right - Area.left) / 2.0f);
-	}
-
-	if (IsSelected())
-	{
-		ImGui::GetWindowDrawList()->AddTriangleFilled(P1, P2, P3, SelectedColor);
-	}
-	else
-	{
-		ImGui::GetWindowDrawList()->AddTriangleFilled(P1, P2, P3, Color);
-	}
-}
-
-float FEArrowScroller::GetLastFrameDelta() const
-{
-	return LastFrameDelta;
-}
-
-float FEArrowScroller::GetSize() const
-{
-	return Size;
-}
-
-void FEArrowScroller::SetSize(const float NewValue)
-{
-	if (NewValue > 1.0f)
-		Size = NewValue;
-}
-
-ImColor FEArrowScroller::GetColor() const
-{
-	return Color;
-}
-
-void FEArrowScroller::SetColor(const ImColor NewValue)
-{
-	Color = NewValue;
-}
-
-ImColor FEArrowScroller::GetSelectedColor() const
-{
-	return SelectedColor;
-}
-
-void FEArrowScroller::SetSelectedColor(const ImColor NewValue)
-{
-	SelectedColor = NewValue;
-}
-
-void FEArrowScroller::SetAvailableRange(const ImVec2 NewValue)
-{
-	AvailableRange = NewValue;
-}
-
-void FEArrowScroller::LiftRangeRestrictions()
-{
-	AvailableRange = ImVec2(-std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+	EndStyledPopup(bOpened);
 }

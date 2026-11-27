@@ -33,7 +33,7 @@ class DeleteMeshPopup : public ImGuiModalPopup
 public:
 	SINGLETON_PUBLIC_PART(DeleteMeshPopup)
 
-	int TimesMeshUsed(const FEMesh* Mesh);
+	static std::vector<std::string> GetUserNames(const FEMesh* Mesh);
 	void Show(FEMesh* MeshToDelete);
 	void Render() override;
 };
@@ -49,7 +49,7 @@ class DeletePointCloudPopup : public ImGuiModalPopup
 public:
 	SINGLETON_PUBLIC_PART(DeletePointCloudPopup)
 
-	int TimesPointCloudUsed(const FEPointCloud* PointCloud);
+	static std::vector<std::string> GetUserNames(const FEPointCloud* PointCloud);
 	void Show(FEPointCloud* PointCloud);
 	void Render() override;
 };
@@ -65,7 +65,7 @@ class DeleteMaterialPopup : public ImGuiModalPopup
 public:
 	SINGLETON_PUBLIC_PART(DeleteMaterialPopup)
 
-	int TimesMaterialUsed(const FEMaterial* Material);
+	static std::vector<std::string> GetUserNames(const FEMaterial* Material);
 	void Show(FEMaterial* Material);
 	void Render() override;
 };
@@ -81,7 +81,7 @@ class DeleteGameModelPopup : public ImGuiModalPopup
 public:
 	SINGLETON_PUBLIC_PART(DeleteGameModelPopup)
 
-	int TimesGameModelUsed(const FEGameModel* GameModel);
+	static std::vector<std::string> GetUserNames(const FEGameModel* GameModel);
 	void Show(FEGameModel* GameModel);
 	void Render() override;
 };
@@ -97,7 +97,7 @@ class DeletePrefabPopup : public ImGuiModalPopup
 public:
 	SINGLETON_PUBLIC_PART(DeletePrefabPopup)
 
-	int TimesPrefabUsed(const FEPrefab* Prefab);
+	static std::vector<std::string> GetUserNames(const FEPrefab* Prefab);
 	void Show(FEPrefab* Prefab);
 	void Render() override;
 };

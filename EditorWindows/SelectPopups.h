@@ -6,16 +6,12 @@ class SelectFEObjectPopUp : public ImGuiModalPopup
 {
 	SINGLETON_PRIVATE_PART(SelectFEObjectPopUp)
 
-	int IndexUnderMouse = -1;
 	FEObject* HighlightedObject = nullptr;
 
 	std::vector<FEObject*> ItemsList;
 	std::vector<FEObject*> FilteredItemsList;
 	std::string FilterString;
-
-	ImGuiButton* SelectButton = nullptr;
-	ImGuiButton* CancelButton = nullptr;
-	ImGuiImageButton* IconButton = nullptr;
+	void UpdateFilteredItems();
 
 	void(*CallBack)(std::vector<FEObject*>) = nullptr;
 	std::vector<FEObject*> SelectedObjects;

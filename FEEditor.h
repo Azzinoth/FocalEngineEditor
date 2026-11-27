@@ -85,9 +85,10 @@ private:
     static void DropCallback(int Count, const char** Paths);
     static void CloseWindowCallBack();
 
-    // Effects window
+    // Editor Cameras window
     bool bEditorCamerasWindowVisible = true;
     void DisplayEditorCamerasWindow() const;
+    void RenderEditorCameraSettings(FEEntity* CameraEntity, float Height) const;
 
     // Log window
     bool bLogWindowVisible = true;

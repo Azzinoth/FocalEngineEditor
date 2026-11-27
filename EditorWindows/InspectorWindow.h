@@ -20,17 +20,17 @@ class FEEditorInspectorWindow
     void DisplayCameraProperties(FEEntity* CameraEntity) const;
 	void DisplayVirtualUIProperties(FEEntity* VirtualUIEntity) const;
 	void DisplayNativeScriptProperties(FEEntity* NativeScriptEntity) const;
+	void DisplayGameModelProperties(FEEntity* GameModelEntity);
+	void DisplayPointCloudProperties(FEEntity* PointCloudEntity);
+	void DisplayPrefabInstanceProperties(FEEntity* PrefabInstanceEntity);
+	void DisplayVolumeProperties(FEEntity* VolumeEntity);
+	void DisplayInstancedProperties(FEEntity* InstancedEntity);
+	void RenderResourceCard(std::string ID, FETexture* PreviewTexture, std::string Name, const std::vector<std::string>& InformationLines, DragAndDropTarget* DropTarget, bool bHasResource, bool& bChangeRequested, bool& bShowInFolderRequested, std::string ActionName = "");
 
     // Terrain settings
     static FEEntity* TerrainToWorkWith;
     static void CreateNewTerrainLayerWithMaterialCallback(std::vector<FEObject*> SelectionsResult);
     static void ChangeMaterialInTerrainLayerCallback(std::vector<FEObject*> SelectionsResult);
-    ImGuiButton* ExportHeightMapButton = nullptr;
-    ImGuiButton* ImportHeightMapButton = nullptr;
-    ImGuiImageButton* SculptBrushButton = nullptr;
-    ImGuiImageButton* LevelBrushButton = nullptr;
-    ImGuiImageButton* SmoothBrushButton = nullptr;
-    ImGuiImageButton* LayerBrushButton = nullptr;
     static bool EntityChangeGameModelTargetCallback(FEObject* Object, void** EntityPointer);
 	static bool EntityChangePointCloudTargetCallback(FEObject* Object, void** EntityPointer);
     static bool TerrainChangeMaterialTargetCallback(FEObject* Object, void** LayerIndex);
@@ -40,19 +40,16 @@ class FEEditorInspectorWindow
 	DragAndDropTarget* EntityChangePointCloudTarget = nullptr;
     std::vector<int> TerrainChangeMaterialIndices;
     std::vector<DragAndDropTarget*> TerrainChangeLayerMaterialTargets;
-    int HoveredTerrainLayerItem = -1;
     void DisplayTerrainSettings(FEEntity* TerrainEntity);
+    void RenderTerrainLayers(FEEntity* TerrainEntity);
+    void SelectMaterialForTerrainLayer(FEEntity* TerrainEntity, int LayerIndex);
+    FEEntity* TerrainWithLayersShown = nullptr;
     int TerrainLayerRenameIndex = -1;
 	std::string TerrainLayerRenameBuffer = "";
     bool bLastFrameTerrainLayerRenameEditWasVisible = false;
 
-    // Brush icons
-    FETexture* SculptBrushIcon = nullptr;
-    FETexture* LevelBrushIcon = nullptr;
-    FETexture* SmoothBrushIcon = nullptr;
-    FETexture* MouseCursorIcon = nullptr;
-    FETexture* ArrowToGroundIcon = nullptr;
-    FETexture* DrawBrushIcon = nullptr;
+    // Icons
+    FETexture* LockIcon = nullptr;
 
     // Context menu
     bool bShouldOpenContextMenu = false;
@@ -70,7 +67,7 @@ class FEEditorInspectorWindow
     void Clear();
     void InitializeResources();
 
-    std::vector<std::string> GetAvailableComponentsToAdd(FEEntity* Entity) const;
+    void RenderAddComponentMenu(FEEntity* Entity);
 
     bool AddComponent(FEEntity* Entity, std::string ComponentName);
     std::unordered_map<std::type_index, std::function<void(FEEntity*)>> AddComponentHandlers;

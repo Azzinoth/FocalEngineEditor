@@ -18,70 +18,50 @@ void ProjectWasModifiedPopUp::Render()
 {
 	ImGuiModalPopup::Render();
 
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-	if (ImGui::BeginPopupModal(PopupCaption.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	bool bCloseProject = false;
+	const bool bOpened = BeginStyledPopup(PopupCaption.c_str());
+	if (bOpened && ObjectToWorkWith == nullptr)
 	{
-		if (ObjectToWorkWith == nullptr)
+		EndStyledPopup(bOpened);
+		APPLICATION.GetMainWindow()->Terminate();
+		return;
+	}
+
+	if (bOpened)
+	{
+		RenderPopupHeading("Save changes before closing?");
+		RenderPopupCard(nullptr, ObjectToWorkWith->GetName(), { ObjectToWorkWith->GetProjectFolder(), "Has changes that are not saved." });
+		RenderPopupText("They are lost if the project is closed without saving.");
+
+		const int PressedButton = RenderPopupButtons({ { "Cancel", FEPopupButtonKind::Normal }, { "Don't save", FEPopupButtonKind::DangerText }, { "Save", FEPopupButtonKind::Primary } });
+		if (PressedButton == 2)
+			PROJECT_MANAGER.GetCurrent()->SaveProject();
+
+		if (PressedButton == 1 || PressedButton == 2)
 		{
-			ImGui::PopStyleVar();
-			ImGui::EndPopup();
-			APPLICATION.GetMainWindow()->Terminate();
+			ObjectToWorkWith = nullptr;
+			bCloseProject = true;
+		}
+
+		if (PressedButton == 0 || PressedButton == 2)
+			APPLICATION.GetMainWindow()->CancelClose();
+
+		if (PressedButton != -1)
+			ImGuiModalPopup::Close();
+	}
+	EndStyledPopup(bOpened);
+
+	if (bCloseProject)
+	{
+		PROJECT_MANAGER.CloseCurrentProject();
+		if (bShouldTerminate)
+		{
+			ENGINE.Terminate();
 			return;
 		}
-
-		bool ButtonPressed = false;
-
-		ImGui::SetWindowPos(ImVec2(APPLICATION.GetMainWindow()->GetWidth() / 2.0f - ImGui::GetWindowWidth() / 2.0f, APPLICATION.GetMainWindow()->GetHeight() / 2.0f - ImGui::GetWindowHeight() / 2.0f));
-		ImGui::Text("Project was modified, should it be saved before exit ?");
-		ImGui::SetCursorPosX(ImGui::GetWindowWidth() * 0.15f - 140.0f / 2.0f);
-		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10.0f);
-		if (ImGui::Button("Save", ImVec2(140, 0)))
+		else if (EDITOR.IsRestartNeededForProject(""))
 		{
-			PROJECT_MANAGER.GetCurrent()->SaveProject();
-			//ENGINE.SaveScreenshot((PROJECT_MANAGER.GetCurrent()->GetProjectFolder() + "projectScreenShot.texture").c_str(), PROJECT_MANAGER.GetCurrent()->GetScene());
-			ObjectToWorkWith = nullptr;
-			ImGuiModalPopup::Close();
-			ButtonPressed = true;
-			APPLICATION.GetMainWindow()->CancelClose();
+			EDITOR.RestartWithProject("");
 		}
-
-		ImGui::SetItemDefaultFocus();
-		ImGui::SameLine();
-		ImGui::SetCursorPosX(ImGui::GetWindowWidth() * 0.5f - 140.0f / 2.0f);
-		if (ImGui::Button("Exit without saving", ImVec2(140, 0)))
-		{
-			ObjectToWorkWith = nullptr;
-			ImGuiModalPopup::Close();
-			ButtonPressed = true;
-		}
-
-		ImGui::SameLine();
-		ImGui::SetCursorPosX(ImGui::GetWindowWidth() * 0.85f - 140.0f / 2.0f);
-		if (ImGui::Button("Cancel", ImVec2(140, 0)))
-		{
-			ImGuiModalPopup::Close();
-			APPLICATION.GetMainWindow()->CancelClose();
-		}
-
-		ImGui::PopStyleVar();
-		ImGui::EndPopup();
-
-		if (ButtonPressed)
-		{
-			PROJECT_MANAGER.CloseCurrentProject();
-			if (bShouldTerminate)
-			{
-				ENGINE.Terminate();
-				return;
-			}
-			else if (EDITOR.IsRestartNeededForProject(""))
-			{
-				EDITOR.RestartWithProject("");
-			}
-		}
-	}
-	else
-	{
-		ImGui::PopStyleVar();
 	}
 }

@@ -8,11 +8,11 @@ FEPrefabSceneEditorWindow::FEPrefabSceneEditorWindow(FEScene* Scene) : FEEditorS
 
 	ApplyButton = new ImGuiButton("Apply");
 	ApplyButton->SetSize(ImVec2(140, 24));
-	ApplyButton->SetDefaultColor(ImVec4(0.2f, 0.8f, 0.2f, 1.0f));
+	ApplyButton->SetDefaultColor(FEEditorStyle::ToVec4(FEEditorStyle::PrimaryButton));
 
 	CloseButton = new ImGuiButton("Close");
 	CloseButton->SetSize(ImVec2(140, 24));
-	CloseButton->SetDefaultColor(ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
+	CloseButton->SetDefaultColor(FEEditorStyle::ToVec4(FEEditorStyle::DangerButton));
 
 	AcceptedTypes.clear();
 	AcceptedTypes.push_back(FE_GAMEMODEL);

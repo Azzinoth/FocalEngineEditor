@@ -62,10 +62,6 @@ class FEGizmoSceneData
 	glm::vec3 RotateXStandardRotation = glm::vec3(0.0f, 0.0f, -90.0f);
 	glm::vec3 RotateYStandardRotation = glm::vec3(0.0f);
 	glm::vec3 RotateZStandardRotation = glm::vec3(90.0f, 0.0f, 90.0f);
-
-	FETexture* TransformationGizmoIcon = nullptr;
-	FETexture* ScaleGizmoIcon = nullptr;
-	FETexture* RotateGizmoIcon = nullptr;
 };
 
 class GizmoManager
@@ -83,10 +79,6 @@ public:
 	glm::vec3 RotateXStandardRotation = glm::vec3(0.0f, 0.0f, -90.0f);
 	glm::vec3 RotateYStandardRotation = glm::vec3(0.0f);
 	glm::vec3 RotateZStandardRotation = glm::vec3(90.0f, 0.0f, 90.0f);
-
-	FETexture* TransformationGizmoIcon = nullptr;
-	FETexture* ScaleGizmoIcon = nullptr;
-	FETexture* RotateGizmoIcon = nullptr;
 
 	void InitializeResources();
 

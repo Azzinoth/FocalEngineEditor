@@ -62,7 +62,7 @@ VolumetricTextureViewWindow::VolumetricTextureViewWindow(FETexture* TextureToVie
 
 	CloseButton = new ImGuiButton("Close");
 	CloseButton->SetSize(ImVec2(140, 24));
-	CloseButton->SetDefaultColor(ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
+	CloseButton->SetDefaultColor(FEEditorStyle::ToVec4(FEEditorStyle::DangerButton));
 
 	AcceptedTypes.clear();
 	ToolTipTexts.clear();
@@ -116,93 +116,69 @@ void VolumetricTextureViewWindow::RenderInfoOverlay()
 	const int Height = Texture->GetHeight();
 	const int Depth  = Texture->GetDepth();
 	const GLint InternalFormat = Texture->GetInternalFormat();
-	const std::string ResolvedFormat = FETexture::TextureInternalFormatToString(InternalFormat);
-	const std::string FormatString = ResolvedFormat.empty() ? ("Unknown (" + std::to_string(InternalFormat) + ")") : ResolvedFormat;
 	const size_t VoxelCount = static_cast<size_t>(Width) * static_cast<size_t>(Height) * static_cast<size_t>(Depth);
 	const size_t ResourceSizeBytes = VoxelCount * TextureViewWindow::EstimateBytesPerPixel(InternalFormat);
+	const std::string ID = UNIQUE_ID.ToString(Texture->GetID());
 
 	// The flipbook converter only supports single-channel float volumes.
 	const bool bFormatSupported = (InternalFormat == GL_R16 || InternalFormat == GL_R32F);
 
-	const float LineHeight = ImGui::GetTextLineHeightWithSpacing();
+	const float LabelWidth = 110.0f;
+	const float SmallFontSize = 16.0f;
 	const float PanelWidth  = 480.0f;
 	const float PanelMargin = 8.0f;
-	float PanelHeight = ImGui::GetStyle().WindowPadding.y * 2.0f
-					  + LineHeight * 9.0f
-					  + LineHeight * 2.5f
-					  + ImGui::GetFrameHeightWithSpacing() * 5.0f;
-	if (!bFormatSupported)
-		PanelHeight += LineHeight;
-	if (!ConvertStatusMessage.empty())
-		PanelHeight += LineHeight * 2.0f;
-
 	const float PanelX = GetWindow()->ContentRegionRect.GetWidth() - PanelWidth - PanelMargin;
-	ImGui::SetCursorPos(ImVec2(PanelX, PanelMargin));
+	// A window that is not docked has a title bar above its content.
+	ImGui::SetCursorPos(ImVec2(PanelX, std::max(PanelMargin, ImGui::GetCursorStartPos().y)));
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.10f, 0.10f, 0.10f, 0.85f));
-	ImGui::BeginChild("##VolumeTextureInfo", ImVec2(PanelWidth, PanelHeight), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(14.0f, 12.0f));
+	ImGui::BeginChild("##VolumeTextureInfo", ImVec2(PanelWidth, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysUseWindowPadding | ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-	ImGui::TextColored(ImVec4(0.95f, 0.90f, 0.0f, 1.0f), "Volume Texture");
-	ImGui::Separator();
-	ImGui::Spacing();
+	TextureViewWindow::RenderPanelTitle("Volume texture");
+	TextureViewWindow::RenderFactRow("Name", Texture->GetName(), LabelWidth);
+	TextureViewWindow::RenderFactRow("ID", ID, LabelWidth, ID + "\nClick to copy", true);
+	if (ImGui::IsItemClicked())
+		ImGui::SetClipboardText(ID.c_str());
 
-	auto DrawRow = [](const char* Label, const std::string& Value)
-	{
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::TextColored(ImVec4(0.65f, 0.65f, 0.65f, 1.0f), "%s", Label);
-		ImGui::TableSetColumnIndex(1);
-		ImGui::TextWrapped("%s", Value.c_str());
-	};
+	TextureViewWindow::RenderFactRow("Size", GetNumberWithSeparators(Width) + " x " + GetNumberWithSeparators(Height) + " x " + GetNumberWithSeparators(Depth), LabelWidth);
+	TextureViewWindow::RenderFactRow("Format", TextureViewWindow::GetFormatName(InternalFormat), LabelWidth, FETexture::TextureInternalFormatToString(InternalFormat));
+	TextureViewWindow::RenderFactRow("Voxels", GetNumberWithSeparators(VoxelCount), LabelWidth);
+	TextureViewWindow::RenderFactRow("In memory", TextureViewWindow::ReadableSize(ResourceSizeBytes), LabelWidth);
 
-	const ImGuiTableFlags TableFlags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoBordersInBody;
-	if (ImGui::BeginTable("##VolumeInfoTable", 2, TableFlags))
-	{
-		ImGui::TableSetupColumn("##Label", ImGuiTableColumnFlags_WidthFixed);
-		ImGui::TableSetupColumn("##Value", ImGuiTableColumnFlags_WidthStretch);
-
-		DrawRow("Name:", Texture->GetName());
-		DrawRow("Object ID:", UNIQUE_ID.ToString(Texture->GetID()));
-		DrawRow("Dimensions:", std::to_string(Width) + " x " + std::to_string(Height) + " x " + std::to_string(Depth));
-		DrawRow("Format:", FormatString);
-		DrawRow("Voxels:", std::to_string(VoxelCount));
-		DrawRow("Resource size:", TextureViewWindow::ReadableSize(ResourceSizeBytes));
-
-		ImGui::EndTable();
-	}
-
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-
-	ImGui::TextColored(ImVec4(0.95f, 0.90f, 0.0f, 1.0f), "Sampling");
+	ImGui::Dummy(ImVec2(0.0f, 6.0f));
+	TextureViewWindow::RenderPanelTitle("Sampling");
 
 	const char* FilterOptions[] = { "Nearest", "Linear" };
+	RenderRowLabel("Filtering", LabelWidth);
+	ImGui::SetNextItemWidth(-1.0f);
 	int CurrentFilter = static_cast<int>(Texture->GetFilterType());
-	if (ImGui::Combo("Filtering", &CurrentFilter, FilterOptions, IM_ARRAYSIZE(FilterOptions)))
+	if (ImGui::Combo("##Filtering", &CurrentFilter, FilterOptions, IM_ARRAYSIZE(FilterOptions)))
 		Texture->SetFilterType(static_cast<FE_TEXTURE_MINMAG_FILTER_TYPE>(CurrentFilter));
 
 	const char* WrapOptions[] = { "Repeat", "Mirrored repeat", "Clamp to edge", "Clamp to border" };
-
+	RenderRowLabel("Wrap U", LabelWidth);
+	ImGui::SetNextItemWidth(-1.0f);
 	int CurrentWrapU = static_cast<int>(Texture->GetUWrapType());
-	if (ImGui::Combo("Wrap U", &CurrentWrapU, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
+	if (ImGui::Combo("##WrapU", &CurrentWrapU, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
 		Texture->SetUWrapType(static_cast<FE_TEXTURE_WRAP_TYPE>(CurrentWrapU));
 
+	RenderRowLabel("Wrap V", LabelWidth);
+	ImGui::SetNextItemWidth(-1.0f);
 	int CurrentWrapV = static_cast<int>(Texture->GetVWrapType());
-	if (ImGui::Combo("Wrap V", &CurrentWrapV, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
+	if (ImGui::Combo("##WrapV", &CurrentWrapV, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
 		Texture->SetVWrapType(static_cast<FE_TEXTURE_WRAP_TYPE>(CurrentWrapV));
 
+	RenderRowLabel("Wrap W", LabelWidth);
+	ImGui::SetNextItemWidth(-1.0f);
 	int CurrentWrapW = static_cast<int>(Texture->GetWWrapType());
-	if (ImGui::Combo("Wrap W", &CurrentWrapW, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
+	if (ImGui::Combo("##WrapW", &CurrentWrapW, WrapOptions, IM_ARRAYSIZE(WrapOptions)))
 		Texture->SetWWrapType(static_cast<FE_TEXTURE_WRAP_TYPE>(CurrentWrapW));
 
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-
-	ImGui::TextColored(ImVec4(0.95f, 0.90f, 0.0f, 1.0f), "Convert");
+	ImGui::Dummy(ImVec2(0.0f, 6.0f));
+	TextureViewWindow::RenderPanelTitle("Convert");
 
 	ImGui::BeginDisabled(!bFormatSupported);
-	if (ImGui::Button("Convert to 2D Flipbook", ImVec2(-1.0f, 0.0f)))
+	if (ImGui::Button("Convert to 2D flipbook", ImVec2(-1.0f, 0.0f)))
 	{
 		int Columns = 0;
 		int Rows = 0;
@@ -227,18 +203,20 @@ void VolumetricTextureViewWindow::RenderInfoOverlay()
 	}
 	ImGui::EndDisabled();
 
+	ImGui::PushFont(nullptr, SmallFontSize);
 	if (!bFormatSupported)
 		ImGui::TextDisabled("Only R16 / R32F volumes can be converted.");
 
 	if (!ConvertStatusMessage.empty())
 	{
-		const ImVec4 StatusColor = bConvertSucceeded ? ImVec4(0.4f, 0.9f, 0.4f, 1.0f) : ImVec4(0.95f, 0.5f, 0.5f, 1.0f);
-		ImGui::PushStyleColor(ImGuiCol_Text, StatusColor);
+		ImGui::PushStyleColor(ImGuiCol_Text, bConvertSucceeded ? FEEditorStyle::Success : FEEditorStyle::Danger);
 		ImGui::TextWrapped("%s", ConvertStatusMessage.c_str());
 		ImGui::PopStyleColor();
 	}
+	ImGui::PopFont();
 
 	ImGui::EndChild();
+	ImGui::PopStyleVar();
 	ImGui::PopStyleColor();
 }
 

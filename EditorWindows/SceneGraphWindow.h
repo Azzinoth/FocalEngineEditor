@@ -84,6 +84,7 @@ public:
     SINGLETON_PUBLIC_PART(FEEditorSceneGraphWindow)
 
     SceneGraphUI::TreeView* GetSceneGraphUI() const;
+    FETexture* GetComponentIcon(const std::type_info& ComponentType) const;
 };
 
 #define SCENE_GRAPH_WINDOW FEEditorSceneGraphWindow::GetInstance()

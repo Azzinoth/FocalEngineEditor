@@ -30,16 +30,13 @@ class TextureViewWindow : public FEImGuiWindow
 	bool bFitToWindow = true;
 	ImVec2 PanOffset = ImVec2(0.0f, 0.0f);
 
-	static constexpr float ToolbarHeight = 36.0f;
-	static constexpr float DetailsPanelWidth = 360.0f;
+	static constexpr float DetailsPanelWidth = 400.0f;
 	static constexpr float MinimumZoom = 0.05f;
 	static constexpr float MaximumZoom = 16.0f;
 
 	void RenderToolbar();
 	void RenderImageCanvas(const ImVec2& CanvasSize);
 	void RenderDetailsPanel(const ImVec2& PanelSize);
-
-	bool RenderChannelToggle(const char* Label, bool& Toggle, const ImVec4& ActiveColor);
 
 	void BuildDisplayTexture(FETexture* RawDataSource);
 	void RebuildDisplayTexture(FETexture* RawDataSource);
@@ -53,4 +50,9 @@ public:
 
 	static std::string ReadableSize(size_t Bytes);
 	static size_t EstimateBytesPerPixel(GLint InternalFormat);
+	static std::string GetFormatName(GLint InternalFormat);
+
+	// Rows of the panels of the texture windows.
+	static void RenderPanelTitle(const char* Title);
+	static void RenderFactRow(const char* Label, const std::string& Value, float LabelWidth, const std::string& ToolTip = "", bool bSmallValue = false);
 };

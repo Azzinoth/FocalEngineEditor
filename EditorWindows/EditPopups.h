@@ -6,12 +6,6 @@ class EditGameModelPopup : public FEImGuiWindow
 {
 	SINGLETON_PRIVATE_PART(EditGameModelPopup)
 
-	enum EDIT_GAME_MODEL_LOD_MODE
-	{
-		NO_LOD_MODE = 0,
-		HAS_LOD_MODE = 1,
-	};
-
 	FEGameModel* ObjectToWorkWith;
 	FEGameModel* TemporaryModel = nullptr;
 	FETexture* TemporaryPreview = nullptr;
@@ -22,22 +16,6 @@ class EditGameModelPopup : public FEImGuiWindow
 	static FEMaterial** BillboardMaterialToModify;
 
 	std::vector<FEMesh*> UpdatedLODMeshes;
-
-	ImGuiButton* CancelButton;
-	ImGuiButton* ApplyButton;
-	ImGuiButton* ChangeMaterialButton;
-	ImGuiButton* ChangeBillboardMaterialButton;
-	ImGuiButton* AddBillboard;
-
-	std::vector<ImGuiButton*> ChangeLODMeshButton;
-	ImGuiButton* DeleteLODMeshButton;
-
-	int CurrentMode = NO_LOD_MODE;
-
-	FERangeConfigurator* LODGroups;
-	RECT LOD0RangeVisualization;
-
-	std::vector<ImColor> LODColors;
 
 	// ************** Drag&Drop **************
 	struct MeshTargetCallbackInfo
@@ -62,10 +40,33 @@ class EditGameModelPopup : public FEImGuiWindow
 	static bool DragAndDropMaterialCallback(FEObject* Object, void** CallbackInfo);
 	// ************** Drag&Drop END **************
 
-	bool IsLastSetupLOD(size_t LODIndex);
+	const float WindowPadding = 20.0f;
+	const float ContentWidth = 1060.0f;
+	const float ResultColumnWidth = 300.0f;
+	const float MaterialCardHeight = 92.0f;
+	const float LevelRowHeight = 84.0f;
+	const float FooterHeight = 72.0f;
+	const float MaxCullDistance = 5000.0f;
 
-	const float NO_LOD_WINDOW_WIDTH = 460.0f;
-	const float NO_LOD_WINDOW_HEIGHT = 520.0f;
+	// Number of levels that have a mesh, 1 when levels of detail are not used.
+	size_t GetLevelCount();
+	bool HasBillboardLevel();
+	ImVec2 GetContentSize();
+	ImVec2 GetWindowSize();
+
+	void ApplyUpdatedResources();
+	void CorrectLevelDistances();
+	void SetUsingLevels(bool bUseLevels);
+	void ApplyChanges();
+
+	void ShowMeshSelection(size_t LevelIndex);
+	void ShowMaterialSelection();
+	void ShowBillboardMaterialSelection();
+
+	void RenderResultColumn(ImVec2 Origin);
+	void RenderMaterialCard(ImVec2 Min, float Width);
+	void RenderLevelRow(size_t LevelIndex, ImVec2 Min, float Width);
+	void RenderDistanceBar(ImVec2 Min, ImVec2 Size);
 
 	static FEMesh** MeshToModify;
 	static void ChangeMeshCallback(std::vector<FEObject*> SelectionsResult);
@@ -75,8 +76,6 @@ public:
 	SINGLETON_PUBLIC_PART(EditGameModelPopup)
 
 	void Show(FEGameModel* GameModel);
-	void SwitchMode(int ToMode);
-	void DisplayLODGroups();
 	void Render() override;
 	void Close();
 };

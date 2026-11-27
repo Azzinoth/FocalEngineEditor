@@ -124,6 +124,13 @@ void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)
 
 	EDITOR_SCENE_WINDOW_MANAGER.KeyButtonCallback(Key, Scancode, Action, Mods);
 
+	// Not while text is typed, a text field can have its own use for these keys.
+	if (!ImGui::GetIO().WantTextInput && Mods == GLFW_MOD_CONTROL && Key == GLFW_KEY_S && Action == GLFW_PRESS)
+	{
+		if (PROJECT_MANAGER.GetCurrent() != nullptr)
+			PROJECT_MANAGER.GetCurrent()->SaveProject();
+	}
+
 	if (!ImGui::GetIO().WantCaptureKeyboard && Mods == GLFW_MOD_CONTROL && Key == GLFW_KEY_V && Action == GLFW_RELEASE)
 	{
 		if (!UNIQUE_ID.IsNull(EDITOR.GetSceneEntityIDInClipboard()))
@@ -311,6 +318,26 @@ bool FEEditor::IsDebugWindowVisible() const
 }
 
 // Small window at the top center of the main window, with a triangle to run game mode and a square to exit it.
+// Name of the project and whether it has changes that are not saved, at the right end of the menu bar.
+static void RenderProjectStatusInMenuBar(FEProject* Project)
+{
+	const float SmallFontSize = 16.0f;
+	const bool bModified = Project->IsModified();
+	const std::string Name = Project->GetName();
+	const std::string Status = bModified ? "not saved" : "saved";
+	const ImU32 StatusColor = bModified ? FEEditorStyle::Warning : FEEditorStyle::Success;
+	const float CenterY = ImGui::GetWindowPos().y + ImGui::GetWindowHeight() / 2.0f;
+
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	float X = ImGui::GetWindowPos().x + ImGui::GetWindowWidth() - 16.0f - ImGui::GetFont()->CalcTextSizeA(SmallFontSize, FLT_MAX, 0.0f, Status.c_str()).x;
+	DrawList->AddText(ImGui::GetFont(), SmallFontSize, ImVec2(floorf(X), floorf(CenterY - SmallFontSize / 2.0f)), bModified ? FEEditorStyle::Warning : FEEditorStyle::TextMuted, Status.c_str());
+	X -= 18.0f;
+	DrawList->AddCircleFilled(ImVec2(floorf(X + 5.0f), floorf(CenterY)), 5.0f, StatusColor);
+	X -= 12.0f + ImGui::CalcTextSize(Name.c_str()).x;
+	DrawList->AddText(ImVec2(floorf(X), floorf(CenterY - ImGui::GetFontSize() / 2.0f)), FEEditorStyle::Text, Name.c_str());
+}
+
+// Play or Stop in the middle of the menu bar.
 void FEEditor::RenderGameModeButton()
 {
 	bool bFocusedSceneCouldBeUsedForGameMode = false;
@@ -322,8 +349,9 @@ void FEEditor::RenderGameModeButton()
 			bFocusedSceneCouldBeUsedForGameMode = true;
 	}
 
+	const bool bInGameMode = EDITOR.IsInGameMode();
 	std::string ToolTipText = "Run game mode";
-	if (EDITOR.IsInGameMode())
+	if (bInGameMode)
 	{
 		ToolTipText = "Exit game mode";
 	}
@@ -332,44 +360,54 @@ void FEEditor::RenderGameModeButton()
 		ToolTipText = "Can not run game mode (focused scene is prefab scene).";
 	}
 
-	const float WindowSize = 48.0f;
-	const float ButtonSize = 32.0f;
-	const float ButtonOffset = (WindowSize - ButtonSize) / 2.0f;
-	ImGui::SetNextWindowPos(ImVec2((APPLICATION.GetMainWindow()->GetWidth() - WindowSize) / 2.0f, 10.0f));
-	ImGui::SetNextWindowSize(ImVec2(WindowSize, WindowSize));
-	ImGui::Begin("##GameModeButtonWindow", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
-													ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings);
+	const char* Name = bInGameMode ? "Stop" : "Play";
+	const ImVec2 BarMin = ImGui::GetWindowPos();
+	const float BarWidth = ImGui::GetWindowWidth();
+	const float BarHeight = ImGui::GetWindowHeight();
+	const ImVec2 ButtonSize = ImVec2(ImGui::CalcTextSize(Name).x + 54.0f, BarHeight - 4.0f);
+	const ImVec2 ButtonMin = ImVec2(floorf(BarMin.x + (BarWidth - ButtonSize.x) / 2.0f), BarMin.y + 2.0f);
+	const ImVec2 ButtonMax = ImVec2(ButtonMin.x + ButtonSize.x, ButtonMin.y + ButtonSize.y);
 
-	const bool bDisabled = !bFocusedSceneCouldBeUsedForGameMode;
+	const bool bDisabled = !bInGameMode && !bFocusedSceneCouldBeUsedForGameMode;
 	if (bDisabled)
 		ImGui::BeginDisabled();
 
-	ImGui::SetCursorPos(ImVec2(ButtonOffset, ButtonOffset));
-	const ImVec2 ButtonPosition = ImGui::GetCursorScreenPos();
-	const bool bClicked = ImGui::Button("##GameModeButton", ImVec2(ButtonSize, ButtonSize));
-
+	ImGui::SetCursorScreenPos(ButtonMin);
+	const bool bClicked = ImGui::InvisibleButton("##GameModeButton", ButtonSize);
 	if (bDisabled)
 		ImGui::EndDisabled();
 
+	const bool bHovered = ImGui::IsItemHovered();
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
 		ImGui::SetTooltip("%s", ToolTipText.c_str());
 
 	ImDrawList* DrawList = ImGui::GetWindowDrawList();
-	if (EDITOR.IsInGameMode())
+	const float IconX = ButtonMin.x + 18.0f;
+	const float IconY = floorf(ButtonMin.y + ButtonSize.y / 2.0f);
+	ImU32 ContentColor = FEEditorStyle::Text;
+	if (bInGameMode)
 	{
-		DrawList->AddRectFilled(ImVec2(ButtonPosition.x + 9.0f, ButtonPosition.y + 9.0f), ImVec2(ButtonPosition.x + 23.0f, ButtonPosition.y + 23.0f), IM_COL32(225, 70, 60, 255));
+		ContentColor = IM_COL32(255, 255, 255, 255);
+		DrawList->AddRectFilled(ButtonMin, ButtonMax, bHovered ? FEEditorStyle::DangerButtonHovered : FEEditorStyle::DangerButton, 4.0f);
+		DrawList->AddRectFilled(ImVec2(IconX, IconY - 6.0f), ImVec2(IconX + 12.0f, IconY + 6.0f), ContentColor);
+
+		// Line under the whole bar while the game runs.
+		DrawList->AddRectFilled(ImVec2(BarMin.x, BarMin.y + BarHeight - 3.0f), ImVec2(BarMin.x + BarWidth, BarMin.y + BarHeight), FEEditorStyle::DangerButton);
 	}
 	else
 	{
-		const ImU32 Color = bDisabled ? IM_COL32(120, 120, 120, 255) : IM_COL32(70, 200, 90, 255);
-		DrawList->AddTriangleFilled(ImVec2(ButtonPosition.x + 10.0f, ButtonPosition.y + 7.0f), ImVec2(ButtonPosition.x + 26.0f, ButtonPosition.y + 16.0f),
-									ImVec2(ButtonPosition.x + 10.0f, ButtonPosition.y + 25.0f), Color);
+		if (bDisabled)
+			ContentColor = FEEditorStyle::TextDisabled;
+
+		DrawList->AddRectFilled(ButtonMin, ButtonMax, bHovered ? FEEditorStyle::ButtonHovered : FEEditorStyle::Button, 4.0f);
+		DrawList->AddRect(ButtonMin, ButtonMax, FEEditorStyle::ButtonBorder, 4.0f);
+		DrawList->AddTriangleFilled(ImVec2(IconX, IconY - 7.0f), ImVec2(IconX + 13.0f, IconY), ImVec2(IconX, IconY + 7.0f), bDisabled ? ContentColor : FEEditorStyle::Success);
 	}
 
-	ImGui::End();
+	DrawList->AddText(ImVec2(ButtonMin.x + 40.0f, floorf(ButtonMin.y + (ButtonSize.y - ImGui::GetFontSize()) / 2.0f)), ContentColor, Name);
 
 	if (bClicked)
-		EDITOR.SetGameMode(!EDITOR.IsInGameMode());
+		EDITOR.SetGameMode(!bInGameMode);
 }
 
 void FEEditor::SetUpDocking()
@@ -439,7 +477,7 @@ void FEEditor::Render()
 		{
 			if (ImGui::BeginMenu("File"))
 			{
-				if (ImGui::MenuItem("Save project"))
+				if (ImGui::MenuItem("Save project", "Ctrl+S"))
 				{
 					PROJECT_MANAGER.GetCurrent()->SaveProject();
 				}
@@ -455,6 +493,11 @@ void FEEditor::Render()
 					});
 				}
 
+				ImGui::Separator();
+				if (ImGui::MenuItem("Build executable"))
+					EDITOR_PROJECT_BUILD_SYSTEM.BuildExecutable(PROJECT_MANAGER.GetCurrent());
+
+				ImGui::Separator();
 				if (ImGui::MenuItem("Close project"))
 				{
 					if (PROJECT_MANAGER.GetCurrent()->IsModified())
@@ -498,14 +541,6 @@ void FEEditor::Render()
 				ImGui::EndMenu();
 			}
 
-			if (ImGui::BeginMenu("Project"))
-			{
-				if (ImGui::MenuItem("Build executable"))
-					EDITOR_PROJECT_BUILD_SYSTEM.BuildExecutable(PROJECT_MANAGER.GetCurrent());
-
-				ImGui::EndMenu();
-			}
-
 			if (ImGui::BeginMenu("Window"))
 			{
 				if (ImGui::MenuItem("Scene Graph", nullptr, SCENE_GRAPH_WINDOW.bVisible))
@@ -523,7 +558,7 @@ void FEEditor::Render()
 					CONTENT_BROWSER_WINDOW.bVisible = !CONTENT_BROWSER_WINDOW.bVisible;
 				}
 
-				if (ImGui::MenuItem("Effects", nullptr, bEditorCamerasWindowVisible))
+				if (ImGui::MenuItem("Editor Cameras", nullptr, bEditorCamerasWindowVisible))
 				{
 					bEditorCamerasWindowVisible = !bEditorCamerasWindowVisible;
 				}
@@ -538,56 +573,61 @@ void FEEditor::Render()
 					PLUGINS_WINDOW.bVisible = !PLUGINS_WINDOW.bVisible;
 				}
 
-				if (ImGui::BeginMenu("Debug"))
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Debug"))
+			{
+				if (ImGui::MenuItem("Debug window", nullptr, bDebugWindowVisible))
+					bDebugWindowVisible = !bDebugWindowVisible;
+
+				if (ImGui::MenuItem("Temporary debug window", nullptr, bTemporaryDebugWindowVisible))
+					bTemporaryDebugWindowVisible = !bTemporaryDebugWindowVisible;
+
+				auto PossibleWindows = RENDERER.GetDebugOutputTextures();
+
+				bool bSeparatorAdded = false;
+				auto WindowIterator = PossibleWindows.begin();
+				while (WindowIterator != PossibleWindows.end())
 				{
-					if (ImGui::MenuItem("Debug window", nullptr, bDebugWindowVisible))
-						bDebugWindowVisible = !bDebugWindowVisible;
-
-					if (ImGui::MenuItem("Temporary debug window", nullptr, bTemporaryDebugWindowVisible))
-						bTemporaryDebugWindowVisible = !bTemporaryDebugWindowVisible;
-
-					ImGui::Separator();
-
-					auto PossibleWindows = RENDERER.GetDebugOutputTextures();
-
-					auto WindowIterator = PossibleWindows.begin();
-					while (WindowIterator != PossibleWindows.end())
+					if (WindowIterator->second != nullptr)
 					{
-						if (WindowIterator->second != nullptr)
+						if (!bSeparatorAdded)
 						{
-							FEImGuiWindow* CurrentWindow = FE_IMGUI_WINDOW_MANAGER.GetWindowByCaption(WindowIterator->first.c_str());
-							bool bVisible = false;
-							if (CurrentWindow != nullptr)
-								bVisible = CurrentWindow->IsVisible();
+							ImGui::Separator();
+							bSeparatorAdded = true;
+						}
 
-							if (ImGui::MenuItem(WindowIterator->first.c_str(), nullptr, bVisible))
+						FEImGuiWindow* CurrentWindow = FE_IMGUI_WINDOW_MANAGER.GetWindowByCaption(WindowIterator->first.c_str());
+						bool bVisible = false;
+						if (CurrentWindow != nullptr)
+							bVisible = CurrentWindow->IsVisible();
+
+						if (ImGui::MenuItem(WindowIterator->first.c_str(), nullptr, bVisible))
+						{
+							bVisible = !bVisible;
+
+							if (bVisible)
 							{
-								bVisible = !bVisible;
-
-								if (bVisible)
+								if (CurrentWindow == nullptr)
 								{
-									if (CurrentWindow == nullptr)
-									{
-										CurrentWindow = new DebugTextureViewWindow(WindowIterator->second);
-										CurrentWindow->SetCaption(WindowIterator->first);
-										CurrentWindow->Show();
-									}
-									else
-									{
-										CurrentWindow->Show();
-									}
+									CurrentWindow = new DebugTextureViewWindow(WindowIterator->second);
+									CurrentWindow->SetCaption(WindowIterator->first);
+									CurrentWindow->Show();
 								}
 								else
 								{
-									if (CurrentWindow != nullptr)
-										CurrentWindow->SetVisible(false);
+									CurrentWindow->Show();
 								}
 							}
+							else
+							{
+								if (CurrentWindow != nullptr)
+									CurrentWindow->SetVisible(false);
+							}
 						}
-						WindowIterator++;
 					}
-
-					ImGui::EndMenu();
+					WindowIterator++;
 				}
 
 				ImGui::EndMenu();
@@ -595,7 +635,7 @@ void FEEditor::Render()
 
 			EDITOR_PLUGIN_MANAGER.RenderMenu();
 
-			if (ImGui::BeginMenu("Info"))
+			if (ImGui::BeginMenu("Help"))
 			{
 				if (ImGui::MenuItem("About..."))
 					ShowAboutDialog();
@@ -603,11 +643,13 @@ void FEEditor::Render()
 				ImGui::EndMenu();
 			}
 
+			RenderGameModeButton();
+			RenderProjectStatusInMenuBar(PROJECT_MANAGER.GetCurrent());
+
 			ImGui::EndMainMenuBar();
 		}
 		ImGui::PopStyleVar();
 
-		RenderGameModeButton();
 		RenderTemporaryDebugWindow();
 		SCENE_GRAPH_WINDOW.Render();
 		CONTENT_BROWSER_WINDOW.Render();
@@ -665,45 +707,35 @@ void FEEditor::RenderAboutWindow()
 		bShouldOpenAboutWindow = false;
 	}
 
-	ImGui::SetNextWindowSizeConstraints(ImVec2(400.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
-	if (ImGui::BeginPopupModal("About", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
+	const bool bOpened = BeginStyledPopup("About");
+	if (bOpened)
 	{
-		int WindowWidth = 0;
-		int WindowHeight = 0;
-		APPLICATION.GetMainWindow()->GetSize(&WindowWidth, &WindowHeight);
+		RenderPopupHeading("Focal Engine Editor");
+		RenderPopupText("Version " + GetFE_EDITOR_VersionInfo().GetFullVersionString(), FEEditorStyle::TextMuted, 0.0f);
+		RenderPopupCard(nullptr, "Modules", { ENGINE.GetFullVersion(), SCENE_GRAPH_WINDOW.GetSceneGraphUI()->GetFullVersion(), NODE_SYSTEM.GetFullVersion(), APPLICATION.GetFullVersion() });
 
-		ImGui::SetWindowPos(ImVec2(WindowWidth / 2.0f - ImGui::GetWindowWidth() / 2.0f, WindowHeight / 2.0f - ImGui::GetWindowHeight() / 2.0f));
+		RenderPopupText("Bug reports and feedback are welcome on GitHub:");
+		const std::string GitHubURL = "https://github.com/Azzinoth/FocalEngineEditor";
+		const std::string LinkText = "github.com/Azzinoth/FocalEngineEditor";
+		const ImVec2 LinkMin = ImGui::GetCursorScreenPos();
+		const ImVec2 LinkSize = ImGui::CalcTextSize(LinkText.c_str());
+		if (ImGui::InvisibleButton("##GitHubLink", LinkSize))
+			PLUGINS_WINDOW.OpenURL(GitHubURL);
 
-		float ContentWidth = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
-		auto CenteredText = [ContentWidth](const std::string& Text) {
-			ImVec2 TextSize = ImGui::CalcTextSize(Text.c_str());
-			ImGui::SetCursorPosX((ContentWidth - TextSize.x) / 2.0f + ImGui::GetWindowContentRegionMin().x);
-			ImGui::Text("%s", Text.c_str());
-		};
-		CenteredText(GetEditorFullVersion());
+		const bool bLinkHovered = ImGui::IsItemHovered();
+		ImDrawList* DrawList = ImGui::GetWindowDrawList();
+		DrawList->AddText(LinkMin, bLinkHovered ? FEEditorStyle::AccentHovered : FEEditorStyle::Accent, LinkText.c_str());
+		if (bLinkHovered)
+		{
+			DrawList->AddLine(ImVec2(LinkMin.x, LinkMin.y + LinkSize.y), ImVec2(LinkMin.x + LinkSize.x, LinkMin.y + LinkSize.y), FEEditorStyle::AccentHovered);
+			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+		}
+		ShowToolTip("Opens the page in the browser.");
 
-		ImGui::Separator();
-		ImGui::Text("Modules:");
-
-		CenteredText(ENGINE.GetFullVersion());
-		CenteredText(SCENE_GRAPH_WINDOW.GetSceneGraphUI()->GetFullVersion());
-		CenteredText(NODE_SYSTEM.GetFullVersion());
-		CenteredText(APPLICATION.GetFullVersion());
-
-		ImGui::Separator();
-
-		CenteredText("To submit a bug report or provide feedback,");
-		CenteredText("please email me at ");
-
-		ImGui::Separator();
-
-		float ButtonWidth = 210.0f;
-		ImGui::SetCursorPosX((ContentWidth - ButtonWidth) / 2.0f + ImGui::GetWindowContentRegionMin().x);
-		if (ImGui::Button("Close", ImVec2(ButtonWidth, 25.0f)))
+		if (RenderPopupButtons({ { "Close", FEPopupButtonKind::Primary } }) != -1)
 			ImGui::CloseCurrentPopup();
-
-		ImGui::EndPopup();
 	}
+	EndStyledPopup(bOpened);
 }
 
 void FEEditor::OnViewportResize(FEUUID ViewportID)
@@ -744,60 +776,191 @@ void FEEditor::DropCallback(const int Count, const char** Paths)
 	}
 }
 
+// The prefab editor works on a copy of the prefab scene, the copy has the editor tag and the name "Scene: <prefab name>".
+static bool IsPrefabEditorScene(FEScene* Scene)
+{
+	return Scene->GetTag() == EDITOR_RESOURCE_TAG;
+}
+
+static std::string GetEditorCameraSceneName(FEScene* Scene)
+{
+	const std::string Name = Scene->GetName();
+	const std::string PrefabEditorPrefix = "Scene: ";
+	if (IsPrefabEditorScene(Scene) && Name.rfind(PrefabEditorPrefix, 0) == 0)
+		return Name.substr(PrefabEditorPrefix.size());
+
+	return Name;
+}
+
+static void RenderEditorCameraColumnTitle(const char* Title)
+{
+	ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::Accent);
+	ImGui::TextUnformatted(Title);
+	ImGui::PopStyleColor();
+	ImGui::Dummy(ImVec2(0.0f, 2.0f));
+}
+
+// Transform and script are short, so they share the first column, the camera pages take the second one.
+void FEEditor::RenderEditorCameraSettings(FEEntity* CameraEntity, const float Height) const
+{
+	const float ColumnWidth = 640.0f;
+	ImGui::PushID(CameraEntity);
+	ImGui::BeginChild("##TransformAndScript", ImVec2(ColumnWidth, Height));
+	RenderEditorCameraColumnTitle("Transform");
+	INSPECTOR_WINDOW.ShowTransformConfiguration(CameraEntity->GetName(), &CameraEntity->GetComponent<FETransformComponent>());
+	if (CameraEntity->HasComponent<FENativeScriptComponent>())
+	{
+		ImGui::Dummy(ImVec2(0.0f, 10.0f));
+		RenderEditorCameraColumnTitle("Script");
+		INSPECTOR_WINDOW.DisplayNativeScriptProperties(CameraEntity);
+	}
+	ImGui::EndChild();
+
+	ImGui::SameLine(0.0f, 32.0f);
+	ImGui::BeginChild("##Camera", ImVec2(ColumnWidth, Height));
+	RenderEditorCameraColumnTitle("Camera");
+	INSPECTOR_WINDOW.DisplayCameraProperties(CameraEntity);
+	ImGui::EndChild();
+	ImGui::PopID();
+}
+
 void FEEditor::DisplayEditorCamerasWindow() const
 {
 	if (!bEditorCamerasWindowVisible)
 		return;
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-	ImGui::Begin("Editor Cameras", nullptr, ImGuiWindowFlags_None);
+	if (!ImGui::Begin("Editor Cameras", nullptr, ImGuiWindowFlags_None))
+	{
+		ImGui::PopStyleVar();
+		ImGui::End();
+		return;
+	}
 
+	struct EditorCameraRecord
+	{
+		FEScene* Scene = nullptr;
+		FEEntity* Camera = nullptr;
+	};
+
+	std::vector<EditorCameraRecord> Cameras;
 	auto EditorCameraIterator = PROJECT_MANAGER.GetCurrent()->SceneIDToEditorCameraID.begin();
 	while (EditorCameraIterator != PROJECT_MANAGER.GetCurrent()->SceneIDToEditorCameraID.end())
 	{
 		FEScene* Scene = SCENE_MANAGER.GetSceneByID(EditorCameraIterator->first);
-		if (Scene == nullptr)
+		FEEntity* CameraEntity = Scene == nullptr ? nullptr : Scene->GetEntity(EditorCameraIterator->second);
+		if (CameraEntity != nullptr && CameraEntity->HasComponent<FECameraComponent>())
 		{
-			EditorCameraIterator++;
-			continue;
-		}
-
-		FEEntity* CameraEntity = Scene->GetEntity(EditorCameraIterator->second);
-		if (CameraEntity == nullptr)
-		{
-			EditorCameraIterator++;
-			continue;
-		}
-
-		if (!CameraEntity->HasComponent<FECameraComponent>())
-		{
-			EditorCameraIterator++;
-			continue;
-		}
-
-		if (ImGui::CollapsingHeader(UNIQUE_ID.ToString(CameraEntity->GetID()).c_str(), 0))
-		{
-			ImGui::Indent();
-
-			if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				FETransformComponent& Transform = CameraEntity->GetComponent<FETransformComponent>();
-				INSPECTOR_WINDOW.ShowTransformConfiguration(CameraEntity->GetName(), &Transform);
-			}
-			
-			if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				INSPECTOR_WINDOW.DisplayCameraProperties(CameraEntity);
-			}
-
-			if (ImGui::CollapsingHeader("Script", ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				INSPECTOR_WINDOW.DisplayNativeScriptProperties(CameraEntity);
-			}
+			EditorCameraRecord Record;
+			Record.Scene = Scene;
+			Record.Camera = CameraEntity;
+			Cameras.push_back(Record);
 		}
 
 		EditorCameraIterator++;
 	}
+
+	// The focused scene is the first one, the rest are in the order of their names.
+	FEScene* FocusedScene = GetFocusedScene();
+	std::sort(Cameras.begin(), Cameras.end(), [FocusedScene](const EditorCameraRecord& First, const EditorCameraRecord& Second) -> bool {
+		if ((First.Scene == FocusedScene) != (Second.Scene == FocusedScene))
+			return First.Scene == FocusedScene;
+
+		return GetEditorCameraSceneName(First.Scene) < GetEditorCameraSceneName(Second.Scene);
+	});
+
+	// These pointers are only compared with scenes that exist now.
+	static FEScene* SelectedScene = nullptr;
+	static FEScene* LastFocusedScene = nullptr;
+	if (FocusedScene != LastFocusedScene)
+	{
+		// The camera of a scene is selected when that scene gets the focus.
+		LastFocusedScene = FocusedScene;
+		SelectedScene = FocusedScene;
+	}
+
+	FEEntity* SelectedCamera = nullptr;
+	for (size_t i = 0; i < Cameras.size(); i++)
+	{
+		if (Cameras[i].Scene == SelectedScene)
+			SelectedCamera = Cameras[i].Camera;
+	}
+
+	if (SelectedCamera == nullptr && !Cameras.empty())
+	{
+		SelectedScene = Cameras[0].Scene;
+		SelectedCamera = Cameras[0].Camera;
+	}
+
+	if (Cameras.empty())
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::TextMuted);
+		ImGui::TextUnformatted("No scene is open.");
+		ImGui::PopStyleColor();
+		ImGui::PopStyleVar();
+		ImGui::End();
+		return;
+	}
+
+	const float SmallFontSize = 16.0f;
+	const float ListWidth = 420.0f;
+	const float Height = ImGui::GetContentRegionAvail().y;
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, FEEditorStyle::Background);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
+	ImGui::BeginChild("##EditorCameraList", ImVec2(ListWidth, Height), ImGuiChildFlags_AlwaysUseWindowPadding);
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	for (size_t i = 0; i < Cameras.size(); i++)
+	{
+		const bool bSelected = Cameras[i].Scene == SelectedScene;
+		const bool bFocused = Cameras[i].Scene == FocusedScene;
+		const ImVec2 CardMin = ImGui::GetCursorScreenPos();
+		const ImVec2 CardSize = ImVec2(ImGui::GetContentRegionAvail().x, 92.0f);
+		const ImVec2 CardMax = ImVec2(CardMin.x + CardSize.x, CardMin.y + CardSize.y);
+		ImGui::PushID(static_cast<int>(i));
+		if (ImGui::InvisibleButton("##EditorCameraCard", CardSize))
+			SelectedScene = Cameras[i].Scene;
+		ImGui::PopID();
+
+		ImU32 CardColor = ImGui::IsItemHovered() ? FEEditorStyle::CardHovered : FEEditorStyle::Card;
+		if (bSelected)
+			CardColor = FEEditorStyle::SelectedItem;
+
+		DrawList->AddRectFilled(CardMin, CardMax, CardColor, 4.0f);
+		DrawList->AddRect(CardMin, CardMax, bSelected ? FEEditorStyle::Accent : FEEditorStyle::CardBorder, 4.0f);
+
+		// What the camera sees.
+		const ImVec2 PictureMin = ImVec2(CardMin.x + 10.0f, CardMin.y + 10.0f);
+		const ImVec2 PictureMax = ImVec2(PictureMin.x + 128.0f, PictureMin.y + 72.0f);
+		DrawList->AddRectFilled(PictureMin, PictureMax, FEEditorStyle::Background);
+		FETexture* CameraView = RENDERER.GetCameraResult(Cameras[i].Camera);
+		if (CameraView != nullptr)
+			DrawList->AddImage(CameraView->GetTextureID(), PictureMin, PictureMax, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		DrawList->AddRect(PictureMin, PictureMax, FEEditorStyle::CardBorder);
+
+		std::string Kind = IsPrefabEditorScene(Cameras[i].Scene) ? "Prefab" : "Scene";
+		if (bFocused)
+			Kind += ", in focus";
+
+		const glm::vec3 CameraPosition = Cameras[i].Camera->GetComponent<FETransformComponent>().GetPosition();
+		char PositionText[96] = {};
+		sprintf_s(PositionText, "at %.1f, %.1f, %.1f", CameraPosition.x, CameraPosition.y, CameraPosition.z);
+
+		const float TextX = PictureMax.x + 12.0f;
+		DrawList->PushClipRect(ImVec2(TextX, CardMin.y), ImVec2(CardMax.x - 8.0f, CardMax.y), true);
+		DrawList->AddText(ImVec2(TextX, CardMin.y + 10.0f), FEEditorStyle::Text, GetEditorCameraSceneName(Cameras[i].Scene).c_str());
+		ImGui::PushFont(nullptr, SmallFontSize);
+		DrawList->AddText(ImVec2(TextX, CardMin.y + 38.0f), bFocused ? FEEditorStyle::Accent : FEEditorStyle::TextMuted, Kind.c_str());
+		DrawList->AddText(ImVec2(TextX, CardMin.y + 60.0f), FEEditorStyle::TextMuted, PositionText);
+		ImGui::PopFont();
+		DrawList->PopClipRect();
+		ImGui::Dummy(ImVec2(0.0f, 0.0f));
+	}
+	ImGui::EndChild();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
+
+	ImGui::SameLine(0.0f, 24.0f);
+	RenderEditorCameraSettings(SelectedCamera, Height);
 
 	ImGui::PopStyleVar();
 	ImGui::End();
@@ -818,8 +981,6 @@ void FEEditor::RenderAllSubWindows()
 	ResizeTexturePopup::GetInstance().Render();
 	JustTextWindowObject.Render();
 
-	RenamePopUp::GetInstance().Render();
-	RenameFailedPopUp::GetInstance().Render();
 	MessagePopUp::GetInstance().Render();
 	
 	ProjectWasModifiedPopUp::GetInstance().Render();
@@ -831,68 +992,86 @@ void FEEditor::SetImGuiStyle()
 {
 	ImGuiStyle* Style = &ImGui::GetStyle();
 	ImVec4* Colors = Style->Colors;
+	using namespace FEEditorStyle;
 
-	Style->WindowRounding = 2.0f;
-	Style->ScrollbarRounding = 3.0f;
-	Style->GrabRounding = 2.0f;
 	Style->AntiAliasedLines = true;
 	Style->AntiAliasedFill = true;
-	Style->WindowRounding = 2;
-	Style->ChildRounding = 2;
-	Style->ScrollbarSize = 16;
-	Style->ScrollbarRounding = 3;
-	Style->GrabRounding = 2;
-	Style->ItemSpacing.x = 10;
-	Style->ItemSpacing.y = 4;
-	Style->IndentSpacing = 22;
-	Style->FramePadding.x = 6;
-	Style->FramePadding.y = 4;
 	Style->Alpha = 1.0f;
-	Style->FrameRounding = 3.0f;
+	Style->WindowRounding = 4.0f;
+	Style->ChildRounding = 4.0f;
+	Style->FrameRounding = 4.0f;
+	Style->PopupRounding = 4.0f;
+	Style->GrabRounding = 3.0f;
+	Style->TabRounding = 4.0f;
+	Style->ScrollbarRounding = 3.0f;
+	Style->ScrollbarSize = 16.0f;
+	Style->WindowBorderSize = 1.0f;
+	Style->PopupBorderSize = 1.0f;
+	Style->FrameBorderSize = 1.0f;
+	Style->TabBarOverlineSize = 3.0f;
+	Style->ItemSpacing = ImVec2(10.0f, 4.0f);
+	Style->IndentSpacing = 22.0f;
+	Style->FramePadding = ImVec2(6.0f, 4.0f);
 
-	Colors[ImGuiCol_Text] = ImVec4(1.0f, 243.0f / 255.0f, 1.0f, 1.00f);
-	Colors[ImGuiCol_TextDisabled] = ImVec4(158.0f / 255.0f, 158.0f / 255.0f, 158.0f / 255.0f, 1.00f);
-	Colors[ImGuiCol_WindowBg] = ImVec4(43.0f / 255.0f, 43.0f / 255.0f, 43.0f / 255.0f, 1.00f);
-	Colors[ImGuiCol_PopupBg] = ImVec4(60.0f / 255.0f, 60.0f / 255.0f, 60.0f / 255.0f, 0.98f);
+	Colors[ImGuiCol_Text] = ToVec4(Text);
+	Colors[ImGuiCol_TextDisabled] = ToVec4(TextMuted);
+	Colors[ImGuiCol_WindowBg] = ToVec4(Panel);
+	Colors[ImGuiCol_ChildBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+	Colors[ImGuiCol_PopupBg] = ToVec4(Card);
+	Colors[ImGuiCol_Border] = ToVec4(ButtonBorder);
+	Colors[ImGuiCol_BorderShadow] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+	Colors[ImGuiCol_FrameBg] = ToVec4(Background);
+	Colors[ImGuiCol_FrameBgHovered] = ToVec4(Card);
+	Colors[ImGuiCol_FrameBgActive] = ToVec4(CardHovered);
+	Colors[ImGuiCol_TitleBg] = ToVec4(Background);
+	Colors[ImGuiCol_TitleBgActive] = ToVec4(Background);
+	Colors[ImGuiCol_TitleBgCollapsed] = ToVec4(Background);
+	Colors[ImGuiCol_MenuBarBg] = ToVec4(Background);
+	Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+	Colors[ImGuiCol_ScrollbarGrab] = ToVec4(ButtonHovered);
+	Colors[ImGuiCol_ScrollbarGrabHovered] = ToVec4(ButtonBorder);
+	Colors[ImGuiCol_ScrollbarGrabActive] = ToVec4(ButtonBorder);
+	Colors[ImGuiCol_CheckMark] = ToVec4(Accent);
+	Colors[ImGuiCol_SliderGrab] = ToVec4(Accent);
+	Colors[ImGuiCol_SliderGrabActive] = ToVec4(AccentHovered);
+	Colors[ImGuiCol_Button] = ToVec4(Button);
+	Colors[ImGuiCol_ButtonHovered] = ToVec4(ButtonHovered);
+	Colors[ImGuiCol_ButtonActive] = ToVec4(ButtonBorder);
+	Colors[ImGuiCol_Header] = ToVec4(SelectedRow);
+	Colors[ImGuiCol_HeaderHovered] = ToVec4(Button);
+	Colors[ImGuiCol_HeaderActive] = ToVec4(ButtonHovered);
+	Colors[ImGuiCol_Separator] = ToVec4(CardBorder);
+	Colors[ImGuiCol_SeparatorHovered] = ToVec4(Accent);
+	Colors[ImGuiCol_SeparatorActive] = ToVec4(Accent);
+	Colors[ImGuiCol_ResizeGrip] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+	Colors[ImGuiCol_ResizeGripHovered] = ToVec4(AccentHovered);
+	Colors[ImGuiCol_ResizeGripActive] = ToVec4(Accent);
 
-	Colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-	Colors[ImGuiCol_Border] = ImVec4(0.71f, 0.71f, 0.71f, 0.08f);
-	Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.04f);
-	Colors[ImGuiCol_FrameBg] = ImVec4(0.71f, 0.71f, 0.71f, 0.55f);
-	Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.94f, 0.94f, 0.94f, 0.55f);
-	Colors[ImGuiCol_FrameBgActive] = ImVec4(0.71f, 0.78f, 0.69f, 0.98f);
-	Colors[ImGuiCol_TitleBg] = ImVec4(0.41f, 0.68f, 0.89f, 1.00f);
-	Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.41f, 0.68f, 0.89f, 1.00f);
-	Colors[ImGuiCol_TitleBgActive] = ImVec4(0.0f, 0.47f, 0.83f, 1.00f);
+	// Selected tab is lighter than the bar of tabs and has a line of accent color above it, the line is brighter in focused window.
+	Colors[ImGuiCol_Tab] = ToVec4(Background);
+	Colors[ImGuiCol_TabHovered] = ToVec4(ButtonHovered);
+	Colors[ImGuiCol_TabSelected] = ToVec4(ButtonHovered);
+	Colors[ImGuiCol_TabSelectedOverline] = ToVec4(Accent);
+	Colors[ImGuiCol_TabDimmed] = ToVec4(Background);
+	Colors[ImGuiCol_TabDimmedSelected] = ToVec4(Button);
+	Colors[ImGuiCol_TabDimmedSelectedOverline] = ToVec4(AccentMuted);
 
-	Colors[ImGuiCol_MenuBarBg] = ImVec4(92.0f / 255.0f, 92.0f / 255.0f, 92.0f / 255.0f, 1.00f);
-	Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.20f, 0.25f, 0.30f, 0.61f);
-	Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.90f, 0.90f, 0.90f, 0.30f);
-	Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.92f, 0.92f, 0.92f, 0.78f);
-	Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-	Colors[ImGuiCol_CheckMark] = ImVec4(0.184f, 0.407f, 0.193f, 1.00f);
-	Colors[ImGuiCol_SliderGrab] = ImVec4(0.26f, 0.59f, 0.98f, 0.78f);
-	Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-	Colors[ImGuiCol_Button] = ImVec4(0.71f, 0.78f, 0.69f, 0.40f);
-	Colors[ImGuiCol_ButtonHovered] = ImVec4(0.725f, 0.805f, 0.702f, 1.00f);
-	Colors[ImGuiCol_ButtonActive] = ImVec4(0.793f, 0.900f, 0.836f, 1.00f);
-	Colors[ImGuiCol_Header] = ImVec4(0.71f, 0.78f, 0.69f, 0.31f);
-	Colors[ImGuiCol_HeaderHovered] = ImVec4(0.71f, 0.78f, 0.69f, 0.80f);
-	Colors[ImGuiCol_HeaderActive] = ImVec4(0.71f, 0.78f, 0.69f, 1.00f);
-	Colors[ImGuiCol_Separator] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
-	Colors[ImGuiCol_SeparatorHovered] = ImVec4(0.14f, 0.44f, 0.80f, 0.78f);
-	Colors[ImGuiCol_SeparatorActive] = ImVec4(0.14f, 0.44f, 0.80f, 1.00f);
-	Colors[ImGuiCol_ResizeGrip] = ImVec4(1.00f, 1.00f, 1.00f, 0.00f);
-	Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.45f);
-	Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.78f);
-	Colors[ImGuiCol_PlotLines] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
-	Colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
-	Colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-	Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
-	Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
-	Colors[ImGuiCol_DragDropTarget] = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
-	Colors[ImGuiCol_NavHighlight] = Colors[ImGuiCol_HeaderHovered];
+	Colors[ImGuiCol_DockingPreview] = ImVec4(0.0f, 0.635f, 0.91f, 0.45f);
+	Colors[ImGuiCol_DockingEmptyBg] = ToVec4(Background);
+	Colors[ImGuiCol_PlotLines] = ToVec4(TextMuted);
+	Colors[ImGuiCol_PlotLinesHovered] = ToVec4(AccentHovered);
+	Colors[ImGuiCol_PlotHistogram] = ToVec4(Accent);
+	Colors[ImGuiCol_PlotHistogramHovered] = ToVec4(AccentHovered);
+	Colors[ImGuiCol_TableHeaderBg] = ToVec4(Card);
+	Colors[ImGuiCol_TableBorderStrong] = ToVec4(CardBorder);
+	Colors[ImGuiCol_TableBorderLight] = ToVec4(CardBorder);
+	Colors[ImGuiCol_TableRowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+	Colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.0f, 1.0f, 1.0f, 0.025f);
+	Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.0f, 0.635f, 0.91f, 0.35f);
+	Colors[ImGuiCol_DragDropTarget] = ToVec4(Accent);
+	Colors[ImGuiCol_NavCursor] = ToVec4(Accent);
 	Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(0.70f, 0.70f, 0.70f, 0.70f);
+	Colors[ImGuiCol_ModalWindowDimBg] = ToVec4(Dim);
 }
 
 void FEEditor::SetUpImGui()

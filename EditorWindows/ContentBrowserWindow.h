@@ -74,11 +74,20 @@
         FETexture* AllIcon = nullptr;
 
         // Item selection and manipulation
-        void ChooseTexturesItem(FETexture*& PreviewTexture, FETexture*& SmallAdditionTypeIcon, ImVec2& UV0, ImVec2& UV1, FEObject* Item);
+        FETexture* GetItemPreview(FEObject* Item, ImVec2& UV0, ImVec2& UV1);
+        FETexture* GetItemTypeIcon(FEObject* Item);
+        void RenderItemCard(FEObject* Item, int Index, ImVec2 Min, int& DirectoryIndex);
+        void OpenItem(FEObject* Item);
         void OpenItemParentFolder(FEObject* Object);
+        void RenderEmptySpaceMenu();
+        void RenderItemMenu(FEObject* Item);
 
         // Item properties and renaming
-        float ItemIconSize = 128.0;
+        const float ItemCardWidth = 140.0f;
+        const float ItemCardHeight = 207.0f;
+        const float ItemCardGap = 12.0f;
+        int GetItemColumnCount(float Width) const;
+        void StartRename(int Index);
     public:
         int ItemUnderMouse = -1;
         int RenameIndex = -1;
@@ -101,17 +110,6 @@
 		bool IsFilteredListOutdated();
 
         // Filter buttons
-        ImGuiImageButton* FilterAllTypesButton = nullptr;
-		ImGuiImageButton* FilterShaderTypeButton = nullptr;
-        ImGuiImageButton* FilterTextureTypeButton = nullptr;
-        ImGuiImageButton* FilterMeshTypeButton = nullptr;
-        ImGuiImageButton* FilterMaterialTypeButton = nullptr;
-        ImGuiImageButton* FilterGameModelTypeButton = nullptr;
-		ImGuiImageButton* FilterPointCloudTypeButton = nullptr;
-        ImGuiImageButton* FilterPrefabTypeButton = nullptr;
-		ImGuiImageButton* FilterSceneTypeButton = nullptr;
-		ImGuiImageButton* FilterAssetPackageTypeButton = nullptr;
-		ImGuiImageButton* FilterNativeScriptModuleTypeButton = nullptr;
 
         // Drag and drop
         struct DirectoryDragAndDropCallbackInfo

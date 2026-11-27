@@ -136,13 +136,6 @@ void GizmoManager::InitializeResources()
 
 	RotateZGizmoGM = RESOURCE_MANAGER.CreateGameModel(RotateGizmoMesh, CurrentMaterial, "RotateZGizmoGM");
 	RESOURCE_MANAGER.SetTag(RotateZGizmoGM, EDITOR_RESOURCE_TAG);
-
-	TransformationGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "434e086c-4046-57b1-a1f4-f53797efc1ea.texture"), "transformationGizmoIcon");
-	RESOURCE_MANAGER.SetTag(TransformationGizmoIcon, EDITOR_RESOURCE_TAG);
-	ScaleGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "2bbad368-dc42-519f-b5bb-77a58d7cb40b.texture"), "scaleGizmoIcon");
-	RESOURCE_MANAGER.SetTag(ScaleGizmoIcon, EDITOR_RESOURCE_TAG);
-	RotateGizmoIcon = RESOURCE_MANAGER.LoadFETexture((RESOURCE_MANAGER.GetDefaultResourcesFolder() + "e4b59f77-ee83-57da-a2f0-da97b1a15f68.texture"), "rotateGizmoIcon");
-	RESOURCE_MANAGER.SetTag(RotateGizmoIcon, EDITOR_RESOURCE_TAG);
 }
 
 void GizmoManager::HideAllGizmo(FEScene* Scene)

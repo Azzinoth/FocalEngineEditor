@@ -128,6 +128,7 @@ endif()
 list(APPEND EDITOR_SOURCE_FILES
 	"FEEditor.cpp"
 	"FEEditor.h"
+	"FEEditorStyle.h"
 	"FEEditorDragAndDropManager.cpp"
 	"FEEditorDragAndDropManager.h"
 	"FEEditorGizmoManager.cpp"
@@ -201,8 +202,6 @@ file(GLOB EditorWindows_SRC
 	"EditorWindows/CombineChannelsToTexturePopUp.h"
 	"EditorWindows/ProjectWasModifiedPopUp.cpp"
 	"EditorWindows/ProjectWasModifiedPopUp.h"
-	"EditorWindows/RenamePopups.cpp"
-	"EditorWindows/RenamePopups.h"
 	"EditorWindows/SelectPopups.cpp"
 	"EditorWindows/SelectPopups.h"
 	"EditorWindows/ShaderEditorWindow.cpp"
@@ -390,8 +389,8 @@ add_custom_command(TARGET FocalEngineEditor PRE_BUILD
     COMMAND ${CMAKE_COMMAND}
         -D PROJECT_VERSION_PREFIX=FE_EDITOR_
         -D PROJECT_VERSION_MAJOR=0
-        -D PROJECT_VERSION_MINOR=1
-        -D PROJECT_VERSION_PATCH=7
+        -D PROJECT_VERSION_MINOR=2
+        -D PROJECT_VERSION_PATCH=0
         -D PROJECT_VERSION_DIR=${CMAKE_CURRENT_SOURCE_DIR}/VersionInfo
         -P ${CMAKE_CURRENT_SOURCE_DIR}/VersionInfo/UpdateProjectVersion.cmake
 )

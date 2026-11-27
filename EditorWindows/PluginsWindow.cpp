@@ -3,10 +3,10 @@
 #include "../FEEditor.h"
 #include <shellapi.h>
 
-static const ImVec4 LabelColor = ImVec4(0.65f, 0.65f, 0.65f, 1.0f);
-static const ImVec4 LoadedColor = ImVec4(0.45f, 0.80f, 0.45f, 1.0f);
-static const ImVec4 WarningColor = ImVec4(0.95f, 0.75f, 0.25f, 1.0f);
-static const ImVec4 ErrorColor = ImVec4(0.95f, 0.5f, 0.5f, 1.0f);
+static const ImVec4 LabelColor = FEEditorStyle::ToVec4(FEEditorStyle::TextMuted);
+static const ImVec4 LoadedColor = FEEditorStyle::ToVec4(FEEditorStyle::Success);
+static const ImVec4 WarningColor = FEEditorStyle::ToVec4(FEEditorStyle::Warning);
+static const ImVec4 ErrorColor = FEEditorStyle::ToVec4(FEEditorStyle::Danger);
 static const ImVec4 EngineModuleColor = ImVec4(0.55f, 0.75f, 0.95f, 1.0f);
 static const ImVec4 EditorModuleColor = ImVec4(0.80f, 0.60f, 0.95f, 1.0f);
 
@@ -54,7 +54,7 @@ void FEEditorPluginsWindow::Render()
 	if (CurrentProject != nullptr)
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-		bWindowOpen = ImGui::Begin("Plugins", nullptr, ImGuiWindowFlags_None);
+		bWindowOpen = ImGui::Begin("Plugins", &bVisible, ImGuiWindowFlags_None);
 		ImGui::PopStyleVar();
 	}
 	else
