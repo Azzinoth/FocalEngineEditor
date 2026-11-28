@@ -101,16 +101,18 @@ void FEEditor::MouseButtonCallback(const int Button, const int Action, int Mods)
 	if (Button == GLFW_MOUSE_BUTTON_1 && Action == GLFW_RELEASE)
 		DRAG_AND_DROP_MANAGER.DropAction();
 
+	EDITOR_SCENE_WINDOW_MANAGER.MouseButtonCallback(Button, Action, Mods);
+
+	// Scene window manager has just checked what is under the mouse.
 	if (Button == GLFW_MOUSE_BUTTON_1 && Action == GLFW_PRESS)
 	{
-		INSPECTOR_WINDOW.bLeftMousePressed = true;
+		const FEEditorSceneWindow* FocusedSceneWindow = EDITOR_SCENE_WINDOW_MANAGER.GetFocusedSceneWindow();
+		INSPECTOR_WINDOW.bLeftMousePressedInSceneWindow = FocusedSceneWindow != nullptr && FocusedSceneWindow->bWindowHovered;
 	}
 	else if (Button == GLFW_MOUSE_BUTTON_1 && Action == GLFW_RELEASE)
 	{
-		INSPECTOR_WINDOW.bLeftMousePressed = false;
+		INSPECTOR_WINDOW.bLeftMousePressedInSceneWindow = false;
 	}
-
-	EDITOR_SCENE_WINDOW_MANAGER.MouseButtonCallback(Button, Action, Mods);
 }
 
 void FEEditor::KeyButtonCallback(int Key, int Scancode, int Action, int Mods)

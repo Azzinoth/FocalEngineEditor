@@ -1742,7 +1742,7 @@ void FEEditorInspectorWindow::Render()
 				// To hide gizmos.
 				SELECTED.SetSelected(EntitySelected);
 
-				TERRAIN_SYSTEM.SetBrushActive(bLeftMousePressed);
+				TERRAIN_SYSTEM.SetBrushActive(bLeftMousePressedInSceneWindow);
 
 				if (bShiftPressed)
 				{

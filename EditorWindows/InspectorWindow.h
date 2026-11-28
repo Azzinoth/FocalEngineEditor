@@ -56,7 +56,7 @@ class FEEditorInspectorWindow
 
     VolumeTransferFunctionWidget TransferFunctionWidget;
 
-    bool bLeftMousePressed = false;
+    bool bLeftMousePressedInSceneWindow = false;
     bool bShiftPressed = false;
 
     void ShowTransformConfiguration(FEObject* Object, FETransformComponent* Transform) const;
