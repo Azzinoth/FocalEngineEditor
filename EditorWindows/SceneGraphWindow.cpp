@@ -76,6 +76,7 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	//CameraComponentIndicator.OnClickCallback = [](FENaiveSceneGraphNode* Node) {};
 	CameraComponentIndicator.bIsVisibleByDefault = false;
 	CameraComponentIndicator.TooltipText = "Camera component";
+	CameraComponentIndicator.IconColor = FEEditorStyle::ToVec4(FEEditorStyle::GetComponentColor(typeid(FECameraComponent)));
 
 	CameraComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
 		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
@@ -95,6 +96,7 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	//CameraComponentIndicator.OnClickCallback = [](FENaiveSceneGraphNode* Node) {};
 	LightComponentIndicator.bIsVisibleByDefault = false;
 	LightComponentIndicator.TooltipText = "Light component";
+	LightComponentIndicator.IconColor = FEEditorStyle::ToVec4(FEEditorStyle::GetComponentColor(typeid(FELightComponent)));
 
 	LightComponentIndicator.IsVisiblePredicate = [this](SceneGraphUI::NodeHandle Node) -> bool {
 		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
@@ -133,6 +135,7 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	GameModelComponentIndicator.bIsInteractive = false;
 	GameModelComponentIndicator.bIsVisibleByDefault = false;
 	GameModelComponentIndicator.TooltipText = "Game model component";
+	GameModelComponentIndicator.IconColor = FEEditorStyle::ToVec4(FEEditorStyle::GetComponentColor(typeid(FEGameModelComponent)));
 
 	GameModelComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
 		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
@@ -150,6 +153,7 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	TerrainComponentIndicator.bIsInteractive = false;
 	TerrainComponentIndicator.bIsVisibleByDefault = false;
 	TerrainComponentIndicator.TooltipText = "Terrain component";
+	TerrainComponentIndicator.IconColor = FEEditorStyle::ToVec4(FEEditorStyle::GetComponentColor(typeid(FETerrainComponent)));
 
 	TerrainComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
 		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
@@ -167,6 +171,7 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	InstancedEntityComponentIndicator.bIsInteractive = false;
 	InstancedEntityComponentIndicator.bIsVisibleByDefault = false;
 	InstancedEntityComponentIndicator.TooltipText = "Instanced entity component";
+	InstancedEntityComponentIndicator.IconColor = FEEditorStyle::ToVec4(FEEditorStyle::GetComponentColor(typeid(FEInstancedComponent)));
 
 	InstancedEntityComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
 		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
@@ -184,6 +189,7 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	PrefabSceneGraphIndicator.bIsInteractive = false;
 	PrefabSceneGraphIndicator.bIsVisibleByDefault = false;
 	PrefabSceneGraphIndicator.TooltipText = "Prefab Instance component";
+	PrefabSceneGraphIndicator.IconColor = FEEditorStyle::ToVec4(FEEditorStyle::GetComponentColor(typeid(FEPrefabInstanceComponent)));
 
 	PrefabSceneGraphIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
 		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
@@ -235,6 +241,7 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	VirtualUIComponentIndicator.bIsInteractive = false;
 	VirtualUIComponentIndicator.bIsVisibleByDefault = false;
 	VirtualUIComponentIndicator.TooltipText = "Virtual UI component";
+	VirtualUIComponentIndicator.IconColor = FEEditorStyle::ToVec4(FEEditorStyle::GetComponentColor(typeid(FEVirtualUIComponent)));
 
 	VirtualUIComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
 		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
@@ -252,6 +259,7 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	PointCloudComponentIndicator.bIsInteractive = false;
 	PointCloudComponentIndicator.bIsVisibleByDefault = false;
 	PointCloudComponentIndicator.TooltipText = "Point cloud component";
+	PointCloudComponentIndicator.IconColor = FEEditorStyle::ToVec4(FEEditorStyle::GetComponentColor(typeid(FEPointCloudComponent)));
 
 	PointCloudComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
 		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
@@ -269,6 +277,7 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	NativeScriptComponentIndicator.bIsInteractive = false;
 	NativeScriptComponentIndicator.bIsVisibleByDefault = false;
 	NativeScriptComponentIndicator.TooltipText = "Native script component";
+	NativeScriptComponentIndicator.IconColor = FEEditorStyle::ToVec4(FEEditorStyle::GetComponentColor(typeid(FENativeScriptComponent)));
 
 	NativeScriptComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
 		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();
@@ -286,6 +295,7 @@ void FEEditorSceneGraphWindow::InitializeResources()
 	VolumeComponentIndicator.bIsInteractive = false;
 	VolumeComponentIndicator.bIsVisibleByDefault = false;
 	VolumeComponentIndicator.TooltipText = "Volumetric component";
+	VolumeComponentIndicator.IconColor = FEEditorStyle::ToVec4(FEEditorStyle::GetComponentColor(typeid(FEVolumeComponent)));
 
 	VolumeComponentIndicator.IsVisiblePredicate = [](SceneGraphUI::NodeHandle Node) -> bool {
 		FEEntity* CurrentEntity = Node.As<FENaiveSceneGraphNode>()->GetEntity();

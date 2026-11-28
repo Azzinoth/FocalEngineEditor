@@ -22,6 +22,7 @@ protected:
 	 
 	 bool bShouldDockToCentralNode = false;
 	 bool bJustAdded = true;
+	 bool bFocusRequested = false;
 	 bool bWindowHovered = false;
 
 	 bool bSelfContained = true;

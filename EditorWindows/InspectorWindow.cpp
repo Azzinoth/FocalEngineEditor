@@ -991,6 +991,7 @@ void FEEditorInspectorWindow::RenderAddComponentMenu(FEEntity* Entity)
 			std::string Name;
 			std::string Label;
 			FETexture* Icon = nullptr;
+			ImU32 IconColor = FEEditorStyle::Text;
 			bool bCanBeAdded = false;
 			std::string Note;
 			std::string Reason;
@@ -1010,8 +1011,11 @@ void FEEditorInspectorWindow::RenderAddComponentMenu(FEEntity* Entity)
 			Row.Label = Row.Name == "Volume" ? "Volumetric" : Row.Name;
 			Row.Icon = SCENE_GRAPH_WINDOW.GetComponentIcon(*RegisteredComponents[i].Type);
 			Row.bCanBeAdded = RegisteredComponents[i].CanBeAddedToEntity(Entity, &Row.Reason);
+			// Icons are white and take the color of their component, dimmed when it can not be added.
+			Row.IconColor = FEEditorStyle::GetComponentColor(*RegisteredComponents[i].Type);
 			if (!Row.bCanBeAdded)
 			{
+				Row.IconColor = FEEditorStyle::Mix(FEEditorStyle::Panel, Row.IconColor, 0.45f);
 				Row.Note = "not available";
 				for (size_t j = 0; j < EntityComponents.size(); j++)
 				{
@@ -1056,7 +1060,7 @@ void FEEditorInspectorWindow::RenderAddComponentMenu(FEEntity* Entity)
 			const ImU32 ContentColor = Rows[i].bCanBeAdded ? FEEditorStyle::Text : FEEditorStyle::TextDisabled;
 			const float IconY = RowMin.y + (RowHeight - IconSize) / 2.0f;
 			if (Rows[i].Icon != nullptr)
-				MenuDrawList->AddImage(Rows[i].Icon->GetTextureID(), ImVec2(RowMin.x + 6.0f, IconY), ImVec2(RowMin.x + 6.0f + IconSize, IconY + IconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ContentColor);
+				MenuDrawList->AddImage(Rows[i].Icon->GetTextureID(), ImVec2(RowMin.x + 6.0f, IconY), ImVec2(RowMin.x + 6.0f + IconSize, IconY + IconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), Rows[i].IconColor);
 
 			MenuDrawList->AddText(ImVec2(RowMin.x + 6.0f + IconSize + 10.0f, RowMin.y + (RowHeight - ImGui::GetFontSize()) / 2.0f), ContentColor, Rows[i].Label.c_str());
 			if (!Rows[i].bCanBeAdded)
@@ -1104,6 +1108,21 @@ bool FEEditorInspectorWindow::AddComponent(FEEntity* Entity, std::string Compone
 	}
 
 	return false;
+}
+
+// Header of a component, with a line in the color of the component at its left edge.
+static bool RenderComponentHeader(const char* Label, const std::type_info& ComponentType)
+{
+	const bool bOpen = ImGui::CollapsingHeader(Label, ImGuiTreeNodeFlags_DefaultOpen);
+	const ImU32 Color = FEEditorStyle::GetComponentColor(ComponentType);
+	// A component without a color of its own has no line.
+	if (Color != FEEditorStyle::Text)
+	{
+		const ImVec2 Min = ImGui::GetItemRectMin();
+		ImGui::GetWindowDrawList()->AddRectFilled(Min, ImVec2(Min.x + 3.0f, ImGui::GetItemRectMax().y), Color, 3.0f, ImDrawFlags_RoundCornersLeft);
+	}
+
+	return bOpen;
 }
 
 bool FEEditorInspectorWindow::RenderComponentDeleteButton(FEEntity* Entity, FEComponentTypeInfo* ComponentInfo) const
@@ -1619,7 +1638,7 @@ void FEEditorInspectorWindow::Render()
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Tag", ImGuiTreeNodeFlags_DefaultOpen))
+		if (RenderComponentHeader("Tag", typeid(FETagComponent)))
 			RenderTagField(CurrentScene, EntitySelected);
 	}
 
@@ -1632,7 +1651,7 @@ void FEEditorInspectorWindow::Render()
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
+		if (RenderComponentHeader("Transform", typeid(FETransformComponent)))
 		{
 			FETransformComponent& Transform = EntitySelected->GetComponent<FETransformComponent>();
 			ShowTransformConfiguration(EntitySelected->GetName(), &Transform);
@@ -1648,7 +1667,7 @@ void FEEditorInspectorWindow::Render()
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Game Model", ImGuiTreeNodeFlags_DefaultOpen))
+		if (RenderComponentHeader("Game Model", typeid(FEGameModelComponent)))
 			DisplayGameModelProperties(EntitySelected);
 	}
 
@@ -1661,7 +1680,7 @@ void FEEditorInspectorWindow::Render()
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Point cloud", ImGuiTreeNodeFlags_DefaultOpen))
+		if (RenderComponentHeader("Point cloud", typeid(FEPointCloudComponent)))
 			DisplayPointCloudProperties(EntitySelected);
 	}
 
@@ -1674,7 +1693,7 @@ void FEEditorInspectorWindow::Render()
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Volumetric", ImGuiTreeNodeFlags_DefaultOpen))
+		if (RenderComponentHeader("Volumetric", typeid(FEVolumeComponent)))
 			DisplayVolumeProperties(EntitySelected);
 	}
 
@@ -1687,7 +1706,7 @@ void FEEditorInspectorWindow::Render()
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Prefab Instance", ImGuiTreeNodeFlags_DefaultOpen))
+		if (RenderComponentHeader("Prefab Instance", typeid(FEPrefabInstanceComponent)))
 			DisplayPrefabInstanceProperties(EntitySelected);
 	}
 
@@ -1700,7 +1719,7 @@ void FEEditorInspectorWindow::Render()
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Instanced", ImGuiTreeNodeFlags_DefaultOpen))
+		if (RenderComponentHeader("Instanced", typeid(FEInstancedComponent)))
 			DisplayInstancedProperties(EntitySelected);
 	}
 
@@ -1713,7 +1732,7 @@ void FEEditorInspectorWindow::Render()
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Terrain", ImGuiTreeNodeFlags_DefaultOpen))
+		if (RenderComponentHeader("Terrain", typeid(FETerrainComponent)))
 		{
 			FETerrainComponent& TerrainComponent = EntitySelected->GetComponent<FETerrainComponent>();
 			DisplayTerrainSettings(EntitySelected);
@@ -1753,7 +1772,7 @@ void FEEditorInspectorWindow::Render()
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
+		if (RenderComponentHeader("Light", typeid(FELightComponent)))
 		{
 			DisplayLightProperties(SELECTED.GetSelected(CurrentScene));
 		}
@@ -1768,7 +1787,7 @@ void FEEditorInspectorWindow::Render()
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
+		if (RenderComponentHeader("Camera", typeid(FECameraComponent)))
 		{
 			DisplayCameraProperties(SELECTED.GetSelected(CurrentScene));
 		}
@@ -1783,7 +1802,7 @@ void FEEditorInspectorWindow::Render()
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Virtual UI", ImGuiTreeNodeFlags_DefaultOpen))
+		if (RenderComponentHeader("Virtual UI", typeid(FEVirtualUIComponent)))
 		{
 			DisplayVirtualUIProperties(SELECTED.GetSelected(CurrentScene));
 		}
@@ -1798,7 +1817,7 @@ void FEEditorInspectorWindow::Render()
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Native Script", ImGuiTreeNodeFlags_DefaultOpen))
+		if (RenderComponentHeader("Native Script", typeid(FENativeScriptComponent)))
 		{
 			DisplayNativeScriptProperties(SELECTED.GetSelected(CurrentScene));
 		}
@@ -2702,61 +2721,62 @@ void FEEditorInspectorWindow::DisplayInstancedProperties(FEEntity* InstancedEnti
 			}
 		}
 
-		RenderGroupTitle("Spawn");
-
-		RenderRowLabel("Count", LabelWidth);
-		ImGui::SetNextItemWidth(-FLT_MIN);
-		ImGui::DragInt("##ObjectCount", &InstancedComponent.SpawnInfo.ObjectCount, 1.0f, 1, 10000000);
-		if (InstancedComponent.SpawnInfo.ObjectCount <= 0)
-			InstancedComponent.SpawnInfo.ObjectCount = 1;
-
-		// Spawn takes a remainder of division by the whole part of the radius.
-		RenderFloatRow("Radius", "##Radius", InstancedComponent.SpawnInfo.Radius, 1.0f, 1.0f, 100000.0f, LabelWidth, "%.1f m");
-		if (InstancedComponent.SpawnInfo.Radius < 1.0f)
-			InstancedComponent.SpawnInfo.Radius = 1.0f;
-
-		RenderRowLabel("Scale", LabelWidth);
-		const float HalfWidth = floorf((ImGui::GetContentRegionAvail().x - FieldSpacing) / 2.0f);
-		float MinScale = InstancedComponent.SpawnInfo.GetMinScale();
-		ImGui::SetNextItemWidth(HalfWidth);
-		if (ImGui::DragFloat("##MinScale", &MinScale, 0.01f, 0.0f, 0.0f, "from %.2f"))
-			InstancedComponent.SpawnInfo.SetMinScale(MinScale);
-
-		ImGui::SameLine(0.0f, FieldSpacing);
-		float MaxScale = InstancedComponent.SpawnInfo.GetMaxScale();
-		ImGui::SetNextItemWidth(HalfWidth);
-		if (ImGui::DragFloat("##MaxScale", &MaxScale, 0.01f, 0.0f, 0.0f, "to %.2f"))
-			InstancedComponent.SpawnInfo.SetMaxScale(MaxScale);
-
-		// Deviation is a part of the full turn, it is shown in degrees.
-		RenderRowLabel("Rotation", LabelWidth);
-		const ImU32 AxisColors[] = { FEEditorStyle::AxisX, FEEditorStyle::AxisY, FEEditorStyle::AxisZ };
-		const char* AxisFormats[] = { "X %.0f\xC2\xB0", "Y %.0f\xC2\xB0", "Z %.0f\xC2\xB0" };
-		const float ThirdWidth = floorf((ImGui::GetContentRegionAvail().x - FieldSpacing * 2.0f) / 3.0f);
-		for (int i = 0; i < 3; i++)
+		if (RenderGroupTitle("Spawn###InstancedSpawn"))
 		{
-			float Degrees = InstancedComponent.SpawnInfo.RotationDeviation[i] * 360.0f;
-			ImGui::PushID(i);
-			ImGui::SetNextItemWidth(ThirdWidth);
-			if (ImGui::DragFloat("##RotationDeviation", &Degrees, 1.0f, 3.6f, 360.0f, AxisFormats[i]))
-				InstancedComponent.SpawnInfo.RotationDeviation[i] = std::clamp(Degrees / 360.0f, 0.01f, 1.0f);
-			ShowToolTip("Each instance is turned around this axis by a random angle up to this one.");
+			RenderRowLabel("Count", LabelWidth);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			ImGui::DragInt("##ObjectCount", &InstancedComponent.SpawnInfo.ObjectCount, 1.0f, 1, 10000000);
+			if (InstancedComponent.SpawnInfo.ObjectCount <= 0)
+				InstancedComponent.SpawnInfo.ObjectCount = 1;
 
-			const ImVec2 FieldMin = ImGui::GetItemRectMin();
-			ImGui::GetWindowDrawList()->AddRectFilled(FieldMin, ImVec2(FieldMin.x + 4.0f, ImGui::GetItemRectMax().y), AxisColors[i], 4.0f, ImDrawFlags_RoundCornersLeft);
-			ImGui::PopID();
+			// Spawn takes a remainder of division by the whole part of the radius.
+			RenderFloatRow("Radius", "##Radius", InstancedComponent.SpawnInfo.Radius, 1.0f, 1.0f, 100000.0f, LabelWidth, "%.1f m");
+			if (InstancedComponent.SpawnInfo.Radius < 1.0f)
+				InstancedComponent.SpawnInfo.Radius = 1.0f;
 
-			if (i < 2)
-				ImGui::SameLine(0.0f, FieldSpacing);
+			RenderRowLabel("Scale", LabelWidth);
+			const float HalfWidth = floorf((ImGui::GetContentRegionAvail().x - FieldSpacing) / 2.0f);
+			float MinScale = InstancedComponent.SpawnInfo.GetMinScale();
+			ImGui::SetNextItemWidth(HalfWidth);
+			if (ImGui::DragFloat("##MinScale", &MinScale, 0.01f, 0.0f, 0.0f, "from %.2f"))
+				InstancedComponent.SpawnInfo.SetMinScale(MinScale);
+
+			ImGui::SameLine(0.0f, FieldSpacing);
+			float MaxScale = InstancedComponent.SpawnInfo.GetMaxScale();
+			ImGui::SetNextItemWidth(HalfWidth);
+			if (ImGui::DragFloat("##MaxScale", &MaxScale, 0.01f, 0.0f, 0.0f, "to %.2f"))
+				InstancedComponent.SpawnInfo.SetMaxScale(MaxScale);
+
+			// Deviation is a part of the full turn, it is shown in degrees.
+			RenderRowLabel("Rotation", LabelWidth);
+			const ImU32 AxisColors[] = { FEEditorStyle::AxisX, FEEditorStyle::AxisY, FEEditorStyle::AxisZ };
+			const char* AxisFormats[] = { "X %.0f\xC2\xB0", "Y %.0f\xC2\xB0", "Z %.0f\xC2\xB0" };
+			const float ThirdWidth = floorf((ImGui::GetContentRegionAvail().x - FieldSpacing * 2.0f) / 3.0f);
+			for (int i = 0; i < 3; i++)
+			{
+				float Degrees = InstancedComponent.SpawnInfo.RotationDeviation[i] * 360.0f;
+				ImGui::PushID(i);
+				ImGui::SetNextItemWidth(ThirdWidth);
+				if (ImGui::DragFloat("##RotationDeviation", &Degrees, 1.0f, 3.6f, 360.0f, AxisFormats[i]))
+					InstancedComponent.SpawnInfo.RotationDeviation[i] = std::clamp(Degrees / 360.0f, 0.01f, 1.0f);
+				ShowToolTip("Each instance is turned around this axis by a random angle up to this one.");
+
+				const ImVec2 FieldMin = ImGui::GetItemRectMin();
+				ImGui::GetWindowDrawList()->AddRectFilled(FieldMin, ImVec2(FieldMin.x + 4.0f, ImGui::GetItemRectMax().y), AxisColors[i], 4.0f, ImDrawFlags_RoundCornersLeft);
+				ImGui::PopID();
+
+				if (i < 2)
+					ImGui::SameLine(0.0f, FieldSpacing);
+			}
+
+			RenderRowLabel("Seed", LabelWidth);
+			const float RandomButtonWidth = ImGui::CalcTextSize("Random").x + 24.0f;
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - RandomButtonWidth - FieldSpacing);
+			ImGui::DragInt("##Seed", &InstancedComponent.SpawnInfo.Seed);
+			ImGui::SameLine(0.0f, FieldSpacing);
+			if (ImGui::Button("Random", ImVec2(RandomButtonWidth, 0.0f)))
+				InstancedComponent.SpawnInfo.Seed = rand();
 		}
-
-		RenderRowLabel("Seed", LabelWidth);
-		const float RandomButtonWidth = ImGui::CalcTextSize("Random").x + 24.0f;
-		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - RandomButtonWidth - FieldSpacing);
-		ImGui::DragInt("##Seed", &InstancedComponent.SpawnInfo.Seed);
-		ImGui::SameLine(0.0f, FieldSpacing);
-		if (ImGui::Button("Random", ImVec2(RandomButtonWidth, 0.0f)))
-			InstancedComponent.SpawnInfo.Seed = rand();
 
 		if (RenderInstancedButton("Respawn", InstancedIcon::Respawn, InstancedButtonKind::Primary, ImGui::GetContentRegionAvail().x))
 		{
@@ -2780,39 +2800,40 @@ void FEEditorInspectorWindow::DisplayInstancedProperties(FEEntity* InstancedEnti
 		const int InstanceIndex = CurrentSelectionData->InstancedSubObjectIndexSelected;
 		if (InstanceIndex != -1)
 		{
-			RenderGroupTitle("Instance " + GetNumberWithSeparators(static_cast<size_t>(InstanceIndex)), "of " + GetNumberWithSeparators(InstancedComponent.GetInstanceCount()));
-
-			FETransformComponent TemporaryTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(InstanceIndex));
-			TemporaryTransform.SetSceneIndependent(true);
-			bool bChanged = false;
-
-			glm::vec3 Position = TemporaryTransform.GetPosition();
-			if (RenderTransformRow("Position", Position, 0.1f, 0.0f, 0.0f) != -1)
+			if (RenderGroupTitle("Instance " + GetNumberWithSeparators(static_cast<size_t>(InstanceIndex)) + "###InstancedInstance", "of " + GetNumberWithSeparators(InstancedComponent.GetInstanceCount())))
 			{
-				TemporaryTransform.SetPosition(Position);
-				bChanged = true;
-			}
+				FETransformComponent TemporaryTransform = FETransformComponent(InstancedComponent.GetTransformedInstancedMatrix(InstanceIndex));
+				TemporaryTransform.SetSceneIndependent(true);
+				bool bChanged = false;
 
-			glm::vec3 Rotation = TemporaryTransform.GetRotation();
-			if (RenderTransformRow("Rotation", Rotation, 0.1f, -360.0f, 360.0f) != -1)
-			{
-				TemporaryTransform.SetRotation(Rotation);
-				bChanged = true;
-			}
+				glm::vec3 Position = TemporaryTransform.GetPosition();
+				if (RenderTransformRow("Position", Position, 0.1f, 0.0f, 0.0f) != -1)
+				{
+					TemporaryTransform.SetPosition(Position);
+					bChanged = true;
+				}
 
-			// Scale of an instance is uniform.
-			glm::vec3 Scale = TemporaryTransform.GetScale();
-			const int ChangedAxis = RenderTransformRow("Scale", Scale, Scale.x * 0.01f, 0.001f, 1000.0f);
-			if (ChangedAxis != -1)
-			{
-				TemporaryTransform.SetScale(glm::vec3(Scale[ChangedAxis]));
-				bChanged = true;
-			}
+				glm::vec3 Rotation = TemporaryTransform.GetRotation();
+				if (RenderTransformRow("Rotation", Rotation, 0.1f, -360.0f, 360.0f) != -1)
+				{
+					TemporaryTransform.SetRotation(Rotation);
+					bChanged = true;
+				}
 
-			if (bChanged)
-			{
-				INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(InstancedEntity, InstanceIndex, TemporaryTransform.GetWorldMatrix());
-				PROJECT_MANAGER.GetCurrent()->SetModified(true);
+				// Scale of an instance is uniform.
+				glm::vec3 Scale = TemporaryTransform.GetScale();
+				const int ChangedAxis = RenderTransformRow("Scale", Scale, Scale.x * 0.01f, 0.001f, 1000.0f);
+				if (ChangedAxis != -1)
+				{
+					TemporaryTransform.SetScale(glm::vec3(Scale[ChangedAxis]));
+					bChanged = true;
+				}
+
+				if (bChanged)
+				{
+					INSTANCED_RENDERING_SYSTEM.ModifyIndividualInstance(InstancedEntity, InstanceIndex, TemporaryTransform.GetWorldMatrix());
+					PROJECT_MANAGER.GetCurrent()->SetModified(true);
+				}
 			}
 
 			const float ThirdWidth = floorf((ImGui::GetContentRegionAvail().x - FieldSpacing * 2.0f) / 3.0f);

@@ -51,8 +51,12 @@ private:
 	void RemoveEntry(FEProjectInfo* Project);
 	void SaveProjectList();
 	void RefreshProjectList();
-	// Editor is restarted if project needs other plugins.
+	// Project is opened two frames later, the list shows a message in these frames.
 	void OpenProjectFromList(FEProjectInfo* Project);
+	// Editor is restarted if project needs other plugins.
+	void OpenRequestedProject();
+	FEProjectInfo* ProjectToOpen = nullptr;
+	bool bOpeningMessageShown = false;
 
 	FEProjectInfo* Selected = nullptr;
 	bool bListView = false;
@@ -74,6 +78,7 @@ private:
 	void DisplayListView(const std::vector<FEProjectInfo*>& Projects, ImVec2 Origin, float Width, float Height);
 	void DisplayDetailsPanel(ImVec2 Origin, float Height);
 	void DisplayBottomBar(ImVec2 Origin, float Width, float Height);
+	void DisplayOpeningMessage(ImVec2 Origin, float Width, float Height);
 	void DisplayProjectMenu(FEProjectInfo* Project);
 	void DisplayPopups();
 	void ShowPopup(const std::string& Name, FEProjectInfo* Project);

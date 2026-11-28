@@ -54,11 +54,82 @@ namespace FEEditorStyle
 	constexpr ImU32 TypeAssetPackage = IM_COL32(0xB0, 0x90, 0x70, 255);
 	constexpr ImU32 TypeNativeScriptModule = IM_COL32(0x9A, 0xA8, 0xC0, 255);
 
+	// Components that have no resource type of their own, the others take the color of their resource type.
+	constexpr ImU32 ComponentCamera = IM_COL32(0xE8, 0x7A, 0x6A, 255);
+	constexpr ImU32 ComponentLight = IM_COL32(0xF5, 0xE6, 0xA8, 255);
+	constexpr ImU32 ComponentInstanced = IM_COL32(0xD0, 0x7A, 0xD8, 255);
+	constexpr ImU32 ComponentTerrain = IM_COL32(0xA6, 0xCC, 0x5A, 255);
+	constexpr ImU32 ComponentVirtualUI = IM_COL32(0x62, 0xB8, 0xF0, 255);
+	constexpr ImU32 ComponentVolume = IM_COL32(0xC4, 0xBC, 0xF0, 255);
+
 	// Drawn over content that is covered by a window or a popup.
 	constexpr ImU32 Dim = IM_COL32(0x0E, 0x0F, 0x12, 200);
 
 	inline ImVec4 ToVec4(const ImU32 Color)
 	{
 		return ImGui::ColorConvertU32ToFloat4(Color);
+	}
+
+	// First color at weight 0, second at weight 1.
+	inline ImU32 Mix(const ImU32 First, const ImU32 Second, const float Weight)
+	{
+		const ImVec4 A = ToVec4(First);
+		const ImVec4 B = ToVec4(Second);
+		return ImGui::ColorConvertFloat4ToU32(ImVec4(A.x + (B.x - A.x) * Weight, A.y + (B.y - A.y) * Weight, A.z + (B.z - A.z) * Weight, A.w + (B.w - A.w) * Weight));
+	}
+
+	// Color of a resource type, the only place where a type gets its color.
+	inline ImU32 GetTypeColor(const FE_OBJECT_TYPE Type)
+	{
+		switch (Type)
+		{
+			case FE_SHADER: return TypeShader;
+			case FE_MESH: return TypeMesh;
+			case FE_TEXTURE: return TypeTexture;
+			case FE_MATERIAL: return TypeMaterial;
+			case FE_GAMEMODEL: return TypeGameModel;
+			case FE_POINT_CLOUD: return TypePointCloud;
+			case FE_PREFAB: return TypePrefab;
+			case FE_SCENE: return TypeScene;
+			case FE_ASSET_PACKAGE: return TypeAssetPackage;
+			case FE_NATIVE_SCRIPT_MODULE: return TypeNativeScriptModule;
+			default: return TextDisabled;
+		}
+	}
+
+	// Color of a component, the only place where a component gets its color. A component without a color of its own has color of the text.
+	inline ImU32 GetComponentColor(const std::type_info& ComponentType)
+	{
+		if (ComponentType == typeid(FEGameModelComponent))
+			return GetTypeColor(FE_GAMEMODEL);
+
+		if (ComponentType == typeid(FEPointCloudComponent))
+			return GetTypeColor(FE_POINT_CLOUD);
+
+		if (ComponentType == typeid(FENativeScriptComponent))
+			return GetTypeColor(FE_NATIVE_SCRIPT_MODULE);
+
+		if (ComponentType == typeid(FEPrefabInstanceComponent))
+			return GetTypeColor(FE_PREFAB);
+
+		if (ComponentType == typeid(FECameraComponent))
+			return ComponentCamera;
+
+		if (ComponentType == typeid(FELightComponent))
+			return ComponentLight;
+
+		if (ComponentType == typeid(FEInstancedComponent))
+			return ComponentInstanced;
+
+		if (ComponentType == typeid(FETerrainComponent))
+			return ComponentTerrain;
+
+		if (ComponentType == typeid(FEVirtualUIComponent))
+			return ComponentVirtualUI;
+
+		if (ComponentType == typeid(FEVolumeComponent))
+			return ComponentVolume;
+
+		return Text;
 	}
 }

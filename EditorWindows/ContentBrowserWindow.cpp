@@ -141,28 +141,10 @@ static std::string GetItemTypeName(FEObject* Item)
 	}
 }
 
-static ImU32 GetItemTypeColor(const FE_OBJECT_TYPE Type)
-{
-	switch (Type)
-	{
-		case FE_SHADER: return FEEditorStyle::TypeShader;
-		case FE_MESH: return FEEditorStyle::TypeMesh;
-		case FE_TEXTURE: return FEEditorStyle::TypeTexture;
-		case FE_MATERIAL: return FEEditorStyle::TypeMaterial;
-		case FE_GAMEMODEL: return FEEditorStyle::TypeGameModel;
-		case FE_POINT_CLOUD: return FEEditorStyle::TypePointCloud;
-		case FE_PREFAB: return FEEditorStyle::TypePrefab;
-		case FE_SCENE: return FEEditorStyle::TypeScene;
-		case FE_ASSET_PACKAGE: return FEEditorStyle::TypeAssetPackage;
-		case FE_NATIVE_SCRIPT_MODULE: return FEEditorStyle::TypeNativeScriptModule;
-		default: return FEEditorStyle::TextDisabled;
-	}
-}
-
 // Icons are white and take this color, folders have no color of their own.
 static ImU32 GetItemIconColor(const FE_OBJECT_TYPE Type)
 {
-	return Type == FE_NULL ? FEEditorStyle::TextMuted : GetItemTypeColor(Type);
+	return Type == FE_NULL ? FEEditorStyle::TextMuted : FEEditorStyle::GetTypeColor(Type);
 }
 
 // Folders, shaders, asset packages and script modules have an icon in place of a preview.
@@ -567,27 +549,42 @@ static float GetFilterChipWidth(const char* Label)
 }
 
 // Toggle with icon and name, it should be called with font of the chips.
-static bool RenderFilterChip(const char* Label, FETexture* Icon, const bool bSelected)
+// Chip of a type has its icon in TypeColor, and outline with tint of that color when selected. Chip without a type is filled with accent color when selected.
+static bool RenderFilterChip(const char* Label, FETexture* Icon, const bool bSelected, const ImU32 TypeColor = 0)
 {
 	const ImVec2 Size = ImVec2(GetFilterChipWidth(Label), 30.0f);
 	const ImVec2 Min = ImGui::GetCursorScreenPos();
 	const ImVec2 Max = ImVec2(Min.x + Size.x, Min.y + Size.y);
 	const bool bPressed = ImGui::InvisibleButton(Label, Size);
 	const bool bHovered = ImGui::IsItemHovered();
+	const bool bHasType = TypeColor != 0;
 
 	ImU32 Fill = bHovered ? FEEditorStyle::ButtonHovered : FEEditorStyle::Button;
-	if (bSelected)
+	ImU32 Border = FEEditorStyle::ButtonBorder;
+	float BorderSize = 1.0f;
+	// Icons are white, so they take any color.
+	ImU32 IconColor = bHasType ? TypeColor : FEEditorStyle::Text;
+	ImU32 TextColor = FEEditorStyle::Text;
+	if (bSelected && bHasType)
+	{
+		Fill = FEEditorStyle::Mix(FEEditorStyle::Button, TypeColor, bHovered ? 0.34f : 0.22f);
+		Border = TypeColor;
+		BorderSize = 1.5f;
+	}
+	else if (bSelected)
+	{
 		Fill = bHovered ? FEEditorStyle::AccentHovered : FEEditorStyle::Accent;
+		IconColor = FEEditorStyle::TextOnAccent;
+		TextColor = FEEditorStyle::TextOnAccent;
+	}
 
-	// Icons are white, so they are tinted together with the text.
-	const ImU32 ContentColor = bSelected ? FEEditorStyle::TextOnAccent : FEEditorStyle::Text;
 	ImDrawList* DrawList = ImGui::GetWindowDrawList();
 	DrawList->AddRectFilled(Min, Max, Fill, Size.y / 2.0f);
-	if (!bSelected)
-		DrawList->AddRect(Min, Max, FEEditorStyle::ButtonBorder, Size.y / 2.0f);
+	if (!bSelected || bHasType)
+		DrawList->AddRect(Min, Max, Border, Size.y / 2.0f, 0, BorderSize);
 
-	DrawList->AddImage(Icon->GetTextureID(), ImVec2(Min.x + 10.0f, Min.y + 5.0f), ImVec2(Min.x + 30.0f, Min.y + 25.0f), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ContentColor);
-	DrawList->AddText(ImVec2(Min.x + 36.0f, Min.y + (Size.y - ImGui::GetFontSize()) / 2.0f), ContentColor, Label);
+	DrawList->AddImage(Icon->GetTextureID(), ImVec2(Min.x + 10.0f, Min.y + 5.0f), ImVec2(Min.x + 30.0f, Min.y + 25.0f), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), IconColor);
+	DrawList->AddText(ImVec2(Min.x + 36.0f, Min.y + (Size.y - ImGui::GetFontSize()) / 2.0f), TextColor, Label);
 	return bPressed;
 }
 
@@ -690,7 +687,7 @@ void FEEditorContentBrowserWindow::RenderFilterMenu()
 		const std::string TypeName = FEObjectTypeToString(Filter.Type);
 		const bool bSelected = std::find(ObjectTypeFilters.begin(), ObjectTypeFilters.end(), TypeName) != ObjectTypeFilters.end();
 		PlaceItem(GetFilterChipWidth(Filter.Name));
-		if (RenderFilterChip(Filter.Name, Filter.Icon, bSelected))
+		if (RenderFilterChip(Filter.Name, Filter.Icon, bSelected, FEEditorStyle::GetTypeColor(Filter.Type)))
 		{
 			if (bSelected)
 			{
@@ -844,7 +841,7 @@ void FEEditorContentBrowserWindow::RenderItemCard(FEObject* Item, const int Inde
 		Border = FEEditorStyle::Accent;
 	}
 
-	const ImU32 TypeColor = GetItemTypeColor(Type);
+	const ImU32 TypeColor = FEEditorStyle::GetTypeColor(Type);
 	ImDrawList* DrawList = ImGui::GetWindowDrawList();
 	DrawList->AddRectFilled(Min, Max, Fill, 6.0f);
 	if (Preview != nullptr)

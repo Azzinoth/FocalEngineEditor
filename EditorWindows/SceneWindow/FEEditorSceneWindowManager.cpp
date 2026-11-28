@@ -164,6 +164,20 @@ FEEditorSceneWindow* FEEditorSceneWindowManager::GetFocusedSceneWindow() const
 	return nullptr;
 }
 
+bool FEEditorSceneWindowManager::FocusSceneWindow(const FEUUID& SceneID)
+{
+	FEScene* Scene = SCENE_MANAGER.GetSceneByID(SceneID);
+	FEEditorSceneWindow* SceneWindow = GetSceneWindow(SceneID);
+	if (Scene == nullptr || SceneWindow == nullptr)
+		return false;
+
+	if (!SetFocusedScene(Scene))
+		return false;
+
+	SceneWindow->bFocusRequested = true;
+	return true;
+}
+
 void FEEditorSceneWindowManager::MouseButtonCallback(int Button, int Action, int Mods)
 {
 	for (size_t i = 0; i < SceneWindows.size(); i++)
@@ -309,6 +323,17 @@ void FEEditorSceneWindowManager::Clear()
 
 void FEEditorSceneWindowManager::RemoveUserClosedWindows()
 {
+	// Closing a game mode window stops game mode, that deletes the window together with its scene.
+	for (size_t i = 0; i < SceneWindows.size(); i++)
+	{
+		FEScene* WindowScene = SceneWindows[i]->GetScene();
+		if (SceneWindows[i]->GetUserRequestedClose() && WindowScene != nullptr && WindowScene->HasFlag(FESceneFlag::GameMode))
+		{
+			EDITOR.SetGameMode(false);
+			break;
+		}
+	}
+
 	for (size_t i = 0; i < SceneWindows.size(); i++)
 	{
 		if (!SceneWindows[i]->GetUserRequestedClose())

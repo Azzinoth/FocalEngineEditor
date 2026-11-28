@@ -23,6 +23,8 @@ public:
 	bool SetFocusedScene(const FEUUID& NewSceneInFocusID);
 	FEScene* GetFocusedScene() const;
 	FEEditorSceneWindow* GetFocusedSceneWindow() const;
+	// Also brings the scene window to front.
+	bool FocusSceneWindow(const FEUUID& SceneID);
 
 	void Clear();
 

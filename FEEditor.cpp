@@ -1238,14 +1238,14 @@ bool FEEditor::SetGameModeInternal(bool GameMode)
 	if (EDITOR.IsInGameMode() == GameMode)
 		return false;
 
-	if (EDITOR.GetFocusedScene() == nullptr)
-	{
-		LOG.Add("FEEditor::SetGameModeInternal: No scene to duplicate for game mode.", "FE_EDITOR_GAME_MODE", FE_LOG_ERROR);
-		return false;
-	}
-
 	if (GameMode)
 	{
+		if (EDITOR.GetFocusedScene() == nullptr)
+		{
+			LOG.Add("FEEditor::SetGameModeInternal: No scene to duplicate for game mode.", "FE_EDITOR_GAME_MODE", FE_LOG_ERROR);
+			return false;
+		}
+
 		if (!DuplicateScenesForGameMode())
 		{
 			LOG.Add("FEEditor::SetGameModeInternal: Failed to set game mode.", "FE_EDITOR_GAME_MODE", FE_LOG_ERROR);
@@ -1254,11 +1254,23 @@ bool FEEditor::SetGameModeInternal(bool GameMode)
 	}
 	else
 	{
+		FEUUID SceneToFocusID;
 		auto SceneIterator = ParentIDToScenesInGameMode.begin();
 		while (SceneIterator != ParentIDToScenesInGameMode.end())
 		{
+			if (EDITOR.GetFocusedScene() == SceneIterator->second)
+				SceneToFocusID = SceneIterator->first;
+
 			EDITOR_SCENE_WINDOW_MANAGER.DeleteSceneAndCleanup(SceneIterator->second->GetID());
 			SceneIterator = ParentIDToScenesInGameMode.erase(SceneIterator);
+		}
+
+		// Return focus to the scene that game mode was started from, or to any opened scene if its window was closed.
+		if (EDITOR.GetFocusedScene() == nullptr && !EDITOR_SCENE_WINDOW_MANAGER.FocusSceneWindow(SceneToFocusID))
+		{
+			const std::vector<FEEditorSceneWindow*>& SceneWindows = EDITOR_SCENE_WINDOW_MANAGER.GetAllSceneWindows();
+			if (!SceneWindows.empty())
+				EDITOR_SCENE_WINDOW_MANAGER.FocusSceneWindow(SceneWindows[0]->SceneID);
 		}
 	}
 

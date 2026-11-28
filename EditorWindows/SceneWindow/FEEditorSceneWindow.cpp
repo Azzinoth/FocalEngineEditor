@@ -150,6 +150,12 @@ void FEEditorSceneWindow::Render()
 		}
 	}
 
+	if (bFocusRequested)
+	{
+		ImGui::SetNextWindowFocus();
+		bFocusRequested = false;
+	}
+
 	FEImGuiWindow::Render();
 
 	if (SceneWindowTarget != nullptr)

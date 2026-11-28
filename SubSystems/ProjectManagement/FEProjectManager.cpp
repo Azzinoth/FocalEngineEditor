@@ -377,7 +377,13 @@ void FEProjectManager::OpenProjectFromList(FEProjectInfo* Project)
 	if (!IsInProjectList(Project) || Project->bMissing)
 		return;
 
-	const std::string ProjectFolder = Project->Folder;
+	ProjectToOpen = Project;
+	bOpeningMessageShown = false;
+}
+
+void FEProjectManager::OpenRequestedProject()
+{
+	const std::string ProjectFolder = ProjectToOpen->Folder;
 	if (EDITOR.IsRestartNeededForProject(ProjectFolder))
 	{
 		EDITOR.RestartWithProject(ProjectFolder);

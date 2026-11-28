@@ -655,7 +655,7 @@ void TextureViewWindow::RenderDetailsPanel(const ImVec2& PanelSize)
 	ImGui::Dummy(ImVec2(0.0f, 6.0f));
 	ImGui::PushStyleColor(ImGuiCol_Header, IM_COL32(0, 0, 0, 0));
 	ImGui::PushStyleColor(ImGuiCol_Text, FEEditorStyle::Accent);
-	const bool bConvertGroupOpen = ImGui::TreeNodeEx("Convert to 3D texture", ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_NoTreePushOnOpen);
+	const bool bConvertGroupOpen = ImGui::TreeNodeEx("Convert to 3D texture###ConvertTo3DGroup", ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_NoTreePushOnOpen);
 	ImGui::PopStyleColor(2);
 	if (bConvertGroupOpen)
 	{

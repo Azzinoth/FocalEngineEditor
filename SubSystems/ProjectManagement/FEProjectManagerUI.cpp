@@ -1013,6 +1013,20 @@ void FEProjectManager::DisplayPopups()
 	EndListPopup(bOpened);
 }
 
+void FEProjectManager::DisplayOpeningMessage(const ImVec2 Origin, const float Width, const float Height)
+{
+	const std::string Text = "Opening " + ProjectToOpen->GetName() + "...";
+	if (bOpeningMessageShown)
+	{
+		OpenRequestedProject();
+		ProjectToOpen = nullptr;
+	}
+	bOpeningMessageShown = !bOpeningMessageShown;
+
+	const float TextSize = 18.0f;
+	DrawListText(GetListBoldFont(), TextSize, ImVec2(Origin.x + (Width - GetTextWidth(GetListBoldFont(), TextSize, Text)) / 2.0f, Origin.y + (Height - TextSize) / 2.0f), FEEditorStyle::Text, Text);
+}
+
 void FEProjectManager::DisplayProjectSelection()
 {
 	const std::vector<FEProjectInfo*> Projects = GetVisibleProjects();
@@ -1039,6 +1053,16 @@ void FEProjectManager::DisplayProjectSelection()
 	ImGui::PushFont(GetListFont(), 14.0f);
 
 	const ImVec2 Origin = ImGui::GetWindowPos();
+	if (ProjectToOpen != nullptr)
+	{
+		DisplayOpeningMessage(Origin, Width, Height);
+		ImGui::PopFont();
+		ImGui::End();
+		ImGui::PopStyleColor();
+		ImGui::PopStyleVar(3);
+		return;
+	}
+
 	DisplayTopBar(Origin, ContentWidth);
 	if (bDetailsPanel)
 	{
